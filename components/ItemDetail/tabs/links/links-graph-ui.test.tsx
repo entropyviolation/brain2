@@ -59,6 +59,26 @@ describe("Links tab graph furniture", () => {
     expect(draft!.links!.some((l) => l.targetId === "x")).toBe(true)
   })
 
+  it("writes one mentioned link when the title names a close person", () => {
+    const person = (id: string, close = false): Task =>
+      ({ ...t(id), title: "Elijah", description: "Elijah", personProfile: close ? { close: true, nicknames: ["Eli"] } : undefined }) as Task
+    const note = {
+      ...t("day"),
+      title: "Elijah called",
+      description: "Eli stopped by",
+      noteLog: [
+        { id: "n1", date: "2026-10-28", text: "elijah" },
+        { id: "n2", date: "2026-10-28", text: "elijah" },
+        { id: "n3", date: "2026-10-28", text: "elijah" },
+      ],
+    } as Task
+    useTaskStore.setState({ tasks: [note, person("e1", true), person("e2"), person("e3")], lists: [], folders: [] })
+    let draft: Task | null = null
+    render(<Host initial={note} onDraft={(d) => (draft = d)} />)
+    expect(draft!.links).toEqual([expect.objectContaining({ relation: "mentioned", targetId: "e1" })])
+    expect(screen.queryAllByRole("button", { name: /Accept Elijah/ })).toHaveLength(0)
+  })
+
   it("mute hides a source; dismiss stores the key", async () => {
     const user = userEvent.setup()
     const me = t("me", [["related", "a"], ["related", "b"]])

@@ -6,7 +6,7 @@ import { buildLattice } from "@/lib/graph/relation-lattice"
 import { deriveAround } from "@/lib/graph/ego-reason"
 import { makeRule, validateRule } from "@/lib/graph/relation-rules"
 import { egoDensity } from "@/lib/graph/ego-density"
-import { linkPath } from "@/lib/graph/link-path"
+import { linkPath, pathQuery } from "@/lib/graph/link-path"
 import { egoMatrix } from "@/lib/graph/ego-matrix"
 import { egoChecks } from "@/lib/graph/relation-checks"
 import { mergeSuggestions } from "@/lib/graph/densify"
@@ -75,6 +75,13 @@ describe("density, path, matrix", () => {
   it("finds a shortest path", () => {
     expect(linkPath("a", "far", links)!.map((s) => s.to)).toEqual(["me", "c", "far"])
     expect(linkPath("a", "nobody", links)).toBeNull()
+    const family = [item("ada", [l("mother-of", "lio")]), item("lio"), item("xe", [l("blocks", "ada")])]
+    const familyLinks = linkIndexOf(family)
+    const along = { relation: "family-of", isSubrelation: (step: string, asked: string) => lattice().isSubrelation(step, asked) }
+    expect(linkPath("ada", "lio", familyLinks, 6, along)!.map((step) => step.to)).toEqual(["lio"])
+    expect(linkPath("xe", "ada", familyLinks, 6, along)).toBeNull()
+    expect(linkPath("xe", "ada", familyLinks)!.map((step) => step.to)).toEqual(["ada"])
+    expect(pathQuery("family-of Ada", allRelations())).toEqual({ along: "family-of", name: "Ada" })
   })
   it("marks open cells", () => {
     const m = egoMatrix("me", links)
@@ -120,6 +127,35 @@ describe("densify", () => {
     expect(triadSource(me, ctx)).toEqual([expect.objectContaining({ otherId: "x", source: "triad" })])
     expect(reciprocalSource(me, ctx)[0]).toMatchObject({ otherId: "sam", relation: inverseRelation("blocks") })
     expect(mentionSource(me, ctx)[0]).toMatchObject({ otherId: "Carla", evidence: expect.objectContaining({ field: "notes" }) })
+    expect(mentionSource(me, ctx)[0].reason).toMatch(/"Lunch with Carla at noon"/)
+    expect(mentionSource(me, { ...ctx, scopeOk: () => false })).toEqual([])
+    expect(mentionSource(me, ctx)[0].relation).toBe("mentioned")
+
+    const elijah = (id: string, extra: Partial<ItemRecord> = {}) => item(id, [], { title: "Elijah", ...extra })
+    const note = item("day", [], {
+      title: "Elijah called",
+      description: "Eli stopped by",
+      noteLog: [
+        { id: "n1", date: "2026-10-28", text: "elijah" },
+        { id: "n2", date: "2026-10-28", text: "elijah" },
+        { id: "n3", date: "2026-10-28", text: "elijah" },
+      ],
+    })
+    const people = [
+      note,
+      elijah("e1", { personProfile: { close: true, nicknames: ["Eli"] } }),
+      elijah("e2"),
+      elijah("e3"),
+    ]
+    const hits = mentionSource(note, { all: people, links: linkIndexOf(people), title: (id) => people.find((p) => p.id === id)?.title ?? id })
+    expect(hits).toHaveLength(1)
+    expect(hits[0]).toMatchObject({ otherId: "e1", relation: "mentioned", evidence: { field: "title" } })
+
+    const far = item("far", [], { title: "Elijah Smith" })
+    const nickNote = item("nick", [], { description: "Ask Eli about the keys" })
+    const close = item("eli", [], { title: "Elijah Smith", personProfile: { close: true, nicknames: ["Eli"] } })
+    const nickHits = mentionSource(nickNote, { all: [nickNote, far, close], links: linkIndexOf([nickNote, far, close]), title: (id) => (id === "far" || id === "eli" ? "Elijah Smith" : id) })
+    expect(nickHits).toEqual([expect.objectContaining({ otherId: "eli", relation: "mentioned", evidence: expect.objectContaining({ field: "description" }) })])
     expect(coMemberSource(me, ctx)[0]).toMatchObject({ otherId: "twin", reason: "Both on #jung and #rare" })
     expect(coTimeSource(me, ctx, [{ otherId: "x", sittings: 3, sharedMinutes: 10, minMinutes: 20 }])).toEqual([])
     const shelf = mergeSuggestions({ ...me, dismissedLinkSuggestions: [mentionSource(me, ctx)[0].key] }, [triadSource(me, ctx), mentionSource(me, ctx), reciprocalSource(me, ctx)], { links, muted: ["triad"] })

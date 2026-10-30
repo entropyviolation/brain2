@@ -4,11 +4,18 @@ _Last mapped: 2026-10-28_
 
 The desk tab is **Data**, formerly Analytics. On a phone (`max-width: 767px`) the studio height follows the content, tables scroll inside the pane, fields are 16px, and drill dialogs are bottom sheets. Desktop chrome is unchanged. The folder and the stored tab id stay `analytics`, so a saved place still opens this room.
 
-The **heart of Brain2**. Capture, Lists, Tracking, Habits, Reviews, and Modules
-write the vault. This tab is mass personal data and information-resource
-**collection, presentation, and analysis** — and the place that turns that mass
-into endless tools. A chart that cannot open its items, or a finding that
-cannot become a next instrument, is unfinished.
+## Intention
+
+_Last mapped: 2026-10-28_
+
+Data is a hugely important tab. The intention is one room for analytics, analysis, data visualization, the library, stats, and annotation.
+
+- **Analytics.** Vast sections, and combined analysis suites, over all data in the vault. What ships is the studio groups in `chrome/analytics-tabs.ts` (Behavior, Time, Accuracy, Meta, Texts, Library, Sources) on one remembered window.
+- **View.** A person can look at data that already exists. Searchable spreadsheet-style libraries — a plain, boring data store — are **Planned**. Library views today are catalogs (item types, lists and areas, attributes, tags, stages, weight).
+- **Sources.** Add and update outside data, including Instagram, texts, and browser history. Instagram and Browser already ship under Sources. Texts already has a report view.
+- **Annotation.** On some screens the job is to clean, annotate, correct, confirm, or otherwise fix the data. That pass is **Planned**. A chart that cannot open its items is still unfinished.
+
+The other rooms write tasks, habits, and tracking. Data reads those stores for the suites. It does not become a second writer of them. Source imports, and a later annotation pass, write the records those screens own. A finding that cannot become a next instrument is unfinished.
 
 ## Public door
 
@@ -17,8 +24,7 @@ lazy-loads that export from `app/page.tsx`. Views are interior
 (`analytics-views.tsx`). The shell also loads `analytics-chrome.css` from
 `app/layout.tsx`.
 
-Data reads the task, habit, and tracking stores. It is not the writer of
-tasks, habits, or tracking.
+Data reads the task, habit, and tracking stores for the suites. See **Intention** above for sources and the planned annotation pass.
 
 The remembered window is `useAnalyticsRangeStore` in `analytics-range-store.ts`.
 Other rooms do not write it.
@@ -29,7 +35,7 @@ cycle marks, reviews, operations, goals, and the item library. Charts use **rech
 (themed, including **pies**) plus shared studio primitives (treemap, density,
 mosaic, hour×day, ribbon, **phosphor traces**). Non-trivial math lives in pure
 `lib/*` helpers plus `cross-section.ts`, `hour-day.ts`, `observatory-findings.ts`,
-and `signal-stats.ts` here. No LLM in this studio today. Tasks, habits, and tracking stay in their own stores. Sources → Browser keeps Chrome exports in IndexedDB (`brain2-browser-history`, `lib/browser-history.ts`) and paints Screen Time through `lib/chrome-sessions.ts`. The Brain2 Chrome extension (`extensions/chrome-history`) posts each finished local day to `/api/chrome-history` when this app is on localhost:3000; `hooks/use-chrome-history-inbox.ts` files it. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
+and `signal-stats.ts` here. No LLM in this studio today. Tasks, habits, and tracking stay in their own stores. Sources → Browser keeps Chrome exports in IndexedDB (`brain2-browser-history`, `lib/browser-history.ts`) and paints Screen Time through `lib/chrome-sessions.ts`. The Brain2 Chrome extension (`extensions/chrome-history`) posts each finished local day to `/api/chrome-history` when this app is on localhost:3000; `hooks/use-chrome-history-inbox.ts` files it. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). Local only. The first grouping of why-it-wasn't-done notes is [`docs/analytics-plan/13-local-readings.md`](../../docs/analytics-plan/13-local-readings.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
 
 **Product law (this tab only):** keep the `.fm98` **title bar** and **status bar**
 so Data still lives in Brain2 next to Lists. Inside them the room is an **esoteric data plate**
@@ -96,7 +102,7 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 
 ## Folders
 
-_Last mapped: 2026-10-27_
+_Last mapped: 2026-10-28_
 
 The public door stays in this folder. Each studio group has the views it already names. `relations/` was already its own library and stays where it is.
 
@@ -106,7 +112,7 @@ The public door stays in this folder. Each studio group has the views it already
 | `time/` | Tracking, its composition boards, and the other Time views |
 | `accuracy/` | Plan vs reality, calibration, cycle, regret, goals |
 | `meta/` | Observatory, cross-section, metrics, correlation, spectrum, research report |
-| `library/` | Item types, lists and areas, attributes, tags, stages, weight |
+| `library/` | Item types, lists and areas, attributes, tags, stages, weight, graph gaps |
 | `sources/` | Instagram and Browser |
 | `chrome/` | Studio index, group catalog, remembered range, lazy view map |
 | `studio/` | Chart frame, Open in Lists, studio kit, studio plots |
@@ -115,7 +121,7 @@ The public door stays in this folder. Each studio group has the views it already
 
 ## Files
 
-_Last mapped: 2026-10-27_
+_Last mapped: 2026-10-28_
 
 | File | Purpose |
 |------|---------|
@@ -184,10 +190,11 @@ _Last mapped: 2026-10-27_
 | `meta/SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
 | `library/ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
 | `sources/InstagramView.tsx` / `sources/instagram-view.css` | Sources → **Instagram**. Hosts the generated `report.html` in a frame. See **Instagram (Sources)** below. `data-testid="instagram-view"`. |
-| `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-16._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`). |
+| `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-28._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`). Two chips add the Taxonomy pack and the Lexical pack; a pack already on does nothing. |
 | `library/ListsAreasView.tsx` | Size-by-items treemap (area ∝ count) + HHI + completion-rate toggle. |
 | `library/AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
 | `library/LibraryCuts.tsx` | Tags (treemap + UpSet combinations), Stages, Weight — fields already on items. |
+| `library/GraphGapsView.tsx` | Library → Graph. Missing and uncertain facts in one slice. A suggestion stays labeled missing; a recorded link stays recorded. |
 
 ### Shell loading
 

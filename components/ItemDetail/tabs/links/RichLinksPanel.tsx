@@ -10,7 +10,7 @@
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { LinkComposer } from "@/components/ItemDetail/tabs/links/LinkComposer"
 import { LinkConstellation } from "@/components/ItemDetail/tabs/links/LinkConstellation"
 import { LinkLedger, visibleEdges } from "@/components/ItemDetail/tabs/links/LinkLedger"
@@ -101,6 +101,17 @@ export function RichLinksPanel({ task, editable = true, addLink, removeLink, wri
   for (const e of edges) counts[e.direction]++
   const inspected = inspectKey ? edges.find((e) => e.key === inspectKey) : undefined
   const dismiss = (key: string) => writeDraft({ dismissedLinkSuggestions: [...(task.dismissedLinkSuggestions ?? []), key] })
+  const pinnedMentions = useRef(new Set<string>())
+  useEffect(() => {
+    if (!editable) return
+    const dismissed = new Set(task.dismissedLinkSuggestions ?? [])
+    for (const row of graph.suggestions) {
+      if (row.source !== "mention" || row.evidence?.field !== "title") continue
+      if (dismissed.has(row.key) || pinnedMentions.current.has(row.key)) continue
+      pinnedMentions.current.add(row.key)
+      addLink(row.relation, row.otherId)
+    }
+  }, [editable, graph.suggestions, task.dismissedLinkSuggestions, addLink])
   const addChecked = (relation: string, targetId: string) => {
     const fresh = graph.precheck(relation, targetId)
     const cycle = fresh.find((c) => c.kind === "acyclic")

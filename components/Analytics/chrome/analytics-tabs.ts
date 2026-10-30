@@ -81,6 +81,7 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "tags", label: "Tags" },
       { id: "stages", label: "Stages" },
       { id: "weight", label: "Weight" },
+      { id: "graph", label: "Graph" },
     ],
   },
   {
@@ -203,6 +204,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Lifecycle bucket (inbox / clarified / scheduled / completed / list). This is Task.stage, not a list name.",
   weight:
     "Importance, cognitive load, and entropy already stored on items. Missing values stay missing.",
+  graph:
+    "Missing and uncertain facts in one slice: people, or items that already have a link, capped at 40. A missing row is a reciprocal or triad suggestion, or a person with no links, and is not drawn as a stored link. Uncertain rows are open inbox proposals. This view does not write a link.",
   browser:
     "Chrome history, merged across profiles. The Brain2 extension sends each finished local day at 12:05am when this app is open; a JSON file also lands in Downloads. Quick Chrome History Export (JSON, CSV, or Excel) still works — rename history.json to the profile name before adding. A later file only adds visits that are not already here. Visits per day, week by hour, sites and kinds of site, sessions, Google searches, and every YouTube video with a topic guessed from its title. Files stay on this computer. The shared date range does not apply here.",
   instagram:

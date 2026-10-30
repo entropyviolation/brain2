@@ -23,7 +23,11 @@ import { reciprocalSource } from "@/lib/graph/densify/reciprocal"
 import { triadSource } from "@/lib/graph/densify/triad"
 import { coMemberSource } from "@/lib/graph/densify/co-member"
 import { mentionSource } from "@/lib/graph/densify/mention"
+import { coTimeSource } from "@/lib/graph/densify/co-time"
+import { coTimeRows } from "@/lib/graph/densify/co-time-rows"
 import { openProposalsFor, useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { PERSON_TYPE_ID } from "@/lib/person-types"
 import { useLinksViewStore } from "@/lib/graph/links-view-store"
 import type { LinkStep } from "@/lib/graph/link-index"
 import type { Task } from "@/lib/types"
@@ -37,6 +41,8 @@ export function useLinksGraph(task: Task) {
   const withDerived = useLinksViewStore((s) => s.withDerived)
   const muted = useLinksViewStore((s) => s.mutedSources)
   const proposals = useGraphInboxStore((s) => s.proposals)
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const scopes = useTimeTrackingStore((s) => s.scopes)
 
   return useMemo(() => {
     const links = linkIndexOf(tasks, task)
@@ -68,9 +74,11 @@ export function useLinksGraph(task: Task) {
       const other = (out ? p.targetId : p.sourceId)!
       return { ...suggestion(other, out ? p.relation! : inverseRelation(p.relation!), "proposal", `${p.origin}: ${p.reason}`, p.score ?? 0.5, p.evidence), proposalId: p.id } as Suggestion
     })
+    const person = task.type === PERSON_TYPE_ID || !!task.personProfile || (task.personPipelines?.length ?? 0) > 0
+    const coTime = person ? coTimeSource(task, ctx, coTimeRows(task, tasks, entries, scopes), true) : []
     const suggestions = mergeSuggestions(
       task,
-      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), mentionSource(task, ctx), proposalSuggestions],
+      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), mentionSource(task, ctx), coTime, proposalSuggestions],
       { links, muted, scopeOk },
     )
 
@@ -87,5 +95,5 @@ export function useLinksGraph(task: Task) {
 
     return { links, lattice, derived, suggestions, density: egoDensity(task.id, links), checks, notes, precheck, title, rules }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task, tasks, lists, relations, overrides, rules, withDerived, muted, proposals])
+  }, [task, tasks, lists, relations, overrides, rules, withDerived, muted, proposals, entries, scopes])
 }

@@ -14,6 +14,10 @@
  *   what reads <item|pen:|list:>
  *   day <YYYY-MM-DD>
  *   people unseen
+ *   unsupported beliefs
+ *   shared names
+ *   unpinned derived
+ *   via <relation> <title>
  *   ? <subject> <relation> <object>     * is a wildcard
  *
  * Week keys and seasons are the ones `projectVault` emits.
@@ -28,6 +32,14 @@ import {
   unlinkedCaptures,
 } from "@/lib/graph/vault-graph"
 import { whatReadsThis, whereFrom, type ImpactSnapshot } from "@/lib/graph/machinery"
+import { deriveAround } from "@/lib/graph/ego-reason"
+import { linkIndexOf } from "@/lib/graph/link-index"
+import { pathsAlong } from "@/lib/graph/link-path"
+import { buildLattice } from "@/lib/graph/relation-lattice"
+import type { RelationRule } from "@/lib/graph/relation-rules"
+import { isEvidenceRelation, relationLabel } from "@/lib/links"
+import { allRelations, getRelationDef } from "@/lib/relation-registry"
+import { BELIEF_TYPE_ID } from "@/lib/second-brain-types"
 
 export const NO_TRIPLE = "No triple supports an answer."
 
@@ -41,11 +53,21 @@ export interface PatternAnswer {
   lines: string[]
 }
 
+export interface HouseItem {
+  id: string
+  title?: string
+  type?: string
+  links?: readonly { relation: string; targetId: string }[]
+}
+
 export interface QuestionContext {
   graph: SpineGraph
   /** Local day the "people unseen" window ends. Default: no people if omitted. */
   asOf?: string
   impact?: ImpactSnapshot
+  /** Item graph for the questions the spine cannot see. */
+  items?: readonly HouseItem[]
+  rules?: readonly RelationRule[]
 }
 
 function label(graph: SpineGraph, address: string): string {
@@ -220,5 +242,111 @@ export function answerHouseQuestion(text: string, ctx: QuestionContext): Pattern
     return answer(question, "messaged weekly and not with-person in 90 days", graph, triples, sentence)
   }
 
+  const items = ctx.items ?? []
+  const named = items.length ? withItemLabels(graph, items) : graph
+
+  if (/^unsupported beliefs$/i.test(question)) {
+    const rows = items.filter((item) => item.type === BELIEF_TYPE_ID && !hasEvidence(item, items))
+    const triples = rows.map((item) => fact(`item:${item.id}`, "has-no-evidence", `item:${item.id}`, "recorded"))
+    const sentence = rows.length
+      ? `${rows.length === 1 ? "1 belief has" : `${rows.length} beliefs have`} no supports or refutes link.`
+      : null
+    return answer(question, "belief and not supports|refutes", named, triples, sentence)
+  }
+
+  if (/^shared names$/i.test(question)) {
+    const people = items.filter((item) => item.type === "person" && (item.title ?? "").trim())
+    const triples: VaultTriple[] = []
+    const bits: string[] = []
+    for (let i = 0; i < people.length; i++) {
+      for (let j = i + 1; j < people.length; j++) {
+        const a = people[i]
+        const b = people[j]
+        if (a.title!.trim().toLowerCase() !== b.title!.trim().toLowerCase()) continue
+        if (linkedAs(a, b.id, "same-as") || linkedAs(b, a.id, "same-as")) continue
+        triples.push(fact(`item:${a.id}`, "same-name", `item:${b.id}`, "recorded"))
+        bits.push(`${a.title} is the title of two people, and neither links same-as.`)
+      }
+    }
+    return answer(question, "person title equal and not same-as", named, triples, bits.length ? bits.join(" ") : null)
+  }
+
+  if (/^unpinned derived$/i.test(question)) {
+    const triples: VaultTriple[] = []
+    const bits: string[] = []
+    const index = linkIndexOf(items as Parameters<typeof linkIndexOf>[0])
+    const lattice = buildLattice(allRelations())
+    const transitive = allRelations().filter((def) => getRelationDef(def.id)?.traits?.transitive).map((def) => def.id)
+    const typeOf = (id: string) => items.find((item) => item.id === id)?.type
+    let scanned = 0
+    for (const item of items) {
+      if (!item.links?.length || triples.length >= 12) continue
+      scanned += 1
+      if (scanned > 80) break
+      for (const edge of deriveAround(item.id, { links: index, rules: ctx.rules ?? [], lattice, transitive, typeOf })) {
+        const pinned = index.steps(item.id).some((step) => step.to === edge.otherId && (step.relation === edge.relation || lattice.isSubrelation(step.relation, edge.relation)))
+        if (pinned) continue
+        triples.push(fact(`item:${item.id}`, edge.relation, `item:${edge.otherId}`, "derived"))
+        bits.push(`${item.title || item.id} ${relationLabel(edge.relation)} ${items.find((row) => row.id === edge.otherId)?.title || edge.otherId} follows from a rule and is not pinned.`)
+        if (triples.length >= 12) break
+      }
+    }
+    return answer(question, "derived and not stored", named, triples, bits.length ? bits.join(" ") : null)
+  }
+
+  const via = /^via\s+(\S+)\s+(.+)$/i.exec(question)
+  if (via) {
+    const relation = relationToken(via[1])
+    if (!relation) return null
+    const needle = via[2].trim().toLowerCase()
+    const start = items.find((item) => (item.title ?? "").trim().toLowerCase() === needle) ?? items.find((item) => (item.title ?? "").toLowerCase().includes(needle))
+    if (!start) return answer(question, `via ${relation} ${via[2].trim()}`, named, [], null)
+    const lattice = buildLattice(allRelations())
+    const hits = pathsAlong(start.id, linkIndexOf(items as Parameters<typeof linkIndexOf>[0]), {
+      relation,
+      isSubrelation: (step, asked) => lattice.isSubrelation(step, asked),
+    })
+    const triples = hits.map((hit) => fact(`item:${start.id}`, relation, `item:${hit.id}`, "derived"))
+    const sentence = hits.length
+      ? hits
+          .map((hit) => `${start.title || start.id} — ${hit.steps.map((step) => `${relationLabel(step.relation)} ${items.find((item) => item.id === step.to)?.title || step.to}`).join(" — ")}`)
+          .join(". ")
+      : null
+    return answer(question, `via ${relation} ⊒ children`, named, triples, sentence)
+  }
+
   return null
+}
+
+function fact(s: string, p: string, o: string, order: EdgeOrder): VaultTriple {
+  return { s, p, o, graph: "items", order }
+}
+
+function withItemLabels(graph: SpineGraph, items: readonly HouseItem[]): SpineGraph {
+  const labels = { ...graph.labels }
+  for (const item of items) labels[`item:${item.id}`] = item.title || item.id
+  return { ...graph, labels }
+}
+
+function hasEvidence(item: HouseItem, items: readonly HouseItem[]): boolean {
+  for (const link of item.links ?? []) {
+    if (isEvidenceRelation(link.relation)) return true
+  }
+  for (const other of items) {
+    if (other.id === item.id) continue
+    for (const link of other.links ?? []) {
+      if (link.targetId === item.id && isEvidenceRelation(link.relation)) return true
+    }
+  }
+  return false
+}
+
+function linkedAs(item: HouseItem, targetId: string, relation: string): boolean {
+  return (item.links ?? []).some((link) => link.targetId === targetId && link.relation === relation)
+}
+
+function relationToken(token: string): string | undefined {
+  const needle = token.toLowerCase()
+  const def = allRelations().find((row) => row.id !== "related" && (row.id.toLowerCase() === needle || row.label.toLowerCase() === needle))
+  return def?.id
 }

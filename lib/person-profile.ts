@@ -105,6 +105,11 @@ export interface PersonProfile {
   dateMet?: string
   dateMetEstimated?: boolean
   instagram?: string
+  /** Optional outside identifiers. Identity match reads the canonical form; nothing here merges two people. */
+  wikidata?: string
+  orcid?: string
+  isbn?: string
+  url?: string
   /** Phone numbers as typed. Phone sync matches calls and texts by these (`lib/phone-sync/people.ts`). */
   phones?: string[]
   /** Email addresses. Phone sync matches iMessage-by-email and mail by these. */
@@ -430,6 +435,10 @@ function assembleProfile(
     : []
   const dateMet = cleanDate(raw.dateMet)
   const instagram = instagramOf(raw.instagram)
+  const wikidata = text(raw.wikidata)
+  const orcid = text(raw.orcid)
+  const isbn = text(raw.isbn)
+  const url = text(raw.url)
   const phones = cleanHandleList(raw.phones)
   const emails = cleanHandleList(raw.emails)
   const address = cleanAddress(raw.address, text)
@@ -448,6 +457,10 @@ function assembleProfile(
     if (raw.dateMetEstimated) next.dateMetEstimated = true
   }
   if (instagram) next.instagram = instagram
+  if (wikidata) next.wikidata = wikidata
+  if (orcid) next.orcid = orcid
+  if (isbn) next.isbn = isbn
+  if (url) next.url = url
   if (phones) next.phones = phones
   if (emails) next.emails = emails
   if (address) next.address = address

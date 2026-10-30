@@ -43,7 +43,7 @@ Two layers, in this order. A person can stand on the classical picture with furt
 
 - **Sentiment, and later valence / arousal / lexicon scores.** A drift across the lines of that corpus. Caption: a guess about the prose. Never written back onto a mood pen, a joy point, a completion, or a claim that a plan was followed. A mean with half the lines unscored says how many were scored.
 - **Machine learning on this vault’s own lines.** Phrase statistics, topics, classifiers, clusters. A cluster is a grouping. The lines that made it stay visible. A label the model invented is marked invented.
-- **Large language models.** Group, compare, summarize, or propose a theme for a span the person asks about. A dated reading. Dismissible. Saving a sentence means the person kept it. Hosted or on-device. Each reading names the method. The vault text is the input. The reading is not stored as if it had been typed.
+- **Large language models.** Group, compare, summarize, or propose a theme for a span the person asks about. A dated reading. Dismissible. Saving a sentence means the person kept it. Local only (see [`13-local-readings.md`](13-local-readings.md)). Each reading names the method. The vault text is the input. The reading is not stored as if it had been typed.
 - **Vector embeddings.** Search and comparison: neighbors of this line, lines that resemble this span, how a corpus moved from one period to the next. Similarity is not a cause. Default neighbor search stays inside the same field. Crossing fields is an explicit comparison captioned with both names.
 - **Show `n`.** A theme on three lines says three. No forecast from a thin corpus. No single language score for a day.
 

@@ -1,6 +1,8 @@
 # Charter — perfecting the Data tab
 
-This folder holds **build briefs** for a later pass that perfects the Data tab. The source of what the vault can honestly show is the inventories already written under `docs/analytics-vision/`. This pass does not audit those inventories by rewriting them. A brief may point at them, quote a law they already state, and say where a shipped view must move. It does not replace them, and it does not invent a column they say is missing.
+This folder holds **build briefs** for a later pass that perfects the analysis studio inside the Data tab. The source of what the vault can honestly show is the inventories already written under `docs/analytics-vision/`. This pass does not audit those inventories by rewriting them. A brief may point at them, quote a law they already state, and say where a shipped view must move. It does not replace them, and it does not invent a column they say is missing.
+
+_Last mapped: 2026-10-28._ The person’s intention for the tab is wider than these briefs. Analytics, combined analysis, visualization, and stats are this folder’s job. Searchable spreadsheet libraries, adding and updating sources (Instagram, texts, browser history), and screens whose job is to clean, annotate, correct, or confirm the data are stated in `components/Analytics/README.md`. These briefs do not absorb that work and do not drop it.
 
 The inventories:
 
@@ -78,7 +80,7 @@ Beauty is composition and the existing kit, not a new theme.
 
 ### Language readings are guesses
 
-Sentiment, machine learning, language models, embeddings, and word clouds are specified as an **intention** in `docs/analytics-vision/06-language.md`. They read sentences the person already stored (task why, why an action was not taken, gratitude, day / week / month / season plan text, and the other prose that file names). A reading is labeled a guess. It never becomes a pen, a mood, a grade, a phase, a completion, or a plan entry. It does not write a model sentence back as if the person had typed it. Classical counts of that same prose stay the record. No new store.
+Sentiment, machine learning, language models, embeddings, and word clouds are specified as an **intention** in `docs/analytics-vision/06-language.md`. They read sentences the person already stored (task why, why an action was not taken, gratitude, day / week / month / season plan text, and the other prose that file names). A reading is labeled a guess. It never becomes a pen, a mood, a grade, a phase, a completion, or a plan entry. It does not write a model sentence back as if the person had typed it. Classical counts of that same prose stay the record. No new store. _Last mapped: 2026-10-28._ Models are local only. The first grouping of why-it-wasn't-done notes is [`13-local-readings.md`](13-local-readings.md).
 
 ## Day landing
 

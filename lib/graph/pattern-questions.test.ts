@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { makeRule } from "@/lib/graph/relation-rules"
 import { NO_TRIPLE, answerHouseQuestion } from "@/lib/graph/pattern-questions"
 import { projectVault } from "@/lib/graph/vault-graph"
 
@@ -49,5 +50,31 @@ describe("house questions", () => {
     expect(unseen?.sentence).toBeNull()
     expect(unseen?.quiet).toMatch(/No triple supports an answer/)
     expect(unseen?.quiet).toMatch(/iPhone Texts/)
+  })
+
+  it("answers item-graph questions the spine cannot see", () => {
+    const items = [
+      { id: "b", title: "Rain", type: "belief", links: [] },
+      { id: "held", title: "Held", type: "belief", links: [{ relation: "supported-by", targetId: "s" }] },
+      { id: "s", title: "Book", type: "source" },
+      { id: "a", title: "Sam", type: "person" },
+      { id: "b2", title: "Sam", type: "person" },
+      { id: "ada", title: "Ada", type: "person", links: [{ relation: "mother-of", targetId: "lio" }] },
+      { id: "lio", title: "Lio", type: "person", links: [{ relation: "parent-of", targetId: "oey" }] },
+      { id: "oey", title: "Oey", type: "person" },
+    ]
+    const ctx = { graph, items }
+    expect(answerHouseQuestion("unsupported beliefs", ctx)?.sentence).toMatch(/1 belief has/)
+    expect(answerHouseQuestion("shared names", ctx)?.sentence).toMatch(/neither links same-as/)
+    const via = answerHouseQuestion("via family-of Ada", ctx)
+    expect(via?.sentence).toMatch(/Ada — is the mother of Lio/)
+    expect(via?.sentence).not.toMatch(/blocks/)
+    const derived = answerHouseQuestion("unpinned derived", {
+      graph,
+      items,
+      rules: [makeRule({ label: "Grandparents", chain: ["parent-of", "parent-of"], head: "grandparent-of" })],
+    })
+    expect(derived?.sentence).toMatch(/grandparent|grandchild/i)
+    expect(derived?.triples.every((triple) => triple.order === "derived")).toBe(true)
   })
 })

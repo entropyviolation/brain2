@@ -47,7 +47,7 @@ hydrates. Birthday and standing notes stay attributes on the catalog Person
 type (`lib/person-types.ts`). The rest of the biography is `Task.personProfile`
 (`lib/person-profile.ts`): full name, nicknames, an optional relation (friend,
 sister, boyfriend, or anything else they type; empty stays empty), date met
-(with Est. when the day is estimated), Instagram, an address at mailing,
+(with Est. when the day is estimated), Instagram, optional Wikidata, ORCID, ISBN, and URL, an address at mailing,
 neighborhood, state, or country precision, an interaction log, gift notes,
 and Close. Dated notes are the item's Notes tab now (see above). Relation and Close live on the profile so a Person
 type already saved still shows them. How long known, time since last seen, and

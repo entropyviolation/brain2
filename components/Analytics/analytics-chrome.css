@@ -73,7 +73,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--an-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
     var(--chrome-pewter);
@@ -134,7 +134,7 @@
   padding: 4px 10px 5px 22px;
   background: var(--an-key-face);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   border: none;
   cursor: pointer;
   border-radius: var(--r-2, 2px);
@@ -181,7 +181,7 @@
   padding: 4px 9px;
   border-radius: var(--r-2, 2px);
   color: var(--an-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   font-variant-numeric: tabular-nums;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
@@ -1599,7 +1599,7 @@
   letter-spacing: 0.06em;
   line-height: 1.25;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   filter: none;
   -webkit-font-smoothing: antialiased;
 }

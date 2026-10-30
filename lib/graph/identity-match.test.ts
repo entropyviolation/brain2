@@ -37,6 +37,17 @@ describe("identity candidates", () => {
     expect(proposals[0].kind).toBe("link")
   })
 
+  it("prefers a shared external id over a different name, and does not merge", () => {
+    const items = [
+      { id: "a", title: "Ada", type: "person", personProfile: { wikidata: "https://www.wikidata.org/wiki/Q42" } },
+      { id: "b", title: "Douglas", type: "source", attributes: { wikidata: "Q42" } },
+    ]
+    const before = items.map((item) => item.title)
+    const rows = identityCandidates({ items, scopes: [] })
+    expect(rows).toEqual([expect.objectContaining({ sourceId: "a", targetId: "b", relation: "same-as", reason: expect.stringMatching(/wikidata/) })])
+    expect(items.map((item) => item.title)).toEqual(before)
+  })
+
   it("skips a pair already same-as, different-from, dismissed, or joined by a company pen", () => {
     const joined = identityCandidates({
       items: [{ id: "a", title: "Sam", type: "person", personPipelines: [{ kind: "company-pen", penId: "sam-pen" }] }],
