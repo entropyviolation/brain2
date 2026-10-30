@@ -1,0 +1,145 @@
+/**
+ * components/Inventory/bookshelf/bookshelf.css — Bookshelf stage
+ *
+ * Cool paper inside the chrome room. The wooden case stays in the diorama.
+ * Phone keeps the plain title list; these rules dress the desktop stage.
+ */
+
+.inv-shelf-invite {
+  margin: 12px 0 0;
+  max-width: 28rem;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.inv-room .inv-stage.inv-shelf-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 640px;
+  padding: 20px 20px 24px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.65), transparent 46%),
+    linear-gradient(180deg, var(--chrome-paper, #f4f6f8) 0%, var(--chrome-haze, #d0d4d8) 100%);
+}
+
+.inv-shelf-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+}
+
+.inv-shelf-search-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inv-shelf-search-name {
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inv-shelf-search {
+  width: min(18rem, 70vw);
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 2px;
+  background: #fff;
+  color: #111;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.inv-shelf-search:focus-visible {
+  outline: 2px solid #000080;
+  outline-offset: 2px;
+}
+
+.inv-shelf-match {
+  min-height: 1.2em;
+  margin: 6px 0 0;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.inv-shelf-status {
+  display: inline;
+  margin-left: 0.75em;
+}
+
+.inv-shelf-fetch {
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 2px;
+  background: #fff;
+  color: #111;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.inv-shelf-fetch:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.inv-shelf-fetch:focus-visible {
+  outline: 2px solid #000080;
+  outline-offset: 2px;
+}
+
+.inv-room .inv-shelf-host {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 480px;
+  margin-top: 8px;
+}
+
+.inv-stage-titles button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inv-room .inv-shelf-stage .inv-stage-titles {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.inv-room .inv-shelf-stage .inv-stage-titles:focus-within {
+  position: static;
+  width: auto;
+  height: auto;
+  max-height: 12rem;
+  margin: 8px 0 0;
+  overflow: auto;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+}

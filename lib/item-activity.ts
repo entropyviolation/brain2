@@ -10,15 +10,24 @@
  * version: `source`, `order`, and `dedupeKey` are optional, and lines written
  * before them still load.
  *
- * `updateTask` is the one writer (`recordItemWrite`). One changed field is one
- * line: `{date time} — {event} — {detail}`. A no-op save writes nothing.
+ * `addTask` appends one created line (`recordItemCreate`). `updateTask` appends
+ * one line per changed field (`recordItemWrite`). A no-op save writes nothing.
+ * Each new line carries an attribution object (`lib/item-write-source.ts`).
+ * The History line ends with `source …`. A create reads `created {time} — source …`.
+ * A later edit keeps `{time} — {event} — {detail}` and adds the same clause.
  * Working-on-now sittings are lines too, recorded when the time log is written
- * (or, under a minute, when the pen clock stops). Reading the ledger does not
- * append. `modifiedAt`, `estimateLog`, and `listAddedAt` are stamps beside the
- * field they follow, so they do not get a second line.
+ * (or, under a minute, when the pen clock stops), with surface `working-on-now`.
+ * Reading the ledger does not append. `modifiedAt`, `estimateLog`, `listAddedAt`,
+ * and `listRuleAddedIds` are stamps beside the field they follow, so they do
+ * not get a second line. `order` stays on the row and is not printed.
  */
 
 import { itemTitle } from "@/lib/item-utils"
+import {
+  formatItemWriteClause,
+  resolveItemWriteAttribution,
+  type ItemWriteAttribution,
+} from "@/lib/item-write-source"
 import { serializeSnapshot } from "@/lib/unsaved-changes"
 import { persistKey, readAliasedLocal, removeAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import type { ItemLink, ItemNoteEntry, ItemResource, List, Subtask, Task, TimeLogEntry, TodoPeriodMark } from "@/lib/types"
@@ -53,10 +62,19 @@ export interface ItemActivityEntry {
   at: string
   summary: string
   changes: ItemActivityChange[]
-  /** Which screen or ingest line wrote the row. Absent on older lines. */
+  /**
+   * Who wrote this row. New creates and edits store this. Older lines leave it off.
+   */
+  attribution?: ItemWriteAttribution
+  /**
+   * Legacy free-string source. Older lines may still have it. New rows use
+   * `attribution` and leave this off.
+   */
   source?: string
-  /** Absent on older lines and on writes that do not name an order. */
+  /** Absent on older lines and on writes that do not name an order. Not printed. */
   order?: ItemActivityOrder
+  /** The created line. One row for the create, not a field-by-field dump. */
+  create?: boolean
   /** Set on a sitting line so the same stop cannot be recorded twice. */
   dedupeKey?: string
 }
@@ -67,6 +85,9 @@ export interface ItemActivityLookup {
 }
 
 export interface ItemActivityMeta {
+  /** Who wrote this edit. The store fills unknown when this and the frame are both absent. */
+  attribution?: ItemWriteAttribution
+  /** Legacy free string. Still loaded. New writes use `attribution`. */
   source?: string
   order?: ItemActivityOrder
 }
@@ -127,7 +148,15 @@ const DATE_FIELDS = new Set([
   "attachedDate",
   "createdAt",
 ])
-const SKIP_FIELDS = new Set(["id", "modifiedAt", "estimateLog", "listAddedAt", "title", "description"])
+const SKIP_FIELDS = new Set([
+  "id",
+  "modifiedAt",
+  "estimateLog",
+  "listAddedAt",
+  "listRuleAddedIds",
+  "title",
+  "description",
+])
 
 /** Human label for a History / activity field key. */
 export function activityFieldLabel(field: string): string {
@@ -620,8 +649,10 @@ export function appendItemActivity(entry: Omit<ItemActivityEntry, "id"> & { id?:
     summary: entry.summary,
     changes: entry.changes,
   }
+  if (entry.attribution !== undefined) next.attribution = entry.attribution
   if (entry.source !== undefined) next.source = entry.source
   if (entry.order !== undefined) next.order = entry.order
+  if (entry.create) next.create = true
   if (entry.dedupeKey !== undefined) next.dedupeKey = entry.dedupeKey
   const rows = [...existing, next]
   all[entry.itemId] = rows.length > MAX_ACTIVITY_PER_ITEM ? rows.slice(rows.length - MAX_ACTIVITY_PER_ITEM) : rows
@@ -655,8 +686,7 @@ export function recordItemWrite(
       summary: draft.summary,
       changes: draft.changes,
       ...(draft.dedupeKey ? { dedupeKey: draft.dedupeKey } : {}),
-      ...(draft.sitting ? { source: "working-on-now" } : meta?.source ? { source: meta.source } : {}),
-      ...(!draft.sitting && meta?.order ? { order: meta.order } : {}),
+      ...activityFields(meta, !!draft.sitting),
     })
     first = saved
   }
@@ -679,13 +709,14 @@ export function recordClockSitting(input: {
   const duration = formatSittingDuration(input.activeMs)
   const when = formatActivityWhen(input.sittingAt.toISOString())
   const at = (input.recordedAt ?? input.sittingAt).toISOString()
+  const sitting = sittingAttribution()
   appendItemActivity({
     itemId: input.itemId,
     at,
     summary: workedOnHistoryLine(duration, when),
     changes: [{ field: "timeLogs", label: "Worked on", from: "(none)", to: duration, detail: duration }],
     dedupeKey: input.dedupeKey,
-    source: "working-on-now",
+    attribution: sitting,
   })
   const step = input.stepName?.trim()
   if (!step) return
@@ -695,7 +726,7 @@ export function recordClockSitting(input: {
     summary: workedOnSubstepHistoryLine(step, duration, when),
     changes: [{ field: "timeLogs", label: "Worked on substep", from: "(none)", to: step, detail: step }],
     dedupeKey: `${input.dedupeKey}:step`,
-    source: "working-on-now",
+    attribution: sitting,
   })
 }
 
@@ -717,14 +748,168 @@ export function formatActivityWhen(iso: string): string {
   return d.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })
 }
 
-/** One console line. A sitting line already carries its date. */
+function activityFields(meta: ItemActivityMeta | undefined, sitting: boolean): Pick<ItemActivityEntry, "attribution" | "source" | "order"> {
+  if (sitting) return { attribution: sittingAttribution() }
+  const out: Pick<ItemActivityEntry, "attribution" | "source" | "order"> = {}
+  if (meta?.attribution) out.attribution = meta.attribution
+  else if (meta?.source) out.source = meta.source
+  if (meta?.order) out.order = meta.order
+  return out
+}
+
+function sittingAttribution(): ItemWriteAttribution {
+  return resolveItemWriteAttribution({ surface: "working-on-now" })
+}
+
+/** One created line. Rule-changed fields on that same create are separate writes. */
+export function recordItemCreate(
+  item: Task,
+  attribution: ItemWriteAttribution,
+  at: Date = new Date(),
+  order?: ItemActivityOrder,
+): ItemActivityEntry | null {
+  if (!item?.id) return null
+  return appendItemActivity({
+    itemId: item.id,
+    at: at.toISOString(),
+    summary: "created",
+    changes: [],
+    create: true,
+    attribution,
+    ...(order ? { order } : {}),
+  })
+}
+
+export interface RuledHistoryInput {
+  create: boolean
+  /** Stored item. The created line uses its id. */
+  item: Task
+  caller: ItemWriteAttribution
+  order?: ItemActivityOrder
+  /** Stored item before this update. Absent on create. */
+  previous?: Task
+  /** Caller snapshot, after the store's own date stamps and before rules. */
+  userSnapshot: Task
+  rules: { name: string; item: Task }[]
+  afterRules: Task
+  afterLinks: Task
+  afterJoin: Task
+  afterMembership: Task
+  lookup?: ItemActivityLookup
+  lists?: Pick<List, "id" | "name" | "membershipRules">[]
+  at?: Date
+}
+
+/**
+ * One create line, or the caller's field lines, then rule / list-link /
+ * membership lines for the fields those steps changed.
+ */
+export function recordRuledHistory(input: RuledHistoryInput): void {
+  const at = input.at ?? new Date()
+  const lookup = input.lookup
+  if (input.create) {
+    recordItemCreate(input.item, input.caller, at, input.order)
+  } else if (input.previous) {
+    recordItemWrite(input.previous, input.userSnapshot, lookup, at, {
+      attribution: input.caller,
+      ...(input.order ? { order: input.order } : {}),
+    })
+  }
+  let cursor = input.userSnapshot
+  for (const step of input.rules) {
+    recordItemWrite(cursor, step.item, lookup, at, {
+      attribution: resolveItemWriteAttribution({ surface: "rule", name: step.name }),
+    })
+    cursor = step.item
+  }
+  if (cursor !== input.afterRules) {
+    recordItemWrite(cursor, input.afterRules, lookup, at, {
+      attribution: resolveItemWriteAttribution({ surface: "rule" }),
+    })
+  }
+  const lists = input.lists
+  recordItemWrite(input.afterRules, input.afterLinks, lookup, at, {
+    attribution: resolveItemWriteAttribution(namedSurface("list-link", changedListNames(input.afterRules, input.afterLinks, lists))),
+  })
+  recordItemWrite(input.afterLinks, input.afterJoin, lookup, at, {
+    attribution: resolveItemWriteAttribution(
+      namedSurface("membership-rule", changedListNames(input.afterLinks, input.afterJoin, lists, true)),
+    ),
+  })
+  recordItemWrite(input.afterJoin, input.afterMembership, lookup, at, {
+    attribution: resolveItemWriteAttribution(namedSurface("list-link", changedListNames(input.afterJoin, input.afterMembership, lists))),
+  })
+}
+
+/**
+ * Batch membership and list-link writes never enter `updateTask`.
+ * Append only when `lists` actually changed.
+ */
+export function recordListMembershipHistory(
+  before: readonly Task[],
+  after: readonly Task[],
+  lists: Pick<List, "id" | "name" | "membershipRules">[],
+  surface: "membership-rule" | "list-link",
+): void {
+  const lookup: ItemActivityLookup = { tasks: [...after], lists }
+  const at = new Date()
+  const prevById = new Map(before.map((task) => [task.id, task]))
+  for (const next of after) {
+    const prev = prevById.get(next.id)
+    if (!prev || sameStringList(prev.lists, next.lists)) continue
+    const name = changedListNames(prev, next, lists, surface === "membership-rule")
+    recordItemWrite(prev, next, lookup, at, {
+      attribution: resolveItemWriteAttribution(namedSurface(surface, name)),
+    })
+  }
+}
+
+function namedSurface(surface: "rule" | "membership-rule" | "list-link", name?: string): ItemWriteAttribution {
+  return name ? { surface, name } : { surface }
+}
+
+function sameStringList(a: string[] | undefined, b: string[] | undefined): boolean {
+  const left = a ?? []
+  const right = b ?? []
+  if (left.length !== right.length) return false
+  for (let i = 0; i < left.length; i++) if (left[i] !== right[i]) return false
+  return true
+}
+
+function changedListNames(
+  before: Task,
+  after: Task,
+  lists: Pick<List, "id" | "name" | "membershipRules">[] | undefined,
+  preferRules = false,
+): string | undefined {
+  const prev = new Set(before.lists ?? [])
+  const next = new Set(after.lists ?? [])
+  const ids = [...next].filter((id) => !prev.has(id)).concat([...prev].filter((id) => !next.has(id)))
+  const rows = ids
+    .map((id) => lists?.find((list) => list.id === id))
+    .filter((list): list is Pick<List, "id" | "name" | "membershipRules"> => !!list)
+  const ruled = preferRules
+    ? rows.filter((list) => (list.membershipRules ?? []).some((rule) => rule.enabled !== false && rule.conditions.length > 0))
+    : rows
+  const names = (ruled.length ? ruled : rows).map((list) => list.name.trim()).filter(Boolean)
+  const unique = [...new Set(names)]
+  return unique.length ? unique.join(", ") : undefined
+}
+
+/** One console line. A sitting line already carries its date. The source clause is last. */
 export function formatHistoryLine(entry: ItemActivityEntry): string {
-  if (entry.summary.startsWith("Worked on")) return entry.summary
+  const create = entry.create === true || (entry.summary === "created" && entry.changes.length === 0)
+  const clause = formatItemWriteClause(entry, { create })
+  const suffix = clause ? ` — ${clause}` : ""
+  if (create) return `created ${formatActivityWhen(entry.at)}${suffix}`
+  if (entry.summary.startsWith("Worked on")) return `${entry.summary}${suffix}`
   const when = formatActivityWhen(entry.at)
   if (entry.changes.length > 1 && !entry.summary.includes("—")) {
-    return entry.changes
-      .map((change) => `${when} — ${change.label} — ${change.detail ?? `${change.from} → ${change.to}`}`)
-      .join("\n")
+    return (
+      entry.changes
+        .map((change) => `${when} — ${change.label} — ${change.detail ?? `${change.from} → ${change.to}`}`)
+        .join("\n") + suffix
+    )
   }
-  return `${when} — ${entry.summary}`
+  return `${when} — ${entry.summary}${suffix}`
 }

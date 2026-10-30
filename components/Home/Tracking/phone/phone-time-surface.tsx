@@ -1,9 +1,9 @@
 /**
  * components/Home/Tracking/phone/phone-time-surface.tsx — Time Grid on a phone
  *
- * Day is the vertical timeline. Week and Infinite scroll keep the desk
- * plots, inside this page, because those edits (paint, fill, open a block)
- * already live there. Day, Week, and Infinite scroll are one segmented
+ * Day is the desk cell grid (`TimeGrid` with `plotOnly`): hour rows, minute
+ * cells, click or drag to paint. It fills the phone width. Week and Infinite
+ * scroll keep those plots. Day, Week, and Infinite scroll are one segmented
  * control. Cell size, Show as, the screen face, ghosts' flags, Day tubes,
  * and Clear day sit in the recorder sheet.
  */
@@ -29,8 +29,8 @@ import {
   useTrackingViewPrefs,
 } from "@/components/Home/Tracking/tracking-view-prefs"
 import { useGhostScopes } from "@/components/Home/Tracking/grids/ghost-layers"
-import { PhoneDayTimeline } from "@/components/Home/Tracking/phone/phone-day-timeline"
 import { PhoneSheet } from "@/components/Home/Tracking/phone/phone-sheet"
+import { TimeGrid } from "@/components/Home/Tracking/time-grid"
 import { WeekGrid } from "@/components/Home/Tracking/grids/week-grid"
 import { InfiniteStrip } from "@/components/Home/Tracking/grids/infinite-strip"
 import { FillRangeControl } from "@/components/Home/Tracking/grids/fill-range-control"
@@ -111,13 +111,13 @@ export function PhoneTimeSurface({
   return (
     <div className="trk-phone-surface" data-span={spanKey}>
       <div className="trk-phone-span" role="toolbar" aria-label="Time grid span">
-        <button type="button" aria-pressed={!scrolling && gridSpan !== "week"} onClick={() => chooseSpan("day")}>
+        <button type="button" data-no95="" className="trk-phone-key" aria-pressed={!scrolling && gridSpan !== "week"} onClick={() => chooseSpan("day")}>
           Day
         </button>
-        <button type="button" aria-pressed={!scrolling && gridSpan === "week"} onClick={() => chooseSpan("week")}>
+        <button type="button" data-no95="" className="trk-phone-key" aria-pressed={!scrolling && gridSpan === "week"} onClick={() => chooseSpan("week")}>
           Week
         </button>
-        <button type="button" aria-pressed={scrolling} onClick={() => chooseSpan("infinite")}>
+        <button type="button" data-no95="" className="trk-phone-key" aria-pressed={scrolling} onClick={() => chooseSpan("infinite")}>
           Infinite scroll
         </button>
       </div>
@@ -125,10 +125,10 @@ export function PhoneTimeSurface({
       {scrolling ? (
         <div className="trk-phone-infinite">
           <div className="trk-phone-infinite-jump">
-            <button type="button" onClick={() => leaveInfinite("day", date)}>
+            <button type="button" data-no95="" className="trk-phone-key" onClick={() => leaveInfinite("day", date)}>
               Open this day
             </button>
-            <button type="button" onClick={() => leaveInfinite("week", date)}>
+            <button type="button" data-no95="" className="trk-phone-key" onClick={() => leaveInfinite("week", date)}>
               Open this week
             </button>
           </div>
@@ -150,8 +150,8 @@ export function PhoneTimeSurface({
           />
         </div>
       ) : (
-        <div className="trk-screen-bezel" data-face={face}>
-          <PhoneDayTimeline date={date} setDate={setDate} />
+        <div className="trk-phone-cells" data-face={face}>
+          <TimeGrid plotOnly showPalette={false} currentDate={date} setCurrentDate={setDate} />
         </div>
       )}
 
@@ -162,7 +162,8 @@ export function PhoneTimeSurface({
           ) : gridSpan === "week" ? (
             <button
               type="button"
-              className="trk-phone-sheet-action"
+              data-no95=""
+              className="trk-phone-key trk-phone-sheet-action"
               onClick={() => {
                 onCloseFill()
                 document.querySelector(".trk-phone .trk-fill-row")?.scrollIntoView({ block: "start" })
@@ -279,7 +280,7 @@ export function PhoneTimeSurface({
               </div>
             ) : null}
             <PushKey label="Day tubes" pressed={tubesOpen} onClick={() => setTubesOpen(true)} title="Day tubes" />
-            <button type="button" className="trk-phone-sheet-action" onClick={() => clearDay(dk, scope.id)}>
+            <button type="button" data-no95="" className="trk-phone-key trk-phone-sheet-action" onClick={() => clearDay(dk, scope.id)}>
               Clear day
             </button>
           </div>

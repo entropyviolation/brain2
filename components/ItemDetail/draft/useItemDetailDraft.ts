@@ -26,6 +26,7 @@
 
 import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from "react"
 import { commitItemDraft } from "@/lib/commit-item-edit"
+import type { ItemWriteAttribution } from "@/lib/item-write-source"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -71,8 +72,9 @@ export interface ItemDetailDraft {
   /**
    * Persist a draft through `commitItemEdit` (patch + activity line).
    * Prefer this over `recordItemWrite` + `updateTask` for detail saves.
+   * The second argument is who wrote the line. Omitted means item detail.
    */
-  commitDraft: (next: Task, source?: string) => Task
+  commitDraft: (next: Task, attribution?: ItemWriteAttribution) => Task
   addTask: (task: Task) => void
   deleteTask: (id: string) => void
   addToCategory: (categoryId: string) => void
@@ -299,16 +301,16 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   }, [])
 
   const commitDraft = useCallback(
-    (next: Task, source = "item-detail") => {
+    (next: Task, attribution: ItemWriteAttribution = { surface: "item-detail" }) => {
       const before = originalRef.current ?? useTaskStore.getState().tasks.find((t) => t.id === next.id)
       resetHistory()
       if (!before) {
-        updateTask(next)
+        updateTask(next, undefined, { attribution })
         setOriginalTask(next)
         applyTask(next)
         return next
       }
-      const saved = commitItemDraft(before, next, source)
+      const saved = commitItemDraft(before, next, attribution)
       setOriginalTask(saved)
       applyTask(saved)
       return saved

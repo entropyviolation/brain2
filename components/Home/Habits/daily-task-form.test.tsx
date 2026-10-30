@@ -10,11 +10,27 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TaskType } from "@/lib/types"
 import { resetAllStores } from "@/tests/test-utils"
 import { TagSettingsHost } from "@/components/Home/Tracking/tag-settings-host"
-import { resolveHabitSectionNavActive, TaskForm } from "./daily-task-form"
+import { HABIT_FORM_PHONE_TABS_MEDIA, resolveHabitSectionNavActive, TaskForm } from "./daily-task-form"
+
+const originalMatchMedia = window.matchMedia
+
+function setFormPhone(phone: boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches: phone && query === HABIT_FORM_PHONE_TABS_MEDIA,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia
+}
 
 describe("TaskForm", () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    window.matchMedia = originalMatchMedia
   })
 
   it("renders the habit form fields", () => {
@@ -152,6 +168,8 @@ describe("TaskForm", () => {
     expect(intoView).not.toHaveBeenCalled()
     expect(fields.scrollTop).toBe(10 + (420 - 120) - 8)
     expect(name).toHaveFocus()
+    expect(name).not.toHaveAttribute("hidden")
+    expect(document.getElementById("habit95-sec-sources")).not.toHaveAttribute("hidden")
     expect(within(nav).getByRole("button", { name: "Name" })).toHaveAttribute("aria-current", "true")
 
     await user.click(within(nav).getByRole("button", { name: "Time" }))
@@ -163,6 +181,39 @@ describe("TaskForm", () => {
     expect(within(nav).getByRole("button", { name: "Climb" })).toBeInTheDocument()
     expect(within(nav).queryByRole("button", { name: "Target" })).not.toBeInTheDocument()
     expect(within(nav).queryByRole("button", { name: "Connections" })).not.toBeInTheDocument()
+  })
+
+  it("on a phone, a section key shows only that section", async () => {
+    setFormPhone(true)
+    const user = userEvent.setup()
+    render(<TaskForm onSubmit={vi.fn()} onCancel={vi.fn()} />)
+    const form = document.getElementById("habit95-form")
+    expect(form).toHaveAttribute("data-phone-tabs", "true")
+    const nav = screen.getByRole("tablist", { name: "Habit sections" })
+    expect(document.getElementById("habit95-sec-priority")).not.toHaveAttribute("hidden")
+    expect(document.getElementById("habit95-sec-name")).toHaveAttribute("hidden")
+    expect(document.getElementById("habit95-sec-sources")).toHaveAttribute("hidden")
+    expect(within(nav).queryByRole("tab", { name: "Target" })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole("tab", { name: "Auto-fill" })).not.toBeInTheDocument()
+
+    const fields = document.querySelector(".habit95-fields") as HTMLElement
+    fields.scrollTop = 4
+    await user.click(within(nav).getByRole("tab", { name: "Name" }))
+    expect(fields.scrollTop).toBe(4)
+    expect(document.getElementById("habit95-sec-name")).not.toHaveAttribute("hidden")
+    expect(document.getElementById("habit95-sec-name")).toHaveFocus()
+    expect(document.getElementById("habit95-sec-priority")).toHaveAttribute("hidden")
+    expect(document.getElementById("habit95-sec-points")).toHaveAttribute("hidden")
+    expect(within(nav).getByRole("tab", { name: "Name" })).toHaveAttribute("aria-selected", "true")
+
+    await user.click(within(nav).getByRole("tab", { name: "Type" }))
+    await user.click(screen.getByRole("radio", { name: /Climb/ }))
+    expect(within(nav).getByRole("tab", { name: "Climb" })).toBeInTheDocument()
+    expect(within(nav).queryByRole("tab", { name: "Connections" })).not.toBeInTheDocument()
+    expect(document.getElementById("habit95-sec-target")).toHaveAttribute("hidden")
+    await user.click(within(nav).getByRole("tab", { name: "Climb" }))
+    expect(document.getElementById("habit95-sec-target")).not.toHaveAttribute("hidden")
+    expect(document.getElementById("habit95-sec-type")).toHaveAttribute("hidden")
   })
 
   it("picks the last intersecting section when the fields well is scrolled to the end", () => {

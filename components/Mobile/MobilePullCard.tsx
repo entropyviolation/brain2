@@ -1,12 +1,13 @@
 /**
- * One-tap pull from the shared hub onto this phone.
- * Continuous live sync is parked; this is the current manual path after desktop
- * seeds the hub. A semi-mobile live sync component will replace this later.
+ * Phone: refresh the memory window onto the Mac file.
+ * A desk render of this card still pulls `/api/sync`. The phone does not.
  */
 "use client"
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { isPhoneWebStorage } from "@/lib/phone-device"
+import { getPhoneWindowSnapshot, loadPhoneWindow, phoneWindowNote, subscribePhoneWindow } from "@/lib/phone-window"
 import {
   fetchMobileSyncStatus,
   pullAndRestoreMobileSync,
@@ -15,7 +16,62 @@ import {
   writeMobileSyncUrl,
 } from "@/lib/mobile-sync"
 
-export function MobilePullCard() {
+function PhoneWindowCard() {
+  const [busy, setBusy] = useState(false)
+  const [url, setUrl] = useState(readMobileSyncUrl)
+  const [status, setStatus] = useState(getPhoneWindowSnapshot().status)
+
+  useEffect(() => subscribePhoneWindow(() => setStatus(getPhoneWindowSnapshot().status)), [])
+
+  useEffect(() => {
+    let cancelled = false
+    loadBundledHubUrl().then((next) => {
+      if (!cancelled && next) setUrl(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const refresh = async () => {
+    setBusy(true)
+    writeMobileSyncUrl(url.trim())
+    try {
+      await loadPhoneWindow()
+    } finally {
+      setBusy(false)
+      setStatus(getPhoneWindowSnapshot().status)
+    }
+  }
+
+  const note = phoneWindowNote(status) ?? (status === "live" ? "Mac answered." : "Opening the Mac…")
+
+  return (
+    <div className="cogs-mobile-pullcard">
+      <div className="cogs-mobile-pullcard-row">
+        <strong>Desktop data</strong>
+        <span className={status === "live" ? "ok" : "warn"}>{busy ? "Working…" : note}</span>
+      </div>
+      <label className="cogs-mobile-pullcard-row">
+        Hub
+        <input
+          className="w-full border px-1"
+          inputMode="url"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+        />
+      </label>
+      <Button type="button" className="m-keycap w-full" disabled={busy} onClick={refresh}>
+        Refresh from Mac
+      </Button>
+    </div>
+  )
+}
+
+function DeskPullCard() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState("Checking desktop hub…")
   const [hasData, setHasData] = useState(false)
@@ -102,4 +158,9 @@ export function MobilePullCard() {
       </Button>
     </div>
   )
+}
+
+export function MobilePullCard() {
+  if (isPhoneWebStorage()) return <PhoneWindowCard />
+  return <DeskPullCard />
 }

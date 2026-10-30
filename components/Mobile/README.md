@@ -4,12 +4,9 @@ Mobile entry for **Home** (Habits, Plan, To Do, Goals, Tracking — including ne
 
 _Last mapped: 2026-10-28._ The page field behind the shell is the default Snowflake plate (`/pcb/mint.jpg`), including when a saved desktop pin is plain teal. The photograph scrolls; a fixed attachment does not paint on iOS.
 
-## Manual hub (no always-on sync)
+## Phone window
 
-Phones copy desktop data with a **manual pull** (`MobilePullCard`) after the desktop
-seeds the hub (`lib/mobile-sync.ts`). There is no continuous live-sync engine.
-Texts, calls, and location are a different door: Settings → **Phone sync**
-(`components/Settings/imports/PhoneSyncPanel.tsx`), on the Mac.
+_Last mapped: 2026-10-30._ After login the shell loads the Mac's vault from `GET /api/persist?canon=1` into memory (`lib/phone-window.ts`). Home, Lists, and Inventory read that memory. The full snapshot is not written into the 5 MB web-storage box. A save of lists, the time grid, planned actions, ingest, the telegram feed, plan text, habits, sleep, or goals is a field patch, queued until the Mac answers. Events, kitchen, modules, and item types show in that session and do not write back. The iPhone app asks for Local Network access; that is how it reaches the Mac. Denying it leaves Home and Lists empty. If the Mac does not answer, a small IndexedDB cache paints and is marked stale. `MobilePullCard` refetches this window. Settings → Mobile Sync can still force a snapshot through `data/mobile-sync.json`; that is the old copy, and the window does not use it. Texts, calls, and location stay on Settings → **Phone sync**. The spare Mac as the one file is **Planned** ([`docs/PHONE_WINDOW_PLAN.md`](../../docs/PHONE_WINDOW_PLAN.md) phases 4–5).
 
 ## Folders
 
@@ -36,26 +33,23 @@ _Last mapped: 2026-10-28_
 | `keyboard/mobile-keyboard.tsx` | _Last mapped: 2026-10-29._ Mounted from `app/mobile/layout.tsx`. A focused text field, textarea, or contenteditable gets this deck instead of the system keyboard. Letter keys are silver keycaps. Shift, delete, 123, ABC, space, hide, and return are darker modifier caps. Shift latches once; a second tap within a moment locks caps, and that cap is the CRT. Return on a single line submits its form, or hides the deck. A phone pad is used for tel and number. |
 | `moon/mobile-moon-sheet.tsx` | Phone Moon detail. Close, the scrim, and Escape dismiss it. The sky chart stays on the desktop dialog. |
 | `MobileLogin.tsx` | Credentials: **admin** / **admin** |
-| `MobilePullCard.tsx` | One-tap manual pull from the shared hub |
+| `MobilePullCard.tsx` | _Last mapped: 2026-10-30._ Refetches the Mac vault into memory. It does not restore `data/mobile-sync.json` onto the phone. |
 | `location/MobileLocationCard.tsx` | _Last mapped: 2026-10-28._ iPhone location, the primary share. Shows only in the iOS build. Upload setup (URL, upload-only token, capture public key), Save goes straight on to Turn on (asks While Using, then Always, then starts). Recording stays on across launches until Turn off. **Set to Always** opens iPhone Settings while only While Using is granted. Send now. The plugin keeps the setup; the card stores nothing. BIM Live Location paints only when this share did not. See [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md). |
 | `health/MobileHealthCard.tsx` | _Last mapped: 2026-10-28._ **Import all history**. On the iPhone app this reads Apple Health from the oldest sample to now, 30 days at a time: steps, walking and running distance, flights, active energy, heart rate, sleep, and workouts. The line under the button is the month in progress, then the imported counts, nothing new, an empty history, or access off. In the browser the same button says the import runs in the iPhone app. HealthKit is read only. See [`docs/phone-sync/04-health.md`](../../docs/phone-sync/04-health.md). |
 | `nfc/MobileNfcCard.tsx` | _Last mapped: 2026-10-28_ iPhone NFC. Shows only in the iOS build (`BrainNfc`). Hub URL and hub token stay in the app. Scan reads the sticker’s hardware id. The first tap picks which saved tag that chip is (`brain2-nfc-chips`). A dose asks how many. Blank posts `nfc:{id}`. A door or a plain event posts with no question. `POST /api/scan` on `npm run phone:hub`. **NFC hub** opens `/mobile/nfc/`. The Simulator cannot scan. Shortcuts stay. See [`docs/shortcuts/nfc-tags.md`](../../docs/shortcuts/nfc-tags.md). |
 | `nfc-hub/MobileNfcHub.tsx` | _Last mapped: 2026-10-28_ Phone-only NFC hub at `/mobile/nfc/`. Writes the hub URL, token, and sync URL onto a sticker, reads that record back, and scans a sticker the same way the home card does. See [`nfc-hub/README.md`](nfc-hub/README.md). |
 | `lib/mobile-auth.ts` | sessionStorage login (no app-data keys) |
-| `lib/mobile-sync.ts` | HTTP client for the hub (`/api/sync` on the dev server). A native shell cannot use `127.0.0.1` (that is the phone). It reads `public/mobile-hub.json` for the Mac's LAN address. A saved port 3847 is ignored. |
+| `lib/mobile-sync.ts` | HTTP client for the hub (`/api/sync` on the dev server). A native shell cannot use `127.0.0.1` (that is the phone). It reads `public/mobile-hub.json` for the Mac's LAN address. A saved port 3847 is ignored. The iPhone must allow Local Network or that fetch never leaves the phone. |
 
-## Same data as desktop (manual, for now)
+## Same vault as the Mac, for this session
 
-`npm run dev` serves **Next + the hub API on one port**. Desktop and phone do
-**not** auto push/pull. To copy desktop data onto a phone:
+_Last mapped: 2026-10-30._ `npm run electron:dev` (or `npm run dev`) serves the page and `/api/persist` on one port. The phone does not keep its own full vault.
 
-1. On your Mac: stop old servers, then `npm run dev`
-2. Open desktop Brain2 in the browser at the printed local URL
-3. Settings → **Force push now** (seeds `data/mobile-sync.json`). The snapshot’s `app` is `brain2`. The hub also still accepts an older `cogs` file. A push that would shrink the hub’s task list to under a quarter of what it holds is refused.
-4. Phone (same Wi‑Fi): open the printed `http://<mac-lan-ip>:<port>/mobile/` → login `admin` / `admin`
-5. Tap **Pull desktop data onto phone**. Settings → **Force pull now** on the iOS app does the same pull. The hub serves that phone copy to an iPhone even when the app asks for the full snapshot. The phone saves into a small web-storage box of about 5 MB, separate from free space on the device. Opening the full site (Home, Lists, Docs, Scheduler) on that phone uses the same box. Saves there keep a short name (also stored as the description), when the item was created, and which list it is on, plus about a week of the time grid. A row already pulled without those fields is filled in on the next save, so the hub can open. Photos, notes, and item attributes stay on the Mac. When the box is full, side vaults over 100 KB are dropped so the save can finish, and the red banner clears on the next save. Reload the phone page once so this build is the one running. Habits, goals, the sun, and today's friend stay. If the device already has more tasks than the snapshot, pull stops and leaves it alone.
+1. On the coding Mac: `npm run electron:dev`. The file the phone reads is this checkout's `data/shared-persist.json`.
+2. Phone, same Wi-Fi: the installed app, or `http://<mac-lan-ip>:3000/mobile/`. Login `admin` / `admin`.
+3. The shell fetches the vault. Notes, attributes, and the time grid past a week are in that session. Kill the app and the memory is gone. The next launch uses the cache if the Mac is quiet.
 
-Hub file: `data/mobile-sync.json` (gitignored). The server never deletes Electron/browser storage by itself.
+A phone edit of a list, the time grid, plan text, a habit, a night, or a goal is posted as `{ name, source: "phone", patch }`. A whole store from the phone is refused. Electron still writes `localStorage` and still posts its own keys. `data/mobile-sync.json` remains the manual snapshot for Settings → Force push / Force pull. The server never deletes Electron storage by itself.
 
 ## Sideload onto iOS
 
@@ -80,6 +74,6 @@ If `pod install` complains about UTF-8, the npm scripts already export `LANG=en_
 1. `npm run dev`
 2. Note the `phone:` URL printed (includes `/mobile/`)
 3. Open it on iPhone → Share → **Add to Home Screen**
-4. Use **Pull desktop data onto phone** after a desktop force-push
+4. Log in. The shell loads the Mac vault. `electron:dev` has to be running on that Mac.
 
 Login: `admin` / `admin`.

@@ -1,9 +1,9 @@
 /**
- * components/Mobile/MobileApp.tsx — Sideloadable Home, Lists, and Inventory shell for iOS.
+ * components/Mobile/MobileApp.tsx — Sideloadable Home, Lists, Inventory, and BIM Chat shell for iOS.
  *
- * Continuous live sync is parked while the core app is finished. Use
- * `MobilePullCard` for a one-tap manual pull. A dedicated semi-mobile live
- * sync component will land after those surfaces are solid.
+ * After login the shell loads the Mac vault into memory (`lib/phone-window.ts`).
+ * Refresh on `MobilePullCard` fetches that window again. It does not copy the
+ * file into localStorage.
  */
 "use client"
 
@@ -26,6 +26,7 @@ import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
 import { APP_NAME } from "@/lib/app-brand"
 import { clearMobileSession, readMobileSession } from "@/lib/mobile-auth"
+import { engagePhoneWindow, getPhoneWindowSnapshot, loadPhoneWindow, phoneWindowNote, subscribePhoneWindow } from "@/lib/phone-window"
 import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
 import { Button } from "@/components/ui/button"
 import "@/components/Mobile/mobile.css"
@@ -38,19 +39,40 @@ const InventoryPanel = lazy(() =>
   import("@/components/Inventory/phone/inventory-phone").then((mod) => ({ default: mod.InventoryPhoneScreen })),
 )
 
-type MobileTab = "home" | "lists" | "inventory"
+const BimPanel = lazy(() =>
+  import("@/components/Bim/phone/bim-phone").then((mod) => ({ default: mod.BimPhoneScreen })),
+)
+
+type MobileTab = "home" | "lists" | "inventory" | "bim"
 
 function sectionName(tab: MobileTab): string {
   if (tab === "home") return "Home"
   if (tab === "lists") return "Lists"
+  if (tab === "bim") return "BIM Chat"
   return "Inventory"
 }
 
 export function MobileApp() {
+  engagePhoneWindow()
   const [session, setSession] = useState(() => readMobileSession())
   const [tab, setTab] = useState<MobileTab>("home")
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [windowStatus, setWindowStatus] = useState(() => getPhoneWindowSnapshot().status)
   const rootRef = useRef<HTMLDivElement>(null)
+  const windowLine = phoneWindowNote(windowStatus)
+
+  useEffect(() => subscribePhoneWindow(() => setWindowStatus(getPhoneWindowSnapshot().status)), [])
+
+  useEffect(() => {
+    if (!session) return
+    let cancelled = false
+    loadPhoneWindow().then(() => {
+      if (!cancelled) setWindowStatus(getPhoneWindowSnapshot().status)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [session])
 
   useEffect(() => {
     const root = rootRef.current
@@ -102,7 +124,7 @@ export function MobileApp() {
           </div>
         </div>
 
-        <nav className="cogs-mobile-main-tabs" aria-label="Mobile sections" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+        <nav className="cogs-mobile-main-tabs" aria-label="Mobile sections" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
           <button type="button" className={tab === "home" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("home")}>
             Home
           </button>
@@ -112,17 +134,33 @@ export function MobileApp() {
           <button type="button" className={tab === "inventory" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("inventory")}>
             Inventory
           </button>
+          <button type="button" className={tab === "bim" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("bim")}>
+            BIM
+          </button>
           <a className="m-keycap" href="/mobile/nfc/">NFC</a>
         </nav>
       </header>
 
       <main className="cogs-mobile-body">
+        {windowLine ? (
+          <p className="cogs-mobile-loading" role="status">
+            {windowLine}
+          </p>
+        ) : null}
         <PersistStatusBanner />
-        <MobilePullCard />
-        <MobileLocationCard />
-        <MobileHealthCard />
-        <MobileNfcCard />
-        {tab === "home" ? (
+        {tab === "bim" ? null : (
+          <>
+            <MobilePullCard />
+            <MobileLocationCard />
+            <MobileHealthCard />
+            <MobileNfcCard />
+          </>
+        )}
+        {tab === "bim" ? (
+          <Suspense fallback={<div className="cogs-mobile-loading">Loading BIM…</div>}>
+            <BimPanel />
+          </Suspense>
+        ) : tab === "home" ? (
           <HomeDashboard />
         ) : tab === "lists" ? (
           <Suspense fallback={<div className="cogs-mobile-loading">Loading Lists…</div>}>

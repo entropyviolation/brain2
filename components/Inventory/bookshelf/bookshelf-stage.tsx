@@ -3,6 +3,8 @@
  *
  * Three mounts in an effect and remounts when the book signature changes.
  * Search and cover urls update the live shelf without rebuilding it.
+ * A loaded cover is painted on the front board. The spine binding is recolored
+ * from that picture and never receives the bitmap.
  */
 "use client"
 

@@ -1,16 +1,16 @@
 /**
  * components/friend-details/portrait/FriendDetailsPortrait.tsx — Photograph, bond, today’s mission
  *
- * Lace frames every friend. The dialog effect chooses the window.
- * Chat is the round key under the portrait and does not write a mission.
+ * The lace window and the bond meter share one top and one bottom.
+ * Chat previews a line and does not write a mission.
+ * Change picture and Remove live here, off the gallery card.
  */
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import type { FriendDialogEffect, FriendPersonality } from "@/lib/baby-animal-personality"
 import type { FriendSuggestion } from "@/lib/friend-suggestion"
 import { isActionableFriendKind, type FriendMission } from "@/lib/friend-mission"
-import { friendSourceLabel } from "@/lib/friend-copy"
 import {
   bondProgress,
   formatCountdownClock,
@@ -47,13 +47,6 @@ function nextUnlock(bond: BondProgress): string {
   return `${left} more → ${next.label}`
 }
 
-function shortWhen(iso: string | undefined): string {
-  if (!iso) return "—"
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return "—"
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-}
-
 export function FriendDetailsPortrait({
   name,
   src,
@@ -67,9 +60,11 @@ export function FriendDetailsPortrait({
   hoverLine,
   onSay,
   onOpenMission,
+  onDismiss,
+  onReplacePicture,
+  onRemove,
+  pictureBusy,
   firstSeenAt,
-  lastAssignedAt,
-  lamp,
   levelPulse,
 }: {
   name: string
@@ -84,6 +79,10 @@ export function FriendDetailsPortrait({
   hoverLine: string
   onSay: () => void
   onOpenMission?: (id: string) => void
+  onDismiss: () => void
+  onReplacePicture?: (file: File) => void
+  onRemove?: () => void
+  pictureBusy?: boolean
   firstSeenAt?: string
   lastAssignedAt?: string
   finished: number
@@ -95,6 +94,7 @@ export function FriendDetailsPortrait({
   const glow = Math.min(1, 0.3 + (bond.level - 1) * 0.14)
   const pinned = pinnedMission(missions, now)
   const frame = FRAME[draft.dialogEffect]
+  const fileRef = useRef<HTMLInputElement>(null)
   const [bloom, setBloom] = useState(false)
   const [flying, setFlying] = useState(false)
   const line = sample?.line || hoverLine
@@ -126,36 +126,75 @@ export function FriendDetailsPortrait({
             <span className="friend-nub is-ne" aria-hidden="true" />
             <span className="friend-nub is-sw" aria-hidden="true" />
             <span className="friend-nub is-se" aria-hidden="true" />
+            {line ? <FriendSpeechBubble className="friend-say-bubble" effect={draft.dialogEffect} line={line} /> : null}
           </div>
-          <span className="friend-hud is-met">met {shortWhen(firstSeenAt)}</span>
-          <span className="friend-hud is-worn">worn ×{wearCount}</span>
-          <figcaption className="friend-portrait-caption">
+        </figure>
+        <div className="friend-side">
+          <div className="friend-side-head">
             <h2 className="friend-name">
               {name}
-              {levelPulse ? <span className="friend-level-flash"> LV {bond.level} ✦</span> : null}
+              {levelPulse ? <span className="friend-level-flash"> LV {bond.level}</span> : null}
             </h2>
-          </figcaption>
-          {line ? (
-            <FriendSpeechBubble className="friend-say-bubble" effect={draft.dialogEffect} line={line} />
-          ) : (
-            <p className="friend-idle">tap me ✦</p>
-          )}
-        </figure>
-        <button
-          type="button"
-          className={`friend-say${bloom ? " is-down" : ""}`}
-          onClick={chat}
-          title="Preview a line with these settings. Nothing is logged."
-        >
-          Chat
-        </button>
-        <FriendDetailsReadouts bond={bond} points={points} streak={streak} teaser={nextUnlock(bond)} />
+            <button type="button" className="friend-dismiss" data-no95="" aria-label="Dismiss friend details" onClick={onDismiss}>
+              Close
+            </button>
+          </div>
+          <FriendDetailsReadouts
+            bond={bond}
+            points={points}
+            streak={streak}
+            teaser={nextUnlock(bond)}
+            wearCount={wearCount}
+            firstSeenAt={firstSeenAt}
+          />
+          {onReplacePicture || onRemove ? (
+            <div className="friend-manage">
+              {onReplacePicture ? (
+                <>
+                  <button
+                    type="button"
+                    className="friend-key"
+                    data-no95=""
+                    disabled={pictureBusy}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    {pictureBusy ? "Cutting out…" : "Change picture"}
+                  </button>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      event.target.value = ""
+                      if (file) onReplacePicture(file)
+                    }}
+                  />
+                </>
+              ) : null}
+              {onRemove ? (
+                <button type="button" className="friend-key" data-no95="" onClick={onRemove}>
+                  Remove
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className={`friend-say${bloom ? " is-down" : ""}`}
+            data-no95=""
+            onClick={chat}
+            title="Preview a line with these settings. Nothing is logged."
+          >
+            Chat
+          </button>
+        </div>
       </div>
       <FriendMissionStrip
         mission={pinned}
         now={now}
         effect={draft.dialogEffect}
-        lamp={lamp}
         flying={flying}
         onOpen={onOpenMission}
         onFinish={() => {
@@ -173,7 +212,6 @@ function FriendMissionStrip({
   mission,
   now,
   effect,
-  lamp,
   flying,
   onOpen,
   onFinish,
@@ -181,7 +219,6 @@ function FriendMissionStrip({
   mission: FriendMission | null
   now: Date
   effect: FriendDialogEffect
-  lamp: TodayLamp
   flying: boolean
   onOpen?: (id: string) => void
   onFinish: () => void
@@ -197,33 +234,29 @@ function FriendMissionStrip({
   const clock = mission.status === "accepted" ? formatCountdownClock(mission.deadline, now) : ""
   const canAccept = mission.status === "offered" && isActionableFriendKind(mission.kind) && Boolean(mission.taskId)
   const canFinish = mission.status === "accepted" && mission.kind === "whim"
+  const title = mission.stepTitle || mission.title
 
   return (
-    <div className={`friend-mission is-${effect} is-scope is-${mission.status}`} data-lamp={lamp}>
-      <div className="friend-mission-main">
-        <span className={`friend-lamp is-${mission.status}`} aria-hidden="true" />
-        <div>
-          <p className="friend-mission-kicker">{friendSourceLabel(mission.source)}</p>
-          {onOpen ? (
-            <button type="button" className="friend-mission-title is-play" onClick={() => onOpen(mission.id)}>
-              <span aria-hidden="true">▶ </span>
-              {mission.stepTitle || mission.title}
-            </button>
-          ) : (
-            <p className="friend-mission-title">{mission.stepTitle || mission.title}</p>
-          )}
-        </div>
-        {clock ? <span className="friend-due is-seg">{clock}</span> : null}
-      </div>
+    <div className={`friend-mission is-${effect} is-scope is-${mission.status}`}>
+      <span className={`friend-lamp is-${mission.status}`} aria-hidden="true" />
+      {onOpen ? (
+        <button type="button" className="friend-mission-title is-play" data-no95="" onClick={() => onOpen(mission.id)}>
+          {title}
+        </button>
+      ) : (
+        <p className="friend-mission-title">{title}</p>
+      )}
+      {clock ? <span className="friend-due is-seg">{clock}</span> : <span className="friend-due is-seg is-empty" />}
       {canAccept ? (
-        <button type="button" className="friend-key is-on" onClick={() => useBabyAnimalsStore.getState().acceptMission(mission.taskId)}>
-          Accept
+        <button type="button" className="friend-key is-on" data-no95="" onClick={() => useBabyAnimalsStore.getState().acceptMission(mission.taskId)}>
+          Accept mission
         </button>
       ) : null}
       {canFinish ? (
         <button
           type="button"
           className="friend-key is-on"
+          data-no95=""
           onClick={() => {
             onFinish()
             useBabyAnimalsStore.getState().completeMission(mission.taskId)

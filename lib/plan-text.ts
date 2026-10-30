@@ -8,6 +8,7 @@
  * stamped entry, or the stamped list of those entries, does not refill the composer.
  * A draft that is still unsent writing does. Writes go through `cogsStateStorage`
  * so Chrome posts the persist hub and Electron can hydrate missing keys.
+ * On the phone window, a plan read uses that memory map instead of a leftover local copy.
  * An empty string on a plan key is a tombstone (not a value); it is skipped
  * so aliases and a later write can win. Hub / phone-hub merges **union entries
  * by id** so a desktop Sync that never saw a Telegram `plan for rn` cannot
@@ -16,6 +17,7 @@
  */
 import { getISOWeek, getISOWeekYear, setISOWeek, startOfISOWeek } from "date-fns"
 import { getWeekString, parseLocalDate } from "@/lib/date-utils"
+import { isPhonePinKey, phoneWindowEngaged, readPhoneWindowItem } from "@/lib/phone-window"
 import { cogsStateStorage } from "@/lib/persist-storage"
 import { persistKeyAliases } from "@/lib/storage-keys"
 import type { ReviewPeriod } from "@/lib/types"
@@ -170,6 +172,10 @@ function candidateStorageKeys(period: PlanTextPeriod, periodKey: string): string
 
 function readLocalRaw(storageKey: string): string | null {
   if (typeof window === "undefined") return null
+  if (phoneWindowEngaged() && !isPhonePinKey(storageKey)) {
+    const fromWindow = readPhoneWindowItem(storageKey)
+    return fromWindow && fromWindow !== "" ? fromWindow : null
+  }
   try {
     const raw = localStorage.getItem(storageKey)
     if (raw === "") {

@@ -266,7 +266,7 @@ export function PhoneAgenda({
       <header className="plan-phone-agenda-head">
         <h3>{format(currentDate, "EEEE, MMMM d")}</h3>
         {showOpenDay ? (
-          <button type="button" onClick={onOpenDay}>
+          <button type="button" className="plan-phone-key" data-no95="" onClick={onOpenDay}>
             Open day
           </button>
         ) : null}
@@ -408,7 +408,7 @@ function TaskRow({
 function GemRow({ token, onOpen }: { token: PlanGemToken; onOpen: () => void }) {
   return (
     <li className="plan-phone-row" data-kind="gem">
-      <button type="button" className="plan-phone-row-main" onClick={onOpen}>
+      <button type="button" className="plan-phone-row-main plan-phone-key" data-no95="" onClick={onOpen}>
         <HabitGemImg src={token.src} title={token.title} width={28} height={28} />
         <span className="plan-phone-row-copy">
           <span className="plan-phone-row-title">{token.title}</span>
@@ -445,14 +445,14 @@ function AgendaMain({
       data-kind={planned ? "plan" : "item"}
       style={{ ["--bar" as string]: color }}
     >
-      <button type="button" className="plan-phone-row-main" onClick={onOpen}>
+      <button type="button" className="plan-phone-row-main plan-phone-key" data-no95="" onClick={onOpen}>
         <span className="plan-phone-time">{time}</span>
         <span className="plan-phone-row-copy">
           <span className="plan-phone-row-title">{title}</span>
           {detail ? <span className="plan-phone-row-detail">{detail}</span> : null}
         </span>
       </button>
-      <button type="button" className="plan-phone-row-more" aria-label={`Actions for ${title}`} onClick={onMenu}>
+      <button type="button" className="plan-phone-row-more plan-phone-key" data-no95="" aria-label={`Actions for ${title}`} onClick={onMenu}>
         Actions
       </button>
     </li>

@@ -11,7 +11,7 @@ import { normalizeInstagram, presentPersonProfile } from "@/lib/person-profile"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 
-const SOURCE = "instagram link"
+const INSTAGRAM_LINK: { surface: "unknown" } = { surface: "unknown" }
 
 const same = (a: string | undefined, b: string) => !!a && normalizeInstagram(a).toLowerCase() === b.toLowerCase()
 
@@ -23,7 +23,7 @@ export function personForInstagram(people: readonly Task[], handle: string): Tas
 
 function write(person: Task, instagram: string | undefined): void {
   const profile = { ...(person.personProfile ?? {}), instagram }
-  commitItemEdit(person.id, { personProfile: presentPersonProfile(profile) }, SOURCE)
+  commitItemEdit(person.id, { personProfile: presentPersonProfile(profile) }, INSTAGRAM_LINK)
 }
 
 export function linkInstagramToPerson(personId: string, handle: string): void {

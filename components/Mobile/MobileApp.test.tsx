@@ -1,44 +1,37 @@
 /**
- * components/Mobile/MobileApp.test.tsx — Manual hub pull onto the phone.
+ * components/Mobile/MobileApp.test.tsx — The phone shell reads the Mac file.
  *
- * The shell's login gate is stubbed. The pull button is the real card:
- * a mocked hub response is restored through lib/mobile-sync.
+ * The shell's login gate is stubbed. Refresh loads `GET /api/persist?canon=1`
+ * into memory. It does not restore `/api/sync` into localStorage.
  */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { persistKey } from "@/lib/storage-keys"
 import { TASK_STORE_PERSIST_VERSION, useTaskStore } from "@/lib/task-store"
+import { resetPhoneWindowForTests } from "@/lib/phone-window"
 import { resetAllStores } from "@/tests/test-utils"
 
 const HUB_TASK_ID = "hub-desk-task"
 
-const hubBackup = {
-  app: "brain2",
-  version: 1,
-  exportedAt: "2026-10-27T19:00:00.000Z",
-  stores: {
-    [persistKey("task-storage")]: {
-      state: {
-        tasks: [
-          {
-            id: HUB_TASK_ID,
-            description: "Pulled from the desktop hub",
-            title: "Pulled from the desktop hub",
-            stage: "inbox",
-            createdAt: "2026-10-27T19:00:00.000Z",
-            completed: false,
-            lists: [],
-          },
-        ],
+const hubTask = {
+  state: {
+    tasks: [
+      {
+        id: HUB_TASK_ID,
+        description: "Pulled from the desktop hub",
+        title: "Pulled from the desktop hub",
+        notes: "the long note",
+        stage: "inbox",
+        createdAt: "2026-10-27T19:00:00.000Z",
+        completed: false,
         lists: [],
-        folders: [],
-        removedTaskIds: [],
-        removedListIds: [],
       },
-      version: TASK_STORE_PERSIST_VERSION,
-    },
+    ],
+    lists: [],
+    folders: [],
+    removedTaskIds: [],
+    removedListIds: [],
   },
-  planText: {},
+  version: TASK_STORE_PERSIST_VERSION,
 }
 
 vi.mock("@/lib/mobile-auth", () => ({
@@ -61,10 +54,12 @@ vi.mock("@/components/PersistStatusBanner", () => ({ PersistStatusBanner: () => 
 
 import { MobileApp } from "./MobileApp"
 
-describe("MobileApp pull", () => {
+describe("MobileApp window", () => {
   beforeEach(() => {
+    resetPhoneWindowForTests()
     resetAllStores()
     useTaskStore.getState().clearAllData()
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)", language: "en-US" })
     vi.stubGlobal("location", {
       protocol: "http:",
       hostname: "127.0.0.1",
@@ -95,32 +90,72 @@ describe("MobileApp pull", () => {
             }),
           }
         }
-        if (url.endsWith("/api/sync/pull")) {
+        if (url.includes("/api/persist")) {
           return {
             ok: true,
             status: 200,
             statusText: "OK",
-            json: async () => ({ ok: true, backup: hubBackup, updatedAt: "2026-10-27T19:00:00.000Z" }),
+            json: async () => ({
+              ok: true,
+              items: { "brain2-task-storage": JSON.stringify(hubTask) },
+            }),
           }
         }
         return { ok: false, status: 404, statusText: "Not Found", json: async () => ({ error: url }) }
       }),
     )
-    vi.spyOn(window, "confirm").mockReturnValue(true)
   })
 
-  it("pulls a desktop snapshot into the task store", async () => {
+  it("loads the Mac file into memory after login", async () => {
     render(<MobileApp />)
-    const pull = await screen.findByRole("button", { name: "Pull desktop data onto phone" })
-    await waitFor(() => expect(pull).toBeEnabled())
-
-    fireEvent.click(pull)
+    expect(await screen.findByRole("button", { name: "Refresh from Mac" })).toBeEnabled()
 
     await waitFor(() => {
       expect(useTaskStore.getState().tasks.some((task) => task.id === HUB_TASK_ID)).toBe(true)
     })
-    expect(useTaskStore.getState().tasks.find((task) => task.id === HUB_TASK_ID)?.description).toBe(
-      "Pulled from the desktop hub",
+    const task = useTaskStore.getState().tasks.find((row) => row.id === HUB_TASK_ID)
+    expect(task?.description).toBe("Pulled from the desktop hub")
+    expect(task?.notes).toBe("the long note")
+    expect(localStorage.getItem("brain2-task-storage")).not.toContain("the long note")
+  })
+
+  it("loads the Mac file from the baked LAN hub on the native shell", async () => {
+    vi.stubGlobal("location", {
+      protocol: "capacitor:",
+      hostname: "localhost",
+      host: "localhost",
+      origin: "capacitor://localhost",
+      href: "capacitor://localhost/mobile/",
+      pathname: "/mobile/",
+      search: "",
+      hash: "",
+    })
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes("mobile-hub.json")) {
+          return { ok: true, status: 200, statusText: "OK", json: async () => ({ url: "http://192.168.0.150:3000" }) }
+        }
+        if (url.startsWith("http://192.168.0.150:3000/api/persist")) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            json: async () => ({
+              ok: true,
+              items: { "brain2-task-storage": JSON.stringify(hubTask) },
+            }),
+          }
+        }
+        return { ok: false, status: 404, statusText: "Not Found", json: async () => ({ error: url }) }
+      }),
     )
+
+    render(<MobileApp />)
+    await waitFor(() => {
+      expect(useTaskStore.getState().tasks.some((task) => task.id === HUB_TASK_ID)).toBe(true)
+    })
+    expect(useTaskStore.getState().tasks.find((row) => row.id === HUB_TASK_ID)?.notes).toBe("the long note")
   })
 })

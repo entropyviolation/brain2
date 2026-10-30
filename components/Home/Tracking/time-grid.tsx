@@ -352,6 +352,7 @@ export function TimeGrid({
   lockDate = false,
   desk = false,
   deck,
+  plotOnly = false,
 }: {
   compact?: boolean
   /** False when the parent already rendered `PenPalette` + `PenModeBar` + Log activity (Home Tracking). */
@@ -368,6 +369,12 @@ export function TimeGrid({
   desk?: boolean
   /** The view deck (`PenModeDeck`) at the top of the screen bay. */
   deck?: ReactNode
+  /**
+   * Phone day plot. The same hour rows and minute cells, and the same click
+   * and drag paint. No desk chrome — the phone already has the date, the
+   * span, and the paint tray. Rows are 44px so a thumb can hit a cell.
+   */
+  plotOnly?: boolean
 } = {}) {
   useHabitTrackingSync()
   // Erasing or clearing sleep on the grid is a statement about the night.
@@ -409,7 +416,7 @@ export function TimeGrid({
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
 
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
-  const rowHeight = compact ? 20 : 24
+  const rowHeight = plotOnly ? 44 : compact ? 20 : 24
   const [hourBand, setHourBand] = useState({ start: 0, end: 24 })
   const [now, setNow] = useState(() => new Date())
   const [spark, setSpark] = useState<{ lo: number; hi: number } | null>(null)
@@ -885,6 +892,23 @@ export function TimeGrid({
     </>
   )
 
+
+  if (plotOnly) {
+    return (
+      <div
+        className="trk95 trk-canvas trk-plot-only select-none"
+        data-ui-name="Time grid"
+        data-ui-docs="components/Home/Tracking/README.md"
+        data-ui-docs-anchor="time-gridtsx-behavior"
+        data-testid="phone-day-plot"
+      >
+        {totals.tracked === 0 && <ScreenTimeEmptyHint date={dk} scopeId={scope.id} />}
+        {dayGrid}
+        {dayRibbon}
+        {openEntry && <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} />}
+      </div>
+    )
+  }
 
   if (desk) {
     const spanKey: "day" | "week" | "infinite" = scrolling ? "infinite" : span === "week" ? "week" : "day"

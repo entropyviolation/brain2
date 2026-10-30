@@ -4,7 +4,8 @@
  * stays behind as a frame). Loose grains fall, bounce, and roll to a steep
  * dune in front of the window, keeping the color of the pixel they left.
  * After the dune rests, wind lifts it from the windward crest and carries
- * it off.
+ * it off to the right. On iOS a breath is a different wind: the dune waits,
+ * then the grains are pushed straight into the screen.
  *
  * Opt in per window via `useWindowSandClose`. This file is the sim and the
  * pixel painter. Loose grains are a single pixel — fine sand, not a 2px brick.
@@ -59,6 +60,8 @@ export type SandWorld = {
   floorY: number
   windAt: number
   windArmed: number
+  /** 1 when the wind is a breath into the screen. 0 is the rightward wind. */
+  into: number
   breakX: number
   breakY: number
   bin: number
@@ -163,6 +166,12 @@ function releaseGrain(world: SandWorld, i: number, wind: boolean) {
   y[i] = homeY[i]
   z[i] = 4 + (hash(i + 2) - 0.5) * 8
   if (wind) {
+    if (world.into) {
+      vx[i] = (world.width * 0.5 - homeX[i]) * 2
+      vy[i] = -(120 + hash(i + 5) * 80)
+      vz[i] = -(480 + hash(i + 6) * 140)
+      return
+    }
     vx[i] = 120 + hash(i + 4) * 160
     vy[i] = -(140 + hash(i + 5) * 180)
     vz[i] = (hash(i + 6) - 0.5) * 70
@@ -180,8 +189,12 @@ function releaseGrain(world: SandWorld, i: number, wind: boolean) {
   vz[i] = (10 - z[i]) * 0.4 + (hash(i + 3) - 0.5) * 14
 }
 
-/** Hurry the wind. Relative blow order stays; the dune leaves from this instant. */
-export function beginWind(world: SandWorld, tMs: number) {
+/**
+ * Hurry the wind. The rightward wind keeps its crest order.
+ * `into` sends the dune straight at the glass instead, crest first.
+ */
+export function beginWind(world: SandWorld, tMs: number, into = false) {
+  if (into) world.into = 1
   if (world.windArmed || tMs >= world.windAt) {
     world.windArmed = 1
     return
@@ -190,6 +203,13 @@ export function beginWind(world: SandWorld, tMs: number) {
   world.windAt = tMs
   world.windArmed = 1
   const blowAt = world.blowAt
+  if (world.into) {
+    for (let i = 0; i < world.n; i++) {
+      const crest = Math.max(0, Math.min(1, (world.floorY - world.y[i]) / (world.grain * 26)))
+      blowAt[i] = tMs + (1 - crest) * 160 + hash(i + 8) * 50
+    }
+    return
+  }
   for (let i = 0; i < world.n; i++) blowAt[i] -= shift
 }
 
@@ -228,6 +248,7 @@ export function createSandWorld(
     floorY: height,
     windAt,
     windArmed: 0,
+    into: 0,
     breakX: ox,
     breakY: oy,
     bin,
@@ -358,9 +379,31 @@ function trySettle(world: SandWorld, i: number) {
   settleGrain(world, i, col)
 }
 
+/** Painted point. Positive z sits closer to the camera and shears down-right. */
+function screenOf(x: number, y: number, z: number) {
+  return { sx: x + z * 0.42, sy: y + z * 0.5 }
+}
+
+/**
+ * Breath into the glass. Screen motion aims at the window's center so the
+ * depth shear does not slide the dune off to the right.
+ */
+function aimIntoScreen(world: SandWorld, i: number) {
+  const cx = world.width * 0.5
+  const cy = world.height * 0.38
+  const { sx, sy } = screenOf(world.x[i], world.y[i], world.z[i])
+  world.vx[i] = (cx - sx) * 6.5 - world.vz[i] * 0.42
+  world.vy[i] = (cy - sy) * 6.5 - world.vz[i] * 0.5
+}
+
 function blowGrain(world: SandWorld, i: number, col: number) {
   if (world.pileN[col] > 0) world.pileN[col]--
   world.state[i] = SAND_LOOSE
+  if (world.into) {
+    world.vz[i] = -180
+    aimIntoScreen(world, i)
+    return
+  }
   const crest = Math.max(0, Math.min(1, (world.floorY - world.y[i]) / (world.grain * 28)))
   world.vx[i] = 240 + hash(i + 4) * 160
   world.vy[i] = -(200 + crest * 260 + hash(i + 5) * 90)
@@ -421,11 +464,18 @@ function substep(world: SandWorld, tMs: number, dt: number) {
     vx[i] *= drag
     vz[i] *= drag
     if (wind && tMs >= blowAt[i]) {
-      vx[i] += 780 * dt
-      vx[i] += (hash(i + ((tMs / 40) | 0)) - 0.5) * 160 * dt
-      const age = tMs - blowAt[i]
-      if (x[i] > width * 0.45) fade[i] -= dt * 1.15
-      if (age > 650) fade[i] -= dt * 1.35
+      if (world.into) {
+        vz[i] -= 1100 * dt
+        aimIntoScreen(world, i)
+        const age = tMs - blowAt[i]
+        if (z[i] < -28 || age > 420) fade[i] -= dt * 1.5
+      } else {
+        vx[i] += 780 * dt
+        vx[i] += (hash(i + ((tMs / 40) | 0)) - 0.5) * 160 * dt
+        const age = tMs - blowAt[i]
+        if (x[i] > width * 0.45) fade[i] -= dt * 1.15
+        if (age > 650) fade[i] -= dt * 1.35
+      }
     }
     const windAge = wind ? tMs - world.windAt : 0
     if (windAge > WINDOW_SAND_WIND_MS * 0.5) fade[i] -= dt * 2.4
@@ -435,13 +485,19 @@ function substep(world: SandWorld, tMs: number, dt: number) {
     z[i] += vz[i] * dt
     world.tumble[i] += (Math.abs(vx[i]) + Math.abs(vy[i]) + Math.abs(vz[i])) * dt * 0.02
 
-    if (fade[i] < 0.04 || x[i] > width + SAND_WIND_RUN || y[i] > world.floorY + 240) {
+    if (
+      fade[i] < 0.04 ||
+      x[i] > width + SAND_WIND_RUN ||
+      y[i] > world.floorY + 240 ||
+      z[i] < -150
+    ) {
       state[i] = SAND_EMPTY
       continue
     }
 
     const col = colOf(world, x[i], z[i])
     const surf = surfaceY(world, col)
+    if (wind && world.into && tMs >= blowAt[i]) continue
     if (y[i] + grain < surf) continue
 
     if (wind) {
@@ -702,7 +758,7 @@ export function paintSand(
     const ao = s === SAND_SETTLED ? 0.84 + 0.16 * crest : 1
     const near = 1 + Math.max(-20, Math.min(70, zz)) * 0.0025
     fillGrain(pixels, viewW, viewH, sx, sy, grain, rgb, ao * near, !separated, tumble[i], i)
-    if (s === SAND_LOOSE && vx[i] > 140 && fade[i] > 0.25) {
+    if (!world.into && s === SAND_LOOSE && vx[i] > 140 && fade[i] > 0.25) {
       shade(rgb, 0.8, 0)
       const a = (90 * fade[i]) | 0
       plot(pixels, viewW, viewH, sx - grain, sy, shadeRgb.r, shadeRgb.g, shadeRgb.b, a)

@@ -19,7 +19,7 @@ import { FriendDetailsPanel } from "@/components/friend-details"
 import { FriendSpeechBubble } from "@/components/friend-details/FriendSpeechBubble"
 import { pickFriendTodoNudge, type FriendNudge } from "@/lib/baby-animal-nudge"
 import { personalityFor } from "@/lib/baby-animal-personality"
-import { ensureWeeklyFriend } from "@/lib/baby-animal-friend"
+import { ensureWeeklyFriend, uploadFriendPicture } from "@/lib/baby-animal-friend"
 import { consumeReunionLine, isPriorMonday } from "@/lib/baby-animal-greeting"
 import { localMondayKey } from "@/lib/baby-animals"
 import { friendCheerLine } from "@/lib/friend-copy"
@@ -104,6 +104,7 @@ export function BabyAnimalNest() {
   const MissionSheet = useFriendMissionSheet(missionOpen)
   const [nudge, setNudge] = useState<FriendNudge | null>(null)
   const [cheer, setCheer] = useState<FriendMission | null>(null)
+  const [pictureBusy, setPictureBusy] = useState(false)
   const [crtPowerOn, setCrtPowerOn] = useState(false)
   const nestRef = useRef<HTMLDivElement>(null)
   const closeDetails = useRef<() => void>(() => setDetailsOpen(false))
@@ -287,6 +288,7 @@ export function BabyAnimalNest() {
       {nudge ? (
         <FriendSpeechBubble
           effect={nudge.effect}
+          name={who}
           line={nudge.line}
           onLineClick={() => setMissionOpen(true)}
           onClose={() => {
@@ -343,6 +345,17 @@ export function BabyAnimalNest() {
             onClose={() => setDetailsOpen(false)}
             closeBridge={closeDetails}
             onCoverChange={setDetailsCover}
+            pictureBusy={pictureBusy}
+            onReplacePicture={(file) => {
+              if (!photo) return
+              setPictureBusy(true)
+              void uploadFriendPicture(file, photo.id).finally(() => setPictureBusy(false))
+            }}
+            onRemove={() => {
+              if (!photo) return
+              useBabyAnimalsStore.getState().removePhoto(photo.id)
+              setDetailsOpen(false)
+            }}
           />
         </DialogContent>
       </Dialog>

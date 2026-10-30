@@ -3,10 +3,12 @@
  *
  * Create/edit body for a habit. The draft, the locks, submit, and the milled
  * section strip stay here. Field groups live in `habit-form/`. Visual order
- * is flex `order` in `habit-form-dialog.css`. The strip scrolls
- * `.habit95-fields` only; it does not hide sections. The active key follows
- * the intersecting section nearest the well top, or the last one when scroll
- * is maxed. A clicked key stays pinned until a hand scroll.
+ * is flex `order` in `habit-form-dialog.css`. On a desktop (768px and up,
+ * fine pointer) the strip scrolls `.habit95-fields` only and does not hide
+ * sections. The active key follows the intersecting section nearest the well
+ * top, or the last one when scroll is maxed. A clicked key stays pinned until
+ * a hand scroll. On a phone the same keys are tabs: one mounted section is
+ * shown, and the others stay mounted but hidden.
  *
  * Prioritize habit refreshes the star immediately, then asks for an optional
  * why (`PriorityReasonDialog`). Skip or a blank note stores no reasoning.
@@ -18,7 +20,7 @@
 import { numberFieldsIn } from "@/lib/pen-fields"
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react"
 import {
   type WeeklyTask,
   TaskType,
@@ -97,6 +99,58 @@ import {
 
 export { resolveHabitSectionNavActive }
 
+/** Phone tabs. Desktop at 768px and up with a fine pointer stays one page. */
+export const HABIT_FORM_PHONE_TABS_MEDIA =
+  "(max-width: 767px), (max-width: 980px) and (pointer: coarse)"
+
+function subscribeHabitFormPhoneTabs(onChange: () => void) {
+  if (typeof window.matchMedia !== "function") return () => {}
+  const media = window.matchMedia(HABIT_FORM_PHONE_TABS_MEDIA)
+  media.addEventListener("change", onChange)
+  return () => media.removeEventListener("change", onChange)
+}
+
+function habitFormPhoneTabsNow() {
+  if (typeof window.matchMedia !== "function") return false
+  return window.matchMedia(HABIT_FORM_PHONE_TABS_MEDIA).matches
+}
+
+function useHabitFormPhoneTabs() {
+  return useSyncExternalStore(subscribeHabitFormPhoneTabs, habitFormPhoneTabsNow, () => false)
+}
+
+function showPhoneHabitSection(root: HTMLElement, id: string) {
+  for (const node of root.querySelectorAll<HTMLElement>(":scope > [id^='habit95-sec-']")) {
+    node.hidden = node.id !== id
+  }
+  const neglect = root.querySelector<HTMLElement>(":scope > .habit95-sec-neglect")
+  if (neglect) neglect.hidden = id !== "habit95-sec-priority"
+}
+
+function clearPhoneHabitSections(root: HTMLElement) {
+  for (const node of root.querySelectorAll<HTMLElement>(":scope > [id^='habit95-sec-']")) {
+    node.hidden = false
+  }
+  const neglect = root.querySelector<HTMLElement>(":scope > .habit95-sec-neglect")
+  if (neglect) neglect.hidden = false
+}
+
+/** Slide the key inside the strip. scrollIntoView would move the dialog. */
+function revealSectionKey(id: string) {
+  const key = document.querySelector<HTMLElement>(
+    `.habit95-section-nav [aria-controls="${CSS.escape(id)}"]`,
+  )
+  const nav = key?.closest(".habit95-section-nav")
+  if (!(key instanceof HTMLElement) || !(nav instanceof HTMLElement)) return
+  const pad = 8
+  const keyLeft = key.offsetLeft
+  const keyRight = keyLeft + key.offsetWidth
+  if (keyLeft < nav.scrollLeft + pad) nav.scrollLeft = Math.max(0, keyLeft - pad)
+  else if (keyRight > nav.scrollLeft + nav.clientWidth - pad) {
+    nav.scrollLeft = keyRight - nav.clientWidth + pad
+  }
+}
+
 interface TaskFormProps {
   onSubmit: (task: WeeklyTask) => void
   onCancel: () => void
@@ -137,6 +191,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
   const listPopupHost = useRef<HTMLElement | null>(null)
   const [fieldsEl, setFieldsEl] = useState<HTMLDivElement | null>(null)
   const [activeSection, setActiveSection] = useState("habit95-sec-priority")
+  const phoneTabs = useHabitFormPhoneTabs()
   const [priorityReasonOpen, setPriorityReasonOpen] = useState(false)
   const sectionNavRef = useRef<{ id: string; label: string }[]>([])
   /** Clicked section key; held until the user scrolls the well by hand. */
@@ -718,7 +773,17 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     }
   }, [sectionNavKey, activeSection])
 
+  useLayoutEffect(() => {
+    if (!fieldsEl) return
+    if (!phoneTabs) {
+      clearPhoneHabitSections(fieldsEl)
+      return
+    }
+    showPhoneHabitSection(fieldsEl, activeSection)
+  }, [fieldsEl, phoneTabs, activeSection, sectionNavKey])
+
   useEffect(() => {
+    if (phoneTabs) return
     const root = fieldsEl
     if (!root || typeof IntersectionObserver !== "function") return
     const nodes = sectionNavRef.current
@@ -773,9 +838,18 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
       root.removeEventListener("scroll", onScroll)
       releaseJumpScroll()
     }
-  }, [fieldsEl, sectionNavKey])
+  }, [fieldsEl, sectionNavKey, phoneTabs])
 
   const jumpToSection = (id: string) => {
+    if (phoneTabs) {
+      pinnedSectionRef.current = null
+      jumpScrollingRef.current = false
+      setActiveSection(id)
+      if (fieldsEl) showPhoneHabitSection(fieldsEl, id)
+      document.getElementById(id)?.focus({ preventScroll: true })
+      revealSectionKey(id)
+      return
+    }
     // Paint the clicked key before the observer catches up; hold it through
     // the programmatic scroll so a maxed well does not steal the key for a
     // lower neighbor that also intersects.
@@ -820,14 +894,25 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
 
   return (
     <>
-    <form id="habit95-form" onSubmit={handleSubmit} className="habit95-form">
-      <nav className="habit95-section-nav" aria-label="Habit sections">
+    <form
+      id="habit95-form"
+      onSubmit={handleSubmit}
+      className="habit95-form"
+      data-phone-tabs={phoneTabs ? "true" : undefined}
+    >
+      <nav
+        className="habit95-section-nav"
+        aria-label="Habit sections"
+        role={phoneTabs ? "tablist" : undefined}
+      >
         {sectionNav.map((section) => (
           <button
             key={`${section.id}:${section.label}`}
             type="button"
             className="habit95-btn habit95-section-key"
-            aria-current={activeSection === section.id ? "true" : undefined}
+            role={phoneTabs ? "tab" : undefined}
+            aria-selected={phoneTabs ? activeSection === section.id : undefined}
+            aria-current={!phoneTabs && activeSection === section.id ? "true" : undefined}
             aria-controls={section.id}
             onClick={() => jumpToSection(section.id)}
           >

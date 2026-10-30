@@ -700,8 +700,17 @@ export type ImpliedRuleEffect =
       awardPoints?: boolean
       field?: string
       delta: number
+      /** `ItemTypeRule.name` of the rule that asked for this effect. */
+      ruleName?: string
     }
-  | { kind: "incrementHabit"; habitId: string; amount: number }
+  | { kind: "incrementHabit"; habitId: string; amount: number; ruleName?: string }
+
+export interface RuleMutation<T extends ItemLike> {
+  /** `ItemTypeRule.name` (or the rule id when the name is blank). */
+  name: string
+  /** Item after this rule's action. */
+  item: T
+}
 
 export interface RuleApplication<T extends ItemLike> {
   /** Item with automation actions (setDefault/setAttribute/addTag) applied. */
@@ -712,6 +721,8 @@ export interface RuleApplication<T extends ItemLike> {
   addToNextActions: boolean
   /** Side effects that must run after the item is persisted (log Done, habits). */
   effects: ImpliedRuleEffect[]
+  /** Rules whose setDefault / setAttribute / addTag actually changed the item, in order. */
+  mutations: RuleMutation<T>[]
 }
 
 /**
@@ -730,6 +741,24 @@ export function applyRules<T extends ItemLike>(
   const errors: string[] = []
   let addToNextActions = false
   const effects: ImpliedRuleEffect[] = []
+  const mutations: RuleMutation<T>[] = []
+
+  const shot = (): T =>
+    ({
+      ...next,
+      attributes: { ...(next.attributes ?? {}) },
+      tags: Array.isArray(next.tags) ? [...(next.tags as string[])] : next.tags,
+    }) as unknown as T
+
+  const changedBy = (before: string, after: T) => {
+    let afterJson = ""
+    try {
+      afterJson = JSON.stringify(after)
+    } catch {
+      afterJson = ""
+    }
+    return afterJson !== before
+  }
 
   for (const rule of rules ?? []) {
     if (rule.enabled === false) continue
@@ -737,6 +766,16 @@ export function applyRules<T extends ItemLike>(
     if (rule.when && !evaluateCondition(next, rule.when, previous)) continue
 
     const action = rule.action
+    const ruleName = rule.name?.trim() || rule.id
+    let beforeJson = ""
+    const mayMutate = action.kind === "setDefault" || action.kind === "setAttribute" || action.kind === "addTag"
+    if (mayMutate) {
+      try {
+        beforeJson = JSON.stringify(shot())
+      } catch {
+        beforeJson = ""
+      }
+    }
     switch (action.kind) {
       case "require":
         if (isEmpty(getFieldValue(next, action.field))) {
@@ -772,6 +811,7 @@ export function applyRules<T extends ItemLike>(
           awardPoints: action.awardPoints,
           field,
           delta,
+          ruleName,
         })
         break
       }
@@ -780,14 +820,18 @@ export function applyRules<T extends ItemLike>(
         const amount =
           action.amount === "delta" ? (field ? numericDelta(previous, next, field) : 0) : action.amount
         if (amount !== 0) {
-          effects.push({ kind: "incrementHabit", habitId: action.habitId, amount })
+          effects.push({ kind: "incrementHabit", habitId: action.habitId, amount, ruleName })
         }
         break
       }
     }
+    if (mayMutate) {
+      const after = shot()
+      if (changedBy(beforeJson, after)) mutations.push({ name: ruleName, item: after })
+    }
   }
 
-  return { item: next as T, errors, addToNextActions, effects }
+  return { item: next as unknown as T, errors, addToNextActions, effects, mutations }
 }
 
 /**

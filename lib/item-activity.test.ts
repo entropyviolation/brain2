@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { commitItemEdit } from "@/lib/commit-item-edit"
 import {
   appendItemActivity,
   diffItemActivity,
@@ -9,6 +10,8 @@ import {
   recordItemWrite,
   resetItemActivity,
 } from "@/lib/item-activity"
+import { useItemTypeStore } from "@/lib/item-type-store"
+import { setItemWriteClientForTests } from "@/lib/item-write-source"
 import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
 import { pausePenColorSession, resumePenColorSession, stopPenColorSession } from "@/lib/pen-color-session"
 import { startWorkingOnOperation, stopWorkingOnOperation } from "@/lib/operation-work-session"
@@ -282,5 +285,105 @@ describe("working-on-now sittings in item history", () => {
     useTaskStore.getState().deleteTask("op_1")
     stopWorkingOnOperation(later(12))
     expect(workedOnLines("op_1")).toEqual([])
+  })
+})
+
+describe("item write source", () => {
+  beforeEach(() => {
+    resetAllStores()
+    resetItemActivity()
+    setItemWriteClientForTests(() => undefined)
+  })
+
+  afterEach(() => {
+    setItemWriteClientForTests(null)
+  })
+
+  it("addTask with quick add on electron persists one created line", () => {
+    useTaskStore.getState().addTask(task({ id: "q", description: "Milk", title: "Milk" }), {
+      surface: "quick-add",
+      client: "electron",
+    })
+    const created = listItemActivity("q").filter((row) => row.create)
+    expect(created).toHaveLength(1)
+    expect(formatHistoryLine(created[0])).toContain("source quick add, electron")
+    expect(formatHistoryLine(created[0]).startsWith("created ")).toBe(true)
+  })
+
+  it("updateTask and commitItemEdit with item detail on iOS name that source", () => {
+    const row = task({ id: "a", description: "Same", title: "Same" })
+    useTaskStore.getState().addTask(row)
+    resetItemActivity()
+    useTaskStore.getState().updateTask({ ...row, notes: "from the desk" }, undefined, {
+      attribution: { surface: "item-detail", client: "ios" },
+    })
+    const updated = formatHistoryLine(listItemActivity("a")[0])
+    expect(updated).toContain("Notes")
+    expect(updated).toContain("source item detail, iOS")
+
+    resetItemActivity()
+    commitItemEdit("a", { notes: "from the phone" }, { surface: "item-detail", client: "ios" })
+    const edited = formatHistoryLine(listItemActivity("a")[0])
+    expect(edited).toContain("source item detail, iOS")
+    expect(listItemActivity("a")[0].attribution).toEqual({ surface: "item-detail", client: "ios" })
+  })
+
+  it("addTask and updateTask with no attribution persist source unknown", () => {
+    useTaskStore.getState().addTask(task({ id: "u", description: "Bare", title: "Bare" }))
+    const created = listItemActivity("u").find((row) => row.create)
+    expect(created?.attribution).toEqual({ surface: "unknown" })
+    expect(formatHistoryLine(created!)).toContain("source unknown")
+
+    const stored = useTaskStore.getState().tasks.find((item) => item.id === "u")!
+    useTaskStore.getState().updateTask({ ...stored, notes: "later" })
+    const edit = listItemActivity("u").find((row) => row.changes.some((change) => change.field === "notes"))
+    expect(edit?.attribution).toEqual({ surface: "unknown" })
+    expect(formatHistoryLine(edit!)).toContain("source unknown")
+  })
+
+  it("splits an item-type rule's field from the caller's field", () => {
+    useItemTypeStore.getState().addType({
+      id: "widget",
+      name: "Widget",
+      rules: [
+        {
+          id: "own",
+          name: "Mark owned",
+          trigger: "update",
+          when: { field: "purchased", operator: "eq", value: true },
+          action: { kind: "setAttribute", field: "owned", value: true },
+        },
+      ],
+    })
+    useTaskStore.getState().addTask(
+      task({ id: "w", description: "Widget", title: "Widget", type: "widget", attributes: {} }),
+    )
+    resetItemActivity()
+    const before = useTaskStore.getState().tasks.find((item) => item.id === "w")!
+    useTaskStore.getState().updateTask(
+      { ...before, notes: "bought", attributes: { ...(before.attributes ?? {}), purchased: true } },
+      undefined,
+      { attribution: { surface: "item-detail", client: "electron" } },
+    )
+    const lines = listItemActivity("w").map(formatHistoryLine)
+    expect(lines.some((line) => line.includes("Notes") && line.includes("source item detail, electron"))).toBe(true)
+    expect(lines.some((line) => /purchased/i.test(line) && line.includes("source item detail, electron"))).toBe(true)
+    expect(lines.some((line) => line.includes("source autoapplied rule Mark owned"))).toBe(true)
+    const ruleLine = lines.find((line) => line.includes("source autoapplied rule Mark owned"))
+    expect(ruleLine).toBeTruthy()
+    expect(ruleLine).not.toContain("source item detail")
+  })
+
+  it("prints a legacy row's old source, and recorded-before-sources when it has none", () => {
+    const base = {
+      id: "act-old",
+      itemId: "old",
+      at: "2020-01-01T00:00:00.000Z",
+      summary: "Notes — a → b",
+      changes: [{ field: "notes", label: "Notes", from: "a", to: "b" }],
+    }
+    expect(formatHistoryLine(base)).toContain("source recorded before sources")
+    expect(formatHistoryLine({ ...base, source: "item-detail" })).toContain("item-detail")
+    expect(formatHistoryLine({ ...base, source: "item-detail" })).not.toContain("recorded before sources")
   })
 })

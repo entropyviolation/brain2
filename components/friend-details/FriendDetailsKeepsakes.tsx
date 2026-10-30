@@ -1,8 +1,8 @@
 /**
- * components/friend-details/FriendDetailsKeepsakes.tsx — Cameo badges from the log
+ * components/friend-details/FriendDetailsKeepsakes.tsx — Inventory of earned marks
  *
- * Earned badges are lace cameos. The rest stay as circuit outlines.
- * Nothing here is stored; it is counted from missions, wear, and tones tried.
+ * Every badge is the same cell. Earned cells show the cameo. The rest stay
+ * outlines. The longer hint appears only for the selected cell.
  */
 "use client"
 
@@ -43,6 +43,7 @@ export function FriendDetailsKeepsakes({
     .map((badge) => badge.id)
     .join(",")
   const [flock, setFlock] = useState<string[]>([])
+  const [picked, setPicked] = useState<FriendBadge["id"] | null>(null)
 
   useEffect(() => {
     const earned = earnedKey ? earnedKey.split(",") : []
@@ -63,25 +64,31 @@ export function FriendDetailsKeepsakes({
     return () => window.clearTimeout(timer)
   }, [earnedKey])
 
+  const hint = picked ? HINT[picked] : ""
+
   return (
     <section className="friend-keeps" aria-label="Keepsakes">
-      <h3>Keepsakes</h3>
       <ul>
         {badges.map((badge) => (
-          <li
-            key={badge.id}
-            className={`${badge.earned ? "is-earned" : "is-trace"}${flock.includes(badge.id) ? " is-flock" : ""}`}
-            title={HINT[badge.id]}
-          >
-            <span className="friend-cameo" aria-hidden="true" />
-            <span>{badge.label}</span>
-            <span className="friend-cameo-progress">
-              {badge.progress}/{badge.goal}
-              <span className="friend-cameo-tube" style={{ ["--fill" as string]: String(badge.goal ? badge.progress / badge.goal : 0) }} />
-            </span>
+          <li key={badge.id} className={flock.includes(badge.id) ? "is-flock" : ""}>
+            <button
+              type="button"
+              data-no95=""
+              className={badge.earned ? "is-earned" : "is-trace"}
+              aria-pressed={picked === badge.id}
+              onClick={() => setPicked((current) => (current === badge.id ? null : badge.id))}
+            >
+              <span className="friend-cameo" aria-hidden="true" />
+              <span className="friend-keeps-name">{badge.label}</span>
+              <span className="friend-cameo-progress">
+                {badge.progress}/{badge.goal}
+                <span className="friend-cameo-tube" style={{ ["--fill" as string]: String(badge.goal ? badge.progress / badge.goal : 0) }} />
+              </span>
+            </button>
           </li>
         ))}
       </ul>
+      {hint ? <p className="friend-keeps-hint">{hint}</p> : null}
     </section>
   )
 }

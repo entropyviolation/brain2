@@ -3,7 +3,8 @@
  *
  * Compact Plan toolbar control. Sits in `#plan-chrome-toggles` beside Dark.
  * Does not own dark-mode CSS. Default off. Visible label flips with the latch:
- * off = "Gem and trinket", on = "no gem no trinket".
+ * off = "Gem and trinket", on = "no gem no trinket". `keycap` is the phone
+ * Plan latch (pale silver key, CRT when on). Desktop leaves it off.
  */
 "use client"
 
@@ -15,16 +16,20 @@ const GEM_ON_LABEL = "no gem no trinket"
 export function PlanGemModeToggle({
   on,
   onChange,
+  keycap = false,
 }: {
   on: boolean
   onChange: (on: boolean) => void
+  /** Phone Plan paints this latch as a pale silver keycap. Desktop stays the mill key. */
+  keycap?: boolean
 }) {
   const label = on ? GEM_ON_LABEL : GEM_OFF_LABEL
   return (
     <button
       type="button"
       id="plan-gem-mode"
-      className="plan-mode-toggle"
+      className={keycap ? "plan-mode-toggle plan-phone-key" : "plan-mode-toggle"}
+      data-no95={keycap ? "" : undefined}
       aria-pressed={on}
       aria-label={label}
       title={

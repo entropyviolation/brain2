@@ -9,6 +9,7 @@ import {
   pullMobileSyncBackup,
   reclaimPhonePullStorage,
   pullShrinksDevice,
+  phoneHubCandidates,
   preferBundledHub,
   pushMobileSyncBackup,
   readMobileSyncUrl,
@@ -27,6 +28,7 @@ const sampleBackup: Backup = {
 describe("mobile-sync", () => {
   afterEach(() => {
     localStorage.removeItem("cogs-mobile-sync-url")
+    localStorage.removeItem("brain2-mobile-sync-url")
     vi.unstubAllGlobals()
   })
 
@@ -66,6 +68,24 @@ describe("mobile-sync", () => {
     })
     writeMobileSyncUrl("http://127.0.0.1:3847")
     expect(readMobileSyncUrl()).toBe("http://127.0.0.1:3000")
+  })
+
+  it("uses the baked LAN hub on a native shell and keeps a saved address ahead of it", async () => {
+    vi.stubGlobal("location", {
+      protocol: "capacitor:",
+      hostname: "localhost",
+      origin: "capacitor://localhost",
+    })
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.cache).toBeUndefined()
+      return { ok: true, json: async () => ({ url: "http://192.168.0.150:3000/" }) }
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    await expect(phoneHubCandidates()).resolves.toEqual(["http://192.168.0.150:3000"])
+    expect(readMobileSyncUrl()).toBe("http://192.168.0.150:3000")
+
+    writeMobileSyncUrl("http://10.0.0.9:3000")
+    await expect(phoneHubCandidates()).resolves.toEqual(["http://10.0.0.9:3000", "http://192.168.0.150:3000"])
   })
 
   it("defaults loopback when no window host", () => {

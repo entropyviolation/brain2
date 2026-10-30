@@ -3,8 +3,8 @@
  * L8.2). Export a graph snapshot for any model or agent; import its
  * proposal file; review proposals one by one. Accept on a link proposal
  * writes one link on the source item through `commitItemDraft` (the one
- * write door), with the proposal's origin as the ledger source. Model
- * proposals land `inferred`; imports `recorded`. No "accept all".
+ * write door). `model:` is surface `agent`; `import:` is surface `import`.
+ * Model proposals land `inferred`; imports `recorded`. No "accept all".
  */
 "use client"
 
@@ -17,12 +17,30 @@ import { itemLinkTypeId } from "@/lib/item-types"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { addLink, relationLabel } from "@/lib/links"
 import { commitItemDraft } from "@/lib/commit-item-edit"
+import type { ItemWriteAttribution } from "@/lib/item-write-source"
 import type { Task } from "@/lib/types"
 import { allRelations, getRelationDef } from "@/lib/relation-registry"
 import { useTaskStore } from "@/lib/task-store"
 
+function attributionForOrigin(origin: string): ItemWriteAttribution {
+  if (origin.startsWith("model:")) {
+    const name = origin.slice("model:".length).trim()
+    return name ? { surface: "agent", name } : { surface: "agent" }
+  }
+  if (origin.startsWith("import:")) {
+    const name = origin.slice("import:".length).trim()
+    return name ? { surface: "import", name } : { surface: "import" }
+  }
+  return { surface: "unknown" }
+}
+
 function acceptLink(source: Task, relation: string, targetId: string, origin: string) {
-  commitItemDraft(source, { ...source, links: addLink(source.links, relation, targetId, source.id) }, origin, origin.startsWith("model:") ? "inferred" : "recorded")
+  commitItemDraft(
+    source,
+    { ...source, links: addLink(source.links, relation, targetId, source.id) },
+    attributionForOrigin(origin),
+    origin.startsWith("model:") ? "inferred" : "recorded",
+  )
 }
 
 export function GraphInbox() {

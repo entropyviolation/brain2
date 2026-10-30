@@ -5,12 +5,12 @@
  * window and the portaled event windows change only inside the 767px block
  * at the bottom of this file.
  *
- * The shape follows Apple Calendar and a Fantastical day: a compact sticky
- * bar, a large title that scrolls away, a month of circles and dots, a week
- * strip, a thumbable agenda, and sheets from the bottom. The dock keys are
- * the same pale silver keycap as the phone tabs. Sideways motion changes the
- * period. Vertical motion stays in the scroller. Springs are the iOS sheet
- * curve. Reduce Motion drops them.
+ * A compact bar, a large title that scrolls away, a month of day keys, a week
+ * strip, a thumbable agenda, and sheets from the bottom. Every control is the
+ * pale silver keycap (`.plan-phone-key`), the same skirt as `.m-keycap`. A
+ * latched key is the CRT. Nothing on this screen uses the system blue.
+ * Sideways motion changes the period. Vertical motion stays in the scroller.
+ * Springs are the sheet curve. Reduce Motion drops them.
  */
 
 .plan95:has(.plan-phone) {
@@ -45,6 +45,7 @@
 .plan-phone button {
   font-family: inherit;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .plan-phone-sr {
@@ -96,26 +97,14 @@
   min-width: 44px;
 }
 
-.plan-phone-nav > button,
-.plan-phone-sheet-head button,
-.plan-phone-agenda-head button {
-  border: 0;
-  background: transparent;
-  color: #0a84ff;
-  font-size: 17px;
-  font-weight: 400;
-  border-radius: 10px;
-}
-
-.plan-phone-nav > button:active,
-.plan-phone-choice:active,
 .plan-phone-row-main:active {
-  opacity: 0.55;
+  opacity: 1;
 }
 
+.plan-phone-nav > button.plan-phone-key,
 .plan-phone-add {
-  font-size: 28px !important;
-  font-weight: 300 !important;
+  font-size: 22px;
+  letter-spacing: 0;
   line-height: 1;
 }
 
@@ -143,33 +132,23 @@
 
 .plan-phone-seg {
   display: flex;
-  gap: 0;
-  margin: 6px 12px 8px;
-  padding: 2px;
-  border-radius: 9px;
-  background: var(--phone-fill);
+  gap: 4px;
+  margin: 6px 8px 8px;
+  padding: 0;
+  background: transparent;
   flex-shrink: 0;
 }
 
 .plan-phone-seg button {
   flex: 1;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--phone-ink);
+  min-width: 0;
   font-size: 13px;
-  font-weight: 600;
-}
-
-.plan-phone-seg button[aria-selected="true"] {
-  background: var(--phone-card);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 0 rgba(0, 0, 0, 0.04);
 }
 
 .plan-phone-week {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 2px;
+  gap: 4px;
   padding: 0 8px 8px;
   flex-shrink: 0;
 }
@@ -179,42 +158,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--phone-ink);
+  gap: 1px;
   font-size: 11px;
-  font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .plan-phone-week-num {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   text-transform: none;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-}
-
-.plan-phone-week button[aria-pressed="true"] .plan-phone-week-num {
-  background: var(--phone-selected);
-  color: #fff;
-}
-
-.plan-phone-week button[data-today="true"]:not([aria-pressed="true"]) .plan-phone-week-num {
-  color: var(--phone-mint-ink);
-  box-shadow: inset 0 0 0 1.5px var(--phone-mint);
-}
-
-.plan-phone-week button[data-past="true"] {
-  color: var(--phone-sub);
 }
 
 .plan-phone-body {
@@ -268,6 +223,7 @@
 
 .plan-phone-month-grid {
   padding: 0 4px;
+  gap: 4px;
 }
 
 .plan-phone-cell,
@@ -279,13 +235,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 3px;
+  justify-content: center;
+  gap: 2px;
   width: 100%;
   min-height: 48px;
-  padding: 2px 0 4px;
-  border: 0;
-  background: transparent;
+  padding: 4px 0 8px;
   color: inherit;
 }
 
@@ -295,34 +249,10 @@
 }
 
 .plan-phone-num {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-.plan-phone-cell-hit[data-selected="true"] .plan-phone-num,
-.plan-phone-week button[aria-pressed="true"] .plan-phone-week-num {
-  background: var(--phone-selected);
-  color: #fff;
-}
-
-.plan-phone-cell-hit[data-today="true"][data-selected="true"] .plan-phone-num {
-  background: var(--phone-mint);
-  color: var(--phone-mint-ink);
-}
-
-.plan-phone-cell-hit[data-today="true"]:not([data-selected="true"]) .plan-phone-num {
-  box-shadow: inset 0 0 0 1.5px var(--phone-mint);
-  color: var(--phone-mint-ink);
-}
-
-.plan-phone-cell-hit[data-past="true"]:not([data-selected="true"]) .plan-phone-num {
-  color: var(--phone-sub);
+  line-height: 1;
 }
 
 .plan-phone-dots {
@@ -359,14 +289,12 @@
 }
 
 .plan-phone-season-title {
-  border: 0;
-  background: transparent;
-  color: #0a84ff;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 12px;
+  font-size: 17px;
+  letter-spacing: 0.02em;
   text-align: left;
-  padding: 0 8px;
 }
 
 .plan-phone-agenda {
@@ -390,11 +318,13 @@
 
 .plan-phone-list {
   list-style: none;
-  margin: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 8px 12px;
   padding: 0;
-  background: var(--phone-card);
-  border-radius: 12px;
-  overflow: hidden;
+  background: transparent;
+  overflow: visible;
 }
 
 .plan-phone-row,
@@ -404,30 +334,14 @@
 .plan-phone-empty {
   display: flex;
   align-items: stretch;
+  gap: 6px;
   min-height: 44px;
-  box-shadow: inset 4px 0 0 var(--bar, transparent), inset 0 -0.5px 0 var(--phone-line);
-}
-
-.plan-phone-row[data-kind="plan"] {
-  background: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 6px,
-    rgba(196, 180, 154, 0.18) 6px,
-    rgba(196, 180, 154, 0.18) 7px
-  );
 }
 
 .plan-phone-row-main {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  flex: 1 1 auto;
   min-width: 0;
-  padding: 8px 8px 8px 12px;
-  border: 0;
-  background: transparent;
-  color: inherit;
+  justify-content: flex-start;
   text-align: left;
 }
 
@@ -459,14 +373,11 @@
 }
 
 .plan-phone-row-more {
+  align-self: center;
   flex: 0 0 auto;
-  border: 0;
-  border-left: 0.5px solid var(--phone-line);
-  background: transparent;
-  color: #0a84ff;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 0 12px;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.02em;
 }
 
 .plan-phone-ghost {
@@ -532,47 +443,210 @@
   z-index: 2;
 }
 
-/* Same skirt as the phone tab keycaps. The long :not() list matches the mill
-   button skin in app/win95.css so this face wins. */
-.plan-phone-dock > button,
-body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+.plan-phone-dock > button {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 44px;
-  padding: 6px 4px 10px;
-  border: 1px solid #6e7378;
-  border-radius: 4px;
-  background: #dfe2e6;
-  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: normal;
+}
+
+/* Pale silver keycap, same skirt as `.m-keycap`. `data-no95` keeps the mill
+   lip off. A latched key is the CRT. The explorer rail and the plan log use
+   this face too, because those sheets are this screen. */
+.plan-phone :is(
+  button.plan-phone-key,
+  .plan-rail-filters button,
+  .plan-add button,
+  .plan-rail-plan,
+  .append-log-views button,
+  .append-log-copy,
+  .append-log-submit
+),
+body.win95-app .plan-phone :is(
+  button.plan-phone-key,
+  .plan-rail-filters button,
+  .plan-add button,
+  .plan-rail-plan,
+  .append-log-views button,
+  .append-log-copy,
+  .append-log-submit
+) {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px !important;
+  height: auto;
+  padding: 6px 8px 10px;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: #dfe2e6 !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
   box-shadow:
     inset 2px 0 0 #b3b8be,
     inset -2px 0 0 #b3b8be,
     inset 0 -4px 0 #b3b8be,
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 1px 0 rgba(0, 0, 0, 0.35);
-  color: #1f2226;
-  font-size: 12px;
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  color: #1f2226 !important;
   font-weight: 700;
-  letter-spacing: 0.02em;
   line-height: 1.15;
-  text-align: center;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0;
   white-space: normal;
+  cursor: pointer;
 }
 
-.plan-phone-dock > button:active,
-body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
-  opacity: 1;
+.plan-phone :is(
+  button.plan-phone-key,
+  .plan-rail-filters button,
+  .plan-add button,
+  .plan-rail-plan,
+  .append-log-views button,
+  .append-log-copy,
+  .append-log-submit
+):active:not(:disabled),
+body.win95-app .plan-phone :is(
+  button.plan-phone-key,
+  .plan-rail-filters button,
+  .plan-add button,
+  .plan-rail-plan,
+  .append-log-views button,
+  .append-log-copy,
+  .append-log-submit
+):active:not(:disabled) {
   transform: translateY(2px);
   box-shadow:
     inset 2px 0 0 #b3b8be,
     inset -2px 0 0 #b3b8be,
     inset 0 -2px 0 #b3b8be,
-    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
 }
 
-.plan-phone-dock > button:focus-visible {
-  outline: 2px solid #9ad7ff;
+.plan-phone :is(
+  button.plan-phone-key[aria-selected="true"],
+  button.plan-phone-key[aria-pressed="true"],
+  .plan-rail-filters button[aria-pressed="true"],
+  .append-log-views button[aria-selected="true"]
+),
+body.win95-app .plan-phone :is(
+  button.plan-phone-key[aria-selected="true"],
+  button.plan-phone-key[aria-pressed="true"],
+  .plan-rail-filters button[aria-pressed="true"],
+  .append-log-views button[aria-selected="true"]
+) {
+  background: #070c0a !important;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%), #070c0a !important;
+  border-color: #070c0a !important;
+  color: #7dffc4 !important;
+  text-shadow: 0 0 3px #7dffc4 !important;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 8px 12px rgba(0, 0, 0, 0.45) !important;
+}
+
+.plan-phone button.plan-phone-key[data-today="true"]:not([aria-pressed="true"]) {
+  color: #143226 !important;
+}
+
+.plan-phone button.plan-phone-key[data-past="true"]:not([aria-pressed="true"]):not([data-today="true"]) {
+  color: rgba(60, 60, 67, 0.55) !important;
+}
+
+.plan-phone :is(
+  button.plan-phone-key:disabled,
+  .plan-add button:disabled,
+  .append-log-copy:disabled,
+  .append-log-submit:disabled
+) {
+  color: #8b9096 !important;
+  opacity: 1;
+}
+
+.plan-phone button.plan-phone-key::before,
+.plan-phone .append-log-views button::before,
+body.win95-app .plan-phone [role="tab"].plan-phone-key::before,
+body.win95-app .plan-phone .append-log-views [role="tab"]::before {
+  content: none !important;
+  display: none !important;
+}
+
+body.win95-app .plan-phone :is(.plan-phone-seg, .append-log-views, .append-log-views-well, .plan-rail-filters) {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+}
+
+.plan-phone button.plan-phone-key:focus-visible {
+  outline: 2px solid #143226;
   outline-offset: 1px;
+}
+
+.plan-phone button.plan-phone-cell-hit {
+  width: 100%;
+  min-height: 48px !important;
+  padding: 4px 2px 8px;
+}
+
+.plan-phone-week button.plan-phone-key {
+  padding: 4px 2px 8px;
+}
+
+.plan-phone button.plan-phone-season-title {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.plan-phone button.plan-phone-row-main.plan-phone-key {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding-left: 12px;
+  text-align: left;
+}
+
+.plan-phone-row[data-kind="item"] button.plan-phone-row-main.plan-phone-key,
+.plan-phone-row[data-kind="plan"] button.plan-phone-row-main.plan-phone-key {
+  box-shadow:
+    inset 5px 0 0 var(--bar, #b3b8be),
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+.plan-phone-row[data-kind="item"] button.plan-phone-row-main.plan-phone-key:active:not(:disabled),
+.plan-phone-row[data-kind="plan"] button.plan-phone-row-main.plan-phone-key:active:not(:disabled) {
+  box-shadow:
+    inset 5px 0 0 var(--bar, #b3b8be),
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.plan-phone-row[data-kind="plan"] button.plan-phone-row-main.plan-phone-key {
+  background-color: #dfe2e6 !important;
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 6px,
+      rgba(196, 180, 154, 0.28) 6px,
+      rgba(196, 180, 154, 0.28) 7px
+    ),
+    linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+}
+
+.plan95 .plan-phone :is(.plan-rail-filters button, .plan-add button, .append-log-views button, .append-log-copy, .append-log-submit) {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .plan-phone-sheet-root {
@@ -637,16 +711,11 @@ body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([r
 .plan-phone-choice {
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
   margin: 0 0 8px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--phone-card);
-  color: var(--phone-ink);
-  font-size: 17px;
-  font-weight: 500;
-  text-align: left;
+  font-size: 15px;
+  text-align: center;
 }
 
 .plan-phone-latches {
@@ -670,14 +739,8 @@ body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([r
 
 .plan95 .plan-phone .plan-rail-plan {
   margin-left: auto;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--phone-mint);
-  color: var(--phone-mint-ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 15px;
-  font-weight: 600;
+  flex: 0 0 auto;
+  font-size: 13px;
 }
 
 .plan95 .plan-phone .plan-add input,
@@ -694,16 +757,9 @@ body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([r
 .plan95 .plan-phone #plan-dark-mode {
   width: 100%;
   min-height: 44px;
-  border: 0;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: none;
-  color: #1c1c1e;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 17px;
-  font-weight: 500;
-  text-align: left;
-  padding: 0 16px;
+  font-size: 15px;
+  text-align: center;
+  justify-content: center;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -777,25 +833,6 @@ body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([r
   --phone-bar: rgba(28, 28, 30, 0.82);
   --phone-selected: #f2f2f7;
   --phone-mint-ink: #143226;
-}
-
-.plan95[data-plan-dark="true"] .plan-phone .plan-phone-nav > button,
-.plan95[data-plan-dark="true"] .plan-phone .plan-phone-season-title,
-.plan95[data-plan-dark="true"] .plan-phone .plan-phone-row-more,
-.plan95[data-plan-dark="true"] .plan-phone .plan-phone-agenda-head button,
-.plan-phone[data-plan-dark="true"] .plan-phone-nav > button {
-  color: #64d2ff;
-}
-
-.plan95[data-plan-dark="true"] .plan-phone .plan-phone-week button[aria-pressed="true"] .plan-phone-week-num,
-.plan95[data-plan-dark="true"] .plan-phone .plan-phone-cell-hit[data-selected="true"] .plan-phone-num {
-  color: #000;
-}
-
-.plan95[data-plan-dark="true"] .plan-phone #plan-gem-mode,
-.plan95[data-plan-dark="true"] .plan-phone #plan-dark-mode {
-  background: #1c1c1e;
-  color: #f2f2f7;
 }
 
 /* Phone-only. Desktop widths never enter this block. */

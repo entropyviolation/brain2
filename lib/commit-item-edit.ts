@@ -4,9 +4,9 @@
  * `commitItemEdit` validates through `taskRepository`, persists with that
  * repository's existing `updateTask` path, and lets that path emit
  * `dispatchItemMutation` with the same open patch. History lines are written
- * by that `updateTask` (one line per changed field). ItemDetail save uses
- * `commitItemDraft` (patch from two snapshots) instead of `recordItemWrite`
- * + `updateTask`.
+ * by that `updateTask` (one line per changed field, with this attribution).
+ * ItemDetail save uses `commitItemDraft` (patch from two snapshots) instead
+ * of `recordItemWrite` + `updateTask`. This function does not append a second copy.
  *
  * It does not call `applyLinkedEffects`. A rename stays a rename: habit sync,
  * sleep, work-session stop, points, and undo run only when a caller asks for
@@ -16,6 +16,7 @@
 import { settleStepPoints } from "@/lib/step-points"
 import { taskRepository } from "@/lib/data/task-repository"
 import { type ItemActivityOrder } from "@/lib/item-activity"
+import { type ItemWriteAttribution } from "@/lib/item-write-source"
 import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
 import { syncSleepNight } from "@/lib/sleep-sync"
 import { stopWorkingOnOperation } from "@/lib/operation-work-session"
@@ -194,7 +195,7 @@ export function applyItemEditPatch(item: Task, patch: ItemEditPatch): Task {
  * puts that same bag on the event so listeners see the keys, not a sentence.
  * A second dispatch would run workflows twice, so this function does not emit
  * another event. History lines come from `updateTask`, one per field that
- * actually changed, with this call's source and order.
+ * actually changed, with this call's attribution and order.
  */
 /**
  * Patch of keys that differ between two item snapshots. Used by ItemDetail
@@ -217,7 +218,7 @@ export function itemEditPatchBetween(before: Task, after: Task): ItemEditPatch {
 export function commitItemEdit(
   itemId: string,
   patch: ItemEditPatch,
-  source: string,
+  attribution: ItemWriteAttribution,
   order?: ItemActivityOrder,
 ): ItemRecord {
   const before = taskRepository.getById(itemId)
@@ -225,7 +226,7 @@ export function commitItemEdit(
 
   const merged = applyItemEditPatch(before, patch)
   const tagged = namedOrder(order)
-  taskRepository.update(merged, patch, tagged ? { source, order: tagged } : { source })
+  taskRepository.update(merged, patch, tagged ? { attribution, order: tagged } : { attribution })
   // Phase 12: a step ticked or unticked in item detail pays or takes back its step points.
   if ("subtasks" in patch) settleStepPoints({ id: before.id, description: before.description, stepPoints: merged.stepPoints }, before.subtasks, merged.subtasks)
 
@@ -236,10 +237,15 @@ export function commitItemEdit(
  * Persist a full draft through `commitItemEdit`. No-op when nothing changed.
  * Returns the stored item (or `after` when the patch was empty).
  */
-export function commitItemDraft(before: Task, after: Task, source: string, order?: ItemActivityOrder): ItemRecord {
+export function commitItemDraft(
+  before: Task,
+  after: Task,
+  attribution: ItemWriteAttribution,
+  order?: ItemActivityOrder,
+): ItemRecord {
   const patch = itemEditPatchBetween(before, after)
   if (Object.keys(patch).length === 0) return after
-  return commitItemEdit(after.id, patch, source, order)
+  return commitItemEdit(after.id, patch, attribution, order)
 }
 
 export type LinkedEffectsRequest =

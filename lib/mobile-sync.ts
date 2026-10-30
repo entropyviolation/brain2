@@ -130,21 +130,52 @@ export function preferBundledHub(current: string, bundled: string | null, httpPa
   return cleaned
 }
 
-/** Native shells read `public/mobile-hub.json` for the Mac's LAN hub. */
-export async function loadBundledHubUrl(): Promise<string | null> {
+/**
+ * LAN hub baked into the app at build time (`public/mobile-hub.json`).
+ * Native shells only. `cache: "no-store"` makes WKWebView miss that file,
+ * so the phone stays on 127.0.0.1 and never reaches the Mac.
+ */
+export async function fetchBundledHubUrl(): Promise<string | null> {
   if (typeof window === "undefined" || isHttpPageOrigin()) return null
-  const current = readMobileSyncUrl()
   try {
-    const response = await fetch("/mobile-hub.json", { cache: "no-store" })
+    const response = await fetch("/mobile-hub.json")
     if (!response.ok) return null
     const data = (await response.json()) as { url?: unknown }
-    const next = preferBundledHub(current, typeof data.url === "string" ? data.url : null, false)
-    if (!next) return null
-    writeMobileSyncUrl(next)
-    return next
+    if (typeof data.url !== "string") return null
+    const cleaned = data.url.trim().replace(/\/+$/, "")
+    if (!cleaned.startsWith("http://") && !cleaned.startsWith("https://")) return null
+    if (isLoopbackUrl(cleaned)) return null
+    return cleaned
   } catch {
     return null
   }
+}
+
+/** Native shells read `public/mobile-hub.json` for the Mac's LAN hub. */
+export async function loadBundledHubUrl(): Promise<string | null> {
+  const bundled = await fetchBundledHubUrl()
+  const next = preferBundledHub(readMobileSyncUrl(), bundled, isHttpPageOrigin())
+  if (!next) return null
+  writeMobileSyncUrl(next)
+  return next
+}
+
+/**
+ * Hosts to try, first choice first. A loopback default is replaced by the
+ * baked LAN address. A saved address that does not answer falls through to
+ * that same bake.
+ */
+export async function phoneHubCandidates(): Promise<string[]> {
+  const current = readMobileSyncUrl().replace(/\/+$/, "")
+  if (typeof window === "undefined" || isHttpPageOrigin()) return current ? [current] : []
+  const bundled = await fetchBundledHubUrl()
+  const replaced = preferBundledHub(current, bundled, false)
+  if (replaced) writeMobileSyncUrl(replaced)
+  const first = replaced || current
+  const out: string[] = []
+  if (first) out.push(first)
+  if (bundled && !out.includes(bundled)) out.push(bundled)
+  return out
 }
 
 /** True when this client has essentially no user content (safe to auto-seed). */

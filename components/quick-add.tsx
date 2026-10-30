@@ -372,7 +372,8 @@ export function QuickAdd({
       folders: useTaskStore.getState().folders,
       origin: lineCaptureOrigin("quick-add", ideaText),
     })
-    addTask(task)
+    const listName = target.list?.name?.trim()
+    addTask(task, listName ? { surface: "quick-add", name: listName } : { surface: "quick-add" })
     const state = useTaskStore.getState()
     const message = quickAddWroteMessage([quickAddWroteLabel(task, state.lists, state.folders)])
     if (message) raiseQuickAddWrote(message)

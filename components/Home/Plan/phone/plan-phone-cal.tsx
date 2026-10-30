@@ -142,7 +142,8 @@ export function PhoneMonth({
             <div key={key} className="plan-phone-cell" role="gridcell" data-outside={outside ? "true" : "false"}>
               <button
                 type="button"
-                className="plan-phone-cell-hit"
+                className="plan-phone-cell-hit plan-phone-key"
+                data-no95=""
                 aria-current={isTodayCell ? "date" : undefined}
                 aria-pressed={selected}
                 data-past={past ? "true" : "false"}
@@ -190,6 +191,8 @@ export function PhoneWeekStrip({
           <button
             key={formatLocalDateKey(date)}
             type="button"
+            className="plan-phone-key"
+            data-no95=""
             aria-pressed={selected}
             aria-current={isTodayCell ? "date" : undefined}
             data-past={isPastLocalCalendarDay(date, today) ? "true" : "false"}
@@ -234,7 +237,7 @@ function SeasonMonth({
 
   return (
     <section className="plan-phone-season-month">
-      <button type="button" className="plan-phone-season-title" onClick={() => onOpenMonth(monthStart)}>
+      <button type="button" className="plan-phone-season-title plan-phone-key" data-no95="" onClick={() => onOpenMonth(monthStart)}>
         {format(month, "MMMM")}
       </button>
       <div className="plan-phone-weekdays" aria-hidden>
@@ -254,7 +257,8 @@ function SeasonMonth({
             <button
               key={key}
               type="button"
-              className="plan-phone-cell-hit"
+              className="plan-phone-cell-hit plan-phone-key"
+              data-no95=""
               data-today={isTodayCell ? "true" : "false"}
               data-past={isPastLocalCalendarDay(date, today) ? "true" : "false"}
               aria-current={isTodayCell ? "date" : undefined}

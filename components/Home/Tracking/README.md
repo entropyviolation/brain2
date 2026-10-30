@@ -46,7 +46,7 @@ Grids, pen dialogs, and CSS stay private. Current practice already imports these
 
 ## Files
 
-_Last mapped: 2026-10-27._
+_Last mapped: 2026-10-30._
 
 Public doors stay in this folder. Private files sit in:
 
@@ -67,11 +67,10 @@ Public doors stay in this folder. Private files sit in:
 |------|---------|
 | `tracking-desk.tsx` | Tracking window loaded only when Home → Tracking is open (fascia, working-now, pen tray, Time Grid / Activity Log / Day Log / Tracking log). The rail `LogActivityLatch` receives `formatLocalDateKey(currentDate)`, so Time Grid and Day Log log onto the desk's day; Activity Log keeps its own dialog; Tracking log omits the rail latch and hides the pen desk. The four fascia keys stay on one row when there is room. A beveled gear at the end of that row opens Tracking view settings on every view. At `max-width: 767px` the desk returns `TrackingPhone` instead of this tree. |
 | `phone/use-tracking-phone.ts` | `useTrackingPhone` — `matchMedia("(max-width: 767px)")`. False until the effect runs, so a server paint and the desk tests stay on the desk. |
-| `phone/tracking-phone.tsx` | Phone Tracking. Sticky date, day chips, four views, pen deck, Now / Find / Settings. Time Grid gets the paint tray. |
-| `phone/phone-day-timeline.tsx` | Vertical day. Drag paints, a tap opens the block, scissors splits, erase clears a step. Now line and sunrise / sunset stay. |
-| `phone/phone-time-surface.tsx` | Day timeline, or the existing week grid and infinite strip. Day / Week / Infinite scroll, Fill, and the recorder sheet (cell size, show as, screen, flags, day tubes, clear day). |
+| `phone/tracking-phone.tsx` | Phone Tracking. Date, day chips, four views, pen deck, Now / Find / Settings. Time Grid gets the paint tray. Header keys and tray keys are pale silver keycaps; the view switcher is a darker gray; a pressed key is the CRT. Draw selects the paint pen, and a second press opens the pen sheet to search, pick, or make a new pen. The header is not sticky, so the day sits under the home tabs. |
+| `phone/phone-time-surface.tsx` | Day is `TimeGrid` with `plotOnly`: the desk's hour rows and minute cells, the full width of the screen, click or drag to paint. Week and Infinite scroll keep those plots. Day / Week / Infinite scroll, Fill, and the recorder sheet (cell size, show as, screen, flags, day tubes, clear day). |
 | `phone/phone-sheet.tsx` | Bottom sheet. Escape, the scrim, and Done close it. |
-| `phone/tracking-phone.css` | Phone rules only, hung off `.trk-phone` and `.trk-phone-sheet`. At `max-width: 767px`, fields are 16px (iOS will not zoom the page), log rows stack, and portaled Tracking dialogs stay inside the visual viewport. |
+| `phone/tracking-phone.css` | Phone rules only, hung off `.trk-phone` and `.trk-phone-sheet`. Type is the app face (`--w95-font`). The day cell grid is the width of the screen. At `max-width: 767px`, fields are 16px (iOS will not zoom the page), log rows stack, and portaled Tracking dialogs stay inside the visual viewport. |
 | `tracking-desk.test.tsx` | Rail **Log activity** follows the desk `currentDate` after a backward step, and again after switching to Day Log; Activity Log shows one period **Log activity**. Tracking log hides the pen desk and keeps the day summary, the operations clock, and the four view keys; Time Grid brings the desk back. The settings gear sits after the view keys on Time Grid and Tracking log and opens the command notes plus the keyword editor. |
 | `grids/grid-stroke.ts` | What a cell shows while the pointer is down. Same pen keeps its fill; a different pen or an empty minute takes the incoming surface; erase is a wash only inside the stroke. Day and week grids both use it. Commit stays on release. |
 | `grids/grid-stroke.test.ts` | Join, overwrite, and erase-only-inside-the-stroke. |

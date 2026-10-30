@@ -96,7 +96,8 @@ describe("BabyAnimalNest", () => {
     render(<BabyAnimalNest />)
     await user.click(screen.getByRole("button", { name: "Open details for Little Baby Hedgehog" }))
     expect(await screen.findByRole("heading", { name: "Little Baby Hedgehog" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Journal" })).toBeInTheDocument()
+    expect(screen.getByText("No mission today.")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Journal" })).not.toBeInTheDocument()
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
   })
 
@@ -232,7 +233,7 @@ describe("BabyAnimalNest", () => {
     render(<BabyAnimalNest />)
     await user.click(screen.getByRole("button", { name: "Gallery" }))
     expect(await screen.findByRole("heading", { name: "Baby animal friend" })).toBeInTheDocument()
-    expect(screen.getAllByRole("button", { name: "Remove" }).length).toBeGreaterThan(1)
+    expect(screen.getAllByRole("button", { name: "Details" }).length).toBeGreaterThan(1)
     await user.type(screen.getByRole("textbox", { name: "Name a baby animal" }), "Tiny Cute Striped Polecat")
     await user.click(screen.getByRole("button", { name: "Name" }))
     expect(requestBabyAnimalFriend).toHaveBeenCalledWith("Tiny Cute Striped Polecat")

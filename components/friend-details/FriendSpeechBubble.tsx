@@ -10,12 +10,14 @@ import type { FriendDialogEffect } from "@/lib/baby-animal-personality"
 
 export function FriendSpeechBubble({
   effect,
+  name,
   line,
   onLineClick,
   onClose,
   className = "",
 }: {
   effect: FriendDialogEffect
+  name?: string
   line: string
   onLineClick?: () => void
   onClose?: () => void
@@ -23,22 +25,25 @@ export function FriendSpeechBubble({
 }) {
   return (
     <div className={`baby-friend-bubble is-${effect}${className ? ` ${className}` : ""}`} role="status">
-      {onLineClick ? (
-        <button
-          type="button"
-          className="baby-friend-bubble-line"
-          data-no95=""
-          onClick={onLineClick}
-          aria-label="Show mission details"
-        >
-          {line}
-        </button>
-      ) : (
-        <p className="baby-friend-bubble-line">{line}</p>
-      )}
+      <div className="baby-friend-bubble-copy">
+        {name ? <p className="baby-friend-bubble-name">{name}</p> : null}
+        {onLineClick ? (
+          <button
+            type="button"
+            className="baby-friend-bubble-line"
+            data-no95=""
+            onClick={onLineClick}
+            aria-label="Show mission details"
+          >
+            {line}
+          </button>
+        ) : (
+          <p className="baby-friend-bubble-line">{line}</p>
+        )}
+      </div>
       {onClose ? (
-        <button type="button" className="baby-friend-bubble-close" aria-label="Close chat" title="Close (Esc)" onClick={onClose}>
-          ×
+        <button type="button" className="baby-friend-bubble-close" data-no95="" aria-label="Close chat" title="Close (Esc)" onClick={onClose}>
+          Close
         </button>
       ) : null}
     </div>

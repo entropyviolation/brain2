@@ -18,6 +18,7 @@
  * journal / outfit / log / skip (or 1 / 2 / 3). Live Location and every other
  * text run as themselves and leave the photo waiting. They do not ask again.
  */
+import { withItemWriteSource } from "@/lib/item-write-source"
 import { INGEST_HELP } from "./help"
 import { BIM_PAIR_OK } from "./bim"
 import { tryApplyGlossary } from "./apply-glossary"
@@ -212,7 +213,12 @@ function markFeedOutcome(
   }
 }
 
+/** BIM writes (capture, links, lists, notes, reminders) share this frame. Node leaves client off. */
 export function ingestIncoming(message: IncomingMessage, now = new Date()): ApplyResult {
+  return withItemWriteSource({ surface: "bim" }, () => ingestIncomingBody(message, now))
+}
+
+function ingestIncomingBody(message: IncomingMessage, now = new Date()): ApplyResult {
   recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
@@ -225,6 +231,10 @@ export function ingestIncoming(message: IncomingMessage, now = new Date()): Appl
 }
 
 export async function ingestIncomingAsync(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
+  return withItemWriteSource({ surface: "bim" }, () => ingestIncomingAsyncBody(message, now))
+}
+
+async function ingestIncomingAsyncBody(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
   recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)

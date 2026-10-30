@@ -75,7 +75,7 @@ describe("LinkLedger", () => {
             onPin={vi.fn()}
             onDismiss={(key) => setDraft((d) => ({ ...d, dismissedLinkSuggestions: [...(d.dismissedLinkSuggestions ?? []), key] }))}
           />
-          <button type="button" onClick={() => commitItemDraft(oey, draft, "test")}>
+          <button type="button" onClick={() => commitItemDraft(oey, draft, { surface: "unknown" })}>
             Save
           </button>
         </>
