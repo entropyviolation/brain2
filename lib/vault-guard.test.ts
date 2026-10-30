@@ -1139,6 +1139,29 @@ describe("applyVaultPatch", () => {
     expect(JSON.parse(result.value).version).toBe(19)
   })
 
+  it("refuses one patch that drops most lists, and keeps an ordinary delete", () => {
+    const lists = Array.from({ length: 40 }, (_, i) => ({ id: `l${i}`, name: `List ${i}` }))
+    const stored = taskVault([{ id: "t1", title: "Keep" }], { lists })
+    const wipe = applyVaultPatch("brain2-task-storage", stored, {
+      upserts: [{ id: "example", name: "Example List", color: "#EF4444" }],
+      removedIds: lists.slice(1).map((list) => list.id),
+    })
+    expect(wipe).toEqual({ ok: false, reason: "mass removal" })
+
+    const one = applyVaultPatch("brain2-task-storage", stored, { removedIds: ["l5"] })
+    expect(one.ok).toBe(true)
+  })
+
+  it("refuses a habits patch that swaps the habit list for a seed", () => {
+    const tasks = Array.from({ length: 50 }, (_, i) => ({ id: `h${i}`, name: `Habit ${i}`, frequency: "daily" }))
+    const stored = JSON.stringify({ state: { tasks, weeklyData: {}, contentRev: 1 }, version: 26 })
+    const seed = applyVaultPatch("brain2-habits-store", stored, {
+      upserts: [{ id: "seed-1", name: "Weekly review", frequency: "weekly" }],
+      removedIds: tasks.slice(0, 25).map((task) => task.id),
+    })
+    expect(seed).toEqual({ ok: false, reason: "mass removal" })
+  })
+
   it("does not bring a tombstoned task back on a later upsert", () => {
     const stored = taskVault([
       { id: "keep", title: "Stay", notes: "n" },

@@ -110,6 +110,8 @@ const acked = new Set<string>()
 let engaged = false
 let macAnswered = false
 let acceptPatches = true
+/** True while the Mac's copy goes into memory and the stores rehydrate from it. */
+let installingWindow = false
 let status: PhoneWindowStatus = "idle"
 /** The step in flight, or why the last load missed. Shown on the phone so a failure names itself. */
 let detail: string | null = null
@@ -391,6 +393,8 @@ export function applyPhoneWindowWrite(name: string, value: string): "same" | "wr
     return "wrote"
   }
   if (previous === value) return "same"
+  // A store still on its seed must not paint over the copy the Mac just sent.
+  if (installingWindow && previous != null) return "same"
   let stored = value
   if (acceptPatches && previous != null && vaultPatchAllowed(name)) {
     const diff = diffPersist(previous, value, name)
@@ -761,15 +765,20 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
     if (second.ok) items = second.items
   }
   if (gen !== loadGen) return status
-  installMap(collapseItems(items))
-  setDetail("(saving the launch copy)")
-  await writeLaunchCache(memory)
-  await replayOutbox()
-  setDetail("(drawing the vault)")
+  // Stores still hold the seed until rehydrate. A save in this window would
+  // diff that seed against the Mac's copy and patch the real rows away (the
+  // launch-cache write is slow enough for list builders to save in it).
   acceptPatches = false
+  installingWindow = true
   try {
+    installMap(collapseItems(items))
+    setDetail("(saving the launch copy)")
+    await writeLaunchCache(memory)
+    await replayOutbox()
+    setDetail("(drawing the vault)")
     await rehydrateMemory()
   } finally {
+    installingWindow = false
     acceptPatches = true
   }
   if (gen !== loadGen) return status
@@ -822,6 +831,7 @@ export function resetPhoneWindowForTests(): void {
   engaged = false
   macAnswered = false
   acceptPatches = true
+  installingWindow = false
   status = "idle"
   detail = null
   hubUrl = ""
