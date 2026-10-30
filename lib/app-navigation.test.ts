@@ -32,6 +32,11 @@ describe("app-navigation", () => {
     expect(readStoredTab(APP_NAV_KEYS.appTab, APP_TABS, "home")).toBe("categories")
   })
 
+  it("accepts the inventory tab id", () => {
+    writeStoredTab(APP_NAV_KEYS.appTab, "inventory")
+    expect(readStoredTab(APP_NAV_KEYS.appTab, APP_TABS, "home")).toBe("inventory")
+  })
+
   it("rejects invalid stored tabs", () => {
     localStorage.setItem(APP_NAV_KEYS.appTab, "invalid")
     expect(readStoredTab(APP_NAV_KEYS.appTab, APP_TABS, "home")).toBe("home")

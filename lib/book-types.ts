@@ -1,10 +1,10 @@
 /**
  * lib/book-types.ts — Catalog **Book** item type
  *
- * A reading-list entry: cover image, author, ISBN, status, page counts, and
- * attached PDFs. This is the canonical demonstration that item types (not Task
- * defaults) own the detail view — a book shows a large cover and pages-read,
- * not Schedule / Subtasks / Analysis.
+ * A reading-list entry: cover image, author, ISBN, status, page counts,
+ * physical size in centimeters, and attached PDFs. This is the canonical
+ * demonstration that item types (not Task defaults) own the detail view — a
+ * book shows a large cover and pages-read, not Schedule / Subtasks / Analysis.
  *
  * Catalog seeding: registered if missing; user customizations persist. The
  * default implied-action rules log "read X pages of {title}" into Done and
@@ -28,6 +28,10 @@ export const BOOK_ATTR = {
   status: "status",
   pageCount: "pageCount",
   pagesRead: "pagesRead",
+  /** Spine height, cover width, and spine thickness, in centimeters. */
+  heightCm: "heightCm",
+  widthCm: "widthCm",
+  thicknessCm: "thicknessCm",
   /** Attached PDFs / documents (multifile). Text is extracted + indexed. */
   files: "files",
 } as const
@@ -52,8 +56,28 @@ const BOOK_ATTRIBUTES: AttributeDefinition[] = [
   },
   { id: BOOK_ATTR.pageCount, name: "Page count", type: "number", allowFloat: false },
   { id: BOOK_ATTR.pagesRead, name: "Pages read", type: "number", allowFloat: false },
+  { id: BOOK_ATTR.heightCm, name: "Height", type: "number", allowFloat: true, unit: "cm" },
+  { id: BOOK_ATTR.widthCm, name: "Width", type: "number", allowFloat: true, unit: "cm" },
+  { id: BOOK_ATTR.thicknessCm, name: "Thickness", type: "number", allowFloat: true, unit: "cm" },
   { id: BOOK_ATTR.files, name: "Files", type: "multifile" },
 ]
+
+/** Size fields a book saved before they existed still needs. */
+export const BOOK_SIZE_ATTRIBUTES: AttributeDefinition[] = BOOK_ATTRIBUTES.filter((attribute) =>
+  attribute.id === BOOK_ATTR.heightCm || attribute.id === BOOK_ATTR.widthCm || attribute.id === BOOK_ATTR.thicknessCm,
+)
+
+/**
+ * A Book type saved before height / width / thickness existed gets those
+ * fields. The stored name and its other attributes stay.
+ */
+export function withBookSizeAttributes(type: ItemTypeDefinition): ItemTypeDefinition {
+  if (type.id !== BOOK_TYPE_ID) return type
+  const have = new Set((type.attributes ?? []).map((attribute) => attribute.id))
+  const missing = BOOK_SIZE_ATTRIBUTES.filter((attribute) => !have.has(attribute.id))
+  if (!missing.length) return type
+  return { ...type, attributes: [...(type.attributes ?? []), ...missing] }
+}
 
 /** The Book item-type definition (catalog seed; user-editable after first load). */
 export function getBookTypeDefinition(): ItemTypeDefinition {
