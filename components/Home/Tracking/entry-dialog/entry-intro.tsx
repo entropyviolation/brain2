@@ -3,7 +3,8 @@
  *
  * The header stays a child of DialogContent. The help, source, and sleep
  * lines stay children of `.space-y-3`. One fragment cannot sit in both
- * parents, so this file exports both pieces. No hooks.
+ * parents, so this file exports both pieces. No hooks here; an LLM block's
+ * line (`llm-block-note.tsx`) reads the store itself.
  */
 "use client"
 
@@ -11,6 +12,7 @@ import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { resolveLogSourceLabel } from "@/lib/log-entry-source"
 import { formatDuration, isInstant, minutesToLabel, type TimeEntry } from "@/lib/time-entries"
 import { nightLabel } from "./labels"
+import { LlmBlockNote } from "./llm-block-note"
 
 export function EntryDialogHead({
   displayName,
@@ -58,6 +60,8 @@ export function EntryIntroCopy({
         {penName && title.trim() && title.trim() !== penName ? ` · pen ${penName}` : ""}
       </p>
       {isInstant(entry) ? <p className="trk-entry-source">Added from {resolveLogSourceLabel(entry)}</p> : null}
+
+      <LlmBlockNote entry={entry} />
 
       {entry.generatedBy?.kind === "sleep" && (
         <p className="trk-section text-xs">

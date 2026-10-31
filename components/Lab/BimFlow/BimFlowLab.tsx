@@ -315,10 +315,10 @@ export function BimFlowLab() {
       const felt = result.messages.flatMap((m) => m.proposals.filter((x) => x.action === "drive").map((x) => readingFromProposal((x.data as { fields?: Record<string, unknown> }).fields, m.message)))
       const got = felt.filter((x): x is DriveReading => x != null)
       if (got.length) setDrive((d) => saveDrive(d, got))
-      archive("flow-run", { flowId, flow, model, source, input: aug.messages, run: result })
+      archive("flow-run", { origin: "bench", flowId, flow, model, source, input: aug.messages, run: result })
       setHistory((h) =>
         saveHistory([
-          { id: `${flowId}-${Date.now()}`, flowId, flowName: flowId.startsWith("a:") ? flow.nodes[0]?.label ?? flowId : flowDef(flowId as FlowId).name, at: new Date().toISOString(), model, inputLabel: `${aug.messages.length} input${aug.messages.length === 1 ? "" : "s"} · ${source === "ask" ? "question" : source} · ${spec.grouping}`, flow, run: slimRun(result) },
+          { id: `${flowId}-${Date.now()}`, flowId, flowName: flowId.startsWith("a:") ? flow.nodes[0]?.label ?? flowId : flowDef(flowId as FlowId).name, at: new Date().toISOString(), model, inputLabel: `${aug.messages.length} input${aug.messages.length === 1 ? "" : "s"} · ${source === "ask" ? "question" : source} · ${spec.grouping}`, flow, run: slimRun(result), origin: "bench" },
           ...h,
         ]),
       )

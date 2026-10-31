@@ -9,7 +9,7 @@
  * failed write never stops a run.
  */
 
-export type ArchiveKind = "model-call" | "flow-run" | "test-result"
+export type ArchiveKind = "model-call" | "flow-run" | "test-result" | "suggestion-verdict"
 
 export function archive(kind: ArchiveKind, record: unknown): void {
   if (typeof fetch === "undefined" || typeof window === "undefined") return
