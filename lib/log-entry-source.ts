@@ -6,6 +6,7 @@
  * stamp) and otherwise says the source is unknown.
  */
 import type { LogSource, TimeEntry } from "@/lib/time-entries"
+import { ITEM_WRITE_CLIENT_LABEL } from "@/lib/item-write-source"
 
 const LABEL: Record<LogSource, string> = {
   "tracking-composer": "Tracking log",
@@ -38,4 +39,29 @@ function inferLogSourceLabel(entry: Pick<TimeEntry, "generatedBy" | "notes">): s
     return LABEL.bim
   }
   return "Unknown source"
+}
+
+const CLIENT_PLACE: Record<string, string> = { electron: "Electron", ios: "iOS", web: "the web app" }
+
+/**
+ * “Created by …” line for the block editor. A stored `createdBy` wins; older
+ * rows read `generatedBy` and `logSource`, else say the creator was not recorded.
+ */
+export function resolveCreatedByLabel(
+  entry: Pick<TimeEntry, "createdBy" | "logSource" | "generatedBy" | "notes">,
+): string {
+  const by = entry.createdBy
+  const place = by?.client ? CLIENT_PLACE[by.client] ?? ITEM_WRITE_CLIENT_LABEL[by.client] : undefined
+  const on = place ? ` on ${place}` : ""
+  if (by?.surface === "bim") return `Created automatically from BIM chat input${on}`
+  if (by?.surface === "llm-suggestion" || entry.generatedBy?.kind === "llm") {
+    return `Suggested by the LLM, confirmed by you${on}`
+  }
+  if (by?.surface === "user") return `Created by you${on}`
+  const generated = entry.generatedBy?.kind
+  if (generated === "sleep") return "Created automatically from the sleep log"
+  if (generated === "screentime") return "Created automatically from Screen Time"
+  const door = resolveLogSourceLabel(entry)
+  if (door !== "Unknown source") return `Created automatically from ${door}`
+  return "Creator not recorded (made before this was tracked)"
 }

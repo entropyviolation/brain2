@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resolveLogSourceLabel } from "./log-entry-source"
+import { resolveCreatedByLabel, resolveLogSourceLabel } from "./log-entry-source"
 
 describe("resolveLogSourceLabel", () => {
   it("prefers a stored door, then the stamp, then unknown", () => {
@@ -27,5 +27,26 @@ describe("resolveLogSourceLabel", () => {
     expect(resolveLogSourceLabel({ notes: "from text pipeline" })).toBe("BIM")
     expect(resolveLogSourceLabel({})).toBe("Unknown source")
     expect(resolveLogSourceLabel({ generatedBy: { kind: "sleep", id: "2026-06-20" } })).toBe("Unknown source")
+  })
+})
+
+describe("resolveCreatedByLabel", () => {
+  it("names the creator and the shell", () => {
+    expect(resolveCreatedByLabel({ createdBy: { surface: "user", client: "ios" } })).toBe("Created by you on iOS")
+    expect(resolveCreatedByLabel({ createdBy: { surface: "user", client: "electron" } })).toBe("Created by you on Electron")
+    expect(resolveCreatedByLabel({ createdBy: { surface: "bim", client: "electron" } })).toBe(
+      "Created automatically from BIM chat input on Electron",
+    )
+    expect(
+      resolveCreatedByLabel({ createdBy: { surface: "llm-suggestion" }, generatedBy: { kind: "llm", id: "bim-suggest:a" } }),
+    ).toBe("Suggested by the LLM, confirmed by you")
+  })
+  it("reads older rows and admits when it cannot", () => {
+    expect(resolveCreatedByLabel({ generatedBy: { kind: "llm", id: "x" } })).toBe("Suggested by the LLM, confirmed by you")
+    expect(resolveCreatedByLabel({ generatedBy: { kind: "sleep", id: "2026-06-20" } })).toBe(
+      "Created automatically from the sleep log",
+    )
+    expect(resolveCreatedByLabel({ logSource: "nfc" })).toBe("Created automatically from NFC")
+    expect(resolveCreatedByLabel({})).toBe("Creator not recorded (made before this was tracked)")
   })
 })

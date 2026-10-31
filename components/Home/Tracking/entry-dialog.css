@@ -180,6 +180,10 @@
   color: #222;
 }
 
+.trk95.trk-dialog.trk-entry .trk-entry-source-key {
+  font-weight: 700;
+}
+
 .trk95.trk-dialog.trk-entry .trk-help,
 .trk95.trk-dialog.trk-entry .trk-entry-source,
 .trk95.trk-dialog.trk-entry .trk-blockpen-path,

@@ -98,6 +98,7 @@ import {
   type GridStep,
   type PaintRangeInput,
   type TimeEntry,
+  type TimeEntryCreator,
   type TrackingPrecision,
   type WeekStep,
 } from "@/lib/time-entries"
@@ -121,6 +122,7 @@ import { normalizeTag } from "@/lib/links"
 import { compactMoodReading } from "@/lib/mood-reading"
 import { compactNowObjectives } from "@/lib/now-objective"
 import { compactSpend } from "@/lib/spend"
+import { currentItemWriteClient, peekItemWriteAttribution } from "@/lib/item-write-source"
 
 export type { PenLink, CompanionTarget } from "@/lib/entry-links"
 
@@ -445,6 +447,13 @@ interface TimeTrackingState {
   splitEntryAt: (id: string, atMin: number) => void
   moveEntryTo: (id: string, startMin: number, endMin: number) => void
   entriesFor: (date: string, scopeId: string) => TimeEntry[]
+}
+
+/** Who is writing right now: the open write frame (BIM, LLM Accept), else a hand stroke on this shell. */
+function creatorNow(): TimeEntryCreator {
+  const frame = peekItemWriteAttribution()
+  const client = frame?.client ?? currentItemWriteClient()
+  return { surface: frame?.surface ?? "user", ...(client ? { client } : {}) }
 }
 
 const rid = (p: string) => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -1628,6 +1637,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               taskId: extras?.taskId,
               stepId: extras?.stepId,
               nowObjectives: extras?.nowObjectives,
+              createdBy: creatorNow(),
             },
             () => rid("te"),
           )
@@ -1810,7 +1820,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       layerEntries: (add, removeIds = []) => {
         if (isRestoring() || (!add.length && !removeIds.length)) return []
         rememberWorld("paint")
-        const added = add.map((entry) => ({ ...entry, id: rid("te") }))
+        const added = add.map((entry) => ({ ...entry, id: rid("te"), createdBy: entry.createdBy ?? creatorNow() }))
         const drop = new Set(removeIds)
         set((state) => ({
           ...dropping(state, [...state.entries.filter((e) => !drop.has(e.id)), ...added]),

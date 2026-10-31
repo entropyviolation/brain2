@@ -35,6 +35,7 @@ const CORE_SURFACES: Record<string, string> = {
   "item-detail": "item detail",
   list: "list",
   bim: "BIM",
+  "llm-suggestion": "LLM suggestion",
   rule: "rule",
   workflow: "workflow",
   "membership-rule": "membership rule",
@@ -45,6 +46,7 @@ const CORE_SURFACES: Record<string, string> = {
   unknown: "unknown",
   notes: "notes",
   reminder: "reminder",
+  "schedule-rollover": "schedule rollover",
   "log-item-detail": "log item detail",
   "header-tracking": "header tracking",
 }
@@ -133,6 +135,14 @@ export function withItemWriteSource<T>(attribution: ItemWriteAttribution, fn: ()
 
 function isPromise(value: unknown): value is Promise<unknown> {
   return !!value && typeof (value as { then?: unknown }).then === "function"
+}
+
+/** The current frame with the shell filled in, or nothing when no frame is open. Never warns. */
+export function peekItemWriteAttribution(): ItemWriteAttribution | undefined {
+  const frame = peekFrame()
+  if (!frame) return undefined
+  const client = frame.client ?? currentItemWriteClient()
+  return { ...frame, ...(client ? { client } : {}) }
 }
 
 const unknownWarned = new Set<string>()

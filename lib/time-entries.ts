@@ -148,6 +148,16 @@ export type LogSource =
   | "phone-sync"
   | "statement-import"
 
+/**
+ * Who made a block, stamped once at creation. `surface` is an item-write
+ * surface id (`lib/item-write-source.ts`): `bim`, `llm-suggestion`, or `user`
+ * for a hand stroke. `client` is the shell. Label: `resolveCreatedByLabel`.
+ */
+export interface TimeEntryCreator {
+  surface: string
+  client?: "electron" | "ios" | "web"
+}
+
 /** Which of the three the block editor holds still. The other two follow each other. */
 export type SpanLock = "start" | "end" | "duration"
 
@@ -227,6 +237,8 @@ export interface TimeEntry {
    * from `generatedBy` when it can. No persist bump.
    */
   logSource?: LogSource
+  /** Who made this block and on which shell. Omitted on older rows. No persist bump. */
+  createdBy?: TimeEntryCreator
   /**
    * Links calendar-day slices of one continuous block. Painting 11 PM–2 AM
    * stores Thursday 23:00–24:00 and Friday 00:00–02:00 with the same id, so the
@@ -713,6 +725,7 @@ export interface PaintRangeInput {
   stepId?: string
   /** Objectives accomplished on this stroke. */
   nowObjectives?: NowObjective[]
+  createdBy?: TimeEntryCreator
 }
 
 function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: string): TimeEntry {
@@ -742,6 +755,7 @@ function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: stri
     ...moodReadingField(input.moodReading),
     ...spendPaintFields(input),
     ...taskPaintFields(input),
+    ...(input.createdBy ? { createdBy: input.createdBy } : {}),
   }
 }
 
