@@ -6,8 +6,12 @@
  * out is three kinds of suggestion: time blocks, items for a list, habit completions. Each is
  * checked against the vault and dropped when it is already saved: a block over time that has an
  * Activity entry, an item whose title is already an item, a habit already done that day.
+ * Suggested blocks may overlap each other, and an accepted LLM block does not trim the others: the
+ * person sorts out the true bounds in Tracking. Two detections of the same activity whose times
+ * overlap become one suggestion that keeps every detection (`detections`).
  * Nothing here writes the vault. A message's result is kept per device, so a second pass only
- * asks the model about messages it has not seen.
+ * asks the model about messages it has not seen. Each fresh message run goes to `onMessageRun`, so the
+ * caller can keep the whole pass as a BIM flow run (`run-history.ts`).
  */
 
 import { dayOf, runsOf, DECLARED_FOLDERS, type FileEvent } from "./file-activity"
@@ -18,7 +22,7 @@ import type { ModelCall } from "./ollama"
 import { runMessage } from "./run-flow"
 import { byDay, DECLARED_APPS, runs } from "./screen-presence"
 import { textsToFeed, type TextRow } from "./texts"
-import type { ActivitySignal, Flow, FlowMessage, ModelPlan, Proposal, TimeBlock } from "./types"
+import type { ActivitySignal, Flow, FlowMessage, MessageRun, ModelPlan, Proposal, TimeBlock } from "./types"
 import type { HistoryEntry, VaultSnapshot } from "./vault-search"
 
 export type SuggestionKind = "timeblock" | "item" | "habit"
@@ -30,6 +34,15 @@ export const SUGGESTION_KINDS: { kind: SuggestionKind; label: string; empty: str
   { kind: "item", label: "LLM SUGGESTED ITEMS", empty: "NO UNSAVED ITEMS THIS WEEK." },
   { kind: "habit", label: "LLM SUGGESTED HABIT COMPLETIONS", empty: "NO UNSAVED HABIT COMPLETIONS THIS WEEK." },
 ]
+
+/** One time the flow (or a rule) saw a block. A merged suggestion keeps them all. */
+export interface Detection {
+  start: string
+  end: string
+  source: SuggestionSource
+  why: string
+  evidence: string[]
+}
 
 export interface Suggestion {
   id: string
@@ -50,6 +63,8 @@ export interface Suggestion {
   list?: string
   /** habit: the habit to mark. */
   habitId?: string
+  /** timeblock: every detection behind it, oldest first. More than one means the same activity was seen more than once. */
+  detections?: Detection[]
 }
 
 export const WEEK_DAYS = 7
@@ -88,10 +103,10 @@ const dayStartMs = (date: string) => {
   return new Date(y!, m! - 1, d!).getTime()
 }
 
-/** Saved Activity time as epoch spans: every Activity entry with a length, guessed or confirmed. */
+/** Saved Activity time as epoch spans: every Activity entry with a length, guessed or confirmed. An accepted LLM block is left out, so other guesses may overlap it. */
 export function savedActivitySpans(entries: HistoryEntry[]): Span[] {
   return entries
-    .filter((e) => e.scope === "activity" && !e.instant && e.endMin > e.startMin)
+    .filter((e) => e.scope === "activity" && !e.instant && e.endMin > e.startMin && e.source !== "llm")
     .map((e) => ({ start: dayStartMs(e.date) + e.startMin * MIN, end: dayStartMs(e.date) + e.endMin * MIN }))
 }
 
@@ -168,30 +183,20 @@ export function collectSuggestions(input: CollectInput): Suggestion[] {
   const out: Suggestion[] = []
   const since = weekStart(now).getTime()
 
-  // Time blocks: messages first, then the rules, trimmed around everything already saved and around each other.
+  // Time blocks: messages and rules, trimmed around saved time but not around each other.
   const signals = messages.flatMap((m) => results.get(m.id)?.signals ?? [])
   const saved = savedActivitySpans(snap.history?.entries ?? [])
-  const fromMessages = fitToUnknown(assembleBlocks(signals), saved)
-  const taken = [...saved, ...fromMessages.map((b) => ({ start: Date.parse(b.start), end: Date.parse(b.end) }))]
-  const fromRules = fitToUnknown(ruleBlocks(snap, files, now), taken)
-  const messageBlocks = fromMessages.map((b) => ({ b, src: sourceOf(b.evidence[0] ?? "") }))
-  for (const { b, src } of [...messageBlocks, ...fromRules.map((b) => ({ b, src: (b.why.includes("files") ? "files" : "screen") as SuggestionSource }))]) {
+  const fromMessages = fitToUnknown(assembleBlocks(signals), saved).map((b) => ({ b, src: sourceOf(b.evidence[0] ?? "") }))
+  const fromRules = fitToUnknown(ruleBlocks(snap, files, now), saved).map((b) => ({ b, src: (b.why.includes("files") ? "files" : "screen") as SuggestionSource }))
+  const seen: { title: string; estimated: boolean; d: Detection }[] = []
+  for (const { b, src } of [...fromMessages, ...fromRules]) {
     const start = Date.parse(b.start)
     const end = Date.parse(b.end)
     if (start < since || end > now.getTime() + MIN || (end - start) / MIN < MIN_BLOCK_MIN) continue
-    out.push({
-      id: `tb-${hash(`${b.activity}|${b.start}|${b.end}`)}`,
-      kind: "timeblock",
-      title: b.activity,
-      detail: `${stamp(b.start)}–${stamp(b.end).slice(11)} · ${Math.round((end - start) / MIN)} min`,
-      at: b.start,
-      end: b.end,
-      estimated: b.estimated,
-      source: src,
-      why: b.why,
-      evidence: src === "bim" || src === "text" ? b.evidence.map(lineOf) : b.evidence,
-    })
+    const evidence = src === "bim" || src === "text" ? b.evidence.map(lineOf) : b.evidence
+    seen.push({ title: b.activity, estimated: b.estimated, d: { start: b.start, end: b.end, source: src, why: b.why, evidence } })
   }
+  for (const group of sameBlockGroups(seen)) out.push(blockSuggestion(group))
 
   // Items and habit completions come from proposals. A text burst never adds an item: its words are not a note to self.
   const have = new Set(snap.items.map((i) => norm(i.title)))
@@ -222,6 +227,39 @@ export function collectSuggestions(input: CollectInput): Suggestion[] {
     }
   }
   return out.sort((a, b) => b.at.localeCompare(a.at))
+}
+
+/** Detections of the same activity whose times overlap, grouped. Different activities stay apart even when they overlap. */
+export function sameBlockGroups<T extends { title: string; d: { start: string; end: string } }>(rows: T[]): T[][] {
+  const groups: T[][] = []
+  const sorted = [...rows].sort((a, b) => a.d.start.localeCompare(b.d.start))
+  for (const row of sorted) {
+    const g = groups.find((x) => norm(x[0]!.title) === norm(row.title) && x.some((y) => Date.parse(y.d.start) < Date.parse(row.d.end) && Date.parse(y.d.end) > Date.parse(row.d.start)))
+    if (g) g.push(row)
+    else groups.push([row])
+  }
+  return groups
+}
+
+function blockSuggestion(group: { title: string; estimated: boolean; d: Detection }[]): Suggestion {
+  const ds = group.map((x) => x.d)
+  const start = ds.reduce((a, d) => (d.start < a ? d.start : a), ds[0]!.start)
+  const end = ds.reduce((a, d) => (d.end > a ? d.end : a), ds[0]!.end)
+  const mins = Math.round((Date.parse(end) - Date.parse(start)) / MIN)
+  const many = ds.length > 1
+  return {
+    id: `tb-${hash(`${group[0]!.title}|${start}|${end}`)}`,
+    kind: "timeblock",
+    title: group[0]!.title,
+    detail: `${stamp(start)}–${stamp(end).slice(11)} · ${mins} min${many ? ` · DETECTED ${ds.length} TIMES` : ""}`,
+    at: start,
+    end,
+    estimated: many || group.some((x) => x.estimated),
+    source: ds[0]!.source,
+    why: many ? `detected ${ds.length} times: ${ds.map((d) => d.why).join("; ")}` : ds[0]!.why,
+    evidence: ds.flatMap((d) => d.evidence),
+    detections: ds,
+  }
 }
 
 const CACHE_KEY = "bimsuggest-results-v1"
@@ -256,6 +294,8 @@ export interface RunInput extends Omit<CollectInput, "results" | "messages" | "s
   onProgress?: (done: number, total: number, cached: number) => void
   /** Called after each message with everything found so far, so the screen fills while the model works. */
   onSuggestions?: (all: Suggestion[]) => void
+  /** Each message the model read this pass, whole (steps, prompts, outputs), so the run can be kept. */
+  onMessageRun?: (run: MessageRun) => void
 }
 
 /** Run the routed flow over every message not seen before (newest first), and return the week's suggestions. */
@@ -280,6 +320,7 @@ export async function suggestWeek(input: RunInput): Promise<Suggestion[]> {
     input.onProgress?.(i, order.length, cached)
     try {
       const run = await runMessage(input.flow, m, input.call, input.snap, undefined, undefined, [], input.getFlow, 0, undefined, input.models)
+      input.onMessageRun?.(run)
       const result: StoredResult = { signals: run.signals, proposals: run.proposals }
       results.set(m.id, result)
       stored.set(resultKey(m), result)

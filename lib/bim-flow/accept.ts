@@ -1,11 +1,15 @@
 /**
  * lib/bim-flow/accept.ts — Write one accepted suggestion through the app's own paths
  *
- * Each accept is one undo step (`runAsAction`). A time block is painted as an Activity entry
- * (marked estimated when the flow guessed), an item goes through Quick Add capture onto the list the
- * flow picked, a habit goes through the same writer BIM's `habit:` command uses. The note on a
- * block says the flow made it, and `generatedBy` is `{ kind: "llm", id: "bim-suggest:<suggestion id>" }`
- * (`acceptedBlockStamp`) so these rows can be found and swept.
+ * Each accept is one undo step (`runAsAction`). An item goes through Quick Add capture onto the list the
+ * flow picked, a habit goes through the same writer BIM's `habit:` command uses.
+ *
+ * A time block lands on Activity, stamped `generatedBy: { kind: "llm" }` (`acceptedBlockStamp`). Unlike
+ * every other block it may overlap another LLM block: both stay, and the person sets the true bounds in
+ * Tracking (moving one edge trims the other, as any move does). Time the person painted still refuses.
+ * An LLM block of the same activity that overlaps is merged with it: one block over both spans, its
+ * notes listing every detection ("Detected 2 times by LLM: …"). The notes always say it was
+ * autodetected and carry the flow's reasons, its evidence lines, and the person's note.
  */
 "use client"
 
@@ -15,8 +19,9 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { ensureActivityPen } from "@/lib/ingest/apply-activity-span"
 import { applyCapture } from "@/lib/ingest/apply-capture"
 import { writeHabit } from "@/lib/ingest/apply-habit"
+import type { TimeEntry } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import type { Suggestion } from "./suggestions"
+import type { Detection, Suggestion } from "./suggestions"
 
 export interface Accepted {
   ok: boolean
@@ -24,11 +29,14 @@ export interface Accepted {
 }
 
 const MINUTES_PER_DAY = 1440
+const ACTIVITY = "activity"
 
 /** `generatedBy` on a block painted by Accept. */
 export function acceptedBlockStamp(suggestionId: string): { kind: "llm"; id: string } {
   return { kind: "llm", id: `bim-suggest:${suggestionId}` }
 }
+
+export const isLlmBlock = (e: Pick<TimeEntry, "generatedBy">) => e.generatedBy?.kind === "llm"
 
 /** Calendar-day pieces of [start, end): a block over midnight is stored as one entry per day. */
 export function dayPieces(startIso: string, endIso: string): { date: string; startMin: number; endMin: number }[] {
@@ -46,29 +54,69 @@ export function dayPieces(startIso: string, endIso: string): { date: string; sta
   return out
 }
 
-function acceptTimeblock(s: Suggestion): Accepted {
+const HEADER = "Autodetected by the BIM LLM flow."
+const pad = (n: number) => String(n).padStart(2, "0")
+const stampOf = (iso: string) => {
+  const d = new Date(iso)
+  return `${formatLocalDateKey(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** One detection as a notes item: when, from what, why, then its evidence lines. */
+export function detectionText(d: Detection): string {
+  return [`${stampOf(d.start)}–${stampOf(d.end).slice(11)} from ${d.source}: ${d.why}`, ...d.evidence.map((e) => `   > ${e}`)].join("\n")
+}
+
+/** The detections already in a block's notes. Notes without the header (older or hand-written) are one item. */
+export function notesItems(notes: string | undefined): string[] {
+  const text = (notes ?? "").trim()
+  if (!text) return []
+  const m = text.match(/Detected \d+ times? by LLM:\n([\s\S]*)$/)
+  if (!m) return [text.replace(HEADER, "").trim()].filter(Boolean)
+  return m[1]!.split(/\n(?=\d+\) )/).map((x) => x.replace(/^\d+\) /, "").trimEnd()).filter(Boolean)
+}
+
+export function renderNotes(items: string[]): string {
+  const n = items.length
+  return [`${HEADER}`, `Detected ${n} time${n === 1 ? "" : "s"} by LLM:`, ...items.map((t, i) => `${i + 1}) ${t}`)].join("\n")
+}
+
+function detectionsOf(s: Suggestion): Detection[] {
+  return s.detections?.length ? s.detections : [{ start: s.at, end: s.end ?? s.at, source: s.source, why: s.why, evidence: s.evidence }]
+}
+
+const overlaps = (e: TimeEntry, p: { date: string; startMin: number; endMin: number }) =>
+  e.scopeId === ACTIVITY && e.kind !== "instant" && e.date === p.date && e.startMin < p.endMin && e.endMin > p.startMin
+
+function acceptTimeblock(s: Suggestion, note: string): Accepted {
   if (!s.end) return { ok: false, message: "NO END TIME" }
   const pieces = dayPieces(s.at, s.end)
-  const entries = useTimeTrackingStore.getState().entries
-  // Someone may have painted this time since the suggestion was made.
-  const taken = pieces.some((p) => entries.some((e) => e.scopeId === "activity" && e.date === p.date && e.startMin < p.endMin && e.endMin > p.startMin))
-  if (taken) return { ok: false, message: "TIME NOW HAS AN ACTIVITY. RUN AGAIN." }
-  let penId = ""
+  const before = useTimeTrackingStore.getState().entries
+  // Someone may have painted this time since the suggestion was made. Only LLM blocks may overlap.
+  if (pieces.some((p) => before.some((e) => overlaps(e, p) && !isLlmBlock(e)))) return { ok: false, message: "TIME NOW HAS AN ACTIVITY YOU PAINTED. RUN AGAIN." }
+  const fresh = detectionsOf(s).map(detectionText)
+  if (note.trim()) fresh[fresh.length - 1] += `\n   Note: ${note.trim()}`
+  let merged = 0
+  let overlapping = 0
   runAsAction(`Accept suggested block: ${s.title}`, () => {
-    penId = ensureActivityPen(s.title)
+    const penId = ensureActivityPen(s.title)
+    const entries = useTimeTrackingStore.getState().entries
+    const add: Omit<TimeEntry, "id">[] = []
+    const drop: string[] = []
     for (const p of pieces) {
-      useTimeTrackingStore.getState().paintMinutes(p.date, "activity", p.startMin, p.endMin, penId, undefined, undefined, s.estimated ? "estimated" : undefined, {
-        notes: `Suggested by BIM flow (${s.source}): ${s.why}`,
-      })
+      const same = entries.filter((e) => overlaps(e, p) && isLlmBlock(e) && e.penId === penId && !drop.includes(e.id))
+      overlapping += entries.filter((e) => overlaps(e, p) && isLlmBlock(e) && e.penId !== penId).length
+      merged += same.length
+      const startMin = Math.min(p.startMin, ...same.map((e) => e.startMin))
+      const endMin = Math.max(p.endMin, ...same.map((e) => e.endMin))
+      const items = [...same.flatMap((e) => notesItems(e.notes)), ...fresh]
+      const ids = [...same.map((e) => e.generatedBy!.id.replace(/^bim-suggest:/, "")), s.id]
+      drop.push(...same.map((e) => e.id))
+      add.push({ date: p.date, scopeId: ACTIVITY, penId, startMin, endMin, precision: "estimated", notes: renderNotes(items), generatedBy: acceptedBlockStamp(ids.join("+")) })
     }
-    // Stamp only rows wholly inside the accepted time; a row merged with a hand-painted neighbour stays unstamped.
-    const store = useTimeTrackingStore.getState()
-    for (const e of store.entries) {
-      const inside = pieces.some((p) => e.date === p.date && e.startMin >= p.startMin && e.endMin <= p.endMin)
-      if (inside && e.scopeId === "activity" && e.penId === penId && !e.generatedBy) store.updateEntry(e.id, { generatedBy: acceptedBlockStamp(s.id) })
-    }
+    useTimeTrackingStore.getState().layerEntries(add, drop)
   })
-  return { ok: true, message: `PAINTED ${s.title.toUpperCase()}` }
+  const extra = merged ? ` · MERGED WITH ${merged} EARLIER DETECTION${merged === 1 ? "" : "S"}` : overlapping ? ` · OVERLAPS ${overlapping} LLM BLOCK${overlapping === 1 ? "" : "S"}: SET THE TRUE BOUNDS IN TRACKING` : ""
+  return { ok: true, message: `PAINTED ${s.title.toUpperCase()}${extra}` }
 }
 
 function acceptItem(s: Suggestion): Accepted {
@@ -83,10 +131,35 @@ function acceptHabit(s: Suggestion): Accepted {
   return { ok: result.status === "ok", message: (result.reply ?? "").toUpperCase() }
 }
 
-export function acceptSuggestion(s: Suggestion): Accepted {
+/** `note` is the person's own words; on a block it is kept in the notes beside the evidence. */
+export function acceptSuggestion(s: Suggestion, note = ""): Accepted {
   try {
-    return s.kind === "timeblock" ? acceptTimeblock(s) : s.kind === "item" ? acceptItem(s) : acceptHabit(s)
+    return s.kind === "timeblock" ? acceptTimeblock(s, note) : s.kind === "item" ? acceptItem(s) : acceptHabit(s)
   } catch (err) {
     return { ok: false, message: `FAILED: ${err instanceof Error ? err.message.toUpperCase() : "ERROR"}` }
   }
+}
+
+export interface LlmOverlap {
+  a: TimeEntry
+  b: TimeEntry
+  date: string
+  startMin: number
+  endMin: number
+}
+
+/** Accepted LLM blocks that still overlap one another, newest day first: the ones waiting for true bounds. */
+export function llmOverlaps(entries: TimeEntry[]): LlmOverlap[] {
+  const llm = entries.filter((e) => e.scopeId === ACTIVITY && e.kind !== "instant" && isLlmBlock(e))
+  const out: LlmOverlap[] = []
+  for (let i = 0; i < llm.length; i++) {
+    for (let j = i + 1; j < llm.length; j++) {
+      const a = llm[i]!
+      const b = llm[j]!
+      if (a.date !== b.date || a.startMin >= b.endMin || b.startMin >= a.endMin) continue
+      const [x, y] = a.startMin <= b.startMin ? [a, b] : [b, a]
+      out.push({ a: x, b: y, date: a.date, startMin: Math.max(a.startMin, b.startMin), endMin: Math.min(a.endMin, b.endMin) })
+    }
+  }
+  return out.sort((p, q) => q.date.localeCompare(p.date) || p.startMin - q.startMin)
 }

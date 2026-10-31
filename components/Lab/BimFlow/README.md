@@ -118,7 +118,7 @@ much better. This bench is that shape, made visible and editable.
 - **Runs** (header button, `this view / all kept`) lists past runs, newest first
   (`flow-runs.tsx`, `lib/bim-flow/run-history.ts`, kept in `bimflow-runs-v1`,
   120 runs, plus the kept test runs). A scope switch picks **This view** or
-  **All views**; a source switch picks Runs, Tests, or both; a node filter keeps
+  **All views**; a source switch picks All, Bench, Brain2 button, or Tests; a node filter keeps
   only runs that went through that node (counts shown). Each keeps the graph as it
   ran, the input and the whole result, with big step outputs cut. Pick one to
   replay it step by step, or **Open output** (Run-button runs) for the dry-run
@@ -126,6 +126,11 @@ much better. This bench is that shape, made visible and editable.
   confidence, counted facts, evidence, blocks, suggestions, or the error), and each row shows
   the first line of it. **My note on this run** is a free-text box kept per run id in
   `bimflow-run-notes-v1` (saved when you leave the box); rows with a note say so.
+  _Last mapped: 2026-10-31_ Each run says where it started (`origin`, `ORIGIN_LABEL`): "Run on
+  the BIM flow bench", "Activated from Brain2 button click" (the Suggest button in BIM's LLM
+  tab, kept apart in `bimflow-button-runs-v1`, 30 runs, so a week of messages cannot push bench
+  runs out), or "Created in BIM flow tests". Runs from before origins are bench runs. A Suggest
+  run also shows **Suggested**: each suggestion it showed, with the person's verdict and reason.
 - **Texts** (source button beside BIM day / Paste / Ask): the person's phone
   texts from the last two weeks, read from the hub (`/api/phone-texts`, loaded
   once by `lib/bim-flow/texts-client.ts`). Old texts are not relevant to what
@@ -294,4 +299,11 @@ graph on the hub when a message lands.
 
 _Last mapped: 2026-10-30_
 
-The BIM console's LLM tab (`components/Bim/console/llm-suggestions.tsx`) runs this engine on the last week and lists unsaved time blocks, items, and habit completions (`lib/bim-flow/suggestions.ts`). It uses the bench's saved `log-routed` graph and model. Texts feed time blocks and habits only, never items. Dismissals and cached per-message results live in `localStorage` (`bimsuggest-*`). Running writes nothing. ACCEPT on a row writes that one suggestion (`lib/bim-flow/accept.ts`, one undo step). **Planned:** writing without a press, on the auto-write plan in the handoff.
+The BIM console's LLM tab (`components/Bim/console/llm-suggestions.tsx`) runs this engine on the last week and lists unsaved time blocks, items, and habit completions (`lib/bim-flow/suggestions.ts`). It uses the bench's saved `log-routed` graph and model. Texts feed time blocks and habits only, never items. Cached per-message results live in `localStorage` (`bimsuggest-results-v1`). Running writes nothing. ACCEPT on a row writes that one suggestion (`lib/bim-flow/accept.ts`, one undo step).
+
+_Last mapped: 2026-10-31_
+
+- **Every pass is kept.** A Suggest press that asked the model about at least one message is saved as a run (`saveButtonRun`): whole on disk (`data/bim-flow-runs/`, `origin: "brain2-button"`), slimmed on the device, with the suggestions it showed. It is saved even when stopped part way. It opens in **Runs** like any other run, with replay and **My note on this run**. A pass where every message was already read asks no model and saves nothing.
+- **Verdicts.** REJECT opens a box: why is this wrong. SAVE REJECTION keeps the reason. ACCEPT keeps the row's note (optional) on the block. Both go to `bimsuggest-verdicts-v1` and the disk archive (kind `suggestion-verdict`, `lib/bim-flow/suggestion-verdicts.ts`), with the suggestion and the run id. A suggestion with a verdict is not shown again. Old dismissals (`bimsuggest-dismissed-v1`) still hide theirs. **Planned:** feed rejected reasons back to the flow as examples, so a mistake is not repeated.
+- **Overlapping blocks.** Suggested blocks are trimmed around saved time, but not around each other or around accepted LLM blocks. Message blocks still come one activity at a time (`assembleBlocks`); overlaps come from a message block against a Screen Time or file rule, or from a later pass. The same activity seen twice with overlapping times is one suggestion over both spans, "DETECTED N TIMES", keeping each detection. Accepted blocks are stamped `generatedBy.kind` `llm` and may overlap other LLM blocks (Tracking's `layerEntries`); time the person painted still refuses. Accepting a block of the same activity over an LLM block merges them into one block. The notes say "Autodetected by the BIM LLM flow. Detected N times by LLM:" and list each detection's time, source, reason, evidence lines, and the person's note. The LLM tab lists accepted LLM blocks that still overlap. In Tracking the block editor says the block was autodetected and names what it overlaps; moving an edge over the other block trims it. While two LLM blocks overlap, Activity totals count those minutes twice.
+- **Planned:** writing without a press, on the auto-write plan in the handoff.

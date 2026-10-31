@@ -436,6 +436,12 @@ interface TimeTrackingState {
 
   updateEntry: (id: string, patch: Partial<Omit<TimeEntry, "id">>, wrapEndDate?: string) => void
   removeEntry: (id: string) => void
+  /**
+   * Adds blocks without clearing what they cover, and drops `removeIds`, in one step.
+   * Only autodetected LLM blocks use it: two of them may overlap until someone sets the true bounds.
+   * Returns the new ids.
+   */
+  layerEntries: (add: Omit<TimeEntry, "id">[], removeIds?: string[]) => string[]
   splitEntryAt: (id: string, atMin: number) => void
   moveEntryTo: (id: string, startMin: number, endMin: number) => void
   entriesFor: (date: string, scopeId: string) => TimeEntry[]
@@ -1799,6 +1805,18 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             ...(next.penId !== target.penId ? { scopes: stampPenUse(state.scopes, next.scopeId, next.penId) } : {}),
           }
         })
+      },
+
+      layerEntries: (add, removeIds = []) => {
+        if (isRestoring() || (!add.length && !removeIds.length)) return []
+        rememberWorld("paint")
+        const added = add.map((entry) => ({ ...entry, id: rid("te") }))
+        const drop = new Set(removeIds)
+        set((state) => ({
+          ...dropping(state, [...state.entries.filter((e) => !drop.has(e.id)), ...added]),
+          scopes: added.reduce((scopes, e) => stampPenUse(scopes, e.scopeId, e.penId), state.scopes),
+        }))
+        return added.map((e) => e.id)
       },
 
       removeEntry: (id) => {

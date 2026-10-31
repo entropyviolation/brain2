@@ -7,12 +7,16 @@
  * by step (the graph as it was, the path lit, a card per step, the full output of
  * a clicked step). A Run-button run can also open its dry-run preview. Runs are
  * kept on this device (`lib/bim-flow/run-history.ts`, `lib/bim-flow/tests.ts`).
+ * Each run names where it started: the bench, BIM's LLM tab Suggest button, or the tests. A Suggest
+ * run also lists what it suggested, with the person's verdict and reason
+ * (`lib/bim-flow/suggestion-verdicts.ts`).
  */
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { stepRec, testColor, type InputRun, type TestResult } from "@/lib/bim-flow/tests"
-import { loadNotes, saveNotes, type SavedRun } from "@/lib/bim-flow/run-history"
+import { loadNotes, ORIGIN_LABEL, originOf, saveNotes, type RunOrigin, type SavedRun } from "@/lib/bim-flow/run-history"
+import { loadVerdicts, type Verdict } from "@/lib/bim-flow/suggestion-verdicts"
 import type { Flow } from "@/lib/bim-flow/types"
 import { Replay } from "./flow-tests"
 
@@ -42,6 +46,7 @@ interface Row {
   id: string
   at: string
   kind: "run" | "test"
+  origin: RunOrigin
   viewId: string
   view: string
   model: string
@@ -57,7 +62,7 @@ interface Row {
 }
 
 type Scope = "view" | "all"
-type Source = "all" | "run" | "test"
+type Source = "all" | "run" | "button" | "test"
 
 export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, onOpenOutput, onDelete, onClose }: {
   flowId: string
@@ -75,7 +80,11 @@ export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, o
   const [node, setNode] = useState("")
   const [pick, setPick] = useState<string | null>(null)
   const [notes, setNotes] = useState<Record<string, string>>({})
-  useEffect(() => setNotes(loadNotes()), [])
+  const [verdicts, setVerdicts] = useState<Verdict[]>([])
+  useEffect(() => {
+    setNotes(loadNotes())
+    setVerdicts(loadVerdicts())
+  }, [])
   const setNote = (id: string, text: string) =>
     setNotes((n) => {
       const next = { ...n }
@@ -87,7 +96,7 @@ export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, o
 
   const all = useMemo<Row[]>(() => {
     const runs: Row[] = history.map((x) => ({
-      id: x.id, at: x.at, kind: "run", viewId: x.flowId, view: x.flowName, model: x.model, label: x.inputLabel, title: x.inputLabel,
+      id: x.id, at: x.at, kind: "run", origin: originOf(x), viewId: x.flowId, view: x.flowName, model: x.model, label: x.inputLabel, title: x.inputLabel,
       ms: x.run.ms, errs: x.run.messages.reduce((n, m) => n + m.steps.filter((s) => s.error).length, 0), color: COLOR, flow: x.flow, saved: x,
       final: {
         answers: x.run.messages.flatMap((m) => m.answers.map((a) => ({ text: a.text, confidence: a.confidence, draft: a.draft, facts: a.facts, evidence: a.evidence.map((e, i) => `${a.used.includes(i + 1) ? "★ " : ""}${e.when} · ${e.source}: ${e.text}`) }))),
@@ -100,7 +109,7 @@ export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, o
     const tests: Row[] = results.map((t) => {
       const inputs = t.output.runs ?? []
       return {
-        id: t.id, at: t.at, kind: "test", viewId: t.flowId, view: nameOf(t.flowId), model: t.model, label: t.inputLabel, title: t.name,
+        id: t.id, at: t.at, kind: "test", origin: "tests", viewId: t.flowId, view: nameOf(t.flowId), model: t.model, label: t.inputLabel, title: t.name,
         ms: t.ms, errs: t.status === "pass" ? 0 : t.status === "review" ? 0 : Math.max(1, inputs.reduce((n, r) => n + r.steps.filter((s) => s.error).length, 0)),
         color: testColor(t.testId), flow: flowOf(t.flowId), inputs,
         final: { answers: t.output.answers, blocks: t.output.blocks, proposals: t.output.proposals, error: t.output.error },
@@ -109,7 +118,7 @@ export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, o
     return [...runs, ...tests].sort((a, b) => b.at.localeCompare(a.at))
   }, [history, results, nameOf, flowOf])
 
-  const inScope = all.filter((x) => (scope === "all" || x.viewId === flowId) && (source === "all" || x.kind === source))
+  const inScope = all.filter((x) => (scope === "all" || x.viewId === flowId) && (source === "all" || (source === "button" ? x.origin === "brain2-button" : source === "run" ? x.kind === "run" && x.origin !== "brain2-button" : x.kind === source)))
   const nodeCounts = useMemo(() => {
     const m = new Map<string, number>()
     for (const x of inScope) {
@@ -144,8 +153,8 @@ export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, o
             <button type="button" data-no95 className={scope === "all" ? "is-go" : ""} onClick={() => setScope("all")}>All views</button>
           </div>
           <div className="bf-row">
-            {(["all", "run", "test"] as Source[]).map((s) => (
-              <button key={s} type="button" data-no95 className={source === s ? "is-go" : ""} onClick={() => setSource(s)}>{s === "all" ? "Runs + tests" : s === "run" ? "Runs" : "Tests"}</button>
+            {(["all", "run", "button", "test"] as Source[]).map((s) => (
+              <button key={s} type="button" data-no95 className={source === s ? "is-go" : ""} onClick={() => setSource(s)}>{s === "all" ? "All" : s === "run" ? "Bench" : s === "button" ? "Brain2 button" : "Tests"}</button>
             ))}
           </div>
           <select className="bf-input on-mill" value={node} onChange={(e) => setNode(e.target.value)} aria-label="Node filter">
@@ -157,7 +166,7 @@ export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, o
             <button key={x.id} type="button" data-no95 className={`bf-test-row${pick === x.id ? " is-on" : ""}`} onClick={() => setPick(x.id)}>
               <span className="bf-test-swatch" style={{ background: x.color }} />
               <span className={`bf-status is-${x.errs ? "fail" : "pass"}`}>{x.errs ? "err" : "ok"}</span>
-              <span>{x.kind === "test" ? `TEST · ${x.title}` : `${when(x.at)} · ${x.inputs.length} input${x.inputs.length === 1 ? "" : "s"}`}</span>
+              <span>{x.kind === "test" ? `TEST · ${x.title}` : `${x.origin === "brain2-button" ? "BRAIN2 BUTTON · " : ""}${when(x.at)} · ${x.inputs.length} input${x.inputs.length === 1 ? "" : "s"}`}</span>
               <span className="bf-why">{scope === "all" || x.kind === "test" ? `${x.view} · ` : ""}{when(x.at)} · {x.model} · {(x.ms / 1000).toFixed(1)}s{notes[x.id] ? " · ✎ note" : ""}</span>
               <span className="bf-run-snip">{snippet(x.final)}</span>
             </button>
@@ -172,7 +181,9 @@ export function FlowRuns({ flowId, flowName, history, results, nameOf, flowOf, o
                 {r.saved ? <button type="button" data-no95 onClick={() => { if (confirm("Delete this kept run?")) onDelete(r.id) }}>Delete</button> : null}
               </div>
               <div className="bf-why">{r.kind === "test" ? `${r.title} · ${r.label}` : r.label}</div>
+              <div className="bf-k">{ORIGIN_LABEL[r.origin]}</div>
               <FinalAnswer final={r.final} />
+              {r.saved?.suggestions?.length ? <SuggestionVerdicts suggestions={r.saved.suggestions} verdicts={verdicts} /> : null}
               <label className="bf-k" htmlFor="bf-run-note">My note on this run</label>
               <textarea id="bf-run-note" key={r.id} className="bf-input bf-run-note" rows={3} placeholder="What was right, wrong, or worth trying next…" defaultValue={notes[r.id] ?? ""} onBlur={(e) => setNote(r.id, e.target.value)} />
               {r.inputs.length ? (
@@ -208,5 +219,32 @@ function FinalAnswer({ final: f }: { final: Final }) {
       {f.proposals.length ? <div><span className="bf-k">Suggested</span>{f.proposals.map((p, i) => <div key={i}>{p}</div>)}</div> : null}
       {none ? <i className="bf-pv-none">This run produced no answer, blocks or suggestions.</i> : null}
     </div>
+  )
+}
+
+/** A Suggest run's suggestions, each with what the person said about it. */
+function SuggestionVerdicts({ suggestions, verdicts }: { suggestions: NonNullable<SavedRun["suggestions"]>; verdicts: Verdict[] }) {
+  const byId = new Map(verdicts.map((v) => [v.suggestionId, v]))
+  const counts = { accepted: 0, rejected: 0, open: 0 }
+  for (const x of suggestions) counts[byId.get(x.id)?.verdict ?? "open"]++
+  return (
+    <details className="bf-final" open>
+      <summary>
+        Suggested ({suggestions.length}) · {counts.accepted} accepted · {counts.rejected} rejected · {counts.open} undecided
+      </summary>
+      {suggestions.map((x) => {
+        const v = byId.get(x.id)
+        return (
+          <div key={x.id} className="bf-answer">
+            <div>
+              <span className={`bf-status is-${v?.verdict === "rejected" ? "fail" : v ? "pass" : "review"}`}>{v?.verdict ?? "open"}</span> {x.kind} · {x.title} · {x.detail}
+            </div>
+            {v?.reason ? <div className="bf-answer-line">{v.verdict === "rejected" ? "Why wrong: " : "Note: "}{v.reason}</div> : null}
+            <div className="bf-why">{x.why}</div>
+            {x.evidence.map((e, i) => <div key={i} className="bf-why">&gt; {e}</div>)}
+          </div>
+        )
+      })}
+    </details>
   )
 }
