@@ -9,7 +9,7 @@
 "use client"
 
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { resolveLogSourceLabel } from "@/lib/log-entry-source"
+import { resolveCreatedByLabel, resolveLogSourceLabel } from "@/lib/log-entry-source"
 import { formatDuration, isInstant, minutesToLabel, type TimeEntry } from "@/lib/time-entries"
 import { nightLabel } from "./labels"
 import { LlmBlockNote } from "./llm-block-note"
@@ -60,6 +60,10 @@ export function EntryIntroCopy({
         {penName && title.trim() && title.trim() !== penName ? ` · pen ${penName}` : ""}
       </p>
       {isInstant(entry) ? <p className="trk-entry-source">Added from {resolveLogSourceLabel(entry)}</p> : null}
+
+      <p className="trk-entry-source" data-testid="entry-created-by">
+        <span className="trk-entry-source-key">Created by</span> {resolveCreatedByLabel(entry)}
+      </p>
 
       <LlmBlockNote entry={entry} />
 

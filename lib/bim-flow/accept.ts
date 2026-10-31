@@ -13,6 +13,7 @@
  */
 "use client"
 
+import { withItemWriteSource } from "@/lib/item-write-source"
 import { runAsAction } from "@/lib/action-history"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -113,7 +114,7 @@ function acceptTimeblock(s: Suggestion, note: string): Accepted {
       drop.push(...same.map((e) => e.id))
       add.push({ date: p.date, scopeId: ACTIVITY, penId, startMin, endMin, precision: "estimated", notes: renderNotes(items), generatedBy: acceptedBlockStamp(ids.join("+")) })
     }
-    useTimeTrackingStore.getState().layerEntries(add, drop)
+    withItemWriteSource({ surface: "llm-suggestion" }, () => useTimeTrackingStore.getState().layerEntries(add, drop))
   })
   const extra = merged ? ` · MERGED WITH ${merged} EARLIER DETECTION${merged === 1 ? "" : "S"}` : overlapping ? ` · OVERLAPS ${overlapping} LLM BLOCK${overlapping === 1 ? "" : "S"}: SET THE TRUE BOUNDS IN TRACKING` : ""
   return { ok: true, message: `PAINTED ${s.title.toUpperCase()}${extra}` }
