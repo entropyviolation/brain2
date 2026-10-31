@@ -69,3 +69,16 @@ Notes:
 - A build needs about 2 GB free (the cache lives in `~/Library/Caches/brain2-ios-build`).
 - The build runs `npm run build` and `npx cap sync ios`, so it installs whatever `~/brain2` has checked out.
 - `PATH` is baked into the plist at install time, so `npx`, `pod` and `xcodebuild` resolve under launchd. Reinstall the plist if you move Node or CocoaPods.
+
+## Always-on Mac (everything at once)
+
+_Last mapped: 2026-10-30_
+
+`install-always-on.sh` installs node, Ollama and ActivityWatch with Homebrew, pulls `qwen2.5:14b-instruct`, `qwen2.5:3b-instruct` and `nomic-embed-text`, builds the app, and installs four launchd jobs: `com.brain2.web` (app and `/api` on :3000), `com.brain2.hub` (`phone:hub`), `com.brain2.awake` (`caffeinate`), and the nightly backup. Jobs restart when they die. Safe to run again.
+
+```bash
+bash deploy/mac/install-always-on.sh --dry-run
+bash deploy/mac/install-always-on.sh
+```
+
+Flags: `--skip-models`, `--skip-build`, `--no-backup`, `--uninstall`. Secrets stay in `.env.local`; the script never writes them. The Energy settings and ActivityWatch permissions are by hand (the script prints them).
