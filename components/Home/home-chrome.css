@@ -5757,6 +5757,12 @@ body.win95-app .home-tabs[role="tablist"] {
     overflow: hidden;
   }
 
+  /* The lit key adds an LED; its desk tracking clipped TRACKING. */
+  body.win95-app [data-ui-name="Home tabs"] [role="tab"][data-state="active"],
+  body.win95-app .home-tabs [role="tab"][data-state="active"] {
+    letter-spacing: 0;
+  }
+
   body .home-widget-dialog.home-widget-instrument,
   .home95.home-weather-dialog {
     left: 0 !important;

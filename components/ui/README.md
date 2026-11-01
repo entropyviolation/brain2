@@ -40,7 +40,7 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `textarea.tsx` | Multi-line text |
 | `tooltip.tsx` | Hover tooltips. On a phone the bubble stays inside the screen |
 | `touch.css` | _Last mapped: 2026-10-28._ Phone-only overrides (max-width 767px). Desktop rules in this folder are unchanged at 768px and up |
-| `safe-insets.ts` | Reads `env(safe-area-inset-*)` and, on a phone, keeps menus inside that inset |
+| `safe-insets.ts` | Reads `env(safe-area-inset-*)` and, on a phone, keeps menus inside that inset. _Last mapped: 2026-11-01._ The probe runs once per viewport size. Every Select, Dropdown, and Tooltip asks on mount, and each probe forced a style and layout pass. |
 
 ## Removed (not present)
 

@@ -48,7 +48,7 @@ Owned by later streams:
 | `inventory-chrome.css` | Desk interior. Imported from the view. |
 | `phone/use-inventory-phone.ts` | 767px gate. |
 | `phone/inventory-phone.tsx` | Phone switcher. Cover shelf, closet, `KitchenPhone`, `ShoppingPhone`, and the gems bag. `InventoryPhoneScreen` is the shell entry. |
-| `phone/inventory-phone.css` | Phone only. Classes use the `inv-phone-` prefix. |
+| `phone/inventory-phone.css` | Phone only. Classes use the `inv-phone-` prefix. _Last mapped: 2026-11-01._ The list picker's search field keeps its left inset, so the magnifier does not cover the first letter. |
 | `phone/bookshelf-phone.tsx` | Cover browser. No Three.js. |
 | `phone/closet-phone.tsx` | Cutout grid, outfits, lookbooks line, settings. |
 | `phone/closet-phone-slots.ts` | Even places for a tapped composition. |

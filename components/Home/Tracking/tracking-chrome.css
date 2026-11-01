@@ -3638,7 +3638,8 @@ body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
 .trk95 .trk-time-axis {
   position: sticky;
   top: 0;
-  z-index: 6;
+  /* Above the sunrise / now markers (6) that scroll under it. */
+  z-index: 7;
   display: flex;
   background: var(--t-face);
   border-bottom: 1px solid var(--chrome-lo);

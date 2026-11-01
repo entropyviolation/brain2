@@ -10,8 +10,15 @@ import { useLayoutEffect, useState } from "react"
  */
 export const HABITS_PHONE_MEDIA = "(max-width: 767px)"
 
+/**
+ * Starts from the media query, not `false`. Home only mounts on the client, so
+ * the first render can read it. Starting false built the whole desktop page
+ * on every phone visit, then threw it away for the phone page.
+ */
 export function useHabitsPhone(): boolean {
-  const [phone, setPhone] = useState(false)
+  const [phone, setPhone] = useState(
+    () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(HABITS_PHONE_MEDIA).matches,
+  )
   useLayoutEffect(() => {
     const media = window.matchMedia(HABITS_PHONE_MEDIA)
     const apply = () => setPhone(media.matches)

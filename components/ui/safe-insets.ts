@@ -9,8 +9,22 @@ export type SafeInsets = { top: number; right: number; bottom: number; left: num
 
 const ZERO: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 }
 
+/**
+ * One probe per viewport size. Every Select, Dropdown, and Tooltip asks on
+ * mount, and each probe forced a style and layout pass, so a screen of
+ * tooltips did that dozens of times while it opened.
+ */
+let cached: { key: string; insets: SafeInsets } | null = null
+
 export function readSafeInsets(): SafeInsets {
   if (typeof document === "undefined") return ZERO
+  const key = `${window.innerWidth}x${window.innerHeight}`
+  if (cached?.key === key) return cached.insets
+  cached = { key, insets: probeSafeInsets() }
+  return cached.insets
+}
+
+function probeSafeInsets(): SafeInsets {
   const probe = document.createElement("div")
   probe.style.cssText =
     "position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);"

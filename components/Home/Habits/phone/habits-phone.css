@@ -619,9 +619,27 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
     0 8px 18px rgba(80, 110, 140, 0.16);
 }
 
+/* Opal and sheen slide on `transform`, which the compositor runs. They used
+   to slide `background-position`, which restyled and repainted the page every
+   frame forever, under the tray's blur, and made the phone stutter. */
 .hab-phone-day-tube .hab-pled-bar-mercury {
   overflow: hidden;
   border-radius: 17px;
+  background: #e6dcf4;
+  box-shadow: none;
+  opacity: 1;
+  transition: width 0.6s var(--hab-phone-ease);
+}
+
+/* The gloss is level across, so it can ride the opal layer unchanged. */
+.hab-phone-day-tube .hab-pled-bar-mercury::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 240%;
+  width: 240cqi;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(170, 196, 214, 0.22) 100%),
     linear-gradient(
@@ -633,20 +651,18 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
       #d7ebe4 78%,
       #e4eef8 100%
     );
-  background-repeat: no-repeat;
-  background-size: 100% 100%, 240% 100%;
-  background-size: 100% 100%, 240cqi 100%;
   animation: hab-phone-tube-opal 9s ease-in-out infinite;
-  box-shadow: none;
-  opacity: 1;
-  transition: width 0.6s var(--hab-phone-ease);
+  will-change: transform;
+  pointer-events: none;
 }
 
 .hab-phone-day-tube .hab-pled-bar-mercury::after {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 220%;
   background: linear-gradient(
     105deg,
     transparent 0%,
@@ -655,9 +671,8 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
     rgba(255, 255, 255, 0.08) 64%,
     transparent 100%
   );
-  background-repeat: no-repeat;
-  background-size: 220% 100%;
   animation: hab-phone-tube-sheen 5.6s ease-in-out infinite;
+  will-change: transform;
   pointer-events: none;
 }
 
@@ -677,15 +692,17 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
   transform-origin: center right;
 }
 
+/* 140 / 240 of the opal layer: its right edge reaches a full tube's. */
 @keyframes hab-phone-tube-opal {
   0%,
-  100% { background-position: 0 0, 0% 50%; }
-  50% { background-position: 0 0, 100% 50%; }
+  100% { transform: translateX(0); }
+  50% { transform: translateX(-58.33%); }
 }
 
+/* The old 130% → -130% sweep of a 220% layer, as a share of that layer. */
 @keyframes hab-phone-tube-sheen {
-  0% { background-position: 130% 0; }
-  100% { background-position: -130% 0; }
+  0% { transform: translateX(-70.9%); }
+  100% { transform: translateX(70.9%); }
 }
 
 .hab-phone-bar {
@@ -833,13 +850,13 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
     transform: none;
   }
 
-  .hab-phone-day-tube .hab-pled-bar-mercury,
+  .hab-phone-day-tube .hab-pled-bar-mercury::before,
   .hab-phone-day-tube .hab-pled-bar-mercury::after {
     animation: none;
   }
 
   .hab-phone-day-tube .hab-pled-bar-mercury::after {
-    background-position: 40% 0;
+    transform: translateX(-21.8%);
   }
 }
 

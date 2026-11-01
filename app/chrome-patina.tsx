@@ -16,6 +16,35 @@ import { applyCornerMix } from "@/lib/corner-mix"
 import { appDriftPosition, settleDrift, type DriftClock } from "@/lib/drift-clock"
 import { cornerClock, useThemeStore, warmthClock } from "@/lib/theme-store"
 
+/** Readouts no stylesheet reads. They move every tick; alone they must not restyle the page. */
+const READOUTS = new Set(["--chrome-set", "--chrome-live", "--chrome-mix", "--corner-mix"])
+
+/**
+ * Collects a tick's tokens and writes `:root` only when a painted value moved.
+ * Any write to `:root` restyles every element, and a drift tick used to do
+ * that once a second (ten times during a fast cycle) on unchanged colors.
+ */
+function rootWriter(root: HTMLElement) {
+  const painted = new Map<string, string>()
+  const pending = new Map<string, string>()
+  return {
+    style: {
+      setProperty(name: string, value: string) {
+        if (painted.get(name) === value) pending.delete(name)
+        else pending.set(name, value)
+      },
+    },
+    flush() {
+      if (![...pending.keys()].some((name) => !READOUTS.has(name))) return
+      for (const [name, value] of pending) {
+        root.style.setProperty(name, value)
+        painted.set(name, value)
+      }
+      pending.clear()
+    },
+  }
+}
+
 function tickDelay(warmth: DriftClock, corner: DriftClock, now: number): number {
   const urgent = [warmth, corner].some((clock) => {
     const transition = clock.transition
@@ -36,7 +65,7 @@ export function ChromePatina() {
   const cornerTransition = useThemeStore((s) => s.cornerTransition)
 
   useEffect(() => {
-    const root = document.documentElement
+    const root = rootWriter(document.documentElement)
     let timer = 0
     let stopped = false
 
@@ -50,6 +79,7 @@ export function ChromePatina() {
       const nextCorner = settleDrift(corner, now)
       applyChromePatina(root, appDriftPosition(nextWarmth, now))
       applyCornerMix(root, appDriftPosition(nextCorner, now))
+      root.flush()
       if (nextWarmth !== warmth || nextCorner !== corner) {
         useThemeStore.setState({
           ...(nextWarmth !== warmth

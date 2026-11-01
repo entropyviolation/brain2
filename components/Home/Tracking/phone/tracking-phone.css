@@ -331,6 +331,14 @@ body.win95-app .trk-phone .trk-cled {
   margin: 0;
 }
 
+/* GHOST joins the column on the phone, so VIEW must too or they overprint.
+   One class above the desk rule: the export bundles that rule later. */
+.trk-phone .trk-deck-slot .trk-deck-caption.is-view {
+  position: relative;
+  top: auto;
+  left: auto;
+}
+
 .trk-phone .trk-deck-caption.is-ghost,
 body.win95-app .trk-phone .trk-deck-caption.is-ghost {
   position: relative;
@@ -457,8 +465,14 @@ body.win95-app .trk95.trk-phone .trk-phone-tray button.trk-latch:not([role="tab"
   align-items: center;
   justify-content: center;
   width: 100%;
+  /* The desk latch is 112px wide; a tray cell is a quarter of the phone. */
+  min-width: 0;
+  margin-left: 0;
+  overflow: hidden;
   min-height: 44px;
-  padding: 6px 8px 10px;
+  padding: 6px 4px 10px;
+  gap: 3px;
+  white-space: nowrap;
   border: 1px solid #6e7378;
   border-radius: 4px;
   background: #dfe2e6;
@@ -474,6 +488,11 @@ body.win95-app .trk95.trk-phone .trk-phone-tray button.trk-latch:not([role="tab"
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.15;
+}
+
+body.win95-app .trk95.trk-phone .trk-phone-tray button.trk-latch-log:not([role="tab"]):not([role="switch"]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  font-size: 12px;
+  letter-spacing: 0;
 }
 
 .trk-phone-sheet-root {

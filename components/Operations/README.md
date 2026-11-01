@@ -87,6 +87,10 @@ Trip, Project, Paid job — offered in the create row on the home board (the
 "Shape" select) and in Settings. A preset's suggested categories are *added*,
 never removed.
 
+_Last mapped: 2026-11-01._ An empty board shows the presets as cards. The cards
+carry `data-no95`, because the app-wide Win95 key skin replaced their silver face
+and left dark text on the black board.
+
 ## Home board — archived operations
 
 Completed and inactive operations stay off the board until **Show archived**.
