@@ -115,6 +115,7 @@ The public door stays in this folder. Each studio group has the views it already
 | `accuracy/` | Plan vs reality, calibration, cycle, regret, goals |
 | `meta/` | Observatory, cross-section, metrics, correlation, spectrum, research report |
 | `library/` | Item types, lists and areas, attributes, tags, stages, weight, graph gaps |
+| `atlas/` | Library → Atlas: the whole-vault graph and the schema category (_Last mapped: 2026-11-01_) |
 | `sources/` | Instagram, Browser, and Health |
 | `chrome/` | Studio index, group catalog, remembered range, lazy view map |
 | `studio/` | Chart frame, Open in Lists, studio kit, studio plots |
@@ -197,6 +198,10 @@ _Last mapped: 2026-10-28_
 | `library/AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
 | `library/LibraryCuts.tsx` | Tags (treemap + UpSet combinations), Stages, Weight — fields already on items. |
 | `library/GraphGapsView.tsx` | Library → Graph. Missing and uncertain facts in one slice. A suggestion stays labeled missing; a recorded link stays recorded. |
+| `atlas/GraphAtlasView.tsx` | _Last mapped: 2026-11-01._ Library → **Atlas**. The only file here that reads stores. It calls `buildKnowledgeGraph` (`lib/graph/knowledge-graph.ts`, with derived edges) and `schemaCategory` (`lib/graph/schema-category.ts`) and passes the results to the two plates below. **Open in Lists** opens an `item:` node. |
+| `atlas/GraphAtlas.tsx` | _Last mapped: 2026-11-01._ The whole-vault graph as one SVG plate (KG-V). Takes a `KnowledgeGraph` as a prop. Chips hide node kinds or edge orders, or keep one relation family; each chip shows its count. Orders as stroke (KG-V3): recorded solid ink, observed cobalt, derived dashed, inferred dotted. The 150 / 300 / 1000 nodes with the most edges are placed, and the plate says "Showing N of M nodes". **Find** focuses a node: 1 or 2 hops stay lit, the rest dims. A click opens a readout: label, kind, type, degree, and in / out edges with `relationLabel`. Drag pans, the wheel and + / − zoom, **Fit** resets; all move the viewBox. Optional `insights` (id → score) sizes nodes; optional `communities` (id → key) groups nodes into cells and tints them with six of the room's inks (`atlas-c0`…`atlas-c5`). Neither is passed by the container yet. |
+| `atlas/SchemaCategoryDiagram.tsx` | _Last mapped: 2026-11-01._ Types and address kinds as boxes, relations as labelled arrows from domain to codomain, layered by `topologicalRanks`. Identity arrows (`id:…`) are left out. Arrows that share both ends are one arrow labelled "first +N". A click lists each relation in it with its domain and codomain. |
+| `atlas/atlas.css` | Atlas furniture: paper well, order strokes, community tones, the ruled readout. Loaded by the two plates. |
 
 ### Shell loading
 
@@ -282,6 +287,11 @@ Group **Texts**, view **Report** (`TextsReportView.tsx`). It frames the texts re
 - `lib/overcommitment.ts` — day-push reconstruction + logged minutes.
 - `lib/regret-store.ts` — accrued cost of important overdue items. Rows are local `YYYY-MM-DD`, same as the Data window. An old evening UTC key can still sit on the next civil day.
 - `lib/operations.ts` — `buildHeatmap` for operations minutes.
+- `lib/graph/atlas-layout.ts` — _Last mapped: 2026-11-01._ Atlas placement.
+  Caps by degree (`capByDegree`, ties by id, a focused node always kept), then
+  one seeded `forceishLayout` (`lib/graph-layout.ts`) with fixed passes, or one
+  cell per community packed in rows. `hopsFrom` gives the 1–2 hop focus.
+  Pairwise repulsion; Barnes-Hut is not needed under about 2k nodes.
 - `lib/habit-accomplishment.ts` — Good days.
 - `lib/incremental-habits.ts` — climb targets (not re-derived here).
 - Habit % from `calculateDayPercentageAV` (`lib/calculations.ts`).
