@@ -10,6 +10,7 @@
  */
 "use client"
 
+import { useGraphUsageStore } from "@/lib/graph/graph-usage-store"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { LinkComposer } from "@/components/ItemDetail/tabs/links/LinkComposer"
 import { LinkConstellation } from "@/components/ItemDetail/tabs/links/LinkConstellation"
@@ -193,11 +194,13 @@ export function RichLinksPanel({ task, editable = true, addLink, removeLink, wri
           addLink(s.relation, s.otherId)
           const pid = (s as { proposalId?: string }).proposalId
           if (pid) setProposalStatus(pid, "accepted")
+          else useGraphUsageStore.getState().recordAction("accepted", s.source, s.relation)
         }}
         onDismiss={(s) => {
           dismiss(s.key)
           const pid = (s as { proposalId?: string }).proposalId
           if (pid) setProposalStatus(pid, "dismissed")
+          else useGraphUsageStore.getState().recordAction("dismissed", s.source, s.relation)
         }}
         onMute={toggleMuted}
         onOpen={onOpenItem}
