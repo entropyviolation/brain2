@@ -86,3 +86,15 @@
   .atlas-readout { flex: none; width: 100%; box-sizing: border-box; }
   .atlas-svg { height: 360px; }
 }
+
+.atlas-insights {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.atlas-insights li[data-order="inferred"] {
+  font-style: italic;
+}

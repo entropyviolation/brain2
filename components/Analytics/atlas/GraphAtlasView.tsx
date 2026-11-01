@@ -10,7 +10,9 @@
 import { useMemo } from "react"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { buildKnowledgeGraph } from "@/lib/graph/knowledge-graph"
-import { schemaCategory } from "@/lib/graph/schema-category"
+import { communities, insightSentences, pageRank } from "@/lib/graph/insights"
+import { checkEquation, rulesAsEquations, schemaCategory } from "@/lib/graph/schema-category"
+import { relationLabel } from "@/lib/links"
 import { allRelations } from "@/lib/relation-registry"
 import { useTaskStore } from "@/lib/task-store"
 import { openItemsInLists } from "../studio/open-in-lists"
@@ -30,6 +32,21 @@ export function GraphAtlasView() {
   const typeName = useMemo(() => new Map(types.map((t) => [t.id as string, t.name])), [types])
   const typeLabel = (id: string) => typeName.get(id) ?? id
   const graph = useMemo(() => buildKnowledgeGraph({ items, lists, rules, defs, withDerived: true }), [items, lists, rules, defs])
+  // Insights read recorded and observed edges only, so a rule's own output does not count as evidence for it.
+  const facts = useMemo(() => ({ orders: ["recorded", "observed"] as const }), [])
+  const rank = useMemo(() => new Map(pageRank(graph, { orders: [...facts.orders] }).map((r) => [r.id, r.score])), [graph, facts])
+  const groups = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of communities(graph, { orders: [...facts.orders] })) for (const id of c.members) m.set(id, c.label)
+    return m
+  }, [graph, facts])
+  const sentences = useMemo(() => insightSentences(graph, { orders: [...facts.orders], relationLabel, knownRules: rules }), [graph, facts, rules])
+  const breaks = useMemo(
+    () =>
+      rulesAsEquations(rules).map((eq) => ({ eq, rows: checkEquation(graph, eq, { limit: 5 }) })).filter((b) => b.rows.length > 0),
+    [graph, rules],
+  )
+  const label = (id: string) => graph.nodes.get(id)?.label ?? id
   const category = useMemo(() => schemaCategory(defs, [...typeName.keys()], typeLabel), [defs, typeName]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -50,8 +67,37 @@ export function GraphAtlasView() {
         <GraphAtlas
           graph={graph}
           typeLabel={typeLabel}
+          insights={rank}
+          communities={groups}
           onOpen={(node) => openItemsInLists({ taskIds: [node.id.replace(/^item:/, "")] })}
         />
+      </section>
+      <section className="an-plate" aria-label="What the graph shows" data-testid="atlas-insights">
+        <p className="an-canvas-title">What the graph shows</p>
+        {sentences.length ? (
+          <ul className="atlas-insights">
+            {sentences.map((i) => (
+              <li key={i.id} data-order={i.order}>
+                {i.sentence}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="an-canvas-kicker">Fewer than 7 linked items. Nothing to count yet.</p>
+        )}
+        {breaks.length ? (
+          <>
+            <p className="an-canvas-title">Where a rule&apos;s chain holds and its link is not written</p>
+            <ul className="atlas-insights" data-testid="atlas-breaks">
+              {breaks.map(({ eq, rows }) => (
+                <li key={eq.id}>
+                  {eq.left.map(relationLabel).join(" then ")} ⇒ {relationLabel(eq.right[0])}: {rows.map((r) => `${label(r.from)} → ${label(r.to)}`).join("; ")}
+                  {rows.length === 5 ? " (first 5)" : ""}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
       </section>
       <section className="an-plate" aria-label="Types and relations">
         <p className="an-canvas-title">Types and relations</p>
