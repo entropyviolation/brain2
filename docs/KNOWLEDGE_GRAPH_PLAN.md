@@ -863,6 +863,7 @@ clear. Families:
 | KG-I4, KG-I6 | `same-as` / `different-from` in `RELATIONS`. `lib/graph/identity-match.ts` proposes. Accept in the graph inbox writes a recorded `same-as`. Dismiss stays a dismissal. | No automatic merge. `same-as` groups are not folded on every query. Tag identity and external ids stay planned. |
 | KG-Q1, KG-Q5 | `lib/graph/pattern-questions.ts`. One triple `? s p o` with `*`, plus the house questions. Cmd-K shows triples and a template sentence. | Variables, paths, optional, aggregates, saved patterns. |
 | KG-NL2, KG-NL3 | Template sentences in that same module and in Cmd-K. | BIM, read-aloud, a full phrase table per predicate. |
+| KG-N2, KG-N3, KG-NL7, KG-NL8 | 2026-11-01: `lib/graph/extract/` reads relation phrases, `[[wiki links]]`, and explicit dates from item text into inbox proposals (`extractProposals`) and the `relation-word` shelf source, with the quoted sentence and span. | Capture-time linking in smart-parse and Telegram, the inbox button, offsets in the ledger, emerging entities. |
 | KG-M2, KG-M3 | `lib/graph/machinery.ts` `whereFrom` and `whatReadsThis`. Shown under the weekly graph review. | Delete-confirm chrome. A row for every store key (KG-M1 stays planned). |
 | E3 | Observation addresses count in `lib/belief-strength.ts` at trust 1. `evidenceMissingFromSpine` lists addresses the spine no longer has. The belief is not rewritten. | No `formulation` type (GS-5 is still planned). Beliefs are the records that carry evidence links. |
 
