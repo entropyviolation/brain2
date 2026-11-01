@@ -96,7 +96,7 @@ describe("date mentions", () => {
 describe("relation-word shelf source", () => {
   it("offers the written relation above a mention", () => {
     const all = [item("dentist", "Dentist", { notes: "Blocked by Tax return. Ask Sam." }), item("tax", "Tax return"), item("sam", "Sam")]
-    const ctx = { all, links: linkIndexOf(all), title: (id: string) => all.find((i) => i.id === id)!.title }
+    const ctx = { all, links: linkIndexOf(all), title: (id: string) => all.find((i) => i.id === id)?.title ?? "" }
     const rows = relationWordSource(all[0], ctx)
     expect(rows).toEqual([expect.objectContaining({ otherId: "tax", relation: "blocked-by", source: "relation-word", score: 1 })])
     expect(rows[0].reason).toBe('Written in the notes: "Blocked by Tax return"')
@@ -107,7 +107,7 @@ describe("relation-word shelf source", () => {
 
   it("reads a sentence naming this item as the object from this side", () => {
     const all = [item("tax", "Tax return", { body: "Dentist blocks Tax return" }), item("dentist", "Dentist")]
-    const ctx = { all, links: linkIndexOf(all), title: (id: string) => all.find((i) => i.id === id)!.title }
+    const ctx = { all, links: linkIndexOf(all), title: (id: string) => all.find((i) => i.id === id)?.title ?? "" }
     expect(relationWordSource(all[0], ctx)).toEqual([expect.objectContaining({ otherId: "dentist", relation: "blocked-by" })])
     expect(allRelations().some((d) => d.id === "blocked-by")).toBe(true)
   })
