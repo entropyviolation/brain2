@@ -26,7 +26,7 @@ interface NameHit {
   close: boolean
 }
 
-function sentenceAt(text: string, at: number, length: number): string {
+export function sentenceAt(text: string, at: number, length: number): string {
   let start = 0
   for (let i = at - 1; i >= 0; i--) {
     const c = text[i]
@@ -74,7 +74,7 @@ function aliases(item: ItemRecord, title: string): string[] {
   return [...names]
 }
 
-function textsOf(item: ItemRecord): { field: string; text: string; when?: string }[] {
+export function textsOf(item: ItemRecord): { field: string; text: string; when?: string }[] {
   const texts: { field: string; text: string; when?: string }[] = []
   if (item.title?.trim()) texts.push({ field: "title", text: item.title })
   if (item.description?.trim() && item.description.trim() !== item.title?.trim()) texts.push({ field: "description", text: item.description })
@@ -93,7 +93,7 @@ function textsOf(item: ItemRecord): { field: string; text: string; when?: string
   return texts
 }
 
-function whereOf(field: string, when?: string): string {
+export function whereOf(field: string, when?: string): string {
   if (field === "title") return "the title"
   if (field === "description") return "the description"
   if (field === "body") return "the body"
