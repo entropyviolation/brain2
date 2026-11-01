@@ -74,6 +74,8 @@ Notes:
 
 ## Always-on Mac (everything at once)
 
+_Last mapped: 2026-11-01_ Texts and calls need Full Disk Access for the `node` binary the hub plist names. Install the hub with the real path (`realpath "$(command -v node)"`, e.g. `/opt/homebrew/Cellar/node@24/24.16.0/bin/node`) and grant that file access. A `brew upgrade` of node changes the path: reinstall the plist and grant access again. The hub also syncs Chrome history every 15 minutes (`lib/chrome-history-reader.ts`), which needs no extra access.
+
 _Last mapped: 2026-10-30_
 
 `install-always-on.sh` installs node and Ollama with Homebrew (not ActivityWatch: the activity that matters is on the Mac you use), pulls `qwen2.5:14b-instruct`, `qwen2.5:3b-instruct` and `nomic-embed-text`, builds the app, and installs four launchd jobs: `com.brain2.web` (app and `/api` on :3000), `com.brain2.hub` (`phone:hub`), `com.brain2.awake` (`caffeinate`), and the nightly backup. Jobs restart when they die. Safe to run again.

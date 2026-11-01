@@ -8,7 +8,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
-import { useBimChatStore } from "@/lib/ingest/bim-chat"
+import { checkInDue, useBimChatStore } from "@/lib/ingest/bim-chat"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { chatPhotoFromFile } from "@/lib/ingest/chat-photo"
 import type { IncomingAttachment } from "@/lib/ingest/types"
@@ -18,12 +18,19 @@ export function useBimChat() {
   const busy = useBimChatStore((s) => s.busy)
   const send = useBimChatStore((s) => s.send)
   const clear = useBimChatStore((s) => s.clear)
+  const checkIn = useBimChatStore((s) => s.checkIn)
   const llm = useBimLlmMode((s) => s.on)
   const setLlm = useBimLlmMode((s) => s.setOn)
   const [draft, setDraft] = useState("")
   const [photos, setPhotos] = useState<IncomingAttachment[]>([])
   const [photoError, setPhotoError] = useState("")
   const logRef = useRef<HTMLDivElement>(null)
+
+  // BIM asks first: on open, when the last check-in is old and nothing else is waiting on you.
+  useEffect(() => {
+    const chat = useBimChatStore.getState()
+    if (checkInDue() && !chat.busy && !openChoices(chat.lines).length) chat.checkIn()
+  }, [])
 
   useEffect(() => {
     const log = logRef.current
@@ -65,7 +72,7 @@ export function useBimChat() {
     }
   }
 
-  return { lines, busy, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError }
+  return { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError }
 }
 
 /** Last BIM line, when it still carries tap answers. */

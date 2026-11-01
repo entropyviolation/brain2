@@ -54,6 +54,8 @@ export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: 
         model,
         stream: false,
         format: schema,
+        // qwen3 thinks by default and spends `num_predict` on it, leaving `content` empty. Others ignore the flag.
+        think: false,
         keep_alive: "15m",
         options: { temperature: 0, num_ctx: NUM_CTX, num_predict: maxTokens },
         messages: [
@@ -63,8 +65,15 @@ export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: 
       }),
     })
     if (!res.ok) throw new Error(`Ollama ${res.status}`)
-    const body = (await res.json()) as { message?: { content?: string } }
-    const parsed: unknown = JSON.parse(body.message?.content ?? "")
+    const body = (await res.json()) as { message?: { content?: string }; done_reason?: string }
+    const content = body.message?.content?.trim() ?? ""
+    if (!content) throw new Error(`${model} gave no JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(content)
+    } catch {
+      throw new Error(`${model} gave cut-off JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
+    }
     cache.set(key, parsed)
     archive("model-call", { model, system, user, schema, maxTokens, output: parsed })
     return parsed

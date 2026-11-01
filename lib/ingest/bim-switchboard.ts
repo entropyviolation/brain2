@@ -84,6 +84,8 @@ export interface SwitchboardResult {
   route: string
   /** Set when the Ask lane answered. */
   answer?: SwitchboardAnswer
+  /** Set when the Ask lane ran and failed (a model error, a timeout): why, short. */
+  failed?: string
   /** True when the executor must still run the line (any lane but a lone ask). */
   passThrough: boolean
   /** The router's label and whether it was sure, so a caller can act on a sure `log`. */
@@ -102,7 +104,9 @@ async function askLane(text: string, crew: Crew, now: Date): Promise<{ answer: S
       snapshotFromStores(),
       {
         model: crew.main,
-        models: crewModelPlan(crew),
+        // Chat keeps the answer on `main` (the 14B) beside the 3B gates: both stay loaded on a 32 GB Mac.
+        // The 30B prose model would push the 14B out and reload on every question (2+ minutes).
+        models: { ...crewModelPlan(crew), prose: crew.main },
         getFlow: (id) => (FLOWS.some((f) => f.id === id) ? flowDef(id as FlowId).build() : undefined),
       },
     )
@@ -153,7 +157,9 @@ export async function runSwitchboard(
     const { answer, models } = await askLane(text, crew, now)
     return { route: routeChip(route, Date.now() - t0, models), answer, passThrough, intent: route.intent, sure: route.sure }
   } catch (error) {
-    const why = error instanceof Error ? error.message : String(error)
-    return { route: `${routeChip(route, Date.now() - t0)} · ask failed: ${why.slice(0, 60)}`, passThrough: true, intent: route.intent, sure: route.sure }
+    const aborted = error instanceof Error && (error.name === "AbortError" || /abort/i.test(error.message))
+    const why = aborted ? `timed out after ${ASK_TIMEOUT_MS / 1000}s` : error instanceof Error ? error.message : String(error)
+    const failed = why.slice(0, 80)
+    return { route: `${routeChip(route, Date.now() - t0)} · ask failed`, failed, passThrough, intent: route.intent, sure: route.sure }
   }
 }

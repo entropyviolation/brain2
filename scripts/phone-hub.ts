@@ -720,6 +720,40 @@ async function main() {
   void startPhoneSync().catch((err) => {
     console.error("[phone-hub] phone sync", err instanceof Error ? err.message : err)
   })
+  void startBrowserSync().catch((err) => {
+    console.error("[phone-hub] browser sync", err instanceof Error ? err.message : err)
+  })
+}
+
+/**
+ * Browser sync: read every Chrome profile's History file on a timer and merge
+ * new visits into data/chrome-history-inbox/, which the open app files
+ * (lib/chrome-history-reader.ts). `BRAIN2_BROWSER_SYNC_MINUTES=0` turns it off.
+ */
+async function startBrowserSync() {
+  const raw = brain2Env("BROWSER_SYNC_MINUTES")
+  const minutes = raw === undefined || raw === "" ? 15 : Number(raw)
+  if (!(minutes > 0)) return
+  const { syncChromeHistory } = await import("../lib/chrome-history-reader")
+  const opts = { inboxDir: join(ROOT, "data", "chrome-history-inbox"), stateDir: join(ROOT, "data", "browser-sync") }
+  const tick = () => {
+    try {
+      // First run catches up on the ~90 days Chrome keeps, a page at a time.
+      for (let pass = 0; pass < 200; pass++) {
+        const results = syncChromeHistory(opts)
+        for (const r of results) {
+          if (r.error) console.error(`[phone-hub] browser sync ${r.profile}: ${r.error}`)
+          else if (r.read) console.log(`[phone-hub] browser sync ${r.profile}: +${r.read} (${r.days[0]}…${r.days[r.days.length - 1]})`)
+        }
+        if (!results.some((r) => r.more)) break
+      }
+    } catch (err) {
+      console.error(`[phone-hub] browser sync tick: ${err instanceof Error ? err.message : err}`)
+    }
+  }
+  console.log(`[phone-hub] browser sync: Chrome every ${minutes}m`)
+  tick()
+  setInterval(tick, Math.max(1, minutes) * 60_000)
 }
 
 /**

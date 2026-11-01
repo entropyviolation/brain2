@@ -8,7 +8,7 @@
  * After the clock write, linked count ticks follow that entry.
  */
 import { syncCountTicksForEntry } from "@/lib/count-statuses"
-import { certaintyPatch, worseOf } from "@/lib/entry-edges"
+import { certaintyPatch } from "@/lib/entry-edges"
 import { isInstant, timeStringToMinutes, type SpanLock, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
 import { useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
 import { compactMoodReading, type MoodReading } from "@/lib/mood-reading"
@@ -144,7 +144,7 @@ export function saveBlock(input: {
       notes: notes.trim() || undefined,
       nowObjectives,
       ...certaintyPatch(startC, startC),
-      precision: assumed || startC !== "exact" ? "estimated" : undefined,
+      precision: assumed ? "estimated" : undefined,
       ...moodPatch,
       ...spendPatch,
     })
@@ -175,7 +175,7 @@ export function saveBlock(input: {
       notes: notes.trim() || undefined,
       nowObjectives,
       ...certaintyPatch(startC, endC),
-      precision: assumed || durationEstimated || worseOf(startC, endC) !== "exact" ? "estimated" : undefined,
+      precision: assumed ? "estimated" : undefined,
       spanLock,
       durationEstimated: durationEstimated || undefined,
       startEventId,

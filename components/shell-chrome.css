@@ -1522,7 +1522,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
 /* Phone shell. Keyed off the viewport so this can restyle `.b2-shell`
    itself (a container query cannot). A wider window keeps the mill above.
    One bar clear of the status bar: Back and Forward, then BRAIN2, then
-   Quick Add and Menu. Go is the switcher. A sheet holds the rest. A live
+   Quick Add, BIM Chat, and Menu. Go is the switcher. A sheet holds the rest. A live
    now well stays on the bar. Phone rules: docs/MOBILE_STYLE.md. */
 @media (max-width: 520px) {
   .b2-shell {
@@ -2066,6 +2066,8 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     opacity: 1;
   }
 
+  /* BIM Chat beside Menu wears the + key's cap (`b2-shell-plus b2-shell-bim`). */
+  body.win95-app .b2-shell .b2-shell-bim svg,
   body.win95-app .b2-shell .b2-shell-nav button svg {
     display: block;
     width: 1.35rem;

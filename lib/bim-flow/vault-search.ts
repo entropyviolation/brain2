@@ -73,6 +73,8 @@ export interface VaultHistory {
   /** Log items. */
   logs: { at: string; text: string }[]
   dayNotes: { date: string; text: string }[]
+  /** Plan / calendar events ("Elijah leaves for tour", all day). `date` is local YYYY-MM-DD; `time` is HH:mm unless all day. */
+  events?: { date: string; title: string; time?: string; allDay?: boolean }[]
   /** Tracking view id → name. */
   scopeNames: Record<string, string>
   /** The iPhone Health import, by local date. */

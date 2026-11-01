@@ -7,6 +7,8 @@
  */
 "use client"
 
+import { toLocalCalendarDate } from "@/lib/date-utils"
+import { useEventStore } from "@/lib/event-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useHealthImportStore } from "@/lib/phone-sync/health-store"
 import { useReviewsStore } from "@/lib/reviews-store"
@@ -35,7 +37,19 @@ interface RawEntry {
   generatedBy?: unknown
 }
 
-/** What happened and when, from the timegrid entries, the BIM feed, log items, and day notes. */
+interface RawEvent {
+  title: string
+  date: Date | string
+  startTime?: string
+  isAllDay?: boolean
+}
+
+function localIso(date: Date | string): string {
+  const d = toLocalCalendarDate(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+/** What happened and when, from the timegrid entries, the BIM feed, log items, day notes, and Plan events. */
 export function buildHistory(input: {
   entries: RawEntry[]
   scopes: RawScope[]
@@ -43,6 +57,7 @@ export function buildHistory(input: {
   tasks: { type?: string; title?: string; createdAt?: unknown }[]
   dayNotes: Record<string, string>
   health?: VaultHistory["health"]
+  events?: RawEvent[]
 }): VaultHistory {
   const pens = new Map<string, string>()
   const scopeNames: Record<string, string> = {}
@@ -69,6 +84,13 @@ export function buildHistory(input: {
       .filter((t) => t.type === "log" && t.title && t.createdAt)
       .map((t) => ({ at: new Date(t.createdAt as string).toISOString(), text: t.title! })),
     dayNotes: Object.entries(input.dayNotes).map(([date, text]) => ({ date, text })),
+    events: (input.events ?? [])
+      .filter((e) => e.title?.trim() && e.date)
+      .map((e) => ({
+        date: localIso(e.date),
+        title: e.title.trim(),
+        ...(e.isAllDay ? { allDay: true } : e.startTime ? { time: e.startTime } : {}),
+      })),
     health: input.health,
   }
 }
@@ -98,6 +120,7 @@ export function snapshotFromStores(): VaultSnapshot {
     tasks: tasks as unknown as { type?: string; title?: string; createdAt?: unknown }[],
     dayNotes: tt.dayNotes ?? {},
     health: useHealthImportStore.getState().days,
+    events: useEventStore.getState().events,
   })
   return {
     items: tasks
@@ -156,6 +179,7 @@ export function snapshotFromPersistItems(items: Record<string, string>, now = ne
     feed,
     tasks: (task?.tasks ?? []) as unknown as { type?: string; title?: string; createdAt?: unknown }[],
     dayNotes: (tg?.dayNotes ?? {}) as Record<string, string>,
+    events: (hubState(items, "event-storage")?.events ?? []) as RawEvent[],
   })
   return {
     feed,

@@ -48,7 +48,7 @@ import { BabyAnimalNest } from "@/components/baby-animal-nest"
 import { InboxKey, QuickAddKey, RitualsKey, SettingsKey } from "@/components/header-doors"
 import { HeaderNowBox } from "@/components/header-now-box"
 import { BimKey } from "@/components/Bim/bim-key"
-import { PhoneDeskKeys } from "@/components/Mobile/phone-desk-keys"
+import { PhoneDeskKeys, PhoneKeyboard } from "@/components/Mobile/phone-desk-keys"
 import { HeaderNavButtons } from "@/components/header-nav-buttons"
 import { HeaderReminderBell } from "@/components/header-reminder-bell"
 import { Button } from "@/components/ui/button"
@@ -276,6 +276,7 @@ export function AppHeader({
               +
             </span>
           </button>
+          <BimKey phoneBar="b2-shell-plus b2-shell-bim" />
           <button
             type="button"
             className="b2-shell-menu"
@@ -310,6 +311,9 @@ export function AppHeader({
           onClick={(event) => {
             const target = event.target
             if (!(target instanceof Element)) return
+            // React bubbles clicks from portals (a dialog opened from a sheet key,
+            // the keycap deck) through here. Only the sheet's own DOM closes it.
+            if (!event.currentTarget.contains(target)) return
             if (target.closest(".b2-shell-sheet-close, .b2-shell-sheet-refresh")) return
             if (target.closest("button, a")) setToolsOpen(false)
           }}
@@ -364,6 +368,7 @@ export function AppHeader({
           </fieldset>
           <PhoneDeskKeys />
         </div>
+        <PhoneKeyboard />
         </div>
       </div>
       <div className="b2-shell-shelf" aria-hidden="true" />

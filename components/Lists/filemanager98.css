@@ -2163,6 +2163,50 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   white-space: nowrap;
 }
 
+/* Go to Instagram: a small raised key at the row's end (rows with an IG username). */
+.fm98 .fm-read-ig {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #000;
+  background: var(--fm-surface);
+  border: 1px solid;
+  border-color: #fff var(--fm-button-shadow) var(--fm-button-shadow) #fff;
+  box-shadow: 1px 1px 0 #000;
+}
+
+.fm98 .fm-read-ig svg {
+  width: 12px;
+  height: 12px;
+}
+
+.fm98 .fm-read-ig:active {
+  border-color: var(--fm-button-shadow) #fff #fff var(--fm-button-shadow);
+  box-shadow: inset 1px 1px 0 #000;
+}
+
+.fm98 .fm-read-ig:focus-visible {
+  outline: 1px dotted #000080;
+  outline-offset: 1px;
+}
+
+.fm98 .fm-readlist.compact .fm-read-ig {
+  width: 18px;
+  height: 16px;
+}
+
+/* Phone: a 32px hit for a thumb; the face stays small. */
+@media (max-width: 767px) {
+  .fm98 .fm-read-ig,
+  .fm98 .fm-readlist.compact .fm-read-ig {
+    width: 32px;
+    height: 28px;
+  }
+}
+
 .fm98 .fm-readlist.compact {
   padding: 2px 0 6px;
 }

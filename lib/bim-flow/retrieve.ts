@@ -45,14 +45,24 @@ const dateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padS
 const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`
 const clip = (s: string, n = 170) => (s.length > n ? `${s.slice(0, n)}…` : s)
 
-/** How many of `terms` appear in `text`, allowing a shared stem ("showered" ~ "shower"). */
+/** Past forms a shared stem cannot reach: "leave" must find "Elijah left". */
+const IRREGULAR: Record<string, string[]> = {
+  leave: ["left"], go: ["went", "gone"], come: ["came"], get: ["got"], see: ["saw", "seen"], eat: ["ate", "eaten"],
+  meet: ["met"], buy: ["bought"], take: ["took", "taken"], sleep: ["slept"], fly: ["flew", "flown"], drive: ["drove"],
+  ride: ["rode"], run: ["ran"], make: ["made"], find: ["found"], tell: ["told"], say: ["said"], feel: ["felt"],
+  break: ["broke"], begin: ["began"], wake: ["woke"], spend: ["spent"], send: ["sent"], pay: ["paid"], lose: ["lost"],
+}
+
+/** How many of `terms` appear in `text`, allowing a shared stem ("showered" ~ "shower") or an irregular past ("leave" ~ "left"). */
 export function termsMatched(text: string, terms: string[]): number {
   if (terms.length === 0) return 0
   const words = text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean)
   let n = 0
   for (const t of terms) {
+    const past = IRREGULAR[t] ?? []
     const hit = words.some(
-      (w) => w.startsWith(t) || (w.length >= 5 && t.startsWith(w)) || (t.length >= 5 && w.length >= 5 && w.startsWith(t.slice(0, 5))),
+      (w) =>
+        w.startsWith(t) || (w.length >= 5 && t.startsWith(w)) || (t.length >= 5 && w.length >= 5 && w.startsWith(t.slice(0, 5))) || past.includes(w),
     )
     if (hit) n++
   }
@@ -107,6 +117,12 @@ function textRows(snap: VaultSnapshot, now: Date, days?: number, withItems = tru
       rows.push({ when: n.date, source: "day note", text: clip(line), date: n.date, ms: new Date(`${n.date}T12:00:00`).getTime(), score: 0 })
     }
   }
+  for (const ev of h?.events ?? []) {
+    if (since && ev.date < since) continue
+    const when = ev.allDay ? `${ev.date} all day` : ev.time ? `${ev.date} ${ev.time}` : ev.date
+    const ms = new Date(`${ev.date}T${ev.time ?? "12:00"}:00`).getTime()
+    rows.push({ when, source: "plan event", text: clip(ev.title), date: ev.date, ms, score: 0 })
+  }
   if (withItems && !days) {
     for (const it of snap.items) rows.push({ when: "item", source: "item", text: clip(it.title), date: "", ms: 0, score: 0 })
   }
@@ -149,7 +165,8 @@ async function rankRows(
       return { r, p: termsMatched(hay, terms), q: termsMatched(hay, related) }
     })
     .filter((x) => x.p + x.q > 0)
-  kept.forEach((x) => (x.r.score = x.p * 3 + x.q))
+  // A bare mark ("Elijah Left", "elijah leaves for tour") is the event itself: it beats a chat line with the same hits.
+  kept.forEach((x) => (x.r.score = x.p * 3 + x.q + (contentWords(x.r.text).length <= 4 ? 0.5 : 0)))
   const sorted = kept.sort((a, b) => b.r.score - a.r.score || b.r.ms - a.r.ms)
   const primary = sorted.filter((x) => x.p > 0).map((x) => x.r)
   return { rows: sorted.map((x) => x.r), primary: terms.length && primary.length ? primary : sorted.map((x) => x.r), note }

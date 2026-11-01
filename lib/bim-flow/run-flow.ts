@@ -122,8 +122,10 @@ export const ANSWER_SYSTEM =
   "2) For a 'last time' question the answer is the most recent matching row, not an earlier one. Say the date and how many days ago it was (\"2 days ago\", \"yesterday\"), never the word TODAY. " +
   "3) For how many, how often, or how long, use the counts given. Never count rows yourself. " +
   "4) For 'most' or 'usually', use the repeated-words tally and the rows, and say it is how often it was written, not a certainty. " +
-  "5) A row counts only if it is about the person doing the thing asked. A plan, a wish, or a note about someone else does not count. " +
-  "6) Answer in a full sentence that names the thing and gives the date as the evidence writes it (not a bare date). One to three plain sentences, speaking to the person as 'you'. No lists, no preamble. JSON only."
+  "5) A row counts only if it is about what was asked: the person doing it, or the other person the question names. A wish or a note about something else does not count. " +
+  "A 'plan event' on a past date is the calendar saying it was set for that day: say it was on the calendar, and name any tracked row or message the same day that confirms it. " +
+  "6) Answer in a full sentence that names the thing and gives the date as the evidence writes it (not a bare date). One to three plain sentences, speaking to the person as 'you'. No lists, no preamble. " +
+  "7) For 'when', a day is an answer. If the rows give the day but not the hour, answer with the day and say the hour is not recorded; that is confidence medium or high, not none. JSON only."
 
 export const SUMMARIZE_SYSTEM =
   "You summarize what the person's own notes say about one topic, using only the EVIDENCE and FACTS COUNTED BY CODE below. " +
@@ -152,6 +154,7 @@ export const INTERVIEW_SYSTEM =
 export const CHECK_SYSTEM =
   "You check a DRAFT answer against the EVIDENCE. Keep every claim the evidence supports. Remove or correct any claim it does not, " +
   "including dates, counts, and names. If nothing in the evidence supports the draft, replace it with one sentence saying the notes do not show it, and set confidence none. " +
+  "A draft that says the notes do not record something the evidence does show (a dated row, a calendar 'plan event', a day note) is wrong: correct it to what the rows say. " +
   "Keep the draft's style. JSON only."
 
 function termsOf(ctx: Ctx): { terms: string[]; related: string[]; person?: string; days?: number } {

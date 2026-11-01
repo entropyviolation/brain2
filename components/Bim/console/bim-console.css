@@ -42,30 +42,53 @@
   font-family: var(--bim-mono) !important;
 }
 
-/* ---- Keys: pale silver cap, drops 2px. Latched = CRT glass with a lamp. ---- */
+/* ---- Keys: the app's ortholinear keycap (`.todo-cap`, DESIGN_STYLE § Keycaps) ----
+   Pale silver face, inset 2px side skirts and a 4px foot. A press is the 2px drop with the
+   foot cut to 2px. Latched = CRT glass with the round green lamp. Same four `--cap-*` locals. */
 
-.bim-crt button {
-  font: 8px/1 var(--bim-pixel);
-  letter-spacing: 0.08em;
+.bim-crt button:not(.keycap-close) {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  font: 700 10px/1.1 var(--bim-pixel);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #111;
-  background: linear-gradient(180deg, #fbfbfb 0%, #d9dcde 55%, #bfc3c6 100%);
-  border: 1px solid #62676b;
-  border-radius: 3px;
-  box-shadow: inset 0 1px 0 #fff, 0 3px 0 #7c8185, 0 4px 0 rgba(0, 0, 0, 0.35);
-  padding: 7px 11px;
-  margin-bottom: 4px;
+  white-space: nowrap;
+  color: #1f2226;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  padding: 3px 10px 6px;
+  margin-bottom: 0;
   cursor: pointer;
   text-shadow: none;
+  transition: transform 60ms ease, box-shadow 60ms ease;
 }
 
 .bim-crt button:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ffffff 0%, #e4e7e9 55%, #c9cdd0 100%);
+  --cap-top: #f8f9fa;
+  --cap-top2: #e7eaed;
 }
 
-.bim-crt button:active:not(:disabled) {
+.bim-crt button:not(.keycap-close):active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 0 #7c8185;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 
 .bim-crt button:focus-visible {
@@ -78,42 +101,57 @@
   cursor: default;
 }
 
+/* Modifier cap: a darker grey for keys that act on the chat, not in it (clear, ✕, 📷). */
+.bim-crt button.is-mod {
+  --cap-top: #c9ccd0;
+  --cap-top2: #b9bdc1;
+  --cap-skirt: #969a9f;
+  --cap-edge: #55595d;
+  color: #25282b;
+}
+
 .bim-crt button.is-on,
 .bim-crt button[aria-expanded="true"].bim-llm-main {
   background: #070c0a;
   color: #7dffc4;
   border-color: #000;
-  box-shadow: inset 0 0 8px rgba(125, 255, 196, 0.18), 0 3px 0 #7c8185, 0 4px 0 rgba(0, 0, 0, 0.35);
+  transform: translateY(2px);
+  box-shadow: inset 0 0 8px rgba(125, 255, 196, 0.18), inset 0 -2px 0 #1b2622, 0 1px 0 rgba(0, 0, 0, 0.35);
   text-shadow: 0 0 6px rgba(125, 255, 196, 0.7);
 }
 
 .bim-crt button.is-on::before {
   content: "";
   display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  vertical-align: 1px;
+  flex: none;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #f4fff8, #7dffc4 55%, #0b4a32);
   box-shadow: 0 0 5px #7dffc4;
 }
 
+/* Primary (SEND): the app's primary cap, silver with a navy edge, ring, and square lamp. */
 .bim-crt button.is-primary {
-  background: linear-gradient(180deg, #14201c 0%, #070c0a 100%);
-  color: #7dffc4;
-  border-color: #000;
-  text-shadow: 0 0 6px rgba(125, 255, 196, 0.6);
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  outline: 2px solid #1d2a6b;
+  outline-offset: 1px;
 }
 
-.bim-crt button.is-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #1c2d27 0%, #0c1411 100%);
+.bim-crt button.is-primary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: #1d2a6b;
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
 }
 
 /* A key inside glass is still a keycap (the row button that expands stays a ghost). */
 .bim-glass button:not(.bim-llm-main) {
-  padding: 6px 10px;
-  margin-bottom: 4px;
+  padding: 3px 10px 6px;
 }
 
 .bim-glass .bim-llm-main {
@@ -194,13 +232,9 @@
   }
 }
 
+/* The ✕ is the shared keycap close (`components/keycap-close.tsx`); it keeps its own face. */
 .bim-crt .bim-crt-x {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border-radius: 3px;
-  font-size: 10px;
-  margin-bottom: 4px;
+  margin-left: auto;
 }
 
 .bim-crt-tabs {
@@ -218,7 +252,7 @@
 
 .bim-crt-tabs button {
   flex: 0 0 auto;
-  padding: 7px 14px;
+  padding: 4px 14px 7px;
 }
 
 .bim-crt-tabs .bim-crt-soon {
@@ -231,10 +265,41 @@
 }
 
 .bim-crt-tabs button.is-soon:not(.is-on) {
-  background: linear-gradient(180deg, #e3e5e6, #c6c9cb);
+  --cap-top: #e3e5e6;
+  --cap-top2: #d2d5d7;
   color: #50565a;
   border-style: dashed;
-  box-shadow: 0 2px 0 #8a8f93;
+}
+
+/* ---- MODE switch: router or LLM, on top of the chat glass ---- */
+
+.bim-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 2px;
+  min-width: 0;
+}
+
+.bim-mode-label {
+  font: 700 9px/1 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  color: #3d4246;
+}
+
+.bim-mode button {
+  min-width: 72px;
+}
+
+.bim-mode-says {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 6px;
+  font: 12px/1.3 var(--bim-mono);
+  color: #2b3034;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---- Body ---- */
@@ -457,8 +522,8 @@
 
 .bim-crt .bim-send button {
   min-width: 96px;
-  padding: 14px 12px;
-  font-size: 10px;
+  padding: 10px 12px 13px;
+  font-size: 11px;
 }
 
 .bim-quick {
@@ -469,11 +534,10 @@
 }
 
 .bim-quick button {
-  padding: 6px 9px;
+  padding: 3px 9px 6px;
 }
 
-/* LLM mode switch: sits at the right end of the quick row; the lamp is the shared .is-on. */
-.bim-quick .bim-llm-key {
+.bim-quick .bim-quick-gap {
   margin-left: auto;
 }
 
@@ -810,7 +874,6 @@
   .bim-crt .bim-crt-x {
     width: 44px;
     height: 44px;
-    margin-left: auto;
   }
 
   .bim-crt-tabs button {
@@ -821,24 +884,54 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Texting-app row: paperclip left, the well, a round send arrow right. */
   .bim-compose {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 6px;
+    align-items: end;
   }
 
   .bim-send {
-    flex-direction: row;
+    display: contents;
+  }
+
+  .bim-compose .bim-well {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 6px 12px;
+    border-radius: 18px;
   }
 
   .bim-crt .bim-send button {
-    flex: 1;
-    min-height: 44px;
-    padding: 10px;
+    grid-row: 1;
+    min-width: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .bim-crt .bim-send button[aria-label="Attach photo"] {
+    grid-column: 1;
+  }
+
+  .bim-crt .bim-send button.is-primary {
+    grid-column: 3;
+  }
+
+  .bim-crt .bim-send .bim-key-word {
+    display: none;
+  }
+
+  .bim-crt .bim-send .bim-key-icon {
+    display: block;
+    margin: auto;
   }
 
   .bim-well textarea {
-    min-height: 44px;
+    min-height: 32px;
     font-size: 16px !important;
+    resize: none;
   }
 
   .bim-chips button {
@@ -846,7 +939,22 @@
   }
 
   .bim-msg {
-    max-width: 96%;
+    max-width: 88%;
+  }
+
+  /* Subtle bubbles: a thin ring instead of the side rule, the tail corner squared. */
+  .bim-msg-text {
+    border: 1px solid color-mix(in srgb, var(--bim-ink) 28%, transparent);
+    border-radius: 12px 12px 12px 3px;
+  }
+
+  .bim-msg.is-you .bim-msg-text {
+    border: 1px solid color-mix(in srgb, var(--bim-lcd) 28%, transparent);
+    border-radius: 12px 12px 3px 12px;
+  }
+
+  .bim-msg.is-error .bim-msg-text {
+    border-color: var(--bim-fault);
   }
 
   .bim-llm-row {
@@ -902,4 +1010,11 @@
 .bim-crt .bim-send button[aria-label="Attach photo"] {
   min-width: 0;
   font-size: 16px;
+}
+
+/* Icons show on phone width only (the media query above); desktop keeps the words. */
+.bim-key-icon {
+  display: none;
+  width: 20px;
+  height: 20px;
 }

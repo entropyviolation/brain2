@@ -98,9 +98,8 @@ export function acceptBlocks(blocks: ProposedBlock[], opts: { force?: boolean } 
           const actPens = scopes.find((s) => s.id === ACTIVITY)?.pens ?? []
           const penId = matchPen(b.activity, actPens)?.id ?? ensureActivityPen(b.activity)
           const placePen = b.place ? matchPen(b.place.name, scopes.find((s) => s.id === LOCATION)?.pens ?? [])?.id || ensureLocationPen(b.place.name) : ""
-          const guess = b.startCert === "estimated" || b.endCert === "estimated"
           for (const p of pieces(b)) {
-            const base = { date: p.date, startMin: p.startMin, endMin: p.endMin, ...(guess ? { precision: "estimated" as const } : {}), ...(b.startCert === "estimated" ? { startCertainty: "estimated" as const } : {}), ...(b.endCert === "estimated" ? { endCertainty: "estimated" as const } : {}) }
+            const base = { date: p.date, startMin: p.startMin, endMin: p.endMin, ...(b.startCert === "estimated" ? { startCertainty: "estimated" as const } : {}), ...(b.endCert === "estimated" ? { endCertainty: "estimated" as const } : {}) }
             add.push({ ...base, scopeId: ACTIVITY, penId, notes: notesOf(b), generatedBy: { kind: "llm", id: `${HELPER_SURFACE}:${b.id}` } })
             if (placePen) add.push({ ...base, scopeId: LOCATION, penId: placePen, notes: "Created from Tracking helper.", generatedBy: { kind: "llm", id: `${HELPER_SURFACE}:${b.id}:place` } })
           }

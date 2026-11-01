@@ -24,7 +24,7 @@ describe("acceptBlocks", () => {
     expect(isHelperBlock(walk)).toBe(true)
     expect(walk.createdBy?.surface).toBe("tracking-helper")
     expect(walk.notes).toContain("Created from Tracking helper.")
-    expect(walk.precision).toBe("estimated")
+    expect(walk.precision).toBeUndefined() // a fuzzy edge is not an assumed block
     expect(walk.endCertainty).toBe("estimated")
     expect(walk.startCertainty).toBeUndefined()
     expect(undoLastAction()).toBe(true)

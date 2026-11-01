@@ -108,8 +108,8 @@ describe("EntryDialog", () => {
       endMin: 12 * 60,
       spanLock: "duration",
       durationEstimated: true,
-      precision: "estimated",
     })
+    expect(reload(entry.id)?.precision).toBeUndefined()
   })
 
   it("treats an end of midnight as the end of the day", () => {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import { ExternalLink } from "lucide-react"
 import { mergeListAttributes, listAttributeSchema, formatAttributeValue } from "@/components/Lists/attribute-editor"
 import { iconFor } from "@/components/Lists/lib/icon-utils"
 import { isMissed } from "@/lib/completion-status"
@@ -15,6 +16,7 @@ import {
 } from "@/lib/default-view-prefs"
 import { getItemType } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
+import { instagramProfileUrl, instagramUsernameOf } from "@/lib/instagram-profile-link"
 import { itemTitle } from "@/lib/item-utils"
 import { reminderRowCaption } from "@/lib/reminders"
 import type { AttributeDefinition, List, Task } from "@/lib/types"
@@ -131,6 +133,7 @@ export function ListContentDefault({
         const type = show.type ? typeLabel(task, openCategory, types) : ""
         const reminderWhen = reminderRowCaption(task)
         const when = reminderWhen || (show.date && task.scheduledDate ? safeDateFormat(task.scheduledDate) : "")
+        const igUser = instagramUsernameOf(task)
         return (
           <div
             key={task.id}
@@ -194,6 +197,21 @@ export function ListContentDefault({
                 </span>
               ))}
             </div>
+            {igUser ? (
+              <a
+                className="fm-read-ig"
+                href={instagramProfileUrl(igUser)}
+                target="_blank"
+                rel="noreferrer"
+                title={`Go to @${igUser} on Instagram`}
+                aria-label={`Go to @${igUser} on Instagram`}
+                data-testid="list-row-instagram"
+                draggable={false}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink aria-hidden />
+              </a>
+            ) : null}
           </div>
         )
       })}

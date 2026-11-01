@@ -33,6 +33,12 @@ Persists on `List.defaultView`. Independent of Details `detailsColumns` and
 Spreadsheet `sheetConfig`. Extra attributes are reading-row chips, not a
 spreadsheet column picker.
 
+## Go to Instagram
+
+_Last mapped: 2026-11-01._
+
+A row whose item has an Instagram username (`ig-username`, or `ig-profile` from an analysis import) ends in a small raised key with the open-in-new glyph. It links to `https://www.instagram.com/<name>/` in a new tab. On iPhone (Safari or the iOS app) that link opens the Instagram app when installed. The key does not open the row or start a drag. It shows on all seven Instagram lists and on any All Items view that holds those rows. It is not a Customize toggle. Helper: `lib/instagram-profile-link.ts`.
+
 Helpers: `lib/default-view-prefs.ts`. UI: `dialogs/DefaultViewSettings.tsx`.
 Rows: `list-content/ListContentDefault.tsx`. Folder **All Items** uses the same settings on `__all-items__{folderId}`; Home All on `__all-items__root`; see [`FOLDER_ALL_ITEMS.md`](FOLDER_ALL_ITEMS.md).
 

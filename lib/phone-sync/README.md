@@ -91,6 +91,10 @@ Brief: [`docs/phone-sync/04-health.md`](../../docs/phone-sync/04-health.md).
 
 `scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `BRAIN2_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushTracking` after a run that wrote rows. A source whose `enabled.json` entry is `false` is skipped for that tick. The location drain uses the same file: off means it waits and does not pull.
 
+_Last mapped: 2026-11-01_ The hub also starts **browser sync** (`startBrowserSync`): Chrome history from every profile, every `BRAIN2_BROWSER_SYNC_MINUTES` (default 15), into `data/chrome-history-inbox/`. See `lib/chrome-history-reader.ts`. It is not a `PhoneReader`: visits go to the app's IndexedDB, not Tracking rows.
+
+_Last mapped: 2026-11-01_ **Full Disk Access.** Texts and calls fail with "unable to open database file" when the process running the hub lacks it. Under launchd (`com.brain2.hub`) that process is the `node` binary the plist names, so grant Full Disk Access to that binary (its real path, e.g. `/opt/homebrew/Cellar/node/<v>/bin/node`). Started from a terminal, the terminal app needs it. On 2026-11-01 the hub here had been failing every tick since about 2026-10-30.
+
 _Last mapped: 2026-10-22_ Texts older than `BRAIN2_PHONE_SYNC_TEXT_DAYS` (default 30; `0` keeps every text out) stay in the disk archive only and do not become Tracking rows (`inTrackWindow` in `write.ts`). Tracking lives in localStorage, and one Mac had 302k texts back to 2018. Calls always count.
 
 _Last mapped: 2026-10-22_ **Hub storage.** `scripts/phone-hub.mjs` loads `phone-hub-polyfill.mjs` natively, and `phone-hub.ts` loads it again through jiti. That makes two module copies. `fillLocalStorage` and `dumpLocalStorage` must use the installed `globalThis.localStorage`; before this fix, the stores started empty and nothing the hub wrote reached the vault. Each sync pass also calls `rehydrateFromDisk()` first, so app edits made in between are not refused by the vault guard.

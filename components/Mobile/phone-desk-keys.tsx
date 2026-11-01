@@ -4,15 +4,16 @@
  * The iPhone app opens the desk page, not `/mobile/`. This group sits in the
  * header's Menu sheet beside Refresh and carries what the phone shell's top row
  * had that the desk lacks: the **Mac** key (✓ loaded, … loading, ✕ failed; tap to
- * reload), Mobile hub, BIM, NFC, Bulk Add, From Notes, and Phone Notes. On mount it engages
- * the Mac window (`lib/phone-window.ts`) and loads it, the same as the shell.
- * It also mounts the keycap keyboard (`keyboard/mobile-keyboard.tsx`), which
- * `/mobile/` gets from its layout. Anywhere but the iOS app it renders nothing.
+ * reload), Mobile hub, NFC, Bulk Add, From Notes, and Phone Notes. BIM is the
+ * header key beside Menu. On mount it engages the Mac window
+ * (`lib/phone-window.ts`) and loads it, the same as the shell.
+ * `PhoneKeyboard` mounts the keycap keyboard (`keyboard/mobile-keyboard.tsx`)
+ * outside the sheet, which `/mobile/` gets from its layout. Anywhere but the
+ * iOS app both render nothing.
  */
 "use client"
 
 import { useEffect, useState } from "react"
-import { BimKey } from "@/components/Bim/bim-key"
 import { openCaptureDoor } from "@/components/capture-door-bus"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
 import { MobileKeyboard } from "@/components/Mobile/keyboard/mobile-keyboard"
@@ -33,6 +34,13 @@ function isIosApp(): boolean {
   return typeof cap?.isNativePlatform === "function" && cap.isNativePlatform()
 }
 
+/** The keycap deck for the desk page in the iOS app. Lives outside the Menu sheet, so closing the sheet never touches it. */
+export function PhoneKeyboard() {
+  const [onPhone, setOnPhone] = useState(false)
+  useEffect(() => setOnPhone(isIosApp()), [])
+  return onPhone ? <MobileKeyboard /> : null
+}
+
 export function PhoneDeskKeys() {
   const [onPhone, setOnPhone] = useState(false)
   const [snap, setSnap] = useState(getPhoneWindowSnapshot)
@@ -51,7 +59,6 @@ export function PhoneDeskKeys() {
 
   return (
     <>
-    <MobileKeyboard />
     <fieldset className="b2-shell-group b2-shell-phone" data-ui-name="Phone keys" data-ui-docs="components/Mobile/README.md">
       <legend>Phone</legend>
       <div className="b2-shell-keys">
@@ -69,7 +76,6 @@ export function PhoneDeskKeys() {
         <Button type="button" variant="outline" size="sm" onClick={() => window.location.assign("/mobile/hub/")}>
           Mobile hub
         </Button>
-        <BimKey word="BIM" />
         <Button type="button" variant="outline" size="sm" onClick={() => window.location.assign("/mobile/nfc/")}>
           NFC
         </Button>

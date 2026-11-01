@@ -68,7 +68,7 @@ empty answer. Questions, corrections' routing, clocks, days, certainty, chaining
 `layerEntries`, inside `runAsAction` and `withItemWriteSource({ surface: "tracking-helper" })`. Rows are
 `generatedBy: { kind: "llm", id: "tracking-helper:<id>" }` (place: `…:place`), so they may overlap other LLM
 blocks and can be swept. Notes begin "Created from Tracking helper." and keep the person's sentence, the
-edges and how each was reached. A guessed edge is stored `estimated`. Time painted by hand refuses the
+edges and how each was reached. A guessed edge is stored as `startCertainty`/`endCertainty` `estimated`. The block itself is never marked assumed (`precision`) by Add; only the person flips that. Time painted by hand refuses the
 block unless the person presses **Add anyway**.
 
 ## Changing the shipped flow

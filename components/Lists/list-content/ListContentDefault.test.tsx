@@ -117,3 +117,29 @@ describe("ListContentDefault chrome", () => {
     expect(screen.getByTestId("list-default-read").className).toMatch(/compact/)
   })
 })
+
+describe("ListContentDefault Instagram key", () => {
+  it("rows with an Instagram username get a Go to Instagram link that does not open the row", () => {
+    const onTaskSelect = vi.fn()
+    renderDefault({
+      tasks: [item({ id: "ig", description: "Some.One", attributes: { "ig-username": "@Some.One" } })],
+      onTaskSelect,
+    })
+    const link = screen.getByTestId("list-row-instagram")
+    expect(link).toHaveAttribute("href", "https://www.instagram.com/some.one/")
+    expect(link).toHaveAttribute("target", "_blank")
+    expect(link).toHaveAccessibleName("Go to @some.one on Instagram")
+    fireEvent.click(link)
+    expect(onTaskSelect).not.toHaveBeenCalled()
+  })
+
+  it("an analysis profile attribute also counts", () => {
+    renderDefault({ tasks: [item({ attributes: { "ig-profile": "instagram.com/fan_1" } })] })
+    expect(screen.getByTestId("list-row-instagram")).toHaveAttribute("href", "https://www.instagram.com/fan_1/")
+  })
+
+  it("rows without one have no key", () => {
+    renderDefault()
+    expect(screen.queryByTestId("list-row-instagram")).not.toBeInTheDocument()
+  })
+})

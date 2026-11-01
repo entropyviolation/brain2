@@ -11,7 +11,7 @@ vi.mock("@/lib/bim-flow/chat-router", () => ({ routeChat: async () => state.rout
 vi.mock("@/lib/bim-flow/run-flow", () => ({ runFlow: async () => state.run }))
 
 import { routable } from "./bim-switchboard"
-import { sendToBim } from "./bim-chat"
+import { checkInLine, openAskBack, sendToBim } from "./bim-chat"
 import { useIngestStore } from "./ingest-store"
 
 const answered = (text: string): FlowRun => ({
@@ -79,10 +79,51 @@ describe("BIM chat LLM mode", () => {
     expect(useIngestStore.getState().events).toHaveLength(1)
   })
 
-  it("on, but the Ask flow fails: the line is still captured and the chip says why", async () => {
+  it("on, but the Ask flow fails: BIM says the lookup failed and why, and files nothing", async () => {
     state.run = { ...answered(""), messages: [{ ...answered("").messages[0]!, answers: [], steps: [{ nodeId: "x", ms: 1, port: "out", output: null, error: "Ollama 500" }] }] }
     const line = await sendToBim("when did I last shower?", new Date(), { llm: true })
-    expect(line.route).toMatch(/ask failed: Ollama 500/)
-    expect(useIngestStore.getState().events).toHaveLength(1)
+    expect(line.route).toMatch(/ask failed$/)
+    expect(line.text).toContain("model run failed (Ollama 500)")
+    expect(line.status).toBe("error")
+    expect(useIngestStore.getState().events).toHaveLength(0)
+  })
+
+  it("on, but no model reachable: BIM says it cannot reach the models, not that LLM is off", async () => {
+    state.crew = null
+    const line = await sendToBim("when did I last shower?", new Date(), { llm: true })
+    expect(line.text).toMatch(/can't reach the local models/)
+  })
+
+  it("on, no evidence: BIM says it does not know, asks you, and files your answer as a log naming the question", async () => {
+    const run = answered("The notes do not record when Elijah left for tour.")
+    run.messages[0]!.answers[0]!.confidence = "none"
+    state.run = run
+    const line = await sendToBim("when did elijah leave for tour?", new Date(), { llm: true })
+    expect(line.text).toMatch(/^I don't know\./)
+    expect(line.text).toMatch(/Tell me and I'll keep it/)
+    expect(openAskBack()).toEqual({ kind: "fact", question: "when did elijah leave for tour?" })
+    const saved = await sendToBim("oct 19", new Date(), { llm: true })
+    expect(saved.text).toMatch(/^Saved\./)
+    expect(useIngestStore.getState().events.at(-1)?.raw).toBe('log: oct 19 (answer to "when did elijah leave for tour?")')
+    expect(openAskBack()).toBeNull()
+  })
+
+  it("check-in: BIM asks what you are doing, and the answer is filed as doing:", async () => {
+    const asked = checkInLine("doing")
+    expect(asked.text).toBe("What are you doing right now?")
+    expect(asked.choices?.map((c) => c.text)).toEqual(["skip"])
+    await sendToBim("editing the zine", new Date(), { llm: false })
+    expect(useIngestStore.getState().events.at(-1)?.raw).toBe("doing: editing the zine")
+    checkInLine("mood")
+    const skipped = await sendToBim("skip", new Date(), { llm: false })
+    expect(skipped.text).toBe("Okay, skipped.")
+    expect(openAskBack()).toBeNull()
+  })
+
+  it("check-in: a new question drops the check-in instead of being filed as the answer", async () => {
+    checkInLine("doing")
+    const line = await sendToBim("when did I last shower?", new Date(), { llm: true })
+    expect(line.text).toBe("Oct 30, 2 days ago.")
+    expect(openAskBack()).toBeNull()
   })
 })

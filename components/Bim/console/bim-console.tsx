@@ -6,16 +6,20 @@
  * pick a numbered answer while a question is open. CHAT, LOG, COMMANDS (filterable), and LLM (week
  * suggestions, then a door to `/lab/bim-flow`) are live. GRAPH, ACTIONS, and RULES are **Planned**:
  * they say what they will show once BIM reads the knowledge graph and a model.
- * Every line runs through the Telegram bot's executor (`lib/ingest/bim-chat.ts`).
+ * Every line runs through the Telegram bot's executor (`lib/ingest/bim-chat.ts`). The MODE switch on
+ * top of the chat picks plain routing or the local models; BIM checks in ("ask me", and on open).
  */
 "use client"
 
 import { Fragment, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { ArrowUp, Paperclip } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { BIM_FULL, BIM_HANDLE, BIM_INTRO, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_CHAT_ID, useBimChatStore } from "@/lib/ingest/bim-chat"
 import { ALL_COMMANDS } from "@/lib/ingest/command-glossary"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
 import { LlmSuggestions } from "./llm-suggestions"
 import "@/components/Bim/bim-ink.css"
@@ -44,7 +48,7 @@ function clock(iso: string): string {
 }
 
 function ChatPane() {
-  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
+  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
   const choices = openChoices(lines)
   const box = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -69,6 +73,7 @@ function ChatPane() {
 
   return (
     <div className="bim-crt-pane">
+      <ModeSwitch llm={llm} setLlm={setLlm} />
       <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
         {lines.length === 0 ? (
           <div className="bim-empty">
@@ -148,11 +153,13 @@ function ChatPane() {
         </div>
         <div className="bim-send">
           <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />
-          <button data-no95 type="button" aria-label="Attach photo" disabled={busy} onClick={() => fileInput.current?.click()}>
-            📷
+          <button data-no95 type="button" className="is-mod" aria-label="Attach photo" disabled={busy} onClick={() => fileInput.current?.click()}>
+            <span className="bim-key-word">📷</span>
+            <Paperclip className="bim-key-icon" aria-hidden="true" />
           </button>
-          <button data-no95 type="button" className="is-primary" disabled={busy || (!draft.trim() && !photos.length)} onClick={() => submit()}>
-            SEND ↵
+          <button data-no95 type="button" className="is-primary" aria-label="Send" disabled={busy || (!draft.trim() && !photos.length)} onClick={() => submit()}>
+            <span className="bim-key-word">SEND ↵</span>
+            <ArrowUp className="bim-key-icon" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -162,20 +169,37 @@ function ChatPane() {
             {word}
           </button>
         ))}
-        <button data-no95 type="button" onClick={clear} disabled={!lines.length}>
+        <button data-no95 type="button" className="bim-quick-gap" disabled={busy} title="BIM asks what you are doing or how you feel" onClick={() => checkIn()}>
+          ask me
+        </button>
+        <button data-no95 type="button" className="is-mod" onClick={clear} disabled={!lines.length}>
           clear
         </button>
-        <button
-          data-no95
-          type="button"
-          className={`bim-llm-key${llm ? " is-on" : ""}`}
-          aria-pressed={llm}
-          title={llm ? "LLM mode on: questions are answered by the local models. Press to go back to commands only." : "LLM mode off: commands only, as BIM always worked. Press to route lines through the local models."}
-          onClick={() => setLlm(!llm)}
-        >
-          LLM {llm ? "on" : "off"}
-        </button>
       </div>
+    </div>
+  )
+}
+
+/**
+ * How BIM reads a line, on top of the chat where it is seen. ROUTER is the Telegram bot: commands,
+ * and plain lines filed by the grammar ladder. LLM adds the local models: questions are answered
+ * from your data, and an answer it cannot find becomes a question back to you.
+ */
+function ModeSwitch({ llm, setLlm }: { llm: boolean; setLlm: (on: boolean) => void }) {
+  return (
+    <div className="bim-mode" role="radiogroup" aria-label="How BIM reads a line">
+      <span className="bim-mode-label">MODE</span>
+      <button data-no95 type="button" role="radio" aria-checked={!llm} className={llm ? undefined : "is-on"} onClick={() => setLlm(false)}>
+        router
+      </button>
+      <button data-no95 type="button" role="radio" aria-checked={llm} className={llm ? "is-on" : undefined} onClick={() => setLlm(true)}>
+        llm
+      </button>
+      <span className="bim-mode-says">
+        {llm
+          ? "Local models answer questions from your data, and ask you when they don't know."
+          : "Plain routing, like the Telegram bot: commands run, lines are filed. No models."}
+      </span>
     </div>
   )
 }
@@ -232,6 +256,7 @@ function Dossier() {
   const pending = useIngestStore((s) => s.pendingByChat[`simulate:${BIM_CHAT_ID}`])
   const count = useIngestStore((s) => s.events.filter((e) => e.chatId === BIM_CHAT_ID).length)
   const busy = useBimChatStore((s) => s.busy)
+  const llm = useBimLlmMode((s) => s.on)
   return (
     <aside className="bim-crt-side">
       <div className="bim-glass bim-card">
@@ -247,6 +272,8 @@ function Dossier() {
           </dd>
           <dt>TELEGRAM</dt>
           <dd>{BIM_HANDLE}</dd>
+          <dt>MODE</dt>
+          <dd>{llm ? "LLM · local models" : "router · no models"}</dd>
           <dt>OPEN THREAD</dt>
           <dd>{pending ? (pending.ritual?.flow ?? pending.kind) : "none"}</dd>
           <dt>LOGGED</dt>
@@ -275,9 +302,7 @@ export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange
             {BIM_SHORT}
           </div>
           <span className="bim-crt-name">{BIM_FULL}</span>
-          <button data-no95 type="button" className="bim-crt-x" onClick={() => onOpenChange(false)} aria-label="Close BIM Chat">
-            ✕
-          </button>
+          <KeycapClose className="bim-crt-x" label="Close BIM Chat" onClick={() => onOpenChange(false)} />
         </div>
         <nav className="bim-crt-tabs" aria-label="BIM console tabs">
           {TABS.map((t, i) => (

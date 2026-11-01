@@ -1701,15 +1701,17 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             else delete next.durationEstimated
           }
           if ("clockCertainty" in patch) {
+            // Fuzzy edges (start/endCertainty) say how sure the clocks are. They never decide "assumed".
+            const edges = "startCertainty" in patch || "endCertainty" in patch
             if (patch.clockCertainty === "estimated") {
               next.clockCertainty = "estimated"
-              next.precision = "estimated"
+              if (!edges) next.precision = "estimated"
             } else if (patch.clockCertainty === "unknown") {
               next.clockCertainty = "unknown"
-              if (!("precision" in patch)) delete next.precision
+              if (!("precision" in patch) && !edges) delete next.precision
             } else {
               delete next.clockCertainty
-              if (!("precision" in patch)) delete next.precision
+              if (!("precision" in patch) && !edges) delete next.precision
             }
           }
           if ("moodReading" in patch) {

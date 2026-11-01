@@ -23,7 +23,6 @@ export function certaintyPatch(start: TrackingClockCertainty, end: TrackingClock
     startCertainty: start === "exact" ? undefined : start,
     endCertainty: end === "exact" ? undefined : end,
     clockCertainty: worst === "exact" ? undefined : worst,
-    precision: worst === "exact" ? undefined : ("estimated" as const),
   }
 }
 
@@ -118,9 +117,8 @@ export function resolveEdge(own: EdgeState, other: EdgeState): Resolution {
 /** Patch that sets one end of `e`, keeping the other end's certainty and an "assumed" stamp. */
 export function edgePatch(e: TimeEntry, edge: Edge, st: EdgeState): Partial<TimeEntry> {
   if (isInstant(e)) return { startMin: st.min, endMin: st.min, ...certaintyPatch(st.c, st.c) }
-  const was = worseOf(edgeOf(e, "start").c, edgeOf(e, "end").c) !== "exact"
   const p = certaintyPatch(edge === "start" ? st.c : edgeOf(e, "start").c, edge === "end" ? st.c : edgeOf(e, "end").c)
-  return { ...(edge === "start" ? { startMin: st.min } : { endMin: st.min }), ...p, precision: p.precision ?? (was ? undefined : e.precision) }
+  return { ...(edge === "start" ? { startMin: st.min } : { endMin: st.min }), ...p }
 }
 
 /** The block next to an edge in the same view: the one before a start, the one after an end. */

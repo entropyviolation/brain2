@@ -12,8 +12,11 @@ import { Button } from "@/components/ui/button"
 
 type ConsoleProps = { open: boolean; onOpenChange: (open: boolean) => void }
 
-/** `word` prints a word key instead of the terminal glyph (the phone sheet). */
-export function BimKey({ word }: { word?: string } = {}) {
+/**
+ * `word` prints a word key instead of the terminal glyph. `phoneBar` is the
+ * phone header key beside Menu: a plain button that wears that bar's keycap.
+ */
+export function BimKey({ word, phoneBar }: { word?: string; phoneBar?: string } = {}) {
   const [open, setOpen] = useState(false)
   const [Console, setConsole] = useState<ComponentType<ConsoleProps> | null>(null)
 
@@ -30,6 +33,11 @@ export function BimKey({ word }: { word?: string } = {}) {
 
   return (
     <>
+      {phoneBar ? (
+        <button type="button" className={phoneBar} title="BIM Chat" aria-label="BIM Chat" onClick={() => setOpen(true)}>
+          <SquareTerminal aria-hidden="true" />
+        </button>
+      ) : (
       <Button
         variant="outline"
         size="sm"
@@ -41,6 +49,7 @@ export function BimKey({ word }: { word?: string } = {}) {
       >
         {word ?? <SquareTerminal />}
       </Button>
+      )}
       {Console ? <Console open={open} onOpenChange={setOpen} /> : null}
     </>
   )
