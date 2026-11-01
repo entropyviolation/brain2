@@ -864,6 +864,7 @@ clear. Families:
 | KG-Q1, KG-Q5 | `lib/graph/pattern-questions.ts`. One triple `? s p o` with `*`, plus the house questions. Cmd-K shows triples and a template sentence. | Variables, paths, optional, aggregates, saved patterns. |
 | KG-NL2, KG-NL3 | Template sentences in that same module and in Cmd-K. | BIM, read-aloud, a full phrase table per predicate. |
 | KG-M2, KG-M3 | `lib/graph/machinery.ts` `whereFrom` and `whatReadsThis`. Shown under the weekly graph review. | Delete-confirm chrome. A row for every store key (KG-M1 stays planned). |
+| KG-V3, KG-V5 (2026-11-01) | Data → Library → **Atlas** (`components/Analytics/atlas/`). The whole-vault `KnowledgeGraph` as one plate: kind, order, and family filters; orders as stroke (derived dashed); degree cap with "showing N of M"; Find with 1–2 hop focus; node readout. Below it, the schema category: types as boxes, relations as arrows. Layout `lib/graph/atlas-layout.ts`. | Edge inspector (KG-V4), line grammar per family (KG-V2), insight sizes and community tints wired to real analytics, emergent-schema widths. |
 | E3 | Observation addresses count in `lib/belief-strength.ts` at trust 1. `evidenceMissingFromSpine` lists addresses the spine no longer has. The belief is not rewritten. | No `formulation` type (GS-5 is still planned). Beliefs are the records that carry evidence links. |
 
 ### 5.1 Data model (KG-D)

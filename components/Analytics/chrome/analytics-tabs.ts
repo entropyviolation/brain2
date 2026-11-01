@@ -82,6 +82,7 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "stages", label: "Stages" },
       { id: "weight", label: "Weight" },
       { id: "graph", label: "Graph" },
+      { id: "atlas", label: "Atlas" },
     ],
   },
   {
@@ -207,6 +208,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Importance, cognitive load, and entropy already stored on items. Missing values stay missing.",
   graph:
     "Missing and uncertain facts in one slice: people, or items that already have a link, capped at 40. A missing row is a reciprocal or triad suggestion, or a person with no links, and is not drawn as a stored link. Uncertain rows are open inbox proposals. This view does not write a link.",
+  atlas:
+    "The whole vault as one graph: items, lists, pens, days and the other addresses, with every edge read at open. Strokes name the order: recorded solid ink, observed cobalt, derived dashed, inferred dotted. The nodes with the most edges are placed first, and the count says how many of the total are shown. Chips hide node kinds, orders, or keep one relation family. Find focuses a node and lights one or two hops. Click a node for its kind, type, degree and edges. Drag pans, the wheel zooms. Below, types are boxes and relations are arrows from domain to codomain. This view does not write a link.",
   browser:
     "Chrome history, merged across profiles. The Brain2 extension sends each finished local day at 12:05am when this app is open; a JSON file also lands in Downloads. Quick Chrome History Export (JSON, CSV, or Excel) still works — rename history.json to the profile name before adding. A later file only adds visits that are not already here. Visits per day, week by hour, sites and kinds of site, sessions, Google searches, and every YouTube video with a topic guessed from its title. Files stay on this computer. The shared date range does not apply here.",
   health:
