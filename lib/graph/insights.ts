@@ -126,6 +126,9 @@ export function hubs(g: KnowledgeGraph | Projection, opts: GraphView & { minDegr
 }
 
 /** Brandes betweenness, undirected, unnormalised: each unordered pair counts once. */
+/** Above this many linked nodes, `insightSentences` leaves the betweenness line out. */
+export const BETWEENNESS_NODE_CAP = 1500
+
 export function betweenness(g: KnowledgeGraph | Projection, view: GraphView = {}): Ranked[] {
   const p = "adj" in g ? g : project(g, view)
   const cb = new Map(p.ids.map((id) => [id, 0]))
@@ -483,7 +486,8 @@ export function insightSentences(
     })
 
   const pairs = (linked * (linked - 1)) / 2
-  for (const r of betweenness(p).slice(0, top)) {
+  // Brandes is O(nodes × edges). Past the cap the sentence is skipped, not estimated.
+  for (const r of linked <= BETWEENNESS_NODE_CAP ? betweenness(p).slice(0, top) : []) {
     if (r.score <= 0) break
     out.push({ id: `betweenness:${r.id}`, kind: "betweenness", nodeIds: [r.id], sentence: `${among}, ${label(r.id)} sits on the shortest paths of ${num(r.score)} of the ${pairs} node pairs.`, n: linked, order: "derived" })
   }
