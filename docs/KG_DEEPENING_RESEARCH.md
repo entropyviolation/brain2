@@ -55,7 +55,11 @@ Read for this file: `lib/links.ts`, `lib/graph/relation-rules.ts`,
   `addLink` and records no source either, except inbox proposals, which get
   `status: "accepted"`. `graph-quality.ts` re-runs four sources to guess
   which one made a dismissed key. So an accept rate per source cannot be
-  counted today. Section 4 fixes that first.
+  counted today. Section 4 fixes that first. _Partly built 2026-11-01:_ the
+  shelf now calls `recordAction` (`lib/graph/graph-usage-store.ts`) with the
+  source and relation, and `lib/graph/feedback.ts` counts them. The ledger
+  line and the KD-IE6 pattern id are still **Planned**, and nothing calls
+  `recordVisit` yet.
 - **Small tension with L10.** The noisy-source line in
   `graph-quality.ts` ends "Mute it on the Links tab." That reads as advice.
   A fact form is "Muting is on the Links tab."
@@ -220,8 +224,11 @@ category feature. It reads, counts, and writes nothing.
 `densify/mention.ts` matches full titles (≥ 3 characters) and close
 people's first names and nicknames (≥ 2) in an item's text fields, one row
 per name, with the sentence as evidence. `RelationDef.phrases` already
-holds forward and inverse phrases per relation. `relation-word` is a listed
-source with no file yet. Wiki links are Wave 12 (`KG-N2`).
+holds forward and inverse phrases per relation. _Partly built 2026-11-01:_
+`relation-word` now has `lib/graph/densify/relation-word.ts`, fed by
+`lib/graph/extract/relation-phrases.ts`, and `lib/graph/extract/wiki-links.ts`
+reads `[[Title]]` and `[[relation::Title]]`. The Aho–Corasick matcher and
+capture-time linking stay **Planned**.
 
 ### 2.3 Proposals
 

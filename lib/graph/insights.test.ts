@@ -157,7 +157,7 @@ describe("insightSentences", () => {
     expect(kinds.has("pagerank")).toBe(true)
     expect(kinds.has("hub")).toBe(true)
     const hub = out.find((i) => i.kind === "hub")!
-    expect(hub.sentence).toBe("Among 10 linked nodes (item nodes, all edges, 2026-10-01 – 2026-10-09), n00 links to 9 of the other 10 nodes.")
+    expect(hub.sentence).toBe("Among 10 linked nodes (item nodes, all edges, 2026-10-01 – 2026-10-09), n00 links to 9 of the other 9 nodes.")
     for (const i of out) {
       expect(i.sentence).not.toMatch(/\b(will|causes?|should)\b/i)
       expect(i.order).toBe("derived")

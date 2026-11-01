@@ -103,7 +103,7 @@ function countText(row: AcceptanceRow): string {
 export function reweightSuggestions<T extends { source: string; relation: string; score: number }>(
   rows: readonly T[],
   stats: AcceptanceStats,
-  opts: { floor?: number; bySource?: boolean; byRelation?: boolean } = {},
+  opts: { floor?: number; bySource?: boolean; byRelation?: boolean; sourceKey?: (row: T) => string } = {},
 ): (T & { baseScore: number; why: string })[] {
   const floor = opts.floor ?? GRAPH_SAMPLE_FLOOR
   const sources = new Map(stats.sources.map((r) => [r.key, r]))
@@ -112,9 +112,10 @@ export function reweightSuggestions<T extends { source: string; relation: string
     const parts: string[] = []
     let factor = 1
     if (opts.bySource !== false) {
-      const s = sources.get(row.source)
+      const key = opts.sourceKey?.(row) ?? row.source
+      const s = sources.get(key)
       factor *= shrunkFactor(s, floor)
-      parts.push(s ? `${row.source}: ${countText(s)}` : `${row.source}: no decisions yet`)
+      parts.push(s ? `${key}: ${countText(s)}` : `${key}: no decisions yet`)
     }
     if (opts.byRelation !== false) {
       const r = relations.get(row.relation)

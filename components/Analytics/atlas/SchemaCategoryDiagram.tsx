@@ -71,7 +71,7 @@ export function SchemaCategoryDiagram({ objects, morphisms }: { objects: readonl
   return (
     <div className="atlas-schema" data-testid="schema-category">
       <div className="atlas-schema-well">
-        <svg width={width} height={height} role="img" aria-label="Types and relations">
+        <svg width={width} height={height} role="group" aria-label="Types and relations">
           <defs>
             <marker id="atlas-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0 0 L8 4 L0 8 z" className="atlas-arrow-head" />
@@ -119,7 +119,10 @@ export function SchemaCategoryDiagram({ objects, morphisms }: { objects: readonl
                 aria-label={`${text}: ${name(b.dom)} to ${name(b.cod)}`}
                 onClick={() => setOpen(open === b.key ? null : b.key)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") setOpen(open === b.key ? null : b.key)
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    setOpen(open === b.key ? null : b.key)
+                  }
                 }}
               >
                 <path d={d} className="atlas-morphism-hit" />

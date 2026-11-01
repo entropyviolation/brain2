@@ -6,7 +6,7 @@
  */
 "use client"
 
-import { reweightSuggestions, sourceAcceptance } from "@/lib/graph/feedback"
+import { reweightSuggestions, sourceAcceptance, sourceOfOrigin } from "@/lib/graph/feedback"
 import { useGraphUsageStore } from "@/lib/graph/graph-usage-store"
 import { useMemo } from "react"
 import { itemLinkTypeId } from "@/lib/item-types"
@@ -84,9 +84,13 @@ export function useLinksGraph(task: Task) {
     // Feedback loop: past accepts and dismisses per source and relation lower a noisy source's score (never raise it). Order only.
     const stats = sourceAcceptance([...proposals, ...decisions])
     const reweigh = (rows: Suggestion[]) => reweightSuggestions(rows, stats)
+    // An inbox row is counted under its origin (`densify:x` → x, `model`, `import`, `extract:…`), not under "proposal".
+    const originOf = new Map(proposals.map((p) => [p.id, sourceOfOrigin(p.origin)]))
+    const reweighProposals = (rows: Suggestion[]) =>
+      reweightSuggestions(rows, stats, { sourceKey: (r) => originOf.get((r as { proposalId?: string }).proposalId ?? "") ?? r.source })
     const suggestions = mergeSuggestions(
       task,
-      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), relationWordSuggestions(task, ctx, buildPhraseTable(defs)), mentionSource(task, ctx), coTime, proposalSuggestions].map(reweigh),
+      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), relationWordSuggestions(task, ctx, buildPhraseTable(defs)), mentionSource(task, ctx), coTime].map(reweigh).concat([reweighProposals(proposalSuggestions)]),
       { links, muted, scopeOk },
     )
 
