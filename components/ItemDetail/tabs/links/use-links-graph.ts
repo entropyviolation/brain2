@@ -23,6 +23,8 @@ import { reciprocalSource } from "@/lib/graph/densify/reciprocal"
 import { triadSource } from "@/lib/graph/densify/triad"
 import { coMemberSource } from "@/lib/graph/densify/co-member"
 import { mentionSource } from "@/lib/graph/densify/mention"
+import { relationWordSuggestions } from "@/lib/graph/densify/relation-word"
+import { buildPhraseTable } from "@/lib/graph/extract/relation-phrases"
 import { coTimeSource } from "@/lib/graph/densify/co-time"
 import { coTimeRows } from "@/lib/graph/densify/co-time-rows"
 import { openProposalsFor, useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
@@ -78,7 +80,7 @@ export function useLinksGraph(task: Task) {
     const coTime = person ? coTimeSource(task, ctx, coTimeRows(task, tasks, entries, scopes), true) : []
     const suggestions = mergeSuggestions(
       task,
-      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), mentionSource(task, ctx), coTime, proposalSuggestions],
+      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), relationWordSuggestions(task, ctx, buildPhraseTable(defs)), mentionSource(task, ctx), coTime, proposalSuggestions],
       { links, muted, scopeOk },
     )
 
