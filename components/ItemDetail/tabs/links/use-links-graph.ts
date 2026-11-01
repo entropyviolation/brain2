@@ -6,6 +6,8 @@
  */
 "use client"
 
+import { reweightSuggestions, sourceAcceptance } from "@/lib/graph/feedback"
+import { useGraphUsageStore } from "@/lib/graph/graph-usage-store"
 import { useMemo } from "react"
 import { itemLinkTypeId } from "@/lib/item-types"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
@@ -43,6 +45,7 @@ export function useLinksGraph(task: Task) {
   const withDerived = useLinksViewStore((s) => s.withDerived)
   const muted = useLinksViewStore((s) => s.mutedSources)
   const proposals = useGraphInboxStore((s) => s.proposals)
+  const decisions = useGraphUsageStore((s) => s.actions)
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
 
@@ -78,9 +81,12 @@ export function useLinksGraph(task: Task) {
     })
     const person = task.type === PERSON_TYPE_ID || !!task.personProfile || (task.personPipelines?.length ?? 0) > 0
     const coTime = person ? coTimeSource(task, ctx, coTimeRows(task, tasks, entries, scopes), true) : []
+    // Feedback loop: past accepts and dismisses per source and relation lower a noisy source's score (never raise it). Order only.
+    const stats = sourceAcceptance([...proposals, ...decisions])
+    const reweigh = (rows: Suggestion[]) => reweightSuggestions(rows, stats)
     const suggestions = mergeSuggestions(
       task,
-      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), relationWordSuggestions(task, ctx, buildPhraseTable(defs)), mentionSource(task, ctx), coTime, proposalSuggestions],
+      [reciprocalSource(task, ctx), ruleSuggestions, triadSource(task, ctx), coMemberSource(task, ctx), relationWordSuggestions(task, ctx, buildPhraseTable(defs)), mentionSource(task, ctx), coTime, proposalSuggestions].map(reweigh),
       { links, muted, scopeOk },
     )
 
@@ -97,5 +103,5 @@ export function useLinksGraph(task: Task) {
 
     return { links, lattice, derived, suggestions, density: egoDensity(task.id, links), checks, notes, precheck, title, rules }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task, tasks, lists, relations, overrides, rules, withDerived, muted, proposals, entries, scopes])
+  }, [task, tasks, lists, relations, overrides, rules, withDerived, muted, proposals, decisions, entries, scopes])
 }

@@ -10,6 +10,11 @@
 
 import { useRef, useState } from "react"
 import { useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
+import { extractProposals } from "@/lib/graph/extract/vault-extract"
+import { feedbackSentences, sourceAcceptance } from "@/lib/graph/feedback"
+import { useGraphUsageStore } from "@/lib/graph/graph-usage-store"
+import { mineChainRules, minedRuleProposal } from "@/lib/graph/insights"
+import { buildKnowledgeGraph } from "@/lib/graph/knowledge-graph"
 import { graphSnapshot } from "@/lib/graph/graph-snapshot"
 import { parseProposalFile } from "@/lib/graph/proposal-schema"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -50,6 +55,7 @@ export function GraphInbox() {
   const proposals = useGraphInboxStore((s) => s.proposals)
   const addProposals = useGraphInboxStore((s) => s.addProposals)
   const setStatus = useGraphInboxStore((s) => s.setStatus)
+  const decisions = useGraphUsageStore((s) => s.actions)
   const [includePrivate, setIncludePrivate] = useState(false)
   const [line, setLine] = useState<string | null>(null)
   const file = useRef<HTMLInputElement>(null)
@@ -82,6 +88,19 @@ export function GraphInbox() {
     }
   }
 
+  const scanVault = () => {
+    const rows = extractProposals(tasks, allRelations(), new Date(), { title: (t) => itemTitleOrUntitled(t) })
+    const added = addProposals(rows)
+    setLine(`Read the text of ${tasks.length} items. Found ${rows.length} written link${rows.length === 1 ? "" : "s"}; ${added} new in the inbox.`)
+  }
+  const minePatterns = () => {
+    const graph = buildKnowledgeGraph({ items: tasks, lists })
+    const mined = mineChainRules(graph, { known: rules })
+    const added = addProposals(mined.map((r) => minedRuleProposal(r, new Date(), relationLabel)))
+    setLine(mined.length ? `${mined.length} repeating chain${mined.length === 1 ? "" : "s"} met the floor of 7; ${added} new in the inbox.` : "No chain of two relations repeats 7 or more times yet.")
+  }
+  const feedback = feedbackSentences(sourceAcceptance([...proposals, ...decisions]))
+
   return (
     <div className="rel-inbox" data-testid="graph-inbox">
       <p className="rel-note">A model works outside the app: it reads the snapshot and hands back a proposal file. Nothing reaches the vault until you accept it.</p>
@@ -94,6 +113,12 @@ export function GraphInbox() {
         </button>{" "}
         <button type="button" className="an-chip" onClick={() => file.current?.click()}>
           Import proposals
+        </button>{" "}
+        <button type="button" className="an-chip" onClick={scanVault}>
+          Read the vault for written links
+        </button>{" "}
+        <button type="button" className="an-chip" onClick={minePatterns}>
+          Find repeating chains
         </button>
         <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => e.target.files?.[0] && importFile(e.target.files[0])} />
       </p>
@@ -124,6 +149,18 @@ export function GraphInbox() {
           </li>
         ))}
       </ul>
+      {feedback.length ? (
+        <>
+          <h4 className="rel-group-head">Accepted and dismissed, by source</h4>
+          <ul className="rel-list" data-testid="graph-feedback">
+            {feedback.map((f) => (
+              <li key={f} className="rel-row">
+                {f}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
       {open.some((p) => p.kind !== "link") ? <p className="rel-note">Relation and rule proposals: open the sheet or the Rules tab and make them there. Nothing is created quietly.</p> : null}
     </div>
   )
