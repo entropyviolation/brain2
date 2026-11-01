@@ -30,6 +30,7 @@ import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip
 import { TrackingDayNotes } from "@/components/Home/Tracking/tracking-day-notes"
 import { PenPalette } from "@/components/Home/Tracking/pen-palette"
 import { PenModeDeck } from "@/components/Home/Tracking/pen-mode-bar"
+import { TrackingHelperKey } from "@/components/Home/Tracking/helper/tracking-helper-key"
 import { TrackingSettingsDialog, type TrackingSettingsSection } from "@/components/Home/Tracking/settings/tracking-view-settings-dialog"
 import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
@@ -111,6 +112,7 @@ export function TrackingDesk({
                 >
                   <TrackingGearIcon />
                 </button>
+                <TrackingHelperKey />
               </div>
             </div>
           </div>

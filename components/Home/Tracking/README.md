@@ -54,6 +54,7 @@ Public doors stay in this folder. Private files sit in:
 - `cabinet/` — paint tools and the pen well
 - `cycle/` — cycle well, cycle detail, encyclopedia (`cycle-figures/` stays beside it)
 - `day-log/` — Day Log week board and confirm planned
+- `helper/` — the Tracking Helper chat (Chat key, dialog, proposal board)
 - `day-summary/` — photos, period summaries, refer to
 - `entry-dialog/` — block editor sections
 - `grids/` — week grid, infinite strip, cell size, fill, stroke, markers, ghost, day tubes
@@ -317,6 +318,12 @@ _Last mapped: 2026-10-28._ A log row on a day shelf, the week agenda, or a shelf
 ## Activity Log
 
 `tracking-activity-log.tsx` lists the day as events. **Log activity** (`log-activity-dialog.tsx`) lives once on this tab’s `.trk-period` trailing latch; Time Grid and Day Log keep the shared `.trk-grid-rail` latch — types an optional name, a when, optional notes, and a pen. Start/End default to the selected calendar day; a **Date** latch is optional so 11 PM–1 AM can name both days without forcing a date pick. **Now** inside the start, end, or discrete **When** clock (`ClockPicker`) snaps that field to this minute without changing the date. Toggle **Discrete event** for a single clock time (smoked weed, fell asleep, sunrise) that can start or end a state block of another pen. Block rows are CRT lines (tabular time, color pad, name, duration). Untracked gaps are a quieter white hairline grid row: time window, Untracked · duration, white note field, Fill, 22px `.trk-gap-add` **+**. **Done this day** lists To Do items finished on this calendar day in a sunken `.trk-aside-well`. **Place as assumed** paints a hatched block; **Confirm** makes it certain. **Find** (`tracking-find.tsx`) sits in the period trailing well and jumps to a block. Discrete log instants from any view are listed with this day’s rows (one clock time). Occupancy and gaps stay this view’s intervals.
+
+## Tracking Helper (chat)
+
+_Last mapped: 2026-11-01_
+
+A **Chat** key on the fascia, right of the gear (the gear stays beside the view keys), opens the Tracking Helper: say what you did and roughly when, and it proposes Activity and Location blocks to add (stamped `llm`, created by `tracking-helper`, one undo step). Files in `helper/` (`tracking-helper-key.tsx`, `tracking-helper-dialog.tsx`, `proposal-board.tsx`, css). Logic in `lib/tracking-helper/`; see [`helper/README.md`](helper/README.md) and [`docs/TRACKING_HELPER.md`](../../../docs/TRACKING_HELPER.md). Desktop only for now.
 
 ## The desk (Home Tracking layout)
 
