@@ -70,6 +70,7 @@ _Last mapped: 2026-10-22_
 
 - **Machines.** No always-on Mac yet. A Mac mini (not a Mac Studio; any Apple silicon is enough) becomes the always-on reader and hub. Until then the laptop reads Messages and call history whenever it is open; the Mac keeps full history, so each run catches up and nothing is lost.
 - **Oracle stays the front door.** It cannot read Apple data, but it catches Telegram and the phone app's location and Health uploads while the Mac sleeps, all sealed to the public key.
+- **Oracle is temporary (2026-10-31).** It is a relay until a home server exists, and it may also carry sealed phone patches. Tiers and exit plan: [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md). The old MacBook Pro is named **Boa** there. It is not running (2026-10-30), so the Mac mini above is still the plan.
 - **Sideloading from Xcode** is OK.
 - **Message bodies are kept**, in the local vault only.
 - **Backups are encrypted** before bodies land (built 2026-10-22, [`BIM_BACKUP.md`](BIM_BACKUP.md) → Encryption).

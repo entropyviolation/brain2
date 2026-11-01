@@ -133,7 +133,7 @@ export function FriendMissionSheet({
           {phase === "offer" && actionable ? (
             <>
               <div className="baby-friend-mission-actions">
-                <button type="button" className="friend-key is-on" data-no95="" onClick={() => accept()}>
+                <button type="button" className="friend-key is-primary" data-no95="" onClick={() => accept()}>
                   Accept mission
                 </button>
                 <button type="button" className="friend-key" data-no95="" onClick={() => setPhase("breakdown")}>
@@ -151,7 +151,7 @@ export function FriendMissionSheet({
             <div className="baby-friend-mission-actions">
               <button
                 type="button"
-                className="friend-key is-on"
+                className="friend-key is-primary"
                 data-no95=""
                 onClick={() => {
                   const lines = splitFriendTask(nudge.taskId, nudge.title)
@@ -180,7 +180,7 @@ export function FriendMissionSheet({
             <div className="baby-friend-mission-actions">
               <button
                 type="button"
-                className="friend-key is-on"
+                className="friend-key is-primary"
                 data-no95=""
                 onClick={() => {
                   const step = ensureFriendFirstStep(nudge.taskId, nudge.title)
@@ -229,7 +229,7 @@ export function FriendMissionSheet({
               {nudge.kind === "whim" ? (
                 <button
                   type="button"
-                  className="friend-key is-on"
+                  className="friend-key is-primary"
                   data-no95=""
                   onClick={() => {
                     const done = useBabyAnimalsStore.getState().completeMission(nudge.taskId)

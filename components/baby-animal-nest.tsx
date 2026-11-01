@@ -2,7 +2,7 @@
  * components/baby-animal-nest.tsx — Header friend for today's companion
  *
  * Click the photograph for this friend's details (the same page as Gallery
- * Details). The chat button beside the name asks them to speak. Click the
+ * Details). The chat key (speech-bubble icon) beside the name asks them to speak. Click the
  * bubble for the mission sheet, which loads then. The friend jewel itself
  * stays eager. A refresh does not parse the sheet until that open. The task
  * opens item detail on top, Accept starts a same-day point window, Decline walks
@@ -302,7 +302,6 @@ export function BabyAnimalNest() {
         <span className="baby-nest-controls">
           <button type="button" className="baby-nest-chat-hit" onClick={speak} aria-label={chatLabel} title={chatLabel} disabled={busy}>
             <ChatMark />
-            Chat
           </button>
           <button type="button" className="baby-nest-gallery-hit" onClick={() => setGalleryOpen(true)}>
             Gallery

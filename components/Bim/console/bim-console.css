@@ -1,210 +1,507 @@
-/* components/Bim/console/bim-console.css — green-phosphor BIM console (desktop). */
+/*
+ * components/Bim/console/bim-console.css — BIM console (desktop).
+ *
+ * A silver handheld like the Friend instrument, with CRT glass wells inside it. The ink is
+ * `bim-ink.css`: ghost green drifting to ghost blue. Sections read in different inks:
+ * BIM = drifting ink, you = LCD white-blue, log = counter-drift, commands = violet, LLM = both.
+ * Every button carries `data-no95` and is skinned here, so the Win95 keycap stays off.
+ */
 
 .ui-dialog-content.bim-crt {
-  --crt-fg: #7dff9a;
-  --crt-dim: #3fa457;
-  --crt-bg: #04140a;
-  --crt-line: #2f9a4a;
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: min(1040px, calc(100vw - 32px));
   max-width: none;
-  height: min(720px, calc(100vh - 48px));
-  padding: 10px 12px;
-  border: 2px solid var(--crt-line);
-  border-radius: 10px;
-  /* The Win95 dialog face paints grey; this screen is its own glass. */
+  height: min(740px, calc(100vh - 48px)) !important;
+  max-height: calc(100vh - 48px) !important;
+  padding: 10px 12px 8px;
+  overflow: hidden !important;
+  border: 0;
+  border-radius: 16px;
   background:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at center, #0a2414 0%, var(--crt-bg) 75%) !important;
-  color: var(--crt-fg) !important;
-  font: 13px/1.45 "VT323", ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  box-shadow: 0 0 0 4px #0b1f12, 0 0 40px rgba(60, 255, 120, 0.15);
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.7), transparent 28%),
+    linear-gradient(180deg, #e6e6e6 0%, #c8c8c8 42%, #9a9a9a 100%) !important;
+  color: #1c140f !important;
+  font: 14px/1.5 var(--bim-mono);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 0 0 1px #2a2a2a,
+    0 10px 0 #6e6e6e,
+    0 24px 48px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Buttons carry `data-no95` so the Win95 keycap skin stays off them. */
-.ui-dialog-content.bim-crt button,
-.ui-dialog-content.bim-crt textarea {
-  font-family: "VT323", ui-monospace, "SF Mono", Menlo, monospace !important;
+/* The Win95 skin and button resets paint their own face; these stay. */
+.ui-dialog-content.bim-crt button {
+  font-family: var(--bim-pixel) !important;
 }
+
+.ui-dialog-content.bim-crt .bim-chips button,
+.ui-dialog-content.bim-crt .bim-glass .bim-llm-main {
+  font-family: var(--bim-mono) !important;
+}
+
+/* ---- Keys: pale silver cap, drops 2px. Latched = CRT glass with a lamp. ---- */
 
 .bim-crt button {
-  font: inherit;
-  color: var(--crt-fg);
-  background: transparent;
-  background-image: none;
-  box-shadow: none;
-  border: 1px solid var(--crt-line);
-  border-radius: 3px;
-  cursor: pointer;
+  font: 8px/1 var(--bim-pixel);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #111;
+  background: linear-gradient(180deg, #fbfbfb 0%, #d9dcde 55%, #bfc3c6 100%);
+  border: 1px solid #62676b;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 #fff, 0 3px 0 #7c8185, 0 4px 0 rgba(0, 0, 0, 0.35);
+  padding: 7px 11px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  text-shadow: none;
 }
 
-.bim-crt button:hover:not(:disabled),
+.bim-crt button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, #e4e7e9 55%, #c9cdd0 100%);
+}
+
+.bim-crt button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 0 #7c8185;
+}
+
 .bim-crt button:focus-visible {
-  background: rgba(125, 255, 154, 0.12);
-  outline: none;
+  outline: 2px solid #000080;
+  outline-offset: 1px;
 }
 
 .bim-crt button:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: default;
 }
 
-.bim-crt-top,
-.bim-crt-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  font-size: 11px;
-  color: var(--crt-dim);
+.bim-crt button.is-on,
+.bim-crt button[aria-expanded="true"].bim-llm-main {
+  background: #070c0a;
+  color: #7dffc4;
+  border-color: #000;
+  box-shadow: inset 0 0 8px rgba(125, 255, 196, 0.18), 0 3px 0 #7c8185, 0 4px 0 rgba(0, 0, 0, 0.35);
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.7);
 }
 
-.bim-crt-x {
-  padding: 0 6px;
+.bim-crt button.is-on::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f4fff8, #7dffc4 55%, #0b4a32);
+  box-shadow: 0 0 5px #7dffc4;
+}
+
+.bim-crt button.is-primary {
+  background: linear-gradient(180deg, #14201c 0%, #070c0a 100%);
+  color: #7dffc4;
+  border-color: #000;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.6);
+}
+
+.bim-crt button.is-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #1c2d27 0%, #0c1411 100%);
+}
+
+/* A key inside glass is still a keycap (the row button that expands stays a ghost). */
+.bim-glass button:not(.bim-llm-main) {
+  padding: 6px 10px;
+  margin-bottom: 4px;
+}
+
+.bim-glass .bim-llm-main {
+  color: var(--bim-ink);
+  text-shadow: var(--bim-glow);
+  background: transparent;
+  border: 1px solid var(--bim-line);
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.bim-glass .bim-llm-main:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bim-ink) 12%, transparent);
+}
+
+.bim-glass .bim-llm-main:active:not(:disabled) {
+  transform: none;
+  background: color-mix(in srgb, var(--bim-ink) 22%, transparent);
+}
+
+.bim-glass .bim-llm-main:focus-visible {
+  outline: 1px dotted var(--bim-ink);
+}
+
+/* ---- Title plate and tabs ---- */
+
+.bim-crt-top,
+.bim-crt-tabs,
+.bim-foot,
+.bim-compose,
+.bim-quick,
+.bim-tools {
+  flex: none;
+}
+
+.bim-crt-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bim-crt-plate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font: 14px/1 var(--bim-pixel);
+  letter-spacing: 0.2em;
+}
+
+.bim-crt-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 8px/1.2 var(--bim-pixel);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #454a4e;
+}
+
+.bim-lamp {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f4fff8, var(--bim-ink) 55%, #0b3a32);
+  box-shadow: 0 0 6px var(--bim-ink);
+  animation: bim-pulse 3.2s ease-in-out infinite;
+}
+
+.bim-lamp.is-idle {
+  animation: none;
+  background: radial-gradient(circle at 35% 35%, #8a9694, #2a3331);
+  box-shadow: none;
+}
+
+@keyframes bim-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.bim-crt .bim-crt-x {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 3px;
+  font-size: 10px;
+  margin-bottom: 4px;
 }
 
 .bim-crt-tabs {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 0 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.bim-crt-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .bim-crt-tabs button {
-  padding: 3px 12px;
+  flex: 0 0 auto;
+  padding: 7px 14px;
 }
 
-.bim-crt-tabs button.is-on {
-  background: var(--crt-fg);
-  color: var(--crt-bg);
+.bim-crt-tabs .bim-crt-soon {
+  margin-left: auto;
+  align-self: center;
+  padding-right: 2px;
+  font: 7px/1 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  color: #5a6064;
 }
+
+.bim-crt-tabs button.is-soon:not(.is-on) {
+  background: linear-gradient(180deg, #e3e5e6, #c6c9cb);
+  color: #50565a;
+  border-style: dashed;
+  box-shadow: 0 2px 0 #8a8f93;
+}
+
+/* ---- Body ---- */
 
 .bim-crt-main {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 252px;
+  /* Without this the row grows to its content and the glass is clipped instead of scrolling. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 10px;
 }
 
 .bim-crt-left {
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.bim-crt-box {
-  border: 1px solid var(--crt-line);
-  border-radius: 4px;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.25);
+.bim-crt-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.bim-crt-log {
+.bim-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  margin: 0;
-  white-space: pre-wrap;
+  overscroll-behavior: contain;
+  padding: 12px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bim-line) transparent;
   overflow-wrap: anywhere;
 }
 
-.bim-crt-line {
-  margin: 0 0 12px;
-  white-space: pre-wrap;
-  text-transform: none;
-}
-
-.bim-crt-line.is-you {
-  color: #b7ffc6;
-}
-
-.bim-crt-line.is-error {
-  color: #ff8f8f;
-}
-
-.bim-crt-line.is-wait,
-.bim-crt-dim {
-  color: var(--crt-dim);
-}
-
-.bim-crt-who {
+.bim-legend {
+  margin: 0 0 6px;
+  font: 8px/1.4 var(--bim-pixel);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--bim-legend);
+  text-shadow: none;
 }
 
-.bim-crt-compose {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px;
-  gap: 10px;
+.bim-dim {
+  color: var(--bim-dim);
+  text-shadow: none;
 }
 
-.bim-crt-input {
+/* ---- Chat ---- */
+
+.bim-msg {
   display: flex;
   flex-direction: column;
+  gap: 3px;
+  max-width: 88%;
+  margin: 0 0 12px;
+}
+
+.bim-msg-text {
+  margin: 0;
+  white-space: pre-wrap;
+  padding: 7px 10px;
+  border-left: 2px solid var(--bim-ink);
+  background: color-mix(in srgb, var(--bim-ink) 6%, transparent);
+}
+
+.bim-msg.is-you {
+  align-self: flex-end;
+  align-items: flex-end;
+  color: var(--bim-lcd);
+  text-shadow: 0 0 1px rgba(205, 238, 255, 0.9), 0 0 7px rgba(205, 238, 255, 0.35);
+}
+
+.bim-msg.is-you .bim-msg-text {
+  border-left: 0;
+  border-right: 2px solid var(--bim-lcd);
+  background: rgba(205, 238, 255, 0.06);
+  text-align: left;
+}
+
+.bim-msg.is-error .bim-msg-text {
+  border-color: var(--bim-fault);
+  color: var(--bim-fault);
+  text-shadow: none;
+}
+
+.bim-msg-who {
+  font: 7px/1 var(--bim-pixel);
+  letter-spacing: 0.16em;
+  color: var(--bim-legend);
+  text-shadow: none;
+}
+
+.bim-glass .bim-msg-who {
+  opacity: 0.8;
+}
+
+/* BIM thinking: three bars, the Dash's "loading". */
+.bim-wait {
+  display: inline-flex;
+  gap: 3px;
+  padding: 6px 10px;
+}
+
+.bim-wait i {
+  width: 4px;
+  height: 10px;
+  background: var(--bim-ink);
+  box-shadow: var(--bim-glow);
+  animation: bim-bars 1s ease-in-out infinite;
+}
+
+.bim-wait i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.bim-wait i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes bim-bars {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scaleY(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.bim-empty p {
+  margin: 0 0 10px;
+}
+
+.bim-chips {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-.bim-crt-input textarea {
-  min-height: 72px;
-  resize: none;
-  border: 0;
-  background: transparent;
-  color: var(--crt-fg);
-  font: inherit;
+.bim-chips button {
   text-transform: none;
-  caret-color: var(--crt-fg);
-  outline: none;
+  font: 13px/1.2 var(--bim-mono);
+  letter-spacing: 0;
+}
+
+.bim-chips kbd {
+  margin-right: 6px;
+  padding: 0 4px;
+  font: 8px/1.6 var(--bim-pixel);
+  color: #070c0a;
+  background: var(--bim-ink);
+  text-shadow: none;
+}
+
+.bim-compose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.bim-well {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+}
+
+.bim-well textarea {
+  padding: 4px 6px !important;
+  min-height: 56px;
+  max-height: 140px;
+  resize: vertical;
   border: 0 !important;
   outline: none !important;
   box-shadow: none !important;
-  background-color: transparent !important;
+  background: transparent !important;
+  color: var(--bim-lcd);
+  font: 14px/1.5 var(--bim-mono) !important;
+  text-shadow: 0 0 1px rgba(205, 238, 255, 0.9), 0 0 7px rgba(205, 238, 255, 0.3);
+  caret-color: var(--bim-ink);
 }
 
-.bim-crt-input textarea::placeholder {
-  color: var(--crt-dim);
+.bim-well textarea::placeholder {
+  color: var(--bim-dim);
+  text-shadow: none;
 }
 
-.bim-crt-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.bim-well textarea:focus,
+.bim-well textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-.bim-crt-chips button {
-  padding: 1px 8px;
-  text-transform: none;
+.bim-well:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--bim-line),
+    inset 0 0 28px rgba(0, 0, 0, 0.7),
+    0 0 0 3px #3b4044,
+    0 -1px 0 3px #6b7175,
+    0 0 14px color-mix(in srgb, var(--bim-ink) 25%, transparent);
 }
 
-.bim-crt-quick button {
-  font-size: 11px;
-}
-
-.bim-crt-pad {
+.bim-send {
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   gap: 6px;
 }
 
-.bim-crt-keys {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
+.bim-crt .bim-send button {
+  min-width: 96px;
+  padding: 14px 12px;
+  font-size: 10px;
 }
 
-.bim-crt-keys button {
-  padding: 3px 0;
-  font-size: 11px;
+.bim-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 6px;
+  padding: 0 2px;
 }
 
-.bim-crt-send {
-  padding: 6px 0;
-  background: rgba(125, 255, 154, 0.18) !important;
+.bim-quick button {
+  padding: 6px 9px;
 }
+
+/* LLM mode switch: sits at the right end of the quick row; the lamp is the shared .is-on. */
+.bim-quick .bim-llm-key {
+  margin-left: auto;
+}
+
+/* LLM mode: how a line was routed, and what the answer read. */
+.bim-msg-route {
+  font: 10px/1.4 var(--bim-mono);
+  letter-spacing: 0.04em;
+  color: var(--bim-violet);
+  text-shadow: none;
+  opacity: 0.85;
+}
+
+.bim-msg-ev {
+  font: 11px/1.45 var(--bim-mono);
+  color: var(--bim-ink-2);
+}
+
+.bim-msg-ev summary {
+  cursor: pointer;
+  color: var(--bim-legend);
+}
+
+.bim-msg-ev p {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Dossier ---- */
 
 .bim-crt-side {
   min-height: 0;
@@ -213,82 +510,310 @@
   gap: 10px;
 }
 
-.bim-crt-card {
+.bim-card {
+  padding: 12px;
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 10px;
-  font-size: 11px;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 13px;
 }
 
-.bim-crt-card dl {
+.bim-card dl {
   margin: 0;
 }
 
-.bim-crt-card dt {
-  color: var(--crt-dim);
+.bim-card dt {
+  font: 7px/1.4 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  color: var(--bim-legend);
+  text-shadow: none;
 }
 
-.bim-crt-card dd {
-  margin: 0 0 4px;
-  overflow-wrap: anywhere;
+.bim-card dd {
+  margin: 0 0 6px;
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
 }
 
-.bim-crt-face {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 3 / 4;
-  border: 1px solid var(--crt-line);
-  background: repeating-linear-gradient(0deg, rgba(125, 255, 154, 0.12) 0 2px, transparent 2px 4px);
-  font-size: 26px;
-  letter-spacing: 0.1em;
+/* A pixel face. It blinks, and its mouth moves while BIM is working. */
+.bim-face {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 4px;
+  background: #020708;
+  box-shadow: inset 0 0 0 1px var(--bim-line), inset 0 0 14px rgba(0, 0, 0, 0.8);
 }
 
-.bim-crt-bio {
+.bim-face i {
+  position: absolute;
+  top: 20px;
+  width: 9px;
+  height: 11px;
+  background: var(--bim-ink);
+  box-shadow: var(--bim-glow);
+  animation: bim-blink 5s steps(1) infinite;
+}
+
+.bim-face i:nth-of-type(1) {
+  left: 14px;
+}
+
+.bim-face i:nth-of-type(2) {
+  right: 14px;
+}
+
+.bim-face b {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 14px;
+  height: 3px;
+  background: var(--bim-ink);
+  box-shadow: var(--bim-glow);
+}
+
+.bim-face.is-busy b {
+  animation: bim-talk 0.45s steps(1) infinite;
+}
+
+@keyframes bim-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes bim-talk {
+  50% {
+    height: 7px;
+    left: 24px;
+    right: 24px;
+  }
+}
+
+.bim-bio {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--bim-lcd);
+  text-shadow: 0 0 6px rgba(205, 238, 255, 0.28);
   white-space: pre-wrap;
-  font-size: 11px;
 }
 
-.bim-crt-wide {
+.bim-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+  font: 7px/1.4 var(--bim-pixel);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #50565a;
+}
+
+/* ---- Log, commands ---- */
+
+.bim-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bim-tools input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid #62676b;
+  border-radius: 3px;
+  background: #fff;
+  color: #111;
+  font: 13px/1.3 var(--bim-mono);
+}
+
+.bim-tools input:focus {
+  outline: 2px solid #000080;
+  outline-offset: -1px;
+}
+
+.bim-event {
+  margin: 0 0 10px;
+  padding: 0 0 8px;
+  border-bottom: 1px dotted var(--bim-line);
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
+}
+
+.bim-event.is-error {
+  color: var(--bim-fault);
+  text-shadow: none;
+}
+
+.bim-event small {
+  display: block;
+  font: 8px/1.5 var(--bim-pixel);
+  letter-spacing: 0.1em;
+  color: var(--bim-legend);
+  text-shadow: none;
+  text-transform: uppercase;
+}
+
+.bim-event span {
+  display: block;
+  color: var(--bim-dim);
+  text-shadow: none;
+}
+
+.bim-commands {
+  margin: 0;
+  white-space: pre-wrap;
+  font: 13px/1.55 var(--bim-mono);
+  color: var(--bim-violet);
+  text-shadow: 0 0 1px rgba(179, 156, 255, 0.9), 0 0 7px rgba(179, 156, 255, 0.35);
+}
+
+/* ---- LLM tab ---- */
+
+.bim-llm-sug {
+  margin-bottom: 14px;
+}
+
+.bim-llm-sec {
+  margin-top: 16px;
+}
+
+.bim-llm-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--bim-line);
+  font: 9px/1.3 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
+}
+
+.bim-llm-head em {
+  margin-left: auto;
+  font-style: normal;
+  padding: 1px 6px;
+  color: #070c0a;
+  background: var(--bim-ink-2);
+  text-shadow: none;
+}
+
+.bim-llm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: start;
+  margin: 0 0 6px;
+}
+
+.bim-glass .bim-llm-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
   text-transform: none;
+  font: 14px/1.4 var(--bim-mono);
+  letter-spacing: 0;
+  color: var(--bim-lcd);
+  text-shadow: 0 0 6px rgba(205, 238, 255, 0.25);
+  white-space: normal;
 }
 
-/* Phone width: one column of glass. Chat, then compose, then quick keys.
-   The dossier and keypad step aside; the system keyboard has digits. */
+.bim-llm-main .bim-dim {
+  font: 8px/1.6 var(--bim-pixel);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bim-glass .bim-llm-main[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--bim-ink) 10%, transparent);
+  color: var(--bim-lcd);
+}
+
+.bim-llm-row .bim-act {
+  min-height: 34px;
+}
+
+.bim-llm-row .bim-yes {
+  color: #0b5a3c;
+}
+
+.bim-llm-why {
+  grid-column: 1 / -1;
+  padding: 6px 0 8px 12px;
+  border-left: 1px solid var(--bim-line);
+  font-size: 13px;
+}
+
+.bim-llm-why p {
+  margin: 0 0 6px;
+}
+
+.bim-llm-words {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 8px;
+  padding: 6px 8px;
+  resize: vertical;
+  border: 1px solid var(--bim-line) !important;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.35) !important;
+  color: var(--bim-lcd);
+  font: 13px/1.45 var(--bim-mono) !important;
+  outline: none;
+}
+
+.bim-llm-words:focus {
+  border-color: var(--bim-ink) !important;
+}
+
+/* ---- Phone width: one column of glass. The dossier steps aside. ---- */
 @media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
   .ui-dialog-content.bim-crt {
     width: auto !important;
     height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--phone-sheet-top, 0px)) !important;
     margin-top: var(--phone-sheet-top, auto) !important;
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 10px;
     font-size: 15px;
-    overflow: hidden !important;
   }
 
-  .bim-crt-top > span:nth-child(2),
-  .bim-crt-foot > span:first-child,
+  /* The keycap deck (`Mobile/keyboard`) is fixed over the bottom of the screen
+     and the sheet is top-anchored. Shrink the sheet to what the deck leaves. */
+  html.m-keyboard-open .ui-dialog-content.bim-crt {
+    height: calc(100dvh - env(safe-area-inset-top) - var(--phone-sheet-top, 0px) - var(--m-keyboard-h, 280px) - 8px) !important;
+  }
+
+  .bim-crt-name,
+  .bim-foot,
   .bim-crt-side,
-  .bim-crt-keys {
+  .bim-crt-soon {
     display: none;
   }
 
-  .bim-crt-x {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .bim-crt-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  .bim-crt .bim-crt-x {
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
   }
 
   .bim-crt-tabs button {
-    flex: 0 0 auto;
     min-height: 40px;
   }
 
@@ -296,30 +821,85 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .bim-crt-compose {
+  .bim-compose {
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
   }
 
-  .bim-crt-input textarea {
-    min-height: 48px;
-    font-size: 16px;
+  .bim-send {
+    flex-direction: row;
   }
 
-  .bim-crt-chips button {
+  .bim-crt .bim-send button {
+    flex: 1;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  .bim-well textarea {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  .bim-chips button {
     min-height: 36px;
   }
 
-  .bim-crt-send {
-    min-height: 44px;
+  .bim-msg {
+    max-width: 96%;
+  }
+
+  .bim-llm-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .bim-llm-row .bim-act:last-of-type {
+    grid-column: 2;
   }
 }
 
-/* LLM tab: suggestion sections above the flow bench door. */
-.bim-llm-sug { margin-bottom: 14px; }
-.bim-llm-sec { margin-top: 10px; }
-.bim-llm-head { letter-spacing: 0.08em; }
-.bim-llm-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; margin: 3px 0; }
-.bim-llm-main { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; }
-.bim-llm-why { flex-basis: 100%; padding-left: 10px; border-left: 1px solid currentColor; opacity: 0.85; }
-.bim-llm-words { width: 100%; box-sizing: border-box; background: transparent; color: inherit; font: inherit; border: 1px solid currentColor; padding: 4px 6px; resize: vertical; }
+/* Photos waiting in the compose well: thumbnails with a remove key, caption below. */
+.bim-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bim-photo {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--bim-ink);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bim-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bim-crt .bim-photo button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.bim-photo-error {
+  margin: 0;
+  color: var(--bim-fault);
+  font: 12px/1.4 var(--bim-mono);
+}
+
+.bim-crt .bim-send button[aria-label="Attach photo"] {
+  min-width: 0;
+  font-size: 16px;
+}

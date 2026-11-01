@@ -1,10 +1,14 @@
 # BIM connection map
 
+**BIM** = Brain Interface Manager (the Telegram phone bot).
+
 _Last mapped: 2026-10-20_
 
 Every machine, every link, every secret, and where each one lives. Setup steps:
 [`BIM_SETUP_FOR_BEGINNERS.md`](BIM_SETUP_FOR_BEGINNERS.md). Design:
-[`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md).
+[`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md). The Oracle VM is a temporary
+relay; the plan for phone sync through it and its exit is
+[`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md).
 
 ```
  Phone ──Telegram servers──► [Oracle VM  brain2-capture]  (public IP: SSH only)

@@ -1,7 +1,8 @@
 /**
  * components/friend-details/portrait/FriendDetailsPortrait.tsx — Photograph, bond, today’s mission
  *
- * The lace window and the bond meter share one top and one bottom.
+ * The round porthole and the bond meter share one top and one bottom.
+ * The ring's metal finish follows the bond level.
  * Chat previews a line and does not write a mission.
  * Change picture and Remove live here, off the gallery card.
  */
@@ -22,25 +23,25 @@ import {
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { FriendSpeechBubble } from "@/components/friend-details/FriendSpeechBubble"
 import { FriendDetailsReadouts } from "@/components/friend-details/portrait/FriendDetailsReadouts"
+import { PixelIcon } from "@/components/friend-details/PixelIcon"
+import { PixelOrb, useMissionOrbSrc } from "@/components/friend-details/PixelOrb"
+import { matchTaskIcon } from "@/lib/pixel-icon-match"
 
-const FRAME: Record<FriendDialogEffect, string> = {
-  plain: "arch",
-  bounce: "arch",
-  heart: "heart",
-  stamp: "cameo",
-  whisper: "medallion",
-  sparkle: "tribal",
-}
-
-const UNLOCKS = [
-  { level: 2, label: "oval cameo" },
-  { level: 3, label: "round medallion" },
-  { level: 4, label: "heart window" },
-  { level: 5, label: "tribal frame" },
+/** The porthole ring's metal. Level 1 is polished chrome; each level after earns a finish. */
+const RINGS = [
+  { level: 1, finish: "chrome", label: "polished chrome ring" },
+  { level: 2, finish: "brushed", label: "brushed steel ring" },
+  { level: 3, finish: "blue", label: "blue anodized ring" },
+  { level: 4, finish: "rose", label: "rose anodized ring" },
+  { level: 5, finish: "rainbow", label: "rainbow titanium ring" },
 ]
 
+function ringFinish(bond: BondProgress): string {
+  return [...RINGS].reverse().find((row) => bond.level >= row.level)?.finish ?? "chrome"
+}
+
 function nextUnlock(bond: BondProgress): string {
-  const next = UNLOCKS.find((row) => bond.level < row.level)
+  const next = RINGS.find((row) => bond.level < row.level)
   if (!next) return ""
   const left = (next.level - 1) * bond.need - bond.score
   if (left <= 0) return ""
@@ -93,7 +94,7 @@ export function FriendDetailsPortrait({
   const streak = friendStreak(missions, now)
   const glow = Math.min(1, 0.3 + (bond.level - 1) * 0.14)
   const pinned = pinnedMission(missions, now)
-  const frame = FRAME[draft.dialogEffect]
+  const ring = ringFinish(bond)
   const fileRef = useRef<HTMLInputElement>(null)
   const [bloom, setBloom] = useState(false)
   const [flying, setFlying] = useState(false)
@@ -115,7 +116,7 @@ export function FriendDetailsPortrait({
     <div className="friend-stage">
       <div className="friend-face">
         <figure
-          className={`friend-portrait is-${draft.dialogEffect} is-lace is-frame-${frame}${powering ? " is-powering" : ""}${bloom ? " is-bloom" : ""}${levelPulse ? " is-level" : ""}`}
+          className={`friend-portrait is-${draft.dialogEffect} is-lace is-ring-${ring}${powering ? " is-powering" : ""}${bloom ? " is-bloom" : ""}${levelPulse ? " is-level" : ""}`}
           style={{ ["--bond-glow" as string]: String(glow) }}
         >
           <div className="friend-portrait-glass">
@@ -132,10 +133,11 @@ export function FriendDetailsPortrait({
         <div className="friend-side">
           <div className="friend-side-head">
             <h2 className="friend-name">
+              <PixelIcon name="heart" size={18} />
               {name}
               {levelPulse ? <span className="friend-level-flash"> LV {bond.level}</span> : null}
             </h2>
-            <button type="button" className="friend-dismiss" data-no95="" aria-label="Dismiss friend details" onClick={onDismiss}>
+            <button type="button" className="friend-key friend-dismiss" data-no95="" aria-label="Dismiss friend details" onClick={onDismiss}>
               Close
             </button>
           </div>
@@ -158,6 +160,7 @@ export function FriendDetailsPortrait({
                     disabled={pictureBusy}
                     onClick={() => fileRef.current?.click()}
                   >
+                    <PixelIcon name="camera" />
                     {pictureBusy ? "Cutting out…" : "Change picture"}
                   </button>
                   <input
@@ -175,6 +178,7 @@ export function FriendDetailsPortrait({
               ) : null}
               {onRemove ? (
                 <button type="button" className="friend-key" data-no95="" onClick={onRemove}>
+                  <PixelIcon name="trash" />
                   Remove
                 </button>
               ) : null}
@@ -182,11 +186,12 @@ export function FriendDetailsPortrait({
           ) : null}
           <button
             type="button"
-            className={`friend-say${bloom ? " is-down" : ""}`}
+            className={`friend-key friend-say${bloom ? " is-down" : ""}`}
             data-no95=""
             onClick={chat}
             title="Preview a line with these settings. Nothing is logged."
           >
+            <PixelIcon name="chat" />
             Chat
           </button>
         </div>
@@ -223,9 +228,11 @@ function FriendMissionStrip({
   onOpen?: (id: string) => void
   onFinish: () => void
 }) {
+  const orb = useMissionOrbSrc(mission?.taskId)
   if (!mission) {
     return (
       <div className={`friend-mission is-${effect} is-scope`}>
+        <PixelIcon name="letter" size={20} />
         <p className="friend-mission-title">No mission today.</p>
       </div>
     )
@@ -239,6 +246,7 @@ function FriendMissionStrip({
   return (
     <div className={`friend-mission is-${effect} is-scope is-${mission.status}`}>
       <span className={`friend-lamp is-${mission.status}`} aria-hidden="true" />
+      <PixelIcon name={matchTaskIcon(title, mission.source)} size={24} />
       {onOpen ? (
         <button type="button" className="friend-mission-title is-play" data-no95="" onClick={() => onOpen(mission.id)}>
           {title}
@@ -246,16 +254,17 @@ function FriendMissionStrip({
       ) : (
         <p className="friend-mission-title">{title}</p>
       )}
+      {orb ? <PixelOrb src={orb} size={24} /> : null}
       {clock ? <span className="friend-due is-seg">{clock}</span> : <span className="friend-due is-seg is-empty" />}
       {canAccept ? (
-        <button type="button" className="friend-key is-on" data-no95="" onClick={() => useBabyAnimalsStore.getState().acceptMission(mission.taskId)}>
+        <button type="button" className="friend-key is-primary" data-no95="" onClick={() => useBabyAnimalsStore.getState().acceptMission(mission.taskId)}>
           Accept mission
         </button>
       ) : null}
       {canFinish ? (
         <button
           type="button"
-          className="friend-key is-on"
+          className="friend-key is-primary"
           data-no95=""
           onClick={() => {
             onFinish()

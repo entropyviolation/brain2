@@ -111,8 +111,8 @@ describe("BookshelfPhone", () => {
   })
 })
 
-function popupEvents(spy: ReturnType<typeof vi.spyOn>): CustomEvent[] {
+function popupEvents(spy: { mock: { calls: unknown[][] } }): CustomEvent[] {
   return spy.mock.calls
-    .map((call) => call[0])
+    .map((call) => call[0] as unknown)
     .filter((event): event is CustomEvent => event instanceof CustomEvent && event.type === OPEN_ITEM_POPUP_EVENT)
 }

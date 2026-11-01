@@ -6,6 +6,9 @@ Goal: BIM stores every text even with your computer off, nothing readable by
 Oracle, an alert when it goes down, and a clean move to your own device later.
 Design and threat table: [`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md).
 Alternatives: [`BIM_HOSTING_OPTIONS.md`](BIM_HOSTING_OPTIONS.md).
+_2026-10-31:_ Oracle is a **temporary** relay. The interim phone and desktop
+sync plan, and how it retires when the home server arrives, is
+[`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md).
 
 Decisions so far: Oracle Free VM as a sealed capture box · Healthchecks.io
 messages Telegram when pings stop · **Tailscale** for the VM↔Mac link (no public port)

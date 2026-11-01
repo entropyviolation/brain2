@@ -447,7 +447,7 @@ describe("ingestIncoming", () => {
     expect(result.status).toBe("ok")
     if (result.status !== "ok") return
     expect(result.reply).toMatch(/BIM/)
-    expect(result.reply).toMatch(/Brain2 Ingestion Messenger/)
+    expect(result.reply).toMatch(/Brain Interface Manager/)
     expect(result.reply).toMatch(/\{prefix\} info/)
     expect(result.reply).toMatch(/all commands/)
     expect(result.reply).toMatch(/groc/)

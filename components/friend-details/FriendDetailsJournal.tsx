@@ -3,17 +3,23 @@
  *
  * Today shows the newest two rows and no heading. Journal is the playlist:
  * day strips, one row per mission, decline reason indented under the row.
+ * Each title leads with the pixel icon its words match and ends with the
+ * task's own orb as a pixel sprite.
  */
 "use client"
 
 import { friendSourceLabel } from "@/lib/friend-copy"
 import { friendMissionStatusLabel, type FriendMission } from "@/lib/friend-mission"
 import { formatExactTime, formatRelativeTime, groupMissionsByDay } from "@/lib/friend-stats"
+import { matchTaskIcon } from "@/lib/pixel-icon-match"
+import { PixelIcon } from "@/components/friend-details/PixelIcon"
+import { PixelOrb, useMissionOrbSrc } from "@/components/friend-details/PixelOrb"
 
 function LogRow({ row, now, onOpen }: { row: FriendMission; now: Date; onOpen: (id: string) => void }) {
   const when = formatRelativeTime(row.offeredAt, now)
   const exact = formatExactTime(row.offeredAt)
   const title = row.stepTitle || row.title
+  const orb = useMissionOrbSrc(row.taskId)
   return (
     <li>
       <button
@@ -25,7 +31,11 @@ function LogRow({ row, now, onOpen }: { row: FriendMission; now: Date; onOpen: (
       >
         <span className={`friend-lamp is-${row.status}`} title={friendMissionStatusLabel(row.status)} />
         <span className="friend-log-main">
-          <span className="friend-log-title">{title}</span>
+          <span className="friend-log-title">
+            <PixelIcon name={matchTaskIcon(title, row.source)} />
+            {title}
+            {orb ? <PixelOrb src={orb} /> : null}
+          </span>
           <span className="friend-log-source">{friendSourceLabel(row.source)}</span>
         </span>
         <time dateTime={row.offeredAt} title={exact}>

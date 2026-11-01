@@ -20,11 +20,16 @@ describe("BIM Chat screens", () => {
     expect(screen.getByText("ping")).toBeTruthy()
   })
 
-  it("desktop console keypad types digits and planned tabs say so", async () => {
+  it("console digit taps a numbered answer, and planned tabs say so", async () => {
+    useBimChatStore.setState({
+      lines: [{ id: "q", at: new Date().toISOString(), who: "bim", text: "Which?", choices: [{ label: "Milk", text: "1" }, { label: "Eggs", text: "2" }] }],
+      busy: false,
+    })
     render(<BimConsole open onOpenChange={() => {}} />)
-    fireEvent.click(screen.getByRole("button", { name: "2" }))
-    expect((screen.getByLabelText("Message BIM") as HTMLTextAreaElement).value).toBe("2")
-    fireEvent.click(screen.getByRole("button", { name: /^GRAPH/ }))
+    expect(screen.queryByRole("button", { name: "CLR" })).toBeNull()
+    fireEvent.keyDown(screen.getByLabelText("Message BIM"), { key: "2" })
+    await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0))
+    fireEvent.click(screen.getByRole("button", { name: /^graph/ }))
     expect(screen.getByText(/PLANNED — NOT CONNECTED YET/)).toBeTruthy()
   })
 

@@ -7,7 +7,7 @@
  * write the vault: a `propose` node only collects what would be written.
  */
 
-export type FlowNodeKind = "message" | "gate" | "search" | "choose" | "extract" | "propose" | "blocks" | "related" | "retrieve" | "answer" | "route" | "handoff" | "link" | "compute" | "clarify" | "guard" | "fallback"
+export type FlowNodeKind = "message" | "gate" | "search" | "choose" | "extract" | "propose" | "blocks" | "related" | "retrieve" | "answer" | "route" | "handoff" | "link" | "compute" | "clarify" | "guard" | "fallback" | "question" | "context"
 
 /** `r:<key>` is one output of a `route` node. */
 export type FlowPort = "out" | "yes" | "no" | `r:${string}`
@@ -61,8 +61,10 @@ export interface ModelPlan {
 export interface FlowNodeConfig {
   /** Any model step: an Ollama model for this node alone. Beats the run's `ModelPlan`. */
   model?: string
-  /** gate / choose: the question. extract: what to pull out. */
+  /** gate / choose: the question. extract: what to pull out. question: the wording an interview answer is asked, edited here. */
   question?: string
+  /** question: other wordings kept to try; picking one makes it the active `question`. */
+  variants?: string[]
   /** gate: taught cases, shown to the model as few-shot lines. */
   examples?: GateExample[]
   /** search */
@@ -98,6 +100,10 @@ export interface FlowNodeConfig {
   compute?: ComputeConfig
   /** clarify: which entities may be ambiguous. Default `any`. */
   clarifyKind?: "person" | "topic" | "any"
+  /** context: `code` keeps only the pairs code is sure of; `ask` (default) asks the model about the unsure ones. */
+  contextMode?: "ask" | "code"
+  /** context: earlier lines further back than this are never context. Default 90. */
+  maxGapMin?: number
   /** retrieve: which part of the app to read, with no model. */
   retrieve?: RetrieveConfig
   /** answer: what kind of reply. `check` re-reads the draft against the evidence. */
@@ -138,7 +144,8 @@ export interface RouteDef {
   pattern?: string
 }
 
-export type AnswerMode = "answer" | "summarize" | "check" | "insight"
+/** `interview`: the model reads everything and asks the person questions (the wording comes from a `question` node), instead of answering. */
+export type AnswerMode = "answer" | "summarize" | "check" | "insight" | "interview"
 
 export type RetrieveKind =
   /** Tracked entries (Activity, Location, Company, Mood, calls, texts) matching the terms. */
@@ -167,6 +174,8 @@ export interface RetrieveConfig {
   focus?: string
   /** dataset: keep only rows whose source is one of these. */
   sources?: string[]
+  /** day: read everything that day, for an interview: every tracking view (screen time stays counted, not listed), phone texts, BIM messages, logs, notes, every dataset row dated that day, confirmed blocks, gaps and Health. */
+  everything?: boolean
   /** Rank by meaning (Ollama embeddings) when an embedding model is installed. */
   semantic?: boolean
 }
@@ -308,6 +317,8 @@ export interface Answer {
   draft?: string
   /** For `insight`: what survived the citation check. */
   insights?: Insight[]
+  /** For `interview`: the questions, in the order asked. */
+  questions?: string[]
   /** For `insight`: how many the model gave that code dropped (no valid citation, or a repeat). */
   dropped?: number
   facts: string[]

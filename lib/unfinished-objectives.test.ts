@@ -79,7 +79,7 @@ function task(id: string, title: string, type: Task["type"] = "task"): Task {
   }
 }
 
-const woodDef = { id: "wood", name: "Wood", type: "text" as const, createdAt: "2026-01-01T00:00:00.000Z" }
+const woodDef = { id: "wood", name: "Wood", type: "string" as const, createdAt: "2026-01-01T00:00:00.000Z" }
 
 /** A task the way the vault actually stores one, so filing has something to keep. */
 function parentTask(patch: Partial<Task> = {}): Task {
@@ -260,7 +260,7 @@ describe("attach objectives to a task", () => {
   })
 
   it("names the list attribute task-objectives when objectives is already taken", () => {
-    const grain = { id: "objectives", name: "Grain", type: "text" as const }
+    const grain = { id: "objectives", name: "Grain", type: "string" as const }
     useTaskStore.setState({
       tasks: [parentTask({ itemAttributeDefinitions: [woodDef, grain] })],
       lists: [],

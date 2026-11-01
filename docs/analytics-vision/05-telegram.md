@@ -1,6 +1,6 @@
 # Telegram analytics vision
 
-BIM (Brain2 Ingestion Messenger) is the phone door into the vault. The bot is [@brain2_phone_bot](https://t.me/brain2_phone_bot). A person texts a short phrase, forwards a photo or PDF, shares a location, or walks a ritual. The same executor that Settings can simulate writes Lists, Habits, Tracking, Plan, sleep, cycle marks, reviews, Docs, and pantry counts.
+BIM (Brain Interface Manager) is the phone door into the vault. The bot is [@brain2_phone_bot](https://t.me/brain2_phone_bot). A person texts a short phrase, forwards a photo or PDF, shares a location, or walks a ritual. The same executor that Settings can simulate writes Lists, Habits, Tracking, Plan, sleep, cycle marks, reviews, Docs, and pantry counts.
 
 This note is a product design for an Data tab that would be built only from that door. It is grounded in the live command surface (`lib/ingest/command-catalog.ts`, `lib/ingest/parse-message.ts`, `lib/ingest/executor.ts`) and in the records those writers actually leave. It does not describe any Data screen that already exists.
 

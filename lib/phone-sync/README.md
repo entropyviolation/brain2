@@ -41,6 +41,8 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `health-store.ts` | Daily totals and the ledger of mornings this import wrote. Persist key `health-import`. |
 | `location-drain.ts` | Node only. `startLocationDrain` pulls sealed batches from the Oracle box (`GET /uploads?kind=location`), opens them, applies, flushes, moves the `location` cursor, then acks that kind only. Started by the hub when `BRAIN2_CAPTURE_BOX_URL` is set. |
 
+**Planned** (_Last mapped: 2026-10-31_): a `patch-drain.ts` beside `location-drain.ts`. It would pull sealed phone patches (`GET /uploads?kind=patch`) from the temporary Oracle relay, apply them through the same patch path as `/api/persist`, then ack. Not started. Design and open questions: [`docs/ORACLE_INTERIM_SYNC.md`](../../docs/ORACLE_INTERIM_SYNC.md) → Tier 2.
+
 ## Rules that keep it safe
 
 - **Bodies stay out of localStorage.** The origin holds ~5 MB for every key together. Tracking rows keep a 120-character preview; the full body is in the archive. `data/` is in the nightly backup, which is encrypted ([`docs/BIM_BACKUP.md`](../../docs/BIM_BACKUP.md)).

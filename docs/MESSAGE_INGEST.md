@@ -1,7 +1,7 @@
 # Message ingest (Telegram first) — BIM
 
-**BIM** = Brain2 Ingestion Messenger. He introduces himself as BIM (Brain2
-Ingestion Messenger) and says you can call him BIM for short. Phone-message
+**BIM** = Brain Interface Manager. He introduces himself as BIM (Brain
+Interface Manager) and says you can call him BIM for short. Phone-message
 capture for Brain2. Text BIM from your phone with short key
 phrases; the same write paths as Quick Add, Bulk Add, Habits, and Tracking apply
 the result. **Channel-agnostic command core; Telegram is the first adapter.**
@@ -166,7 +166,7 @@ Token from gitignored `.env.local` / `BRAIN2_TELEGRAM_BOT_TOKEN` (never committe
 A VPS / NAS / always-on Mac is enough. Where to host it, the alternatives, and
 the plan: [`BIM_HOSTING_OPTIONS.md`](BIM_HOSTING_OPTIONS.md). Set
 `BRAIN2_PHONE_HUB_TOKEN` on any public host. For a cloud host that must not read your data, use the
-sealed capture box instead ([`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md); `BRAIN2_CAPTURE_BOX_URL` + `BRAIN2_CAPTURE_TOKEN` switch `phone:hub` to drain it) (Settings → **Hub token**). Settings → **Always-on hub URL** + **Sync
+sealed capture box instead ([`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md); `BRAIN2_CAPTURE_BOX_URL` + `BRAIN2_CAPTURE_TOKEN` switch `phone:hub` to drain it; the box is a temporary relay, see [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md)) (Settings → **Hub token**). Settings → **Always-on hub URL** + **Sync
 vault** copies today’s lists onto that host. Pairing still happens in Settings;
 the hub hydrates the allowlist from the vault.
 

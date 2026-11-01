@@ -34,6 +34,8 @@ const KIND_TAG: Record<FlowNode["kind"], string> = {
   clarify: "WHICH?",
   guard: "KNOWN?",
   fallback: "ELSE",
+  question: "ASK",
+  context: "LINKED?",
 }
 
 /** A route node grows a row per output so every port has room. */
@@ -285,6 +287,8 @@ export function stepGlyph(node: Pick<FlowNode, "kind">, step: Pick<TraceStep, "e
   if (node.kind === "gate") return String(out).toUpperCase()
   if (node.kind === "guard") return out && typeof out === "object" && (out as { holds?: boolean }).holds ? "KNOWN" : "UNKNOWN"
   if (node.kind === "fallback") return "ELSE"
+  if (node.kind === "question") return "WORDING"
+  if (node.kind === "context" && out && typeof out === "object") return `${((out.prior as unknown[]) ?? []).length} of ${((out.links as unknown[]) ?? []).length} kept`
   if (node.kind === "clarify") return out && typeof out === "object" && "question" in out ? "ASK" : "CLEAR"
   if (node.kind === "compute" && out && typeof out === "object") return `${out.total ?? 0} rows`
   if ((node.kind === "search" || node.kind === "link") && out && typeof out === "object") return `${(out.hits as unknown[]).length} hits`
@@ -295,6 +299,7 @@ export function stepGlyph(node: Pick<FlowNode, "kind">, step: Pick<TraceStep, "e
   if (node.kind === "handoff" && out && typeof out === "object") return `→ ${String(out.handedTo ?? "")}`
   if (node.kind === "related" && out && typeof out === "object") return `${((out.terms as string[]) ?? []).length} words`
   if (node.kind === "retrieve" && out && typeof out === "object") return `${out.total ?? 0} rows`
+  if (node.kind === "answer" && out && typeof out === "object" && Array.isArray(out.questions)) return `${out.questions.length} questions`
   if (node.kind === "answer" && out && typeof out === "object") return String(out.confidence ?? "")
   return `${step.ms}ms`
 }

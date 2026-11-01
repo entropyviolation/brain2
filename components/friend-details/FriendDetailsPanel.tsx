@@ -27,6 +27,7 @@ import { FriendDetailsKeepsakes } from "@/components/friend-details/FriendDetail
 import { FriendDetailsPortrait } from "@/components/friend-details/portrait/FriendDetailsPortrait"
 import { FriendDetailsVoice } from "@/components/friend-details/personality/FriendDetailsVoice"
 import { confirmDiscard, useFriendDraft } from "@/components/friend-details/useFriendDraft"
+import { PixelIcon } from "@/components/friend-details/PixelIcon"
 import "@/components/friend-details/friend-details.css"
 
 const POWER_MS = 560
@@ -215,15 +216,15 @@ export function FriendDetailsPanel({
         levelPulse={levelPulse}
       />
       <div className="friend-body">
-      <div className="friend-tabs" role="tablist" aria-label="Friend pages">
+      <div className="friend-tabs b2-keycap-tab" role="tablist" aria-label="Friend pages">
         {(
           [
-            ["today", "Today"],
-            ["personality", "Personality"],
-            ["keepsakes", "Keepsakes"],
-            ["journal", "Journal"],
+            ["today", "Today", "sprout"],
+            ["personality", "Personality", "heart"],
+            ["keepsakes", "Keepsakes", "gem"],
+            ["journal", "Journal", "book"],
           ] as const
-        ).map(([id, label]) => (
+        ).map(([id, label, icon]) => (
           <button
             key={id}
             type="button"
@@ -231,9 +232,11 @@ export function FriendDetailsPanel({
             id={`friend-tab-${id}`}
             aria-selected={tab === id}
             aria-controls={`friend-panel-${id}`}
+            data-state={tab === id ? "active" : "inactive"}
             className={tab === id ? "is-on" : ""}
             onClick={() => chooseTab(id)}
           >
+            <PixelIcon name={icon} />
             {label}
           </button>
         ))}
@@ -293,7 +296,7 @@ export function FriendDetailsPanel({
           Close
         </button>
         {dirty ? (
-          <button type="button" className="friend-key is-on" data-no95="" onClick={save}>
+          <button type="button" className="friend-key is-primary" data-no95="" onClick={save}>
             Save personality
           </button>
         ) : null}

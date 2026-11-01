@@ -16,7 +16,7 @@
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) minmax(220px, 38vh);
+  grid-template-rows: auto auto minmax(0, 1fr) minmax(220px, 38vh);
   gap: 8px;
   padding: 10px 12px;
   color: var(--crt-fg);

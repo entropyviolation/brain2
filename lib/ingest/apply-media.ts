@@ -5,6 +5,8 @@
  * writes Zustand the same way the text executor does.
  */
 import { itemTitle } from "@/lib/item-utils"
+import { useTaskStore } from "@/lib/task-store"
+import { applyCapture } from "./apply-capture"
 import { escapeHtmlText, sanitizeDocHtml } from "@/lib/doc-html"
 import { pdfArrayBufferToHtml } from "@/lib/pdf-to-html"
 import { attachmentUri, dataUrlToBlob, deleteAttachment, getAttachmentDataUrl, putAttachment } from "@/lib/attachments"
@@ -22,7 +24,8 @@ import { expandIngestText } from "./expand"
 import { parseMessage } from "./parse-message"
 import type { ApplyResult, IncomingAttachment, IncomingMessage, PendingClarify } from "./types"
 
-export const MEDIA_QUESTION = "Journal, outfit, or log?"
+export const MEDIA_QUESTION =
+  "What is this photo? Journal, outfit, log, or inbox — or skip. Add words after a colon, like inbox: album cover inspo."
 
 export async function applyMedia(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
   const attachments = message.attachments ?? []
@@ -40,6 +43,7 @@ export async function applyMedia(message: IncomingMessage, now = new Date()): Pr
 
   if (forced === "outfit") return fileOutfitPhotos(photos, titleHint, now)
   if (forced === "log") return fileLogPhotos(photos, titleHint, now)
+  if (forced === "inbox") return fileInboxPhotos(photos, titleHint, now)
 
   if (forced === "receipt" || (forced !== "journal" && forced !== "pdf" && photos.length > 0 && pdfs.length === 0)) {
     const ocr = message.ocrText?.trim() || (await ocrPhotoPages(photos, "receipt"))
@@ -232,13 +236,14 @@ function slugFile(title: string): string {
   )
 }
 
-const CAPTION_ROUTES: { kind: "outfit" | "log"; aliases: string[] }[] = [
+const CAPTION_ROUTES: { kind: "outfit" | "log" | "inbox"; aliases: string[] }[] = [
   { kind: "outfit", aliases: ["outfit", "look", "wore"] },
   { kind: "log", aliases: ["log", "photo"] },
+  { kind: "inbox", aliases: ["inbox", "save", "inspo"] },
 ]
 
 /** Caption on a photo. Colon optional, same shape as `journal:`. Text-only `log:` stays a tracking note. */
-export function captionRoute(caption: string): { kind: "outfit" | "log"; note: string } | null {
+export function captionRoute(caption: string): { kind: "outfit" | "log" | "inbox"; note: string } | null {
   const text = caption.replace(/^\uFEFF/, "").trim()
   const breakAt = text.indexOf("\n")
   const first = (breakAt === -1 ? text : text.slice(0, breakAt)).trim()
@@ -288,13 +293,31 @@ function mediaPending(ids: string[], caption: string, now: Date): PendingClarify
 }
 
 /** Whole message is a photo-question answer. Anything else is a normal text. */
-export function mediaChoice(text: string): "journal" | "outfit" | "log" | "skip" | null {
+export function mediaChoice(text: string): "journal" | "outfit" | "log" | "inbox" | "skip" | null {
   const answer = text.replace(/^\uFEFF/, "").trim().toLowerCase()
   if (answer === "skip") return "skip"
   if (answer === "journal" || answer === "1") return "journal"
   if (answer === "outfit" || answer === "2") return "outfit"
   if (answer === "log" || answer === "3") return "log"
+  if (answer === "inbox" || answer === "4") return "inbox"
   return null
+}
+
+const ANSWER_WITH_NOTE = /^(journal|outfit|photo|inbox|save|inspo)\s*[:：]\s*([\s\S]*)$/i
+
+/**
+ * An answer to the photo question, with optional words. The colon is required
+ * for the note form so `log: smoked` and other ordinary texts are never read as
+ * an answer; `photo:` files a log photo.
+ */
+export function mediaAnswer(text: string): { mode: "journal" | "outfit" | "log" | "inbox" | "skip"; note: string } | null {
+  const plain = mediaChoice(text)
+  if (plain) return { mode: plain, note: "" }
+  const hit = ANSWER_WITH_NOTE.exec(text.replace(/^\uFEFF/, "").trim())
+  if (!hit) return null
+  const word = hit[1]!.toLowerCase()
+  const mode = word === "photo" ? "log" : word === "save" || word === "inspo" ? "inbox" : (word as "journal" | "outfit" | "inbox")
+  return { mode, note: hit[2]!.trim() }
 }
 
 async function askMediaRoute(photos: IncomingAttachment[], caption: string, now: Date): Promise<ApplyResult> {
@@ -363,11 +386,54 @@ async function fileLogPhotos(photos: IncomingAttachment[], note: string, now: Da
   }
 }
 
-async function fileHeld(pending: PendingClarify, mode: "journal" | "outfit" | "log"): Promise<ApplyResult> {
+/** A photo can be for anything: it lands in Inbox as an item, the image attached as a resource. */
+async function inboxFromUris(uris: string[], note: string, now: Date): Promise<Extract<ApplyResult, { status: "ok" }> | null> {
+  const held = uris.filter((uri) => !uri.startsWith("data:"))
+  if (!held.length) return null
+  const title = note || `Photo ${now.toLocaleDateString(undefined, { day: "numeric", month: "short" })}`
+  const made = applyCapture(title, { sendToInbox: true, now })
+  const id = made.status === "ok" ? made.itemIds?.[0] : undefined
+  if (made.status !== "ok" || !id) return null
+  const task = useTaskStore.getState().tasks.find((row) => row.id === id)
+  if (task) {
+    const resources = held.map((uri, i) => ({
+      id: `res_${Date.now().toString(36)}_${i}`,
+      name: `photo-${i + 1}.jpg`,
+      mime: "image/jpeg",
+      uri,
+      addedAt: now.toISOString(),
+    }))
+    useTaskStore.getState().updateTask({ ...task, resources: [...(task.resources ?? []), ...resources] })
+  }
+  return {
+    status: "ok",
+    kind: "capture",
+    reply: dayReply(held.length, "Inbox photo", now, title),
+    summary: `Inbox photo → ${title}`,
+    itemIds: [id],
+  }
+}
+
+async function fileInboxPhotos(photos: IncomingAttachment[], note: string, now: Date): Promise<ApplyResult> {
+  const uris: string[] = []
+  for (const photo of photos) {
+    const uri = await holdPhoto(photo)
+    if (uri && !uri.startsWith("data:")) uris.push(uri)
+  }
+  const filed = await inboxFromUris(uris, note, now)
+  return filed ?? { status: "error", kind: "unknown", reply: "Send a photo with inbox: and a few words." }
+}
+
+async function fileHeld(pending: PendingClarify, mode: "journal" | "outfit" | "log" | "inbox", extra = ""): Promise<ApplyResult> {
   const ids = pending.mediaHold?.attachmentIds ?? []
   const sentAt = pending.mediaHold?.sentAt ? new Date(pending.mediaHold.sentAt) : new Date()
   const now = Number.isNaN(sentAt.getTime()) ? new Date() : sentAt
-  const note = (pending.mediaHold?.caption ?? "").trim()
+  const note = (extra || (pending.mediaHold?.caption ?? "")).trim()
+  if (mode === "inbox") {
+    const filed = await inboxFromUris(ids, note, now)
+    if (!filed) return { status: "error", kind: "unknown", reply: "That photo is gone. Send it again.", mediaSettled: true }
+    return { ...filed, mediaSettled: true }
+  }
   if (mode === "outfit") {
     const made: string[] = []
     for (const uri of ids) {
@@ -441,13 +507,14 @@ async function fileHeld(pending: PendingClarify, mode: "journal" | "outfit" | "l
  * would send the question on every fix.
  */
 export async function resolveMediaChoice(pending: PendingClarify, text: string, now = new Date()): Promise<ApplyResult | null> {
-  const mode = mediaChoice(text)
-  if (!mode) return null
+  const answer = mediaAnswer(text)
+  if (!answer) return null
+  const { mode, note } = answer
   if (mode === "skip") {
     await releaseMediaHold(pending)
     return { status: "ok", kind: "unknown", reply: "Skipped.", summary: "Photo skipped", mediaSettled: true }
   }
-  return fileHeld(pending, mode)
+  return fileHeld(pending, mode, note)
 }
 
 export function applyJournalText(payload: string, now = new Date()): ApplyResult {

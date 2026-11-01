@@ -36,8 +36,8 @@ import type { ApplyResult, IngestIntentKind, NameCandidate, PendingClarify } fro
 const SEARCH_CAP = 25
 const TAG_CAP = 40
 
-export function applyInfo(): ApplyResult {
-  return applyMainInfo()
+export function applyInfo(chat = false): ApplyResult {
+  return applyMainInfo(chat)
 }
 
 export function applyPing(): ApplyResult {

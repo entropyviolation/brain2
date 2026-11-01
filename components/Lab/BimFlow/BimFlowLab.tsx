@@ -18,6 +18,7 @@ import { augment, AUGMENT_LABEL, DEFAULT_INPUT, GROUPING_LABEL, group, parsePast
 import { DEFAULT_MODEL, embedScores, listOllamaModels, ollamaCall } from "@/lib/bim-flow/ollama"
 import { CORE_TEST_IDS, loadResults, runTest, saveResults, TESTS, type TestResult } from "@/lib/bim-flow/tests"
 import { runFlow } from "@/lib/bim-flow/run-flow"
+import { DEFAULT_INTERVIEW_QUESTION } from "@/lib/bim-flow/task-flows"
 import { loadTexts, TEXT_WINDOW_DAYS } from "@/lib/bim-flow/texts-client"
 import { loadFileEvents } from "@/lib/bim-flow/file-activity-client"
 import type { FileEvent } from "@/lib/bim-flow/file-activity"
@@ -36,7 +37,12 @@ import { FlowTests, type LiveTest } from "./flow-tests"
 import { FlowRuns } from "./flow-runs"
 import { archive } from "@/lib/bim-flow/archive"
 import { loadHistory, saveHistory, slimRun, type SavedRun } from "@/lib/bim-flow/run-history"
+import { AgentRail } from "../Agents/AgentRail"
+import { builtinBlueprints } from "@/lib/agents/registry"
 import "./bim-flow.css"
+
+/** Every shipped agent, for the rail. Built once; the flows inside are not read. */
+const AGENTS = builtinBlueprints()
 
 const OLD_GRAPH_KEY = "bimflow-graph-v1"
 const graphKey = (id: string) => `bimflow-graph-v2:${id}`
@@ -280,7 +286,7 @@ export function BimFlowLab() {
   const addNode = (kind: FlowNode["kind"]) => {
     const id = `${kind}-${Date.now().toString(36)}`
     const maxY = Math.max(...flow.nodes.map((n) => n.y), 0)
-    const node: FlowNode = { id, kind, label: `New ${kind}`, x: 260, y: maxY + NODE_H + 60, config: kind === "gate" ? { question: "" } : kind === "retrieve" ? { retrieve: { kind: "text" } } : kind === "compute" ? { compute: { fn: "count" } } : {} }
+    const node: FlowNode = { id, kind, label: `New ${kind}`, x: 260, y: maxY + NODE_H + 60, config: kind === "gate" ? { question: "" } : kind === "question" ? { question: DEFAULT_INTERVIEW_QUESTION } : kind === "retrieve" ? { retrieve: { kind: "text" } } : kind === "compute" ? { compute: { fn: "count" } } : {} }
     setFlow((f) => ({ ...f, nodes: [...f.nodes, node] }))
     setSelectedNodeId(id)
   }
@@ -489,7 +495,7 @@ export function BimFlowLab() {
         <button type="button" data-no95 className="bf-cap" onClick={() => setAnalysesOpen(true)}>Analyses · {analyses.length}</button>
         <button type="button" data-no95 className="bf-cap" onClick={() => setDriveOpen(true)}>Drive · {driveBoard(drive).length}</button>
         <span className="bf-sep" />
-        {(["gate", "route", "search", "link", "choose", "extract", "retrieve", "compute", "guard", "clarify", "fallback", "related", "answer", "handoff", "propose", "blocks"] as const).map((k) => (
+        {(["gate", "route", "search", "link", "choose", "extract", "retrieve", "compute", "guard", "clarify", "fallback", "question", "context", "related", "answer", "handoff", "propose", "blocks"] as const).map((k) => (
           <button key={k} type="button" data-no95 className="bf-cap" onClick={() => addNode(k)}>+ {k}</button>
         ))}
         <span className="bf-sep" />
@@ -502,6 +508,12 @@ export function BimFlowLab() {
           Starter graph
         </button>
       </header>
+
+      <AgentRail
+        agents={AGENTS}
+        activeId={`bim-flow:${flowId}`}
+        onPick={(a) => (a.id.startsWith("bim-flow:") ? pickFlow(a.id.slice("bim-flow:".length)) : (window.location.href = "/lab/tracking-helper"))}
+      />
 
       <div className="bf-main">
         <FlowCanvas

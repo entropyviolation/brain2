@@ -24,7 +24,21 @@ describe("LlmSuggestions", () => {
     acceptSuggestion(block("a", "Dishes", 10, 11))
     acceptSuggestion(block("b", "Podcast", 10, 12))
     render(<LlmSuggestions />)
-    expect(screen.getByText("ACCEPTED LLM BLOCKS THAT OVERLAP (1)")).toBeTruthy()
-    expect(screen.getByText(/DISHES 10:00–11:00 × PODCAST 10:00–12:00 · 60 MIN SHARED/)).toBeTruthy()
+    expect(screen.getByText("Accepted LLM blocks that overlap (1)")).toBeTruthy()
+    expect(screen.getByText(/Dishes 10:00–11:00 × Podcast 10:00–12:00 · 60 min shared/)).toBeTruthy()
+  })
+
+  it("shows the last pass's suggestions again, minus decided ones", () => {
+    localStorage.setItem(
+      "bim-llm-suggestions-v1",
+      JSON.stringify({ suggestions: [block("keep", "Laundry", 9, 10), block("gone", "Nap", 13, 14)], at: new Date().toISOString() }),
+    )
+    localStorage.setItem(
+      "bimsuggest-verdicts-v1",
+      JSON.stringify([{ suggestionId: "gone", verdict: "rejected", reason: "no", at: new Date().toISOString() }]),
+    )
+    render(<LlmSuggestions />)
+    expect(screen.getByText("Laundry")).toBeTruthy()
+    expect(screen.queryByText("Nap")).toBeNull()
   })
 })

@@ -39,14 +39,20 @@ function reason(err: unknown): string {
 }
 
 async function pingHub(url: string): Promise<HubInput["ping"]> {
+  let timer = 0
   try {
     const status = await Promise.race([
       fetchMobileSyncStatus(url),
-      new Promise<never>((_, no) => window.setTimeout(() => no(new Error("no answer in 6 s")), PING_MS)),
+      new Promise<never>((_, no) => {
+        timer = window.setTimeout(() => no(new Error("no answer in 6 s")), PING_MS)
+      }),
     ])
     return { ok: true, hasData: status.hasData }
   } catch (err) {
     return { ok: false, reason: reason(err) }
+  } finally {
+    // Every 15 s recheck left a 6 s timer behind after a fast answer.
+    window.clearTimeout(timer)
   }
 }
 

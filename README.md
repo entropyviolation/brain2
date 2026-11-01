@@ -1,5 +1,7 @@
 # BRAIN2
 
+_Name history: Brain2 was formerly called **COGS**, the **Cognitively Optimizable Generative System**. See [Name history](#name-history-cogs)._
+
 **Brain2** is meant to be a **new type of software**: a **living, perfect second
 brain** — adaptable, alive, beautiful, cutting-edge, and **infinite**. Not a
 to-do list with extra tabs. Not a dashboard of orphans. Not a note dump that
@@ -189,7 +191,7 @@ in `lib/` and domain `lib/services/`. JSON backup, Zod schemas, and
 `taskRepository` live in `lib/data/`. The Mongo / `DataSource` files there are
 unwired scaffolding. The store catalog is [`lib/README.md`](lib/README.md).
 
-**Phone capture (built):** text **BIM** (Brain2 Ingestion Messenger — you can call
+**Phone capture (built):** text **BIM** (Brain Interface Manager — you can call
 him BIM for short) at the Telegram bot with short phrases
 (`groc`, `store`, `got: milk`, `needed:`, `get:`, `/quicklists`, `now … | … | …`, `plan for rn:`, `currently …`, `dh:` habit
 keywords, discrete events + `log:` / `intake:` / `st:` / `so:` / `transit:`, `n stuck in aisle 4` (a point at send time), `qa: pick up milk`, `habit: exercise 30`,
@@ -460,6 +462,9 @@ Brain2 is **offline-first and stays that way**. Highlights:
   [`components/Mobile/README.md`](components/Mobile/README.md)). There is no
   always-on multi-device engine. Telegram `npm run phone:hub` is message
   capture ([`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md)), not that sync.
+  The phone-as-window plan is [`docs/PHONE_WINDOW_PLAN.md`](docs/PHONE_WINDOW_PLAN.md).
+  Sync away from home, through a temporary Oracle relay until a home server
+  exists, is [`docs/ORACLE_INTERIM_SYNC.md`](docs/ORACLE_INTERIM_SYNC.md) (**Planned**).
 - **Speculation, not the storage plan.** MongoDB Atlas, a shared `@brain2/core`
   package, and an Expo / React Native app are not scheduled. Unwired sketches
   live under `lib/data/mongo/` and `electron/ipc/`.
@@ -699,3 +704,19 @@ and unbuilt. A single honest `Item` (§5,
 [`docs/CANONICAL_FIELDS.md`](docs/CANONICAL_FIELDS.md)) and one write path
 remain open. Keep building screens. UI waves do not wait on that cleanup
 ([`docs/PLAN_OF_ACTION.md`](docs/PLAN_OF_ACTION.md)).
+
+## Name history: COGS
+
+Brain2 was first called **COGS**: the **Cognitively Optimizable Generative
+System**. The spec file is still `Cognitive_Management_System_Spec.docx`. The
+name still describes the product:
+
+- **Cognitively:** it models how you think. Inbox and Monkey brain clear the
+  head, Reviews and Clarify sort it, and BIM (Brain Interface Manager) takes
+  thoughts in from the phone.
+- **Optimizable:** what you record can be measured and tuned. Tracking, Habits,
+  points, and the Data tab read your own history so you can change what works.
+- **Generative:** the system makes new things from what you stored. Modules
+  compose workspaces and save blueprints, and BIM suggestions and the local
+  model propose items and links.
+- **System:** one organism, not tabs (the two laws above).

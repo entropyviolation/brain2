@@ -1,25 +1,27 @@
 /**
  * components/Bim/console/bim-console.tsx — BIM Chat console on the desktop
  *
- * A green-phosphor terminal: tab strip, chat log, BIM's dossier card, and a
- * compose well with a keypad (digits answer numbered questions). CHAT, LOG,
- * COMMANDS, and LLM (week suggestions, then a door to `/lab/bim-flow`) are live. GRAPH, ACTIONS, and RULES are **Planned**: they
- * say what they will show once BIM reads the knowledge graph and a model.
+ * A silver handheld with CRT glass wells (`bim-console.css`, ink from `components/Bim/bim-ink.css`):
+ * tab keys, the chat glass with a compose well, and BIM's dossier card with a pixel face. Digits 1–9
+ * pick a numbered answer while a question is open. CHAT, LOG, COMMANDS (filterable), and LLM (week
+ * suggestions, then a door to `/lab/bim-flow`) are live. GRAPH, ACTIONS, and RULES are **Planned**:
+ * they say what they will show once BIM reads the knowledge graph and a model.
  * Every line runs through the Telegram bot's executor (`lib/ingest/bim-chat.ts`).
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { Fragment, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { BIM_FULL, BIM_HANDLE, BIM_INTRO, BIM_SHORT } from "@/lib/ingest/bim"
-import { BIM_CHAT_ID } from "@/lib/ingest/bim-chat"
+import { BIM_CHAT_ID, useBimChatStore } from "@/lib/ingest/bim-chat"
 import { ALL_COMMANDS } from "@/lib/ingest/command-glossary"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
 import { LlmSuggestions } from "./llm-suggestions"
+import "@/components/Bim/bim-ink.css"
 import "./bim-console.css"
 
-const TABS = ["chat", "log", "commands", "graph", "llm", "actions", "rules"] as const
+const TABS = ["chat", "log", "commands", "llm", "graph", "actions", "rules"] as const
 type ConsoleTab = (typeof TABS)[number]
 
 const PLANNED: Partial<Record<ConsoleTab, string>> = {
@@ -28,7 +30,13 @@ const PLANNED: Partial<Record<ConsoleTab, string>> = {
   rules: "Rules. Standing instructions BIM follows when a message or a time matches.",
 }
 
-const KEYPAD = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "CLR", "0", "DEL"] as const
+/** Sentences to start from. They fill the message well; the person finishes and sends. */
+const TRY = ["info", "groc milk eggs", "gm", "log: walked the dog"] as const
+
+/** A touch phone opens the keycap deck on focus; let the person tap the field instead of focusing it on open. */
+function touchFirst(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches
+}
 
 function clock(iso: string): string {
   const d = new Date(iso)
@@ -36,89 +44,186 @@ function clock(iso: string): string {
 }
 
 function ChatPane() {
-  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, logRef } = useBimChat()
+  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
   const choices = openChoices(lines)
+  const box = useRef<HTMLTextAreaElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
 
-  const press = (key: (typeof KEYPAD)[number]) => {
-    if (key === "CLR") setDraft("")
-    else if (key === "DEL") setDraft(draft.slice(0, -1))
-    else setDraft(draft + key)
+  /** While a question is open and nothing is typed, a digit taps that numbered answer. */
+  const onKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!draft && /^[1-9]$/.test(event.key) && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const pick = choices[Number(event.key) - 1]
+      if (pick) {
+        event.preventDefault()
+        submit(pick.text)
+        return
+      }
+    }
+    onKeyDown(event)
+  }
+
+  const startWith = (text: string) => {
+    setDraft(text)
+    box.current?.focus()
   }
 
   return (
-    <>
-      <div className="bim-crt-box bim-crt-log" ref={logRef} role="log" aria-live="polite">
+    <div className="bim-crt-pane">
+      <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
         {lines.length === 0 ? (
-          <p className="bim-crt-line">BIM: LISTENING. TYPE WHAT YOU WOULD TEXT ME. INFO FOR THE BASICS.</p>
+          <div className="bim-empty">
+            <p className="bim-legend">BIM · listening</p>
+            <p>Type what you would text me. Tap one to start from it:</p>
+            <div className="bim-chips" aria-label="Examples">
+              {TRY.map((word) => (
+                <button data-no95 key={word} type="button" onClick={() => startWith(word)}>
+                  {word}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : (
           lines.map((line) => (
-            <p key={line.id} className={`bim-crt-line is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
-              <span className="bim-crt-who">{line.who === "you" ? "YOU:" : "BIM:"}</span> {line.text}
-            </p>
+            <div key={line.id} className={`bim-msg is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
+              <span className="bim-msg-who">
+                {line.who === "you" ? "YOU" : "BIM"} {clock(line.at)}
+              </span>
+              <p className="bim-msg-text">{line.text}</p>
+              {line.route ? <span className="bim-msg-route">{line.route}</span> : null}
+              {line.evidence?.length ? (
+                <details className="bim-msg-ev">
+                  <summary>evidence ({line.evidence.length})</summary>
+                  {line.evidence.map((row, i) => <p key={i}>{row}</p>)}
+                </details>
+              ) : null}
+            </div>
           ))
         )}
-        {busy ? <p className="bim-crt-line is-wait">BIM: …</p> : null}
+        {busy ? (
+          <div className="bim-msg is-bim">
+            <span className="bim-msg-who">BIM</span>
+            <span className="bim-wait" role="status" aria-label="BIM is working">
+              <i />
+              <i />
+              <i />
+            </span>
+          </div>
+        ) : null}
       </div>
-      <div className="bim-crt-compose">
-        <div className="bim-crt-box bim-crt-input">
+      <div className="bim-compose">
+        <div className="bim-glass bim-well">
           {choices.length ? (
-            <div className="bim-crt-chips" aria-label="Answers">
-              {choices.map((choice) => (
+            <div className="bim-chips" aria-label="Answers">
+              {choices.map((choice, i) => (
                 <button data-no95 key={choice.text + choice.label} type="button" onClick={() => submit(choice.text)}>
+                  {i < 9 ? <kbd>{i + 1}</kbd> : null}
                   {choice.label}
                 </button>
               ))}
             </div>
           ) : null}
+          {photos.length ? (
+            <div className="bim-photos" aria-label="Photos to send">
+              {photos.map((photo, i) => (
+                <span key={i} className="bim-photo">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo.dataUrl} alt={photo.name} />
+                  <button data-no95 type="button" aria-label={`Remove ${photo.name}`} onClick={() => removePhoto(i)}>
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {photoError ? <p className="bim-photo-error">{photoError}</p> : null}
           <textarea
+            ref={box}
             aria-label="Message BIM"
             value={draft}
-            placeholder="TYPE A MESSAGE…"
+            placeholder={photos.length ? "Caption (or leave blank and I will ask)…" : choices.length ? "Type an answer, or press a number…" : "Message BIM…"}
             onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={onKeyDown}
-            autoFocus
+            onKeyDown={onKey}
+            autoFocus={!touchFirst()}
           />
-          <div className="bim-crt-chips bim-crt-quick" aria-label="Quick commands">
-            {BIM_QUICK.map((word) => (
-              <button data-no95 key={word} type="button" disabled={busy} onClick={() => submit(word)}>
-                {word}
-              </button>
-            ))}
-            <button data-no95 type="button" onClick={clear} disabled={!lines.length}>
-              clear
-            </button>
-          </div>
         </div>
-        <div className="bim-crt-pad">
-          <div className="bim-crt-keys">
-            {KEYPAD.map((key) => (
-              <button data-no95 key={key} type="button" onClick={() => press(key)}>
-                {key}
-              </button>
-            ))}
-          </div>
-          <button data-no95 type="button" className="bim-crt-send" disabled={busy || !draft.trim()} onClick={() => submit()}>
-            SEND
+        <div className="bim-send">
+          <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />
+          <button data-no95 type="button" aria-label="Attach photo" disabled={busy} onClick={() => fileInput.current?.click()}>
+            📷
+          </button>
+          <button data-no95 type="button" className="is-primary" disabled={busy || (!draft.trim() && !photos.length)} onClick={() => submit()}>
+            SEND ↵
           </button>
         </div>
       </div>
-    </>
+      <div className="bim-quick" aria-label="Quick commands">
+        {BIM_QUICK.map((word) => (
+          <button data-no95 key={word} type="button" disabled={busy} onClick={() => submit(word)}>
+            {word}
+          </button>
+        ))}
+        <button data-no95 type="button" onClick={clear} disabled={!lines.length}>
+          clear
+        </button>
+        <button
+          data-no95
+          type="button"
+          className={`bim-llm-key${llm ? " is-on" : ""}`}
+          aria-pressed={llm}
+          title={llm ? "LLM mode on: questions are answered by the local models. Press to go back to commands only." : "LLM mode off: commands only, as BIM always worked. Press to route lines through the local models."}
+          onClick={() => setLlm(!llm)}
+        >
+          LLM {llm ? "on" : "off"}
+        </button>
+      </div>
+    </div>
   )
 }
 
 function LogPane() {
   const events = useIngestStore((s) => s.events)
-  const mine = useMemo(() => events.filter((e) => e.channel === "simulate" && e.chatId === BIM_CHAT_ID), [events])
+  const [faultsOnly, setFaultsOnly] = useState(false)
+  const mine = useMemo(
+    () => events.filter((e) => e.channel === "simulate" && e.chatId === BIM_CHAT_ID && (!faultsOnly || e.status === "error")),
+    [events, faultsOnly],
+  )
   return (
-    <div className="bim-crt-box bim-crt-log bim-crt-wide">
-      {mine.length === 0 ? <p className="bim-crt-line">NO BIM CHAT WRITES IN THE INGEST LOG YET.</p> : null}
-      {mine.map((e) => (
-        <p key={e.id} className={`bim-crt-line${e.status === "error" ? " is-error" : ""}`}>
-          {clock(e.at)} [{e.kind.toUpperCase()}] {e.status.toUpperCase()} — {e.summary}
-          <br />
-          <span className="bim-crt-dim">&gt; {e.raw}</span>
-        </p>
-      ))}
+    <div className="bim-crt-pane">
+      <div className="bim-tools">
+        <button data-no95 type="button" className={faultsOnly ? "is-on" : undefined} aria-pressed={faultsOnly} onClick={() => setFaultsOnly(!faultsOnly)}>
+          errors only
+        </button>
+      </div>
+      <div className="bim-glass bim-scroll">
+        {mine.length === 0 ? <p className="bim-dim">{faultsOnly ? "No errors. Good." : "Nothing from BIM chat has been written to the ingest log yet."}</p> : null}
+        {mine.map((e) => (
+          <p key={e.id} className={`bim-event${e.status === "error" ? " is-error" : ""}`}>
+            <small>
+              {clock(e.at)} · {e.kind} · {e.status}
+            </small>
+            {e.summary}
+            <span>&gt; {e.raw}</span>
+          </p>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CommandsPane() {
+  const [query, setQuery] = useState("")
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return q ? ALL_COMMANDS.split("\n").filter((row) => row.toLowerCase().includes(q)).join("\n") : ALL_COMMANDS
+  }, [query])
+  return (
+    <div className="bim-crt-pane">
+      <div className="bim-tools">
+        <input type="search" aria-label="Filter commands" placeholder="Filter commands…" value={query} onChange={(event) => setQuery(event.target.value)} />
+      </div>
+      <div className="bim-glass bim-scroll">
+        <pre className="bim-commands">{shown || "No command matches."}</pre>
+      </div>
     </div>
   )
 }
@@ -126,26 +231,29 @@ function LogPane() {
 function Dossier() {
   const pending = useIngestStore((s) => s.pendingByChat[`simulate:${BIM_CHAT_ID}`])
   const count = useIngestStore((s) => s.events.filter((e) => e.chatId === BIM_CHAT_ID).length)
+  const busy = useBimChatStore((s) => s.busy)
   return (
     <aside className="bim-crt-side">
-      <div className="bim-crt-box bim-crt-card">
-        <div className="bim-crt-face" aria-hidden="true">
-          <span>BIM</span>
+      <div className="bim-glass bim-card">
+        <div className={`bim-face${busy ? " is-busy" : ""}`} aria-hidden="true">
+          <i />
+          <i />
+          <b />
         </div>
         <dl>
-          <dt>HANDLE:</dt>
-          <dd>{BIM_SHORT}</dd>
-          <dt>FULL NAME:</dt>
-          <dd>{BIM_FULL.toUpperCase()}</dd>
-          <dt>TELEGRAM:</dt>
+          <dt>NAME</dt>
+          <dd>
+            {BIM_SHORT} · {BIM_FULL}
+          </dd>
+          <dt>TELEGRAM</dt>
           <dd>{BIM_HANDLE}</dd>
-          <dt>OPEN THREAD:</dt>
-          <dd>{pending ? (pending.ritual?.flow ?? pending.kind).toUpperCase() : "NONE"}</dd>
-          <dt>LOGGED:</dt>
+          <dt>OPEN THREAD</dt>
+          <dd>{pending ? (pending.ritual?.flow ?? pending.kind) : "none"}</dd>
+          <dt>LOGGED</dt>
           <dd>{count}</dd>
         </dl>
       </div>
-      <div className="bim-crt-box bim-crt-bio">{BIM_INTRO.toUpperCase()}</div>
+      <div className="bim-glass bim-scroll bim-bio">{BIM_INTRO}</div>
     </aside>
   )
 }
@@ -153,59 +261,67 @@ function Dossier() {
 export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [tab, setTab] = useState<ConsoleTab>("chat")
   const planned = PLANNED[tab]
+  const busy = useBimChatStore((s) => s.busy)
+  const firstSoon = TABS.findIndex((t) => PLANNED[t])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bim-crt" hideClose>
+      <DialogContent className="bim-crt bim-ink" hideClose>
         <DialogTitle className="sr-only">{BIM_SHORT} Chat</DialogTitle>
         <DialogDescription className="sr-only">{BIM_FULL} console</DialogDescription>
         <div className="bim-crt-top">
-          <span>BRAIN2 BIM TERM 1.0</span>
-          <span>{BIM_FULL.toUpperCase()}</span>
+          <div className="bim-glass bim-crt-plate">
+            <span className={`bim-lamp${busy ? "" : " is-idle"}`} aria-hidden="true" />
+            {BIM_SHORT}
+          </div>
+          <span className="bim-crt-name">{BIM_FULL}</span>
           <button data-no95 type="button" className="bim-crt-x" onClick={() => onOpenChange(false)} aria-label="Close BIM Chat">
-            [X]
+            ✕
           </button>
         </div>
         <nav className="bim-crt-tabs" aria-label="BIM console tabs">
-          {TABS.map((t) => (
-            <button data-no95
-              key={t}
-              type="button"
-              className={t === tab ? "is-on" : undefined}
-              aria-pressed={t === tab}
-              onClick={() => setTab(t)}
-            >
-              {t.toUpperCase()}
-              {PLANNED[t] ? <sup>·</sup> : null}
-            </button>
+          {TABS.map((t, i) => (
+            <Fragment key={t}>
+              {i === firstSoon ? <span className="bim-crt-soon">NOT WIRED YET</span> : null}
+              <button
+                data-no95
+                type="button"
+                className={`${t === tab ? "is-on" : ""}${PLANNED[t] ? " is-soon" : ""}`.trim() || undefined}
+                aria-pressed={t === tab}
+                onClick={() => setTab(t)}
+              >
+                {t}
+              </button>
+            </Fragment>
           ))}
         </nav>
         <div className="bim-crt-main">
           <div className="bim-crt-left">
             {tab === "chat" ? <ChatPane /> : null}
             {tab === "log" ? <LogPane /> : null}
-            {tab === "commands" ? <pre className="bim-crt-box bim-crt-log bim-crt-wide">{ALL_COMMANDS}</pre> : null}
+            {tab === "commands" ? <CommandsPane /> : null}
             {tab === "llm" ? (
-              <div className="bim-crt-box bim-crt-log bim-crt-wide">
+              <div className="bim-glass bim-scroll">
                 <LlmSuggestions />
-                <p className="bim-crt-line">FLOW BENCH — LOCAL MODEL GATES OVER BIM TEXT. WRITES NOTHING.</p>
+                <p className="bim-legend">Flow bench</p>
+                <p>Local model gates over BIM text. Writes nothing.</p>
                 <button data-no95 type="button" onClick={() => (window.location.href = "/lab/bim-flow/")}>
-                  OPEN FLOW BENCH
+                  Open flow bench
                 </button>
               </div>
             ) : null}
             {planned ? (
-              <div className="bim-crt-box bim-crt-log bim-crt-wide">
-                <p className="bim-crt-line">PLANNED — NOT CONNECTED YET.</p>
-                <p className="bim-crt-line bim-crt-dim">{planned.toUpperCase()}</p>
+              <div className="bim-glass bim-scroll">
+                <p className="bim-legend">PLANNED — NOT CONNECTED YET.</p>
+                <p className="bim-dim">{planned}</p>
               </div>
             ) : null}
           </div>
           <Dossier />
         </div>
-        <div className="bim-crt-foot">
-          <span>LINK: LOCAL EXECUTOR · SAME BRAIN AS TELEGRAM</span>
-          <span>PROPERTY OF BRAIN2</span>
+        <div className="bim-foot">
+          <span>Enter sends · Shift+Enter new line · 1–9 picks an answer</span>
+          <span>Same brain as Telegram</span>
         </div>
       </DialogContent>
     </Dialog>

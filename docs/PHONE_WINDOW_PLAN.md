@@ -6,6 +6,8 @@ The iPhone app and the Electron app on the coding Mac should show one vault. The
 
 _Last mapped: 2026-10-30._ Phases 1–3 are built. The phone loads the file into memory, keeps a small cache, and sends field patches. Phases 4 and 5 are **Planned**. Texts, calls, and location stay on the path in [`PHONE_SYNC_PLAN.md`](PHONE_SYNC_PLAN.md). That plan fills the vault from the phone. This plan lets the phone see and edit the vault.
 
+_Last mapped: 2026-10-31._ Away from home: Tailscale on the iPhone reaches the hub while the Mac is awake. When it is off, sealed patches can wait on the Oracle relay (**Planned**). Both are in [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md). "The spare Mac" below is **Boa**, the old MacBook Pro, or whatever home server replaces it.
+
 ## Decision
 
 _Last mapped: 2026-10-29_
@@ -22,7 +24,7 @@ _Last mapped: 2026-10-29_
 
 **In phone memory, for the session.** The full persist snapshot, one `brain2-*` key each, parsed into the same Zustand stores the screens already read (`useTaskStore` and the others). Home, Lists, and Inventory already mount those stores (`components/Mobile/MobileApp.tsx`). A full item in memory is how notes, attributes, and the whole time grid show up. RAM is not the 5 MB box.
 
-**In phone `localStorage`, and only these.** Pins that are already small: the hub URL, NFC chips (`brain2-nfc-hub`, `brain2-nfc-chips`), the data-profile flag, and the login mark in `sessionStorage` (`components/Mobile/lib/mobile-auth.ts`). The task vault and the time grid do not land here. `slimPhonePersistValue` (`lib/phone-storage.ts`) is what writes the short names and the week of blocks today. The window path does not call it.
+**In phone `localStorage`, and only these.** Pins that are already small: the hub URL, the hub token typed on the phone (`phone-hub-token`, added 2026-10-31 so a token-guarded hub can be reached the first time), NFC chips (`brain2-nfc-hub`, `brain2-nfc-chips`), the data-profile flag, and the login mark in `sessionStorage` (`components/Mobile/lib/mobile-auth.ts`). The task vault and the time grid do not land here. `slimPhonePersistValue` (`lib/phone-storage.ts`) is what writes the short names and the week of blocks today. The window path does not call it.
 
 **In a phone IndexedDB cache, once phase 2 exists.** The slices the shell paints on launch: the task store (Lists and Inventory scan it), habits, goals, sleep, settings, theme, and the time-grid entries those screens ask for. Open a photo, a doc, or a thread, and that one object can join the cache. The message archive does not. Both key aliases do not. The cache is disposable. A free Apple ID install lasts about 7 days (`docs/PHONE_SYNC_PLAN.md`, `deploy/mac`). The reinstall wipes the app container, so WKWebView `localStorage` and IndexedDB go with it. The baked `public/mobile-hub.json` in the new build is how the shell finds the Mac again. NFC's hub URL lives in `localStorage` (`components/Mobile/nfc/MobileNfcCard.tsx`), so a reinstall asks for it again unless the bake already points at the spare.
 
@@ -166,7 +168,7 @@ _Last mapped: 2026-10-29_
 - Stand up Atlas, a second database, or a new sync protocol beside `/api/persist`.
 - Run two Telegram pollers.
 - Move the desktop stores into IndexedDB. That redesign stays parked.
-- Copy the vault onto the Oracle VM.
+- Copy the vault onto the Oracle VM in the clear. Sealed patches (and, if ever needed, a sealed snapshot) are a different thing: [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md).
 - Teach the phone to read `chat.db`. Texts still enter through the Mac.
 
 ## How to know a phase worked

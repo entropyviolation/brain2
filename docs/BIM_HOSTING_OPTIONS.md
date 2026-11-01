@@ -62,6 +62,13 @@ provider holds only encrypted texts and never the vault or private key. Details,
 threat table and setup: [`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md). Down
 alerts: Healthchecks.io messaging Telegram. Move to an owned device as soon as possible.
 
+_2026-10-31:_ the Oracle VM stays a **temporary relay** until a home server
+exists (Boa, then likely an Apple silicon Mac mini, which can also run local
+language models). It may carry sealed phone patches too, but never the vault in
+the clear. Tiers, limits, and the exit plan:
+[`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md). The Pi, old-Mac and Fly.io
+rows above stay as fallbacks.
+
 ## Plan
 
 See [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md) for how the hub works. Steps:

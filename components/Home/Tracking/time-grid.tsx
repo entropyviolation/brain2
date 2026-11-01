@@ -344,6 +344,17 @@ const DayHourRow = memo(function DayHourRow({
   )
 }, dayHourPropsEqual)
 
+/** Phone rows follow the cell width so a minute cell stays close to square. */
+function squareRowHeight(gridWidth: number, cellsPerHour: number): number {
+  if (!gridWidth) return 36
+  const cell = (gridWidth - 64) / cellsPerHour
+  return Math.max(28, Math.min(48, Math.round(cell)))
+}
+
+/** A finger held this long on a cell starts a paint stroke; moving sooner scrolls. */
+const TOUCH_HOLD_MS = 160
+const TOUCH_SLOP_PX = 8
+
 export function TimeGrid({
   compact = false,
   showPalette = true,
@@ -416,7 +427,8 @@ export function TimeGrid({
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
 
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
-  const rowHeight = plotOnly ? 44 : compact ? 20 : 24
+  const [plotWidth, setPlotWidth] = useState(0)
+  const rowHeight = plotOnly ? squareRowHeight(plotWidth, 60 / gridStep) : compact ? 20 : 24
   const [hourBand, setHourBand] = useState({ start: 0, end: 24 })
   const [now, setNow] = useState(() => new Date())
   const [spark, setSpark] = useState<{ lo: number; hi: number } | null>(null)
@@ -580,13 +592,7 @@ export function TimeGrid({
 
   useEffect(() => {
     window.addEventListener("mouseup", endDrag)
-    window.addEventListener("touchend", endDrag)
-    window.addEventListener("touchcancel", endDrag)
-    return () => {
-      window.removeEventListener("mouseup", endDrag)
-      window.removeEventListener("touchend", endDrag)
-      window.removeEventListener("touchcancel", endDrag)
-    }
+    return () => window.removeEventListener("mouseup", endDrag)
   }, [endDrag])
 
   const showStroke = (anchor: number, head: number) => {
@@ -629,6 +635,126 @@ export function TimeGrid({
     flashStroke(from, parsedTo <= from && parsedTo !== 0 ? MINUTES_PER_DAY : parsedTo)
     playTrkMotion(gridRef.current, "fill", from, parsedTo <= from && parsedTo !== 0 ? MINUTES_PER_DAY : parsedTo || MINUTES_PER_DAY)
   }
+
+  // Touch is native and non-passive. React registers touch listeners as
+  // passive, so its preventDefault did nothing: iOS scrolled and painted at
+  // once, then sent mouse events after the tap that began a second stroke.
+  // A tap applies at once. A hold starts a stroke that applies on release. A
+  // move before the hold ends is a scroll and paints nothing.
+  const paperRef = useRef<HTMLDivElement>(null)
+  const lastTouchAt = useRef(0)
+  const touchRef = useRef<{
+    x: number
+    y: number
+    minute: number
+    armed: boolean
+    scrolled: boolean
+    timer: number | null
+  } | null>(null)
+  const touchApi = useRef<{
+    start: (e: TouchEvent) => void
+    move: (e: TouchEvent) => void
+    end: (e: TouchEvent) => void
+    cancel: () => void
+  } | null>(null)
+  touchApi.current = {
+    start: (e) => {
+      lastTouchAt.current = Date.now()
+      focusTrackingPlot(gridRef.current)
+      const touch = e.touches[0]
+      const minute = minuteFromEvent(e.target)
+      if (!touch || minute === null || e.touches.length > 1) {
+        touchRef.current = null
+        return
+      }
+      const state = { x: touch.clientX, y: touch.clientY, minute, armed: false, scrolled: false, timer: null as number | null }
+      touchRef.current = state
+      const paints = !noPaint(selectedPenId) && selectedPenId !== SCISSORS
+      if (paints) {
+        state.timer = window.setTimeout(() => {
+          state.timer = null
+          if (touchRef.current !== state || state.scrolled) return
+          state.armed = true
+          beginDrag(minute)
+        }, TOUCH_HOLD_MS)
+      }
+    },
+    move: (e) => {
+      const state = touchRef.current
+      const touch = e.touches[0]
+      if (!state || !touch) return
+      if (!state.armed) {
+        if (Math.hypot(touch.clientX - state.x, touch.clientY - state.y) > TOUCH_SLOP_PX) {
+          state.scrolled = true
+          if (state.timer) window.clearTimeout(state.timer)
+          state.timer = null
+        }
+        return
+      }
+      if (e.cancelable) e.preventDefault()
+      const minute = minuteFromEvent(document.elementFromPoint(touch.clientX, touch.clientY))
+      if (minute !== null) extendDrag(minute)
+    },
+    end: (e) => {
+      const state = touchRef.current
+      touchRef.current = null
+      if (!state) return
+      if (state.timer) window.clearTimeout(state.timer)
+      lastTouchAt.current = Date.now()
+      if (state.scrolled) return
+      if (e.cancelable) e.preventDefault()
+      if (state.armed) {
+        endDrag()
+        return
+      }
+      if (acceptAt(state.minute)) return
+      if (noPaint(selectedPenId)) {
+        const existing = map[state.minute]
+        if (existing) setOpenEntryId(existing.id)
+        return
+      }
+      dragRef.current = { anchor: state.minute, head: state.minute, moved: false }
+      endDrag()
+    },
+    cancel: () => {
+      const state = touchRef.current
+      touchRef.current = null
+      if (state?.timer) window.clearTimeout(state.timer)
+      if (state?.armed) {
+        dragRef.current = null
+        setStroke(null)
+      }
+    },
+  }
+  useEffect(() => {
+    const el = paperRef.current
+    if (!el) return
+    const start = (e: TouchEvent) => touchApi.current?.start(e)
+    const move = (e: TouchEvent) => touchApi.current?.move(e)
+    const end = (e: TouchEvent) => touchApi.current?.end(e)
+    const cancel = () => touchApi.current?.cancel()
+    el.addEventListener("touchstart", start, { passive: true })
+    el.addEventListener("touchmove", move, { passive: false })
+    el.addEventListener("touchend", end, { passive: false })
+    el.addEventListener("touchcancel", cancel, { passive: true })
+    return () => {
+      el.removeEventListener("touchstart", start)
+      el.removeEventListener("touchmove", move)
+      el.removeEventListener("touchend", end)
+      el.removeEventListener("touchcancel", cancel)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!plotOnly) return
+    const el = gridRef.current
+    if (!el || typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setPlotWidth(Math.round(entry.contentRect.width))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [plotOnly])
 
   const pens = useMemo(() => penTotals(dayEntries, scope, [dk]), [dayEntries, scope, dk])
   const totals = useMemo(() => totalsFor(dayEntries, [dk]), [dayEntries, dk])
@@ -756,8 +882,10 @@ export function TimeGrid({
         onMouseLeave={() => writeProbe(null)}
       >
         <div
+          ref={paperRef}
           className="trk-plot-paper"
           onMouseDown={(e) => {
+            if (Date.now() - lastTouchAt.current < 800) return
             focusTrackingPlot(gridRef.current)
             const minute = minuteFromEvent(e.target)
             if (minute === null) return
@@ -776,30 +904,6 @@ export function TimeGrid({
           onMouseOver={(e) => {
             if (!dragRef.current) return
             const minute = minuteFromEvent(e.target)
-            if (minute !== null) extendDrag(minute)
-          }}
-          onTouchStart={(e) => {
-            focusTrackingPlot(gridRef.current)
-            const minute = minuteFromEvent(e.target)
-            if (minute === null) return
-            if (acceptAt(minute)) {
-              e.preventDefault()
-              return
-            }
-            if (noPaint(selectedPenId)) {
-              const existing = map[minute]
-              if (existing) setOpenEntryId(existing.id)
-              return
-            }
-            e.preventDefault()
-            beginDrag(minute)
-          }}
-          onTouchMove={(e) => {
-            if (!dragRef.current) return
-            e.preventDefault()
-            const touch = e.touches[0]
-            if (!touch) return
-            const minute = minuteFromEvent(document.elementFromPoint(touch.clientX, touch.clientY))
             if (minute !== null) extendDrag(minute)
           }}
         >

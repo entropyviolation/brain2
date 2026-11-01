@@ -1,7 +1,7 @@
 /**
  * components/friend-details/friend-details.css — Friend instrument
  *
- * Silver handheld shell, black-mirror portrait, nixie wells, chunky keys,
+ * Space homestead hull, steel plates, round chrome porthole, pixel hearts,
  * vertical equalizer. Tokens: --friend-silver, --friend-lace, --friend-glow,
  * --friend-nixie.
  */
@@ -400,36 +400,94 @@
   gap: 6px;
 }
 
+/* Word keys are the house keycap (docs/DESIGN_STYLE.md → Keycaps): pale silver,
+   darker skirt, a 2px drop on press. .is-primary is the navy-ringed cap. .is-on latches to CRT glass.
+   The tabs are the shared latching bay (.b2-keycap-tab in app/win95.css). */
 .friend-key {
-  border: 0;
-  border-radius: var(--r-6, 6px);
-  padding: 4px 8px;
-  background: linear-gradient(180deg, #f3f3f3, #b5b5b5 55%, #8f8f8f);
-  color: var(--friend-ink);
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  padding: 3px 10px 6px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  color: #1f2226;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.1;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #666;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.friend-key:hover:not(:disabled) {
+  --cap-top: #f8f9fa;
+  --cap-top2: #e8ebee;
+}
+
+.friend-key:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.friend-key.is-primary {
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  letter-spacing: 0.02em;
+  outline: 2px solid #22306c;
+  outline-offset: 1px;
+}
+
+.friend-key.is-primary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: #22306c;
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
 }
 
 .friend-key.is-on {
-  background: #102018;
-  color: var(--friend-glow);
-  box-shadow: inset 0 0 0 1px #7dffc4, 0 0 8px rgba(125, 255, 196, 0.45);
+  --cap-skirt: #1c2a24;
+  --cap-edge: #0b1a14;
+  background: #070c0a;
+  color: #7dffc4;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.55);
 }
 
 .friend-key:disabled {
-  opacity: 0.45;
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+  color: #7d8185;
   cursor: default;
 }
 
-.friend-key:focus-visible,
 .friend-say:focus-visible,
 .friend-dismiss:focus-visible,
 .friend-fader-well:focus-visible,
 .friend-log-row:focus-visible {
   outline: 1px dotted #111;
   outline-offset: 2px;
+}
+
+.friend-key:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
 }
 
 .friend-voice {
@@ -1083,41 +1141,6 @@
   box-shadow: inset 6px 6px 0 rgba(255, 255, 255, 0.28);
 }
 
-.friend-portrait.is-frame-arch .friend-portrait-photo {
-  -webkit-mask-image: url(/friend-details/frames/arch.svg);
-  mask-image: url(/friend-details/frames/arch.svg);
-}
-
-.friend-portrait.is-frame-heart .friend-portrait-photo {
-  -webkit-mask-image: url(/friend-details/frames/heart.svg);
-  mask-image: url(/friend-details/frames/heart.svg);
-}
-
-.friend-portrait.is-frame-cameo .friend-portrait-photo {
-  -webkit-mask-image: url(/friend-details/frames/cameo.svg);
-  mask-image: url(/friend-details/frames/cameo.svg);
-}
-
-.friend-portrait.is-frame-medallion .friend-portrait-photo {
-  -webkit-mask-image: url(/friend-details/frames/medallion.svg);
-  mask-image: url(/friend-details/frames/medallion.svg);
-}
-
-.friend-portrait.is-frame-tribal .friend-portrait-photo {
-  -webkit-mask-image: url(/friend-details/frames/tribal.svg);
-  mask-image: url(/friend-details/frames/tribal.svg);
-}
-
-.friend-portrait[class*="is-frame-"] .friend-portrait-photo {
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  mask-mode: luminance;
-}
-
 .friend-portrait.is-lace .friend-lace {
   display: block;
 }
@@ -1202,14 +1225,15 @@
   height: 72px;
   padding: 0;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%, #fff 0 12%, #e4e4e4 28%, #9a9a9a 70%, #5c5c5c);
-  box-shadow: inset 0 2px 0 #fff, inset 0 -3px 4px rgba(0, 0, 0, 0.35), 0 3px 0 #4a4a4a;
 }
 
 .friend-say.is-down {
   transform: translateY(2px);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt, #b3b8be),
+    inset -2px 0 0 var(--cap-skirt, #b3b8be),
+    inset 0 -2px 0 var(--cap-skirt, #b3b8be),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 
 .friend-bond-panel {
@@ -1281,20 +1305,9 @@
 }
 
 .friend-tabs button {
-  border: 0;
-  border-radius: var(--r-6, 6px) var(--r-6, 6px) var(--r-0, 0px) var(--r-0, 0px);
-  padding: 4px 8px;
-  background: linear-gradient(180deg, #efefef, #bdbdbd);
-  box-shadow: inset 0 1px 0 #fff;
   font: inherit;
   font-size: 11px;
   font-weight: 800;
-  cursor: pointer;
-}
-
-.friend-tabs button.is-on {
-  background: #f7f7f7;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #f7f7f7;
 }
 
 .friend-mission.is-scope {
@@ -1349,8 +1362,6 @@
   min-width: 4.5rem;
 }
 
-.friend-key.is-swatch.is-heart { box-shadow: inset 0 0 0 2px #f3c6ff; }
-.friend-key.is-swatch.is-sparkle { box-shadow: inset 0 0 0 2px #7dffc4; }
 .friend-key.is-swatch.is-stamp { border-radius: 999px; }
 .friend-key.is-swatch.is-whisper { border-radius: 50%; }
 .friend-key.is-swatch.is-bounce { animation: friend-spring 1.8s ease-in-out infinite; }
@@ -1644,7 +1655,6 @@
   min-width: 36px;
   height: auto;
   min-height: 36px;
-  padding: 4px 8px;
   border-radius: 4px;
   font-size: var(--friend-text);
   font-weight: 700;
@@ -1745,16 +1755,11 @@
   width: 100%;
   height: auto;
   min-height: 36px;
-  padding: 4px 8px;
-  border: 0;
   border-radius: 4px;
   justify-self: stretch;
   grid-column: auto;
-  background: linear-gradient(180deg, #f3f3f3, #b5b5b5 55%, #8f8f8f);
-  color: var(--friend-ink);
   font-size: var(--friend-text);
   font-weight: 700;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #666;
 }
 
 .friend-say-bubble.baby-friend-bubble {
@@ -1812,22 +1817,12 @@ p.friend-mission-title {
 
 .friend-tabs button {
   min-height: 36px;
-  padding: 4px 8px;
-  border-radius: 4px 4px 0 0;
   font-size: var(--friend-text);
   font-weight: 700;
 }
 
-.friend-tabs button.is-on {
-  background: #070c0a;
-  color: #7dffc4;
-  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.45);
-}
-
 .friend-key {
   min-height: 36px;
-  padding: 4px 8px;
-  border-radius: 4px;
   font-size: var(--friend-text);
 }
 
@@ -2087,7 +2082,6 @@ p.friend-mission-title {
 .friend-key.is-swatch.is-whisper,
 .friend-key.is-swatch.is-bounce {
   border-radius: 4px;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #666;
   animation: none;
 }
 
@@ -2208,6 +2202,315 @@ p.friend-mission-title {
   font-size: var(--friend-text);
 }
 
+/* Space homestead. A cozy farm-sim page on a station hull: dark riveted hull,
+   pale steel plates with an inset dialogue-box border, a round chrome
+   porthole for the friend, and pixel hearts for the bond. No yellow, no gold:
+   metal is chrome, the shine is a thin-film rainbow. _2026-11-01_ */
+
+.friend-instrument.fm98-dialog {
+  --friend-hull: #121a26;
+  --friend-hull-lo: #0a0f18;
+  --friend-hull-edge: #3a4656;
+  --friend-plate: #dfe6ea;
+  --friend-plate-lo: #c7d0d6;
+  --friend-plate-edge: #2c3743;
+  --friend-heart: #ff7aa8;
+  --friend-heart-lo: #c93a6c;
+  --friend-ink: #17202a;
+  background:
+    radial-gradient(1px 1px at 12% 18%, rgba(220, 236, 255, 0.55), transparent 60%),
+    radial-gradient(1px 1px at 78% 9%, rgba(220, 236, 255, 0.4), transparent 60%),
+    radial-gradient(1px 1px at 64% 72%, rgba(220, 236, 255, 0.35), transparent 60%),
+    radial-gradient(1px 1px at 31% 88%, rgba(220, 236, 255, 0.3), transparent 60%),
+    radial-gradient(120% 60% at 0% 112%, rgba(62, 207, 142, 0.22), transparent 55%),
+    radial-gradient(90% 50% at 108% -8%, rgba(159, 212, 255, 0.14), transparent 60%),
+    linear-gradient(180deg, var(--friend-hull) 0%, var(--friend-hull-lo) 100%) !important;
+  border: 4px solid #05080d !important;
+  border-radius: 10px !important;
+  box-shadow:
+    inset 0 0 0 2px var(--friend-hull-edge),
+    inset 0 0 0 4px #1c2533,
+    0 6px 0 #05080d,
+    0 18px 40px rgba(0, 0, 0, 0.5) !important;
+  color: #d9e6ee;
+}
+
+/* Plates: the Stardew dialogue box, in brushed steel, a rivet in each corner. */
+.friend-instrument .friend-face,
+.friend-instrument .friend-scroll {
+  position: relative;
+  padding: 16px;
+  border: 3px solid var(--friend-plate-edge);
+  border-radius: 6px;
+  color: var(--friend-ink);
+  background:
+    radial-gradient(circle at 8px 8px, #fff 0 1px, #7d8892 1.5px 3px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 8px) 8px, #fff 0 1px, #7d8892 1.5px 3px, transparent 3.5px),
+    radial-gradient(circle at 8px calc(100% - 8px), #fff 0 1px, #7d8892 1.5px 3px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #fff 0 1px, #7d8892 1.5px 3px, transparent 3.5px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #edf2f5 0%, var(--friend-plate) 40%, var(--friend-plate-lo) 100%);
+  box-shadow:
+    inset 0 0 0 2px #f8fbfd,
+    inset 0 0 0 4px #9aa6b0,
+    0 3px 0 #05080d;
+}
+
+.friend-instrument .friend-scroll:empty {
+  display: none;
+}
+
+.friend-instrument.fm98-dialog h2.friend-name {
+  font-family: var(--font-pixel, inherit);
+  font-size: 22px !important;
+  letter-spacing: 0.02em;
+}
+
+.friend-instrument .friend-captions dt {
+  color: #4a5864;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Porthole: a round chrome ring with rivets, glass lip, and a rainbow film. */
+.friend-instrument .friend-face {
+  grid-template-columns: minmax(150px, 210px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.friend-instrument .friend-portrait {
+  height: auto;
+  min-height: 0;
+  align-self: center;
+}
+
+.friend-instrument .friend-portrait-glass,
+.friend-instrument .friend-portrait.is-lace .friend-portrait-glass,
+.friend-instrument .friend-portrait.is-heart .friend-portrait-glass,
+.friend-instrument .friend-portrait.is-stamp .friend-portrait-glass {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  --friend-ring-film: conic-gradient(from 200deg, rgba(255, 150, 210, 0.38), rgba(150, 210, 255, 0.34), rgba(150, 255, 200, 0.34), rgba(210, 170, 255, 0.38), rgba(255, 150, 210, 0.38));
+  --friend-ring-metal: conic-gradient(from 210deg, #f6f8fa, #98a1a9 11%, #e6eaed 21%, #69727a 36%, #d9dee2 50%, #858e96 64%, #fbfcfd 77%, #a1a9b0 89%, #f6f8fa);
+  background:
+    var(--friend-ring-film),
+    radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.95) 0 6%, transparent 18%),
+    var(--friend-ring-metal);
+  background-blend-mode: soft-light, normal, normal;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45),
+    0 0 0 1px #1a1f24,
+    0 0 0 4px #0a0f18,
+    0 0 0 5px var(--friend-hull-edge),
+    0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+.friend-instrument .friend-portrait-photo {
+  inset: 14px;
+  width: calc(100% - 28px);
+  height: calc(100% - 28px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #1d3a52, #070c16 72%);
+}
+
+.friend-instrument .friend-portrait-glow,
+.friend-instrument .friend-portrait.is-sparkle .friend-portrait-glass::after {
+  inset: 14px;
+  border-radius: 50%;
+}
+
+/* Ring finishes, earned by bond level (RINGS in FriendDetailsPortrait.tsx).
+   Chrome is the default above. Anodized tints stay cool or pink, never gold. */
+.friend-instrument .friend-portrait.is-ring-brushed .friend-portrait-glass {
+  --friend-ring-metal:
+    repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.14) 0 1deg, rgba(0, 0, 0, 0.08) 1deg 2deg),
+    conic-gradient(from 210deg, #dfe3e6, #a7afb6 18%, #cdd3d8 36%, #8e979e 54%, #d5dade 72%, #a3abb2 88%, #dfe3e6);
+}
+
+.friend-instrument .friend-portrait.is-ring-blue .friend-portrait-glass {
+  --friend-ring-metal: conic-gradient(from 210deg, #e6f1ff, #5f8fd6 12%, #b9d4ff 24%, #2f5aa8 38%, #a9c8f5 52%, #4a6fc0 66%, #eaf3ff 78%, #6d93d8 90%, #e6f1ff);
+}
+
+.friend-instrument .friend-portrait.is-ring-rose .friend-portrait-glass {
+  --friend-ring-metal: conic-gradient(from 210deg, #fff0f6, #d77aa3 12%, #ffc6dc 24%, #a8436f 38%, #f5b3cf 52%, #c45e8c 66%, #fff2f8 78%, #dc84ab 90%, #fff0f6);
+}
+
+.friend-instrument .friend-portrait.is-ring-rainbow .friend-portrait-glass {
+  --friend-ring-film: none;
+  --friend-ring-metal: conic-gradient(from 200deg, #ffb3d6, #c9a8ff 14%, #8fc8ff 28%, #7ee0c8 42%, #f2f6ff 52%, #ff9ec8 64%, #a98cf0 76%, #79b8ff 88%, #ffb3d6);
+}
+
+/* The lace layer is the glass lip now: a recess between ring and photo. */
+.friend-instrument .friend-portrait .friend-lace {
+  display: block;
+  inset: 14px;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  box-shadow:
+    inset 0 4px 8px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.45),
+    inset 0 -1px 0 3px rgba(255, 255, 255, 0.18);
+}
+
+/* Rainbow film on the glass, every friend. Sparkle still adds its sweep. */
+.friend-instrument .friend-portrait-glass::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 50%;
+  /* Clear in the middle: the rainbow lives at the rim, plus one small glint. */
+  background:
+    radial-gradient(ellipse 22% 12% at 32% 20%, rgba(255, 255, 255, 0.55), transparent 70%),
+    conic-gradient(from 200deg, rgba(255, 150, 210, 0.5), rgba(150, 210, 255, 0.45), rgba(150, 255, 200, 0.45), rgba(210, 170, 255, 0.5), rgba(255, 150, 210, 0.5));
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 74%);
+  mask: radial-gradient(circle, transparent 62%, #000 74%);
+  mix-blend-mode: screen;
+}
+
+/* Four rivets on the ring at the diagonals. */
+.friend-instrument .friend-nub {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #b9c0c6 45%, #5c646b);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.friend-instrument .friend-nub.is-nw { top: calc(14.64% + 1px); left: calc(14.64% + 1px); }
+.friend-instrument .friend-nub.is-ne { top: calc(14.64% + 1px); right: calc(14.64% + 1px); left: auto; }
+.friend-instrument .friend-nub.is-sw { bottom: calc(14.64% + 1px); left: calc(14.64% + 1px); top: auto; }
+.friend-instrument .friend-nub.is-se { bottom: calc(14.64% + 1px); right: calc(14.64% + 1px); top: auto; left: auto; }
+
+.friend-instrument .friend-say-bubble.baby-friend-bubble {
+  left: -8px;
+  right: -8px;
+  bottom: 4px;
+}
+
+/* Bond: twenty pixel hearts on the readout. */
+.friend-instrument .friend-tube-row .friend-capsule {
+  width: 11px;
+  height: 10px;
+  border-radius: 0;
+  background: #2a3644;
+  box-shadow: none;
+  clip-path: polygon(1px 0, 4px 0, 4px 1px, 5px 1px, 5px 2px, 6px 2px, 6px 1px, 7px 1px, 7px 0, 10px 0, 10px 1px, 11px 1px, 11px 5px, 10px 5px, 10px 6px, 9px 6px, 9px 7px, 8px 7px, 8px 8px, 7px 8px, 7px 9px, 6px 9px, 6px 10px, 5px 10px, 5px 9px, 4px 9px, 4px 8px, 3px 8px, 3px 7px, 2px 7px, 2px 6px, 1px 6px, 1px 5px, 0 5px, 0 1px, 1px 1px);
+}
+
+.friend-instrument .friend-tube-row .friend-capsule.is-lit {
+  background: linear-gradient(180deg, #ffd0e2 0 2px, var(--friend-heart) 2px 6px, var(--friend-heart-lo) 6px);
+}
+
+.friend-instrument .friend-meter-row {
+  border: 2px solid #05080d;
+  box-shadow: inset 0 0 0 1px #1d3a2c, 0 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Today's mission: the quest board, framed like the plates but dark. */
+.friend-instrument .friend-mission.is-scope {
+  padding: 12px 16px;
+  border: 3px solid var(--friend-plate-edge);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 2px #2f5a47,
+    0 3px 0 #05080d;
+}
+
+/* Rows on the plate: readable sources and dates. */
+.friend-instrument .friend-journal.is-compact .friend-log-source,
+.friend-instrument .friend-journal.is-compact .friend-log-row time {
+  color: #1f6e4e;
+}
+
+.friend-instrument .friend-footer {
+  color: #d9e6ee;
+}
+
+.friend-instrument .friend-commit-lamp.is-unsaved {
+  color: var(--friend-nixie);
+}
+
+.friend-instrument .friend-commit-lamp.is-unsaved::before {
+  background: var(--friend-nixie);
+}
+
+/* Pixel icons (`PixelIcon.tsx`): little farm-sim sprites beside each word. */
+.friend-instrument .friend-pixel {
+  flex: none;
+  display: inline-block;
+  vertical-align: -2px;
+  image-rendering: pixelated;
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.18));
+}
+
+.friend-instrument .friend-key,
+.friend-instrument .friend-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.friend-instrument.fm98-dialog h2.friend-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.friend-instrument .friend-captions dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.friend-instrument .friend-mission.is-scope .friend-pixel {
+  filter: drop-shadow(0 0 4px rgba(125, 255, 196, 0.35));
+}
+
+/* Task rows: the matched sprite leads the title, the task's pixel orb ends it. */
+.friend-instrument .friend-log-title,
+.friend-instrument .friend-mission-pop-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.friend-instrument canvas.friend-pixel.is-orb {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.friend-instrument .friend-mission.is-scope .friend-pixel.is-orb {
+  margin-left: auto;
+}
+
+/* Cozy: softer plate corners and a stitched inner line, like a quilted box. */
+.friend-instrument .friend-face,
+.friend-instrument .friend-scroll,
+.friend-instrument .friend-mission.is-scope {
+  border-radius: 10px;
+}
+
+.friend-instrument .friend-face::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  pointer-events: none;
+  border: 1px dashed rgba(44, 55, 67, 0.22);
+  border-radius: 6px;
+}
+
 @media (max-width: 767px) {
   .ui-dialog-content.baby-friend-dialog:has(.friend-instrument),
   .ui-dialog-content.baby-friend-instrument-dialog {
@@ -2240,6 +2543,27 @@ p.friend-mission-title {
   .friend-portrait-glass {
     height: 160px;
     min-height: 160px;
+  }
+
+  .friend-instrument .friend-portrait,
+  .friend-instrument .friend-portrait .friend-portrait-glass {
+    width: 180px;
+    height: 180px;
+    min-height: 0;
+    align-self: center;
+  }
+
+  .friend-instrument .friend-face,
+  .friend-instrument .friend-scroll {
+    padding: 12px;
+  }
+
+  .friend-instrument .friend-tabs button {
+    flex-direction: column;
+    gap: 2px;
+    padding-inline: 2px;
+    font-size: var(--friend-caption);
+    white-space: nowrap;
   }
 
   .friend-say,

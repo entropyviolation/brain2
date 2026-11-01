@@ -255,15 +255,15 @@ describe("AppHeader", () => {
     const header = screen.getByTestId("app-header")
     const nav = screen.getByTestId("header-nav")
     const tools = header.querySelector(".b2-shell-phone-tools")
-    const plus = header.querySelector(".b2-shell-plus")
-    const menu = header.querySelector(".b2-shell-menu")
+    const plus = header.querySelector<HTMLElement>(".b2-shell-plus")
+    const menu = header.querySelector<HTMLElement>(".b2-shell-menu")
 
     expect(tools).toBeTruthy()
     expect(nav.closest(".b2-shell-phone-tools")).toBeNull()
     expect(plus).toHaveAttribute("aria-label", "Quick Add")
     expect(tools).toContainElement(plus)
     expect(tools).toContainElement(menu)
-    expect(plus?.compareDocumentPosition(menu as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect((plus as Node).compareDocumentPosition(menu as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     act(() => {
       ;(plus as HTMLButtonElement).click()

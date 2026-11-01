@@ -33,6 +33,10 @@ export interface TestChecks {
   answerMaxLines?: number
   /** No two blocks may share minutes. */
   blocksNoOverlap?: boolean
+  /** Not one time block: ideas, spending, dreams, people. */
+  noBlocks?: boolean
+  /** A block of this activity starts within 10 minutes of this local HH:MM (a clock the line states). */
+  blockStarts?: { activity: string; at: string }[]
   /** A node must have left by this port (for example the command gate by `yes`), whatever the model then wrote. */
   stepPorts?: { nodeId: string; port: string }[]
 }
@@ -240,6 +244,15 @@ export function judgeChecks(t: BimTest, run: FlowRun): { label: string; ok: bool
   if (c.blocksNoOverlap) {
     const spans = run.blocks.map((b) => [Date.parse(b.start), Date.parse(b.end)] as const).sort((a, b) => a[0] - b[0])
     out.push({ label: "no two blocks share minutes", ok: spans.every((sp, i) => i === 0 || sp[0] >= spans[i - 1]![1]) })
+  }
+  if (c.noBlocks) out.push({ label: "no time block", ok: run.blocks.length === 0 })
+  for (const bs of c.blockStarts ?? []) {
+    const [h, m] = bs.at.split(":").map(Number)
+    const near = run.blocks.some((b) => {
+      const d = new Date(b.start)
+      return b.activity.toLowerCase().includes(bs.activity.toLowerCase()) && Math.abs(d.getHours() * 60 + d.getMinutes() - (h! * 60 + m!)) <= 10
+    })
+    out.push({ label: `a ${bs.activity} block starts near ${bs.at}`, ok: near })
   }
   for (const sp of c.stepPorts ?? []) {
     const steps = run.messages.flatMap((m) => m.steps).filter((st) => st.nodeId === sp.nodeId)

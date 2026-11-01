@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const { incrementCountForEntry, removeCountTickForEntry, duplicateLogEntry, reassignLogBookList } = vi.hoisted(() => ({
   incrementCountForEntry: vi.fn(() => true),
   removeCountTickForEntry: vi.fn(() => true),
-  duplicateLogEntry: vi.fn((): string | null => null),
+  duplicateLogEntry: vi.fn((_entryId: string): string | null => null),
   reassignLogBookList: vi.fn(() => false),
 }))
 

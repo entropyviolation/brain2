@@ -40,5 +40,6 @@ class AppViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(LocationPlugin())
         bridge?.registerPluginInstance(NfcPlugin())
         bridge?.registerPluginInstance(HealthPlugin())
+        bridge?.registerPluginInstance(SpeechPlugin())
     }
 }

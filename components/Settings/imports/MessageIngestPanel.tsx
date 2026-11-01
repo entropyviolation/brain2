@@ -197,7 +197,7 @@ export function MessageIngestPanel() {
         <h3 className="font-semibold">Message ingest</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Meet <strong>BIM</strong> (Brain2 Ingestion Messenger) — you can call him BIM for short. Text{" "}
+        Meet <strong>BIM</strong> (Brain Interface Manager) — you can call him BIM for short. Text{" "}
         <a className="underline" href="https://t.me/brain2_phone_bot" target="_blank" rel="noreferrer">
           t.me/brain2_phone_bot
         </a>{" "}

@@ -101,6 +101,17 @@ export function parseMessage(raw: string, now = new Date()): IngestIntent {
   return { kind: "capture", payload: text, raw: text }
 }
 
+const QUESTION_LEAD = /^(what|whats|when|where|who|why|how|did|do|does|is|are|was|were|can|could|should|have|has|am)\b/i
+
+/**
+ * One short line that opens with a question word and ends in `?`. The ladder
+ * will not file it as a log line: it is asking BIM something, not telling it.
+ */
+export function looksLikeQuestion(text: string): boolean {
+  const t = text.trim()
+  return t.length <= 140 && !t.includes("\n") && t.endsWith("?") && QUESTION_LEAD.test(t)
+}
+
 /** True only when the first line actually used a known verb (not prefix-less capture). */
 export function looksLikeVerb(text: string, now = new Date()): boolean {
   return matchVerb(text, now) != null

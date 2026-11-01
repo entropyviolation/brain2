@@ -92,6 +92,11 @@
   color: inherit;
 }
 
+/* The list picker's search field draws its magnifier at the left edge. */
+.inv-phone input.pl-8 {
+  padding-left: 2.25rem;
+}
+
 .inv-phone .list-picker-row {
   min-height: 44px;
   font-size: 16px;

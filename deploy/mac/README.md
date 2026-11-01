@@ -4,6 +4,8 @@ _Last mapped: 2026-10-20_
 
 launchd jobs: the always-on installer (below), the nightly vault backup (`com.brain2.backup`, see `docs/BIM_BACKUP.md`) and the iPhone app reinstall (`com.brain2.ios-reinstall`, below).
 
+_Last mapped: 2026-10-31._ The Mac that runs `com.brain2.hub` and `com.brain2.awake` is the machine the iPhone reaches through Tailscale, and the one that drains the temporary Oracle relay. If it sleeps, away-from-home sync pauses. See [`docs/ORACLE_INTERIM_SYNC.md`](../../docs/ORACLE_INTERIM_SYNC.md).
+
 ## Install
 
 _Last mapped: 2026-10-22_

@@ -1,6 +1,6 @@
 # BIM command catalog
 
-Complete list of phrases **BIM** (Brain2 Ingestion Messenger) accepts.
+Complete list of phrases **BIM** (Brain Interface Manager) accepts.
 Generated from the live surface in `lib/ingest/command-catalog.ts`
 (parser verbs, expansions, habit/discrete presets, bulk dumps, morning GM, retired `g`).
 

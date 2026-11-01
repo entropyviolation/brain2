@@ -12,6 +12,7 @@ import { buildDayContext, confirmedSpans, dayContextText } from "./day-context"
 import type { ModelCall } from "./ollama"
 import { retrieve, type Ranker } from "./retrieve"
 import { linkText } from "./entity-link"
+import { commonStems, contextPrompt, linkPrior, type PriorLink } from "./context-link"
 import { premiseCheck, runCompute } from "./compute"
 import { contentWords, searchVault, type VaultSnapshot } from "./vault-search"
 import type {
@@ -48,7 +49,7 @@ const EXTRACT_SYSTEM =
 /** The model a step asks for, or undefined to use the run's main model. */
 export function modelFor(node: FlowNode, models?: ModelPlan): string | undefined {
   if (node.config.model) return node.config.model
-  if (node.kind === "gate" || node.kind === "route" || node.kind === "choose") return models?.gates || undefined
+  if (node.kind === "gate" || node.kind === "route" || node.kind === "choose" || node.kind === "context") return models?.gates || undefined
   if (node.kind === "answer") return models?.prose || undefined
   return undefined
 }
@@ -140,6 +141,14 @@ export const INSIGHT_SYSTEM =
   "4) No medical or psychological labels, and nothing about the person's worth. 5) If the data is thin, return fewer insights, or none. " +
   "6) Plain words, speaking to the person as 'you', one or two sentences each. JSON only."
 
+export const INTERVIEW_SYSTEM =
+  "You have read everything recorded about one day of a person's life: what they tracked, what they wrote and texted, and the counts. " +
+  "The QUESTION below says what to ask them. Write the questions you would put to the person themselves so this day is understood later. " +
+  "Rules: 1) Each question is about something specific in the data (a named stretch, a gap, a change, a person, a message), never generic. " +
+  "2) Ask what the data cannot say: what really happened, why, and how it felt. Do not ask what the rows already answer. " +
+  "3) One question at a time, answerable in a sentence or two, speaking to the person as 'you'. " +
+  "4) No diagnosing, no advice, no judgment. 5) Ask as many as the QUESTION asks for, and no more. JSON only."
+
 export const CHECK_SYSTEM =
   "You check a DRAFT answer against the EVIDENCE. Keep every claim the evidence supports. Remove or correct any claim it does not, " +
   "including dates, counts, and names. If nothing in the evidence supports the draft, replace it with one sentence saying the notes do not show it, and set confidence none. " +
@@ -173,6 +182,7 @@ async function runAnswer(node: FlowNode, ctx: Ctx, call: ModelCall): Promise<Omi
   const c = node.config
   const mode: AnswerMode = c.mode ?? "answer"
   if (mode === "insight") return runInsight(node, ctx, call)
+  if (mode === "interview") return runInterview(node, ctx, call)
   const draft = mode === "check" ? [...ctx.answers].reverse().find((a) => a.mode !== "check") : undefined
   const ev = evidenceFor(ctx, c.fromNodeIds)
   const rows: EvidenceRow[] = []
@@ -226,11 +236,30 @@ async function runAnswer(node: FlowNode, ctx: Ctx, call: ModelCall): Promise<Omi
   return { port: "out", output: answer, prompt }
 }
 
+/** The message as this node sees it: a `context` node on its path decides which earlier lines stay. */
+function seenMessage(ctx: Ctx): FlowMessage {
+  for (const o of ctx.path) if (o && typeof o === "object" && "contextFor" in o) return { ...ctx.message, prior: (o as unknown as { prior: FlowMessage["prior"] }).prior }
+  return ctx.message
+}
+
+/** Stems too common in this person's feed to link two lines, worked out once per snapshot. */
+const commonCache = new WeakMap<object, Set<string>>()
+function commonFor(snap: VaultSnapshot): Set<string> {
+  const feed = snap.history?.feed
+  if (!feed) return new Set()
+  let s = commonCache.get(feed)
+  if (!s) commonCache.set(feed, (s = commonStems(feed)))
+  return s
+}
+
 async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSnapshot): Promise<Omit<TraceStep, "nodeId" | "ms">> {
   const c = node.config
-  const msg = messageBlock(ctx.message)
+  const msg = messageBlock(seenMessage(ctx))
 
   if (node.kind === "message") return { port: "out", output: { text: ctx.message.text, at: ctx.message.at, entry: ctx.message.entry ?? c.entry ?? "" } }
+
+  // The wording an interview answer is asked: no model, edited in the inspector.
+  if (node.kind === "question") return { port: "out", output: { ask: c.question ?? "" } }
 
   // Reached only when no other lane produced an answer, a suggestion, or a time signal.
   if (node.kind === "fallback") return { port: "out", output: { fired: true } }
@@ -266,7 +295,7 @@ async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSna
     const sub = c.flowId ? ctx.getFlow?.(c.flowId) : undefined
     if (!sub) throw new Error(`No flow "${c.flowId ?? ""}" to hand off to.`)
     if (ctx.depth >= 3) throw new Error("Handoffs nest too deep.")
-    const r = await runMessage(sub, ctx.message, call, snap, undefined, ctx.rank, ctx.known, ctx.getFlow, ctx.depth + 1, undefined, ctx.models)
+    const r = await runMessage(sub, seenMessage(ctx), call, snap, undefined, ctx.rank, ctx.known, ctx.getFlow, ctx.depth + 1, undefined, ctx.models)
     ctx.proposals.push(...r.proposals)
     ctx.signals.push(...r.signals)
     ctx.answers.push(...r.answers)
@@ -275,6 +304,31 @@ async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSna
       port: "out",
       output: { handedTo: c.flowId, steps: r.steps.map((s) => `${names.get(s.nodeId) ?? s.nodeId}${s.error ? " ERR" : s.port === "no" ? " no" : ""} ${s.ms}ms`) },
     }
+  }
+
+  // Which earlier lines are context. Code calls the clear pairs; the model is asked one yes/no per unsure pair.
+  if (node.kind === "context") {
+    const links: PriorLink[] = linkPrior(ctx.message, ctx.message.prior, commonFor(snap), { maxGapMin: c.maxGapMin })
+    const prompts: string[] = []
+    for (const l of links) {
+      if (l.call !== "unsure") continue
+      if (c.contextMode === "code") {
+        l.why += "; dropped (code only)"
+        continue
+      }
+      const prompt = contextPrompt(ctx.message, l)
+      prompts.push(prompt)
+      const out = (await call({
+        system: GATE_SYSTEM,
+        user: prompt,
+        schema: { type: "object", properties: { answer: { type: "string", enum: ["yes", "no"] } }, required: ["answer"] },
+        maxTokens: 20,
+      })) as { answer?: string }
+      l.call = out.answer === "yes" ? "linked" : "unlinked"
+      l.why += `; model said ${out.answer === "yes" ? "yes" : "no"}`
+    }
+    const prior = ctx.message.prior.filter((p) => links.some((l) => l.at === p.at && l.text === p.text && l.call === "linked"))
+    return { port: "out", output: { contextFor: ctx.message.id, prior, links }, prompt: prompts.join("\n\n---\n\n") || undefined }
   }
 
   if (node.kind === "gate") {
@@ -301,7 +355,7 @@ async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSna
 
   if (node.kind === "link") {
     const want = c.linkKind ?? "person"
-    const all = linkText(snap, ctx.message.text)
+    const all = linkText(snap, ctx.message.text, want === "any" ? undefined : { kind: want })
     const mentions = all.filter((m) => m.status !== "nil" && (want === "any" || m.kind === want))
     const links = all.map((m) => ({ text: m.text, status: m.status, labels: m.candidates.map((x) => x.label) }))
     const hits: SearchOutput["hits"] = mentions.flatMap((m) =>
@@ -350,7 +404,7 @@ async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSna
   if (node.kind === "clarify") {
     // Yes: a name fits two or more candidates; ask which instead of guessing. No: nothing is in doubt.
     const want = c.clarifyKind ?? "any"
-    const doubts = linkText(snap, ctx.message.text).filter((m) => m.status === "ambiguous" && (want === "any" || m.kind === want))
+    const doubts = linkText(snap, ctx.message.text, want === "any" ? undefined : { kind: want }).filter((m) => m.status === "ambiguous" && (want === "any" || m.kind === want))
     if (doubts.length === 0) return { port: "no", output: { clear: true } }
     const first = doubts[0]!
     const options = first.candidates.map((x) => x.label)
@@ -462,7 +516,7 @@ async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSna
 /** The nearest extract output on this path that has every key. */
 function latestObject(ctx: Ctx, keys: string[]): Record<string, unknown> | undefined {
   for (const o of ctx.path) {
-    if (o && typeof o === "object" && !Array.isArray(o) && !("picks" in o) && !("routes" in o) && !("handedTo" in o) && !("hits" in o) && !("text" in o) && !("messageId" in o)) {
+    if (o && typeof o === "object" && !Array.isArray(o) && !("picks" in o) && !("routes" in o) && !("handedTo" in o) && !("hits" in o) && !("text" in o) && !("messageId" in o) && !("ask" in o) && !("contextFor" in o)) {
       const rec = o as Record<string, unknown>
       if (keys.every((k) => k in rec)) return rec
     }
@@ -478,6 +532,58 @@ function latestPick(ctx: Ctx, all = false): string | string[] | undefined {
     }
   }
   return undefined
+}
+
+/** The nearest `question` node's wording on this path: the thing an interview is asked. */
+function askedQuestion(ctx: Ctx): string | undefined {
+  for (const o of ctx.path) if (o && typeof o === "object" && typeof (o as { ask?: unknown }).ask === "string") return (o as { ask: string }).ask
+  return undefined
+}
+
+/** Interview: every row on the path goes to the model, which asks the person questions. Code only caps and de-duplicates them. */
+async function runInterview(node: FlowNode, ctx: Ctx, call: ModelCall): Promise<Omit<TraceStep, "nodeId" | "ms">> {
+  const c = node.config
+  const ev = evidenceFor(ctx, c.fromNodeIds)
+  const seen = new Set<string>()
+  const rows: EvidenceRow[] = []
+  for (const e of ev) for (const r of e.rows) if (!seen.has(r.when + r.text)) (seen.add(r.when + r.text), rows.push(r))
+  const facts = [...new Set(ev.flatMap((e) => e.facts))]
+  const notes = ev.map((e) => e.note).filter(Boolean)
+  const total = ev.reduce((a, e) => a + e.total, 0)
+  const asked = askedQuestion(ctx) ?? c.question ?? "If you could ask this person 3 questions to clarify what happened and how they felt, what would they be?"
+  const prompt = [
+    `DAY: ${new Date(ctx.message.at).toDateString()}`,
+    `QUESTION: ${asked}`,
+    ctx.message.text ? `INPUT: ${ctx.message.text}` : "",
+    ctx.message.context ? `RELATED NOTES:\n${ctx.message.context}` : "",
+    `FACTS COUNTED BY CODE:\n${facts.length ? facts.map((f) => `- ${f}`).join("\n") : "- none"}`,
+    `EVERYTHING RECORDED (${rows.length} shown of ${total} found):\n${rows.length ? rows.map((r) => `${r.when} · ${r.source}: ${r.text}`).join("\n") : "(no rows)"}`,
+    notes.length ? `NOTES: ${notes.join(" ")}` : "",
+  ].filter(Boolean).join("\n\n")
+  const base = c.system || INTERVIEW_SYSTEM
+  const out = (await call({
+    system: c.extra ? `${base} ${c.extra}` : base,
+    user: prompt,
+    schema: { type: "object", properties: { questions: { type: "array", maxItems: 8, items: { type: "string", maxLength: 240 } } }, required: ["questions"] },
+    maxTokens: 500,
+  })) as { questions?: string[] }
+  const questions: string[] = []
+  for (const q of out.questions ?? []) {
+    const text = (q ?? "").trim()
+    if (text && !questions.some((k) => overlap(k, text) > 0.8)) questions.push(text)
+  }
+  const answer: Answer = {
+    nodeId: node.id,
+    mode: "interview",
+    text: questions.map((q, i) => `${i + 1}. ${q}`).join("\n") || "Nothing worth asking from this day's data.",
+    confidence: questions.length ? "medium" : "none",
+    evidence: rows,
+    used: [],
+    facts,
+    questions,
+  }
+  ctx.answers.push(answer)
+  return { port: "out", output: answer, prompt }
 }
 
 /** Insights: the model proposes, code keeps only those that cite real lines, enough of them, and say something new. */

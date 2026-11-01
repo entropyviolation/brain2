@@ -25,7 +25,7 @@ describe("code-docs-fs", () => {
     expect(listed.files[0].kind).toBe("markdown")
     expect(listed.files[1].kind).toBe("image")
     const text = readDocFile(root, "README.md")
-    expect(text.ok && text.encoding === "utf8" && text.text.startsWith("# Index")).toBe(true)
+    expect(text.ok && text.encoding === "utf8" && text.text?.startsWith("# Index")).toBe(true)
     const image = readDocFile(root, "screenshots/a.png")
     expect(image.ok && image.encoding === "base64").toBe(true)
   })

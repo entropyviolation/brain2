@@ -8,6 +8,7 @@
 
 import { GEM_IMAGES } from "@/lib/gems-manifest"
 import type { BondProgress } from "@/lib/friend-stats"
+import { PixelIcon } from "@/components/friend-details/PixelIcon"
 
 const GEM = GEM_IMAGES[4] ? `/gems-removebackground/${GEM_IMAGES[4]}` : ""
 
@@ -61,16 +62,25 @@ export function FriendDetailsReadouts({
       </div>
       <dl className="friend-captions">
         <div>
-          <dt>Met</dt>
+          <dt>
+            <PixelIcon name="rocket" size={14} />
+            Met
+          </dt>
           <dd>{shortWhen(firstSeenAt)}</dd>
         </div>
         <div>
-          <dt>Worn</dt>
+          <dt>
+            <PixelIcon name="shirt" size={14} />
+            Worn
+          </dt>
           <dd>×{wearCount}</dd>
         </div>
         {teaser ? (
           <div>
-            <dt>Next</dt>
+            <dt>
+            <PixelIcon name="gift" size={14} />
+            Next
+          </dt>
             <dd>{teaser}</dd>
           </div>
         ) : null}

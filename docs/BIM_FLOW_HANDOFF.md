@@ -223,6 +223,9 @@ Read `docs/BIM_FLOW_RESEARCH.md` first; it holds the research and the backlog. T
    comes from use.
 5. **An eval set:** label real feed messages per gate, then score each gate per
    model in the bench.
+   _Last mapped: 2026-11-01:_ first version built. `lib/bim-flow/real-feed.ts` (108 lines, 48 context
+   pairs), `label-model.ts` (the code ceiling), `real-feed.live.test.ts` (per-room model scores). Next:
+   show the scores in the Tests sheet, and add lines from each new BIM day the person corrects.
 6. **Embedding search** beside word search (`nomic-embed-text` through Ollama;
    see `docs/analytics-plan/13-local-readings.md`). Pull graph neighbours from
    the knowledge graph plan, and use its textbook notes (entity resolution,

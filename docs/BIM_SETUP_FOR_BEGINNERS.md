@@ -1,10 +1,14 @@
 # BIM always-on: setup for beginners
 
+**BIM** = Brain Interface Manager (the Telegram phone bot).
+
 _Last mapped: 2026-10-20_
 
 No jargon. Do the parts in order. Each part says how you know it worked.
 Why it is built this way: [`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md).
 Every secret and where it lives: [`BIM_CONNECTION_MAP.md`](BIM_CONNECTION_MAP.md).
+The Oracle computer is **temporary**. It holds the mailbox until Brain2 has a
+home computer of its own. What comes next: [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md).
 
 ## The idea, like you are five
 

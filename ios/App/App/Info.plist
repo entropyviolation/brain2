@@ -57,6 +57,8 @@
 	<string>BRAIN2 reads your lists, habits, and the time grid from the Mac on this Wi-Fi.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>BRAIN2 records significant moves and visits in the background, so Location fills in while the phone is in your pocket. Batches are encrypted before they leave the phone.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>BRAIN2 turns what you say into text when you press the mic key on its keyboard.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>BRAIN2 listens while it is open, so a breath can blow the sand off a closed window and spoken affirmations can be heard. Audio stays on this phone.</string>
 	<key>NSHealthShareUsageDescription</key>

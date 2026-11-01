@@ -98,6 +98,54 @@ function rank(hits: SearchHit[], limit: number): SearchHit[] {
     .slice(0, limit)
 }
 
+/**
+ * A pen or list whose name is really a pasted thought ("slipping for nap bc so so hungry (sleep for lunch)
+ * or maybe shower could go", a paragraph about EEG pipelines). The person's vault has dozens; offering them
+ * to a PICK lets a model choose one. Kept in the vault, left out of search.
+ */
+export function isArtifactName(name: string): boolean {
+  return name.length > 70 || name.trim().split(/\s+/).length > 9
+}
+
+/** BIM's own head aliases (`lib/ingest/parse-message.ts`): `get:` writes to the list "needed". */
+const HEAD_ALIAS: Record<string, string> = { get: "needed" }
+/** Words a line may open with before its real first word ("gotta get shoes"). */
+const LEAD_FILLER = new Set(["gotta", "gonna", "also", "and", "i", "must", "should", "def", "really", "still", "so"])
+
+const firstWord = (text: string): string => {
+  const words = text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean)
+  return words.find((w) => !LEAD_FILLER.has(w)) ?? ""
+}
+
+/** Lists a line's head names: "Lyric: …" → Lyric, "Merch: …" → Merch, "Get: …" → needed. */
+export function headLists(snap: VaultSnapshot, text: string): string[] {
+  const written = /^\s*([\p{L}\p{N} ]{2,24}?)\s*(?:idea)?\s*[:\-–]/u.exec(text)?.[1]?.trim()
+  if (!written) return []
+  const head = written.toLowerCase()
+  const want = [head, HEAD_ALIAS[head]].filter(Boolean)
+  const names = [...new Set(snap.lists.filter((l) => !snap.skipListIds.has(l.id) && want.includes(l.name.trim().toLowerCase())).map((l) => l.name.trim()))]
+  // "needed" and "Needed" are both lists; the one spelled as written (or as the grammar writes it) wins.
+  const exact = names.filter((n) => n === written || n === HEAD_ALIAS[head])
+  return exact.length ? exact : names
+}
+
+/**
+ * Lists the person already keeps lines like this one on, learned from their items: of 111 items that
+ * start with need / iso / get, most sit on Needed, needed, shopping list or wanted. So "Need more macbook
+ * bricks" is offered those lists even though no item shares a word with it. Lists with 3+ such items, top 3.
+ */
+export function cueLists(snap: VaultSnapshot, text: string): string[] {
+  const cue = firstWord(text)
+  if (!cue || cue.length < 3 || /^\d+$/.test(cue)) return []
+  const listName = new Map(snap.lists.map((l) => [l.id, l.name]))
+  const counts = new Map<string, number>()
+  for (const it of snap.items) {
+    if (it.type === "person" || firstWord(it.title) !== cue) continue
+    for (const l of it.listIds) if (!snap.skipListIds.has(l)) counts.set(listName.get(l) ?? l, (counts.get(listName.get(l) ?? l) ?? 0) + 1)
+  }
+  return [...counts].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name]) => name)
+}
+
 export function searchVault(
   snap: VaultSnapshot,
   text: string,
@@ -107,7 +155,14 @@ export function searchVault(
   const limit = opts.limit ?? 12
   const listName = new Map(snap.lists.map((l) => [l.id, l.name]))
   const hits: SearchHit[] = []
+  const seenNames = new Set<string>()
   const push = (id: string, title: string, extra: Partial<SearchHit> = {}) => {
+    if (opts.source === "pens" || opts.source === "lists") {
+      // Same name twice ("Text log" three times, three "Reading List"s) is one option; a pasted paragraph is none.
+      const key = title.trim().toLowerCase()
+      if (isArtifactName(title) || seenNames.has(key)) return
+      seenNames.add(key)
+    }
     const words = opts.all ? [] : wordHits(title, terms)
     if (opts.all || words.length > 0) hits.push({ id, title, source: opts.source, matched: words.length, words, ...extra })
   }
@@ -133,7 +188,7 @@ export function searchVault(
   const top = opts.all ? hits.slice(0, opts.limit ?? 200) : rank(hits, limit)
   const options =
     opts.source === "items"
-      ? [...new Set(top.flatMap((h) => h.lists ?? []))]
+      ? [...new Set([...headLists(snap, text), ...top.flatMap((h) => h.lists ?? []), ...cueLists(snap, text)])]
       : [...new Set(top.map((h) => h.title))]
   return { terms, hits: top, options }
 }

@@ -47,4 +47,6 @@ export const FLOW_REV: Partial<Record<FlowId, string>> = {
   ask: "2026-10-30-route-fallback",
   "ask-calc": "2026-10-30-fallback",
   "log-phone": "2026-10-30-command-examples",
+  day: "2026-10-31-interview-everything",
+  "log-routed": "2026-11-01-activity-always-heads-kept",
 }

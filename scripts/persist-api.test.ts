@@ -20,7 +20,7 @@ import {
 } from "@/scripts/persist-api.mjs"
 
 const phonePatch = vi.hoisted(() => ({
-  applyVaultPatch: vi.fn(() => ({ ok: false, reason: "patch refused" })),
+  applyVaultPatch: vi.fn((): { ok: boolean; reason?: string; value?: string } => ({ ok: false, reason: "patch refused" })),
 }))
 
 vi.mock("../lib/vault-guard.js", async (importOriginal) => {
@@ -437,22 +437,22 @@ describe("persist HTTP canon and phone patch", () => {
     setup({ items: { "brain2-a": "1", "cogs-a": "1" }, source: "desk" })
     const electron = await persistHttp("POST", "/api/persist", { name: "brain2-a", value: "2" })
     expect(electron.status).toBe(200)
-    expect(readSharedPersist().items["brain2-a"]).toBe("2")
-    expect(readSharedPersist().items["cogs-a"]).toBe("2")
+    expect((readSharedPersist().items as Record<string, string>)["brain2-a"]).toBe("2")
+    expect((readSharedPersist().items as Record<string, string>)["cogs-a"]).toBe("2")
     const chrome = await persistHttp("POST", "/api/persist", {
       name: "brain2-b",
       value: "chrome",
       source: "chrome",
     })
     expect(chrome.status).toBe(200)
-    expect(readSharedPersist().items["cogs-b"]).toBe("chrome")
+    expect((readSharedPersist().items as Record<string, string>)["cogs-b"]).toBe("chrome")
     const hub = await persistHttp("POST", "/api/persist", {
       name: "brain2-tg",
       value: "from-hub",
       source: "phone-hub",
     })
     expect(hub.status).toBe(200)
-    expect(readSharedPersist().items["brain2-tg"]).toBe("from-hub")
+    expect((readSharedPersist().items as Record<string, string>)["brain2-tg"]).toBe("from-hub")
     expect(phonePatch.applyVaultPatch).not.toHaveBeenCalled()
   })
 })

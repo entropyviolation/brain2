@@ -14,6 +14,7 @@ import { sleepFact, sleepOffsets } from "./text-sleep"
 import { apartRuns, companyRates } from "./text-company"
 import { screenFacts } from "./screen-presence"
 import { fileFacts } from "./file-activity"
+import { buildDayContext, dayContextText } from "./day-context"
 import { digestFacts, filterTexts, textEvidenceRow } from "./texts"
 import type { Evidence, EvidenceRow, RetrieveConfig } from "./types"
 
@@ -305,6 +306,31 @@ export async function retrieve(snap: VaultSnapshot, cfg: RetrieveConfig, input: 
 
   if (!snap.history) {
     return { kind: cfg.kind, terms, rows: [], total: 0, facts: [], note: "This copy of the vault has no history to read (open the hub copy or the app window)." }
+  }
+
+  if (cfg.kind === "day" && cfg.everything) {
+    const date = dateKey(now)
+    const h = snap.history
+    const all = Object.keys(h.scopeNames).filter((s) => s !== "screentime")
+    const texts = (snap.texts ?? []).filter((r) => dateKey(new Date(r.at)) === date)
+    const sets = Object.values(snap.datasets ?? {}).flatMap((d) => d.rows.filter((r) => r.date === date).map((r) => ({ ms: 0, row: { when: date, source: `${d.label} · ${r.source}`, text: r.text } })))
+    const timed: { ms: number; row: EvidenceRow }[] = [
+      ...entryRows(snap, [...new Set([...all, ...PERSON_SCOPES])], now, 1).filter((r) => r.date === date).map((r) => ({ ms: r.ms, row: { when: r.when, source: r.source, text: r.text } })),
+      ...textRows(snap, now, 1, false).filter((r) => r.date === date).map((r) => ({ ms: r.ms, row: { when: r.when, source: r.source, text: r.text } })),
+      ...texts.map((t) => ({ ms: new Date(t.at).getTime(), row: textEvidenceRow(t) })),
+    ].sort((a, b) => a.ms - b.ms)
+    const rows = [...timed, ...sets].map((x) => x.row)
+    const limit = cfg.limit ?? 200
+    const facts = [
+      `Rows on ${date}: ${rows.length}.`,
+      ...dayContextText(buildDayContext(h, now)).split("\n"),
+      ...minuteFacts(entryRows(snap, ["activity"], now, 1).filter((r) => r.date === date), true),
+      ...screenFacts(h.entries, date),
+      ...fileFacts(snap.files ?? [], h.entries, date),
+      ...digestFacts(texts, "Texts"),
+      ...sleepFacts(snap, date),
+    ]
+    return { kind: "day", terms, rows: rows.slice(0, limit), total: rows.length, facts, note: rows.length > limit ? `Showing the first ${limit} of ${rows.length}.` : undefined }
   }
 
   if (cfg.kind === "day") {

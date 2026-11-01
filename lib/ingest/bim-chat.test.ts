@@ -48,3 +48,53 @@ describe("BIM Chat", () => {
     expect(useBimChatStore.getState().busy).toBe(false)
   })
 })
+
+describe("ladder guards", () => {
+  beforeEach(() => {
+    resetAllStores()
+  })
+
+  it("does not log a question", async () => {
+    const line = await sendToBim("what was yesterday like for me?")
+    expect(line.status).toBe("ignored")
+    expect(line.text).toMatch(/question/i)
+  })
+
+  it("logs a lone x instead of asking what was got", async () => {
+    const line = await sendToBim("x")
+    expect(line.text).not.toMatch(/Got what/)
+  })
+
+  it("answers info differently in BIM chat than on Telegram", async () => {
+    const chat = await sendToBim("info")
+    expect(chat.text).toContain("just talk")
+    expect(chat.text).toContain("Shortcuts skip the model")
+  })
+})
+
+describe("photos in BIM chat", () => {
+  const photo = { kind: "photo" as const, mime: "image/jpeg", name: "p.jpg", dataUrl: "idb:hold_chat" }
+
+  beforeEach(() => {
+    resetAllStores()
+    useBimChatStore.setState({ lines: [], busy: false })
+  })
+
+  it("asks what the photo is when there is no clear caption, with a tap answer for each place", async () => {
+    const line = await sendToBim("album cover inspo", new Date(), { photos: [photo] })
+    expect(line.status).toBe("needs_clarify")
+    expect(line.choices?.map((c) => c.text)).toEqual(["journal", "outfit", "log", "inbox", "skip"])
+  })
+
+  it("files straight away when the caption names the place", async () => {
+    const line = await sendToBim("inbox: album cover inspo", new Date(), { photos: [photo] })
+    expect(line.status).toBe("ok")
+  })
+
+  it("shows the photo in the transcript and sends a photo with no words", async () => {
+    await useBimChatStore.getState().send("", [photo])
+    const lines = useBimChatStore.getState().lines
+    expect(lines[0]?.text).toContain("📷")
+    expect(lines).toHaveLength(2)
+  })
+})

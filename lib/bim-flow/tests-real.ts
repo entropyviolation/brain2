@@ -22,95 +22,102 @@ export const REAL_TESTS: BimTest[] = [
   // ── Log: BIM text (routed) ───────────────────────────────────────────────
   {
     id: "real-shower-egg-bites", name: "Real · Log (routed): resist shower → shower → egg bites", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("16:15 Feeling strong resistance to shower, using music to motivate me to get in", "16:44 Done with shower now time to get dressed", "16:50 Starting to cook making egg bites", "17:25 Still cooking egg bites", "17:48 Done cooking and eating egg bites") },
+    input: { kind: "paste", text: lines("09:15 Feeling strong resistance to shower, using music to motivate me to get in", "09:44 Done with shower now time to get dressed", "09:50 Starting to cook making egg bites", "10:25 Still cooking egg bites", "10:48 Done cooking and eating egg bites") },
     expect: "A shower block ending 16:44, a cooking block 16:50–17:48 with eating at the end, a resistance reading on showering. The 'still cooking' line adds no new block.",
-    checks: { blocksContain: ["cook"] },
+    checks: { blocksContain: ["cook", "shower"], blocksNoOverlap: true },
   },
   {
     id: "real-evening-mixed", name: "Real · Log (routed): messy evening, chores and errands between", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("19:07 Nap i think maybe o idk nap since 10 idk still tired but i took my meds and i need to worrkkkk", "19:08 Def want to scroll less", "20:12 Finally changed my outfit", "20:13 Take out trash and recycling -i", "20:14 Mineral oil on rocks , jewelry class", "20:17 Need a lotttt of frames kept seeing em at goodwill and not getting them put that for sure on goodwill list and rate it as if reasonable price, neeeeed and buy!", "21:16 Went much fatter this time and it's ironic because it's kind of like I literally smoked it on my responsibilities. Should write a journal entry about that actually.") },
+    input: { kind: "paste", text: lines("12:07 Nap i think maybe o idk nap since 10 idk still tired but i took my meds and i need to worrkkkk", "12:08 Def want to scroll less", "13:12 Finally changed my outfit", "13:13 Take out trash and recycling -i", "13:14 Mineral oil on rocks , jewelry class", "13:17 Need a lotttt of frames kept seeing em at goodwill and not getting them put that for sure on goodwill list and rate it as if reasonable price, neeeeed and buy!", "14:16 Went much fatter this time and it's ironic because it's kind of like I literally smoked it on my responsibilities. Should write a journal entry about that actually.") },
     expect: "A nap/rest block from about 10, meds taken, a want (scroll less), a to-do (trash and recycling, marked), a Goodwill list item (frames) tagged need/buy, a journal prompt. Not one invented work block.",
   },
   {
     id: "real-spend-shorthand", name: "Real · Log (routed): spending in shorthand", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: "01:33 Spent 21.50 on 2sfrb 1 apple rb 1 dp 1 lemonade pack of gum" },
+    input: { kind: "paste", text: "18:33 Spent 21.50 on 2sfrb 1 apple rb 1 dp 1 lemonade pack of gum" },
     expect: "Reads rb as Red Bull and dp as a drink, keeps $21.50 as the spend, and logs the drinks and gum as intake. No activity block.",
+    checks: { noBlocks: true },
   },
   {
     id: "real-open-walk", name: "Real · Log (routed): a walk begun at a clock time", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: "00:09 Walking since 4:46" },
+    input: { kind: "paste", text: "17:09 Walking since 4:46" },
     expect: "One walking block that opens at 4:46 and stays open. The clock in the text beats the time the message was sent.",
+    checks: { blocksContain: ["walk"], blockStarts: [{ activity: "walk", at: "16:46" }] },
   },
   {
     id: "real-one-word-lines", name: "Real · Log (routed): one-word lines (O, Up, Plucky, J)", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("13:10 O", "13:19 O", "00:08 Up", "19:54 Plucky", "19:18 J", "07:42 Camshare") },
+    input: { kind: "paste", text: lines("13:10 O", "13:19 O", "00:08 Up", "12:54 Plucky", "19:18 J", "00:42 Camshare") },
     expect: "O is the orgasm pen (two counted), Up is waking. Plucky, J and Camshare carry too little to place: kept as notes, nothing invented.",
   },
   {
     id: "real-o-count-sleep", name: "Real · Log (routed): 'O x 2 sleeping til 3'", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: "23:30 O x 2 sleeping til 3 something" },
+    input: { kind: "paste", text: "16:30 O x 2 sleeping til 3 something" },
     expect: "O logged with a count of 2, then a sleep block with an end near 3 (not a start).",
   },
   {
     id: "real-wake-dream", name: "Real · Log (routed): woke from a dream about people", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("21:40 Woke dream involving school, Alexis wanting to be friends again", "12:48 From a dream where me and someone else made, my sister were in a park next to an older woman and we said the right thing and then she liked us and gave Rebecca a job or s") },
+    input: { kind: "paste", text: lines("14:40 Woke dream involving school, Alexis wanting to be friends again", "05:48 From a dream where me and someone else made, my sister were in a park next to an older woman and we said the right thing and then she liked us and gave Rebecca a job or s") },
     expect: "A dream note (journal), not an activity. Alexis and Rebecca linked as people when they exist. Waking marks the end of sleep.",
+    checks: { proposalsNotContain: ["computer work"] },
   },
   {
     id: "real-brain2-ideas", name: "Real · Log (routed): brain2 ideas that are not activities", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("02:48 Brain2: define habits completion tiers option; bare minimum drink water is drink any water, etc", "02:49 Brain2: EXPAND THE AUTOLINK DETECTION STUFF and also for stuff like instagram and phone number from data allow search by contact name or display name", "01:56 Brain: still deciding whether to keep having to manually click save over and over for changes to an item.. maybe make it auto?") },
+    input: { kind: "paste", text: lines("19:48 Brain2: define habits completion tiers option; bare minimum drink water is drink any water, etc", "19:49 Brain2: EXPAND THE AUTOLINK DETECTION STUFF and also for stuff like instagram and phone number from data allow search by contact name or display name", "18:56 Brain: still deciding whether to keep having to manually click save over and over for changes to an item.. maybe make it auto?") },
     expect: "Each goes to the brain2 to-do or idea list. None becomes a 'Computer Work' block, and none is read as the person doing it now.",
+    checks: { noBlocks: true, proposalsContain: ["brain2"] },
   },
   {
     id: "real-people-and-tasks", name: "Real · Log (routed): one run-on with two people and four jobs", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: "00:48 Tell elijah about texts and instagram analysis also tell rebecca also text rebcca back also how many pieces do i wish (how much addy is left)" },
+    input: { kind: "paste", text: "17:48 Tell elijah about texts and instagram analysis also tell rebecca also text rebcca back also how many pieces do i wish (how much addy is left)" },
     expect: "Splits into: tell Elijah, tell Rebecca, text Rebecca back (typo linked), count what is left of the pills. Two people, three to-dos, no block.",
+    checks: { noBlocks: true },
   },
   {
     id: "real-med-count", name: "Real · Log (routed): medicine taken with a count left", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("19:26 Taking another addy 14 left now wow how much i need a higher dose wowwwww need to get it upped for real", "06:14 Took the addy btw (2)") },
+    input: { kind: "paste", text: lines("12:26 Taking another addy 14 left now wow how much i need a higher dose wowwwww need to get it upped for real", "23:14 Took the addy btw (2)") },
     expect: "Intake for the pill with the time, remaining count 14 kept as a fact, and 'get the dose raised' as a to-do. The (2) is the second dose.",
   },
   {
     id: "real-intentions-done", name: "Real · Log (routed): intentions, then one done", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("03:37 Intention: take chlorophyll , take adderall, get water", "03:53 Took the chlorophyll", "03:53 Intention: get wipe to clean laptop", "04:46 Gonna go grab red bull") },
+    input: { kind: "paste", text: lines("20:37 Intention: take chlorophyll , take adderall, get water", "20:53 Took the chlorophyll", "20:53 Intention: get wipe to clean laptop", "21:46 Gonna go grab red bull") },
     expect: "Three intentions set, then the chlorophyll one checked off; the laptop wipe and the Red Bull errand open.",
   },
   {
     id: "real-company-chore", name: "Real · Log (routed): company and a chore born of a complaint", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("16:03 Just o elijah now waking up", "16:43 motivated to clean room bc elijah complained in his journal which i barely peeked at", "17:25 Elijah bday dinner tm also Jordan thing") },
+    input: { kind: "paste", text: lines("09:03 Just o elijah now waking up", "09:43 motivated to clean room bc elijah complained in his journal which i barely peeked at", "10:25 Elijah bday dinner tm also Jordan thing") },
     expect: "Elijah as company at the first line, a clean-the-room job with a reason, and two plans for tomorrow (a birthday dinner, a Jordan thing).",
   },
   {
     id: "real-thought-process", name: "Real · Log (routed): a long 'Thought process' run-on", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: "06:35 Thought process: getting rly snacky and hungry (seaweed pack some salami and a chunk of mozzarella cheese) but need to get this foxtide stuff done TONIGHHHT so gonna take" },
+    input: { kind: "paste", text: "23:35 Thought process: getting rly snacky and hungry (seaweed pack some salami and a chunk of mozzarella cheese) but need to get this foxtide stuff done TONIGHHHT so gonna take" },
     expect: "Intake (seaweed, salami, mozzarella), a Foxtide commitment for tonight, a thought entry. The cut-off ending is not guessed.",
   },
   {
     id: "real-grief-free-feeling", name: "Real · Log (routed): feeling lines", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("23:49 (Olaying by myself outside)", "23:49 Making me happy", "02:05 No one else will ever know what its like to be you and you wont ever know what its like to be anyone else", "21:16 Life is beautiful") },
+    input: { kind: "paste", text: lines("16:49 (Olaying by myself outside)", "16:49 Making me happy", "19:05 No one else will ever know what its like to be you and you wont ever know what its like to be anyone else", "14:16 Life is beautiful") },
     expect: "A mood (happy) with outside as the place, the quotes saved as thoughts or quotes. No block for a line like 'Life is beautiful'.",
+    checks: { noBlocks: true },
   },
   {
     id: "real-link-notes", name: "Real · Log (routed): links with a one-word note", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("00:19 https://www.instagram.com/reel/EXAMPLE1/?rpxt=abc holograph pendant", "00:16 Mirror craft with disco sheet https://www.instagram.com/reel/EXAMPLE2/?psln=abc", "07:33 https://www.instagram.com/reel/EXAMPLE3/?psln=abc foxtide", "04:17 https://shop.example.com/products/bison-tallow-balm-sandalwood?utm_source=ig") },
+    input: { kind: "paste", text: lines("00:19 https://www.instagram.com/reel/EXAMPLE1/?rpxt=abc holograph pendant", "17:16 Mirror craft with disco sheet https://www.instagram.com/reel/EXAMPLE2/?psln=abc", "07:33 https://www.instagram.com/reel/EXAMPLE3/?psln=abc foxtide", "04:17 https://shop.example.com/products/bison-tallow-balm-sandalwood?utm_source=ig") },
     expect: "Each link goes to the inbox or the craft/foxtide list by its note, the note kept with it. A link with no note goes to the inbox plain.",
+    checks: { noBlocks: true },
   },
   {
     id: "real-day-1-long", name: "Real · Log (routed): a long night (10 lines, many topics)", flowId: "log-routed", entry: "bim-text",
-    input: { kind: "paste", text: lines("00:39 Brain2: actually package it into a desktop app, improve mobile app, make hardware component (compatible with remarkable?)", "00:44 Objective: make coffee", "00:45 dishes really stinky need to add importance and points to do dishes also oooo adding suggested chores and connecting cleaning module to \"clean for 15 min\" ?", "00:47 So coffee being made now, next is start a 30 min session for cd design specifically, with bare min being mockups completed for every element of both cds", "06:43 Intake: bricoche hamburger bun grilled with about 1-2 tbs of butter garlic powder and salt served with goat cheese and mozzarella chunks, plus now black coffee", "06:53 Log: OKAY SERIOUSLY NO MORE BRAIN2 UNTIL AT LEAST 1 CD DESIGN FULLY DONE IN GOOGLE DRIVE. Also how u earn a chicken wing.") },
+    input: { kind: "paste", text: lines("17:39 Brain2: actually package it into a desktop app, improve mobile app, make hardware component (compatible with remarkable?)", "17:44 Objective: make coffee", "17:45 dishes really stinky need to add importance and points to do dishes also oooo adding suggested chores and connecting cleaning module to \"clean for 15 min\" ?", "17:47 So coffee being made now, next is start a 30 min session for cd design specifically, with bare min being mockups completed for every element of both cds", "23:43 Intake: bricoche hamburger bun grilled with about 1-2 tbs of butter garlic powder and salt served with goat cheese and mozzarella chunks, plus now black coffee", "23:53 Log: OKAY SERIOUSLY NO MORE BRAIN2 UNTIL AT LEAST 1 CD DESIGN FULLY DONE IN GOOGLE DRIVE. Also how u earn a chicken wing.") },
     expect: "An objective set, a coffee block, a CD-design session planned (not logged as done), intake of a meal, a rule for the person to stay off brain2. Dishes are a chore idea.",
   },
 
   // ── Log: grammar first ───────────────────────────────────────────────────
   {
     id: "real-grammar-verbs", name: "Real · Log (grammar first): BIM's own verbs as they were sent", flowId: "log-grammar", entry: "bim-text",
-    input: { kind: "paste", text: lines("17:00 Log: o", "10:48 Intake: brig", "16:11 Start substack", "16:12 Today menu", "01:40 /start") },
+    input: { kind: "paste", text: lines("17:00 Log: o", "03:48 Intake: brig", "09:11 Start substack", "09:12 Today menu", "01:40 /start") },
     expect: "log: o and intake: and Start are decided by code with no model; the menu and /start are commands, not notes. Check the trace for model calls.",
   },
   {
     id: "real-grammar-link-first", name: "Real · Log (grammar first): link first, note after; plain line behind it", flowId: "log-grammar", entry: "bim-text",
-    input: { kind: "paste", text: lines("19:28 https://www.instagram.com/reel/EXAMPLE4/?obrf=abc foxtide viz", "19:59 Get my carrrrrrrr", "09:47 Super glue and baking soda") },
+    input: { kind: "paste", text: lines("19:28 https://www.instagram.com/reel/EXAMPLE4/?obrf=abc foxtide viz", "19:59 Get my carrrrrrrr", "02:47 Super glue and baking soda") },
     expect: "The link line takes the link door with its note; the other two go on to the routed flow as an errand and a shopping item.",
     checks: { proposalsContain: ["Inbox"] },
   },
@@ -118,12 +125,12 @@ export const REAL_TESTS: BimTest[] = [
   // ── Log: phone capture ───────────────────────────────────────────────────
   {
     id: "real-phone-shopping", name: "Real · Phone capture: shopping fragments", flowId: "log-phone", entry: "phone-capture",
-    input: { kind: "paste", text: lines("19:40 Portable scanner", "03:16 2 color tights", "19:20 Gotta get shoes sole repair stuff", "04:59 Need more macbook bricks", "04:37 Get: more big, sheer scarves") },
+    input: { kind: "paste", text: lines("12:40 Portable scanner", "20:16 2 color tights", "12:20 Gotta get shoes sole repair stuff", "21:59 Need more macbook bricks", "21:37 Get: more big, sheer scarves") },
     expect: "Each lands as one shopping item, de-duplicated against the existing list (macbook bricks may already exist). None goes to Ask.",
   },
   {
     id: "real-phone-objective-later", name: "Real · Phone capture: Objective, Later, Idea, Plan prefixes", flowId: "log-phone", entry: "phone-capture",
-    input: { kind: "paste", text: lines("00:44 Objective: make coffee", "20:12 Later: update how bim receives images", "23:30 Idea: using nfc tags to track drinking water, eating, weed, adderall, any pills, and \"went outside\" auto logging", "22:07 Plan: work on cds, finish them and have the 3d mockup emailed with options by 6pm for at least 1 of them to buy time, text shelby and elijah back") },
+    input: { kind: "paste", text: lines("17:44 Objective: make coffee", "13:12 Later: update how bim receives images", "16:30 Idea: using nfc tags to track drinking water, eating, weed, adderall, any pills, and \"went outside\" auto logging", "15:07 Plan: work on cds, finish them and have the 3d mockup emailed with options by 6pm for at least 1 of them to buy time, text shelby and elijah back") },
     expect: "Objective sets the current objective; Later is a deferred to-do on brain2; Idea is an idea note; Plan becomes a dated plan with a 6pm deadline and two text-back jobs.",
   },
   {
@@ -155,7 +162,7 @@ export const REAL_TESTS: BimTest[] = [
   },
   {
     id: "real-grid-company", name: "Real · Time-grid note: who was there", flowId: "log-grid", entry: "time-grid",
-    input: { kind: "paste", text: "16:03 Just o elijah now waking up" },
+    input: { kind: "paste", text: "09:03 Just o elijah now waking up" },
     expect: "Company: Elijah. The o count if the model catches it. No block, because the entry already has its activity.",
   },
   {
@@ -235,7 +242,7 @@ export const REAL_TESTS: BimTest[] = [
   },
   {
     id: "real-day-oct16", name: "Real · Recap: a day from shower to dinner plans", flowId: "day", grouping: "day",
-    input: { kind: "paste", text: lines("16:03 Just o elijah now waking up", "16:06 bowl? shower asap, make egg bites and arugula salad and Vietnamese coffee for breakfast, finish working on cds", "16:15 Feeling strong resistance to shower, using music to motivate me to get in", "16:44 Done with shower now time to get dressed", "16:50 Starting to cook making egg bites", "17:25 Elijah bday dinner tm also Jordan thing", "17:48 Done cooking and eating egg bites", "20:19 6 min of yt vid abt incredibles bowl smoked switching rooms rq gnna enter stuff into brain2", "20:39 bedroom now tbh feelong rllyyy sleepy") },
+    input: { kind: "paste", text: lines("09:03 Just o elijah now waking up", "16:06 bowl? shower asap, make egg bites and arugula salad and Vietnamese coffee for breakfast, finish working on cds", "09:15 Feeling strong resistance to shower, using music to motivate me to get in", "09:44 Done with shower now time to get dressed", "09:50 Starting to cook making egg bites", "10:25 Elijah bday dinner tm also Jordan thing", "10:48 Done cooking and eating egg bites", "13:19 6 min of yt vid abt incredibles bowl smoked switching rooms rq gnna enter stuff into brain2", "13:39 bedroom now tbh feelong rllyyy sleepy") },
     expect: "Morning plan against what happened: the shower and egg bites got done, the CDs are not mentioned again. Ends sleepy in the bedroom. The recap adds nothing else.",
   },
 

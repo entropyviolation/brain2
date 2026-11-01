@@ -98,7 +98,7 @@ describe("sync push", () => {
     expect(phone.stores["brain2-task-storage"].state.lists[0].name).toBe("Groceries")
     expect(phone.stores["brain2-task-storage"].state.lists[0].itemAttributes).toBeUndefined()
     const entries = phone.stores["brain2-timegrid-store"].state.entries
-    expect(entries.map((entry) => entry.id)).toEqual(["new"])
+    expect(entries.map((entry: { id: string }) => entry.id)).toEqual(["new"])
     expect(entries[0].notes).toBeUndefined()
     expect(phone.stores["brain2-telegram-feed"]).toBeUndefined()
     expect(backup.stores["brain2-task-storage"].state.tasks[0].attributes).toEqual({ note: "long" })

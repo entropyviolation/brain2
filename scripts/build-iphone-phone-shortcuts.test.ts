@@ -22,6 +22,8 @@ function expectTelegramSend(workflow: {
     WFWorkflowActionIdentifier: string
     WFWorkflowActionParameters: {
       IntentAppIdentifier?: string
+      IntentAppDefinition?: unknown
+      ShowWhenRun?: boolean
       WFSendMessageContent?: { Value?: { Type?: string; VariableName?: string } }
       WFVariableName?: string
     }
@@ -184,7 +186,7 @@ function openBotUrl(workflow: {
     WFWorkflowActionParameters: { WFInput?: { Value?: { string?: string } } }
   }[]
 }) {
-  const open = workflow.WFWorkflowActions.find((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.openurl")
+  const open = workflow.WFWorkflowActions.find((a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.openurl")
   return open?.WFWorkflowActionParameters.WFInput?.Value?.string ?? ""
 }
 
@@ -192,17 +194,17 @@ describe("buildBoundNfcWorkflow", () => {
   it("bakes a door id in and opens the bot chat", () => {
     const workflow = buildBoundNfcWorkflow({ id: "door", name: "Front door", askQuantity: false })
     expect(workflow).not.toBeNull()
-    expect(workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.sendmessage")).toBe(
+    expect(workflow!.WFWorkflowActions.some((a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.sendmessage")).toBe(
       false,
     )
     expect(workflow!.WFWorkflowName).toBe("NFC Front door")
     expect(textBlob(workflow!)).toBe("nfc:door")
     expect(openBotUrl(workflow!)).toBe("tg://resolve?domain=brain2_phone_bot&text=\uFFFC")
     expect(
-      workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.urlencode"),
+      workflow!.WFWorkflowActions.some((a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.urlencode"),
     ).toBe(true)
     expect(
-      workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask"),
+      workflow!.WFWorkflowActions.some((a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask"),
     ).toBe(false)
     expect(workflow!.WFWorkflowImportQuestions).toEqual([])
     expect(nfcShortcutDownloadName("Front door", "door")).toBe("NFC Front door.shortcut")
@@ -214,10 +216,10 @@ describe("buildBoundNfcWorkflow", () => {
     expect(textBlob(workflow!)).toBe("nfc:adderall \uFFFC")
     expect(openBotUrl(workflow!)).toContain("tg://resolve?domain=brain2_phone_bot&text=")
     const asks = workflow!.WFWorkflowActions.filter(
-      (a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask",
+      (a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask",
     )
     expect(asks).toHaveLength(1)
-    expect(workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.conditional")).toBe(
+    expect(workflow!.WFWorkflowActions.some((a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.conditional")).toBe(
       false,
     )
   })

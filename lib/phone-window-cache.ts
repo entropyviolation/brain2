@@ -35,6 +35,8 @@ export type PhoneOutboxRow = {
   name: string
   source: "phone"
   patch: PhonePatch
+  /** Enqueue order. IndexedDB lists rows by their random id, so replay and send sort on this. */
+  seq?: number
 }
 
 type SliceRow = { name: string; value: string }
@@ -167,7 +169,23 @@ export async function readLaunchCache(): Promise<Map<string, string>> {
   }
 }
 
-export async function enqueueOutbox(row: PhoneOutboxRow): Promise<void> {
+let lastSeq = 0
+
+function nextSeq(): number {
+  lastSeq = Math.max(Date.now(), lastSeq + 1)
+  return lastSeq
+}
+
+/** Rows in the order the phone made them. A row from before `seq` sorts first, in its listed order. */
+export function orderOutbox(rows: PhoneOutboxRow[]): PhoneOutboxRow[] {
+  return rows
+    .map((row, at) => ({ row, at }))
+    .sort((a, b) => (a.row.seq ?? 0) - (b.row.seq ?? 0) || a.at - b.at)
+    .map(({ row }) => row)
+}
+
+export async function enqueueOutbox(input: PhoneOutboxRow): Promise<void> {
+  const row: PhoneOutboxRow = { ...input, seq: input.seq ?? nextSeq() }
   if (!idbAvailable()) {
     memoryOutbox.push(row)
     return
@@ -180,10 +198,10 @@ export async function enqueueOutbox(row: PhoneOutboxRow): Promise<void> {
 }
 
 export async function listOutbox(): Promise<PhoneOutboxRow[]> {
-  if (!idbAvailable()) return memoryOutbox.map((row) => ({ ...row, patch: { ...row.patch, upserts: row.patch.upserts.map((item) => ({ ...item })), removedIds: [...row.patch.removedIds] } }))
+  if (!idbAvailable()) return orderOutbox(memoryOutbox.map((row) => ({ ...row, patch: { ...row.patch, upserts: row.patch.upserts.map((item) => ({ ...item })), removedIds: [...row.patch.removedIds] } })))
   try {
     const rows = await withDb((db) => readAll<PhoneOutboxRow>(db, OUTBOX))
-    return rows.filter((row) => row && typeof row.id === "string" && row.patch && Array.isArray(row.patch.upserts))
+    return orderOutbox(rows.filter((row) => row && typeof row.id === "string" && row.patch && Array.isArray(row.patch.upserts)))
   } catch {
     return []
   }
@@ -205,4 +223,5 @@ export async function deleteOutbox(id: string): Promise<void> {
 export function resetPhoneWindowCacheForTests(): void {
   memorySlices.clear()
   memoryOutbox.splice(0, memoryOutbox.length)
+  lastSeq = 0
 }

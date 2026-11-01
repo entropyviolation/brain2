@@ -27,6 +27,14 @@ function e(from: string, to: string, port: FlowPort = "out"): FlowEdge {
 
 const read = (id: string, label: string, col: number, row: number, retrieve: RetrieveConfig) => n(id, "retrieve", label, col, row, { retrieve })
 
+/** The wording a day interview starts with, and other wordings worth trying. Edited on the `question` node. */
+export const INTERVIEW_VARIANTS = [
+  "If you could ask this user 3 questions to clarify what exactly happened and how they felt on this day, for future posterity, what would they be?",
+  "What are the 3 biggest things about this day that the data cannot explain, and how would you ask the user about each?",
+  "Pick the 3 moments of this day that most need the user's own words to be remembered, and ask about how each felt.",
+]
+export const DEFAULT_INTERVIEW_QUESTION = INTERVIEW_VARIANTS[0]!
+
 const PLAN_SYSTEM =
   "You turn a question a person asks about their own notes into a small search plan. " +
   "subject: the thing asked about in one to three words, as the person would have written it in a note ('shower', 'shirt', 'garlic confit'). No question words, no time words, no names. " +
@@ -179,9 +187,14 @@ export function dayFlow(): Flow {
         "and how they felt if a mood is tracked. End with one line on what carried over from earlier days if the notes show it.",
     }),
     CHECK("chk", 4, 1),
+    // The interview lane: it reads the whole day (tracking and every text) and asks the person questions. The wording is its own node.
+    read("r-all", "Everything that day", 3, 3, { kind: "day", everything: true, limit: 200 }),
+    n("q-day", "question", "What to ask", 4, 3, { question: DEFAULT_INTERVIEW_QUESTION }),
+    n("a-ask", "answer", "Questions for you", 5, 3, { mode: "interview", fromNodeIds: ["r-all", "r-more"] }),
   ]
   const edges: FlowEdge[] = [
     e("msg", "x-theme"), e("x-theme", "r-day"), e("r-day", "r-more"), e("r-more", "a-day"), e("a-day", "chk"),
+    e("r-more", "r-all"), e("r-all", "q-day"), e("q-day", "a-ask"),
   ]
   return { version: 1, nodes, edges }
 }
@@ -235,6 +248,10 @@ const start = (id: string, label: string, entry: string, row: number) => n(id, "
 
 const handoff = (id: string, label: string, flowId: string, col: number, row: number) => n(id, "handoff", label, col, row, { flowId })
 
+/** BIM's own list heads and the person's "text X back" shape: a line that is kept, never a doing. */
+const KEEP_HEAD =
+  "^\\s*(brain ?2|brain|lyric|merch|cleaning|bathroom|kitchen|living room|idea|later|get|iso|intention|objective|need(ed)?)\\s*(idea)?\\s*[:\\-–]|^\\s*text \\w+ back\\b|^\\s*(call|text) \\w+\\s*$"
+
 /**
  * The log flow, routed. Three start nodes (BIM text, phone capture, time-grid
  * note). BIM text asks one coarse question first (doing / keeping / self /
@@ -247,6 +264,8 @@ function routedLogMaster(): Flow {
 
   const nodes: FlowNode[] = [
     start("s-bim", "BIM text", "bim-text", 3),
+    // Only the earlier lines this one leans on reach the gates (asked for in BIM, Oct 30: "are these 2 messages connected?").
+    n("k-ctx", "context", "Earlier lines needed?", 0.5, 1.2),
     start("s-phone", "Phone capture", "phone-capture", 7.5),
     start("s-grid", "Time-grid note", "time-grid", 11),
 
@@ -271,17 +290,20 @@ function routedLogMaster(): Flow {
     handoff("h-ask", "Hand to Ask", "ask", 2, 6.8),
 
     route("r-family", "What kind of line?", 1, 2, [
+      // BIM's own heads ("Brain2:", "Lyric:", "Get:") and "text X back" are kept on a list, decided by code.
+      // First, so a head wins over a "finished" inside the line. The 14B sent these to doing or self (real eval, Nov 1).
+      { key: "keeping", label: "keep on a list", hint: "an idea, task, or thing to buy worth keeping", pattern: KEEP_HEAD },
       { key: "doing", label: "doing or place", hint: "what the person is doing, started, finished, or where they are", pattern: "\\b(starting|started|since \\d|finished|done with|back (home|from))\\b" },
-      { key: "keeping", label: "keep on a list", hint: "an idea, task, or thing to buy worth keeping" },
       { key: "self", label: "body or mind", hint: "ate or took something, a feeling, a symptom, a dream", pattern: "\\b(dream|dreamt|dreamed)\\b" },
       { key: "people", label: "people", hint: "names a person, or says who they are with" },
     ], "What kind of line is this?"),
 
-    route("r-doing", "Doing which?", 2, 0, [
-      { key: "activity", label: "an activity", hint: "starts, ends, or is in the middle of something" },
+    // The activity lane runs on every doing line. This route only adds a habit or a place on top: when it had to
+    // pick one of three, the 14B picked habit for "Done with shower" and "Walking since 4:46" and no block was made.
+    route("r-doing", "Also a habit or place?", 2, 0.9, [
       { key: "habit", label: "a habit", hint: "exercise, cleaning, water, stretching, going outside, brushing teeth" },
       { key: "place", label: "a place", hint: "says where they are or went" },
-    ], "Which of these is the line about?"),
+    ], "Besides what the person is doing, is the line also about one of these? Pick none if not."),
     route("r-self", "Body or mind?", 2, 3.2, [
       { key: "intake", label: "ate / drank / took", hint: "food, drink, a substance" },
       { key: "mood", label: "a feeling", hint: "how they feel emotionally" },
@@ -311,11 +333,11 @@ function routedLogMaster(): Flow {
     lane("s-comp", 3, 9.6), lane("c-comp", 4, 9.6), lane("p-comp", 5, 9.6),
   ]
   const edges: FlowEdge[] = [
-    e("s-bim", "r-family"),
+    e("s-bim", "k-ctx"), e("k-ctx", "r-family"),
     e("s-phone", "g-cmd"), e("g-cmd", "h-ask", "yes"), e("g-cmd", "r-family", "no"),
     e("s-grid", "r-grid"),
     e("r-family", "r-doing", "r:doing"), e("r-family", "s-items", "r:keeping"), e("r-family", "r-self", "r:self"), e("r-family", "r-people", "r:people"),
-    e("r-doing", "s-pens", "r:activity"), e("r-doing", "s-habit", "r:habit"), e("r-doing", "s-loc", "r:place"),
+    e("r-family", "s-pens", "r:doing"), e("r-doing", "s-habit", "r:habit"), e("r-doing", "s-loc", "r:place"),
     e("r-self", "x-intake", "r:intake"), e("r-self", "x-mood", "r:mood"), e("r-self", "p-body", "r:body"), e("r-self", "p-dream", "r:dream"),
     e("r-people", "s-people", "r:person"), e("r-people", "s-comp", "r:with"),
     e("r-grid", "s-comp", "r:with"), e("r-grid", "x-intake", "r:intake"), e("r-grid", "x-mood", "r:mood"), e("r-grid", "s-people", "r:person"),

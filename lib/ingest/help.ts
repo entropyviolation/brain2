@@ -56,7 +56,7 @@ Plan / capture
 • gm — morning review · help  ·  info  ·  all commands
 Pair: pair: 123456  ·  Settings → Message ingest`
 
-export const INGEST_INFO = `BIM (Brain2 Ingestion Messenger) — full guide mirror
+export const INGEST_INFO = `BIM (Brain Interface Manager) — full guide mirror
 
 Live replies use info / {prefix} info / {prefix} commands / all commands
 (from command-glossary + command-catalog). Complete on-disk list:

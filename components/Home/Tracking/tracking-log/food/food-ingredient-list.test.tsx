@@ -66,8 +66,8 @@ describe("Food ingredient list", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use 28 g" }))
     fireEvent.click(screen.getByRole("button", { name: "Add to the recipe" }))
 
-    expect(screen.getByLabelText("Grams of Butter").value).toBe("14")
-    expect(screen.getByLabelText("Grams of Mozzarella").value).toBe("28")
+    expect((screen.getByLabelText("Grams of Butter") as HTMLInputElement).value).toBe("14")
+    expect((screen.getByLabelText("Grams of Mozzarella") as HTMLInputElement).value).toBe("28")
     fireEvent.click(screen.getByRole("button", { name: "Save recipe" }))
     expect(within(document.querySelector(".trk-food-recipe-list") as HTMLElement).getByText("breakfast sandwich")).toBeTruthy()
     const saved = useKitchenStore.getState().recipes.find((recipe) => recipe.name === "breakfast sandwich")

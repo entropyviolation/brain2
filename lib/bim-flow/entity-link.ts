@@ -36,6 +36,8 @@ export interface IndexedEntity {
   groups: string[]
   /** Lowercase text used to count how often the vault mentions it. */
   needle: string
+  /** person: every name they go by, lowercased (full name, nicknames). */
+  names?: string[]
 }
 
 export interface EntityCandidate {
@@ -77,6 +79,11 @@ export interface LinkOptions {
   margin?: number
   /** Most candidates kept per mention. */
   maxCandidates?: number
+  /**
+   * Only names of this kind. Without it the longest name wins whatever its kind, so the person's list
+   * "tell elijah" swallowed Elijah in "Tell elijah about texts" and the people lane found nobody.
+   */
+  kind?: EntityKind
 }
 
 const MAX_PHRASE = 4
@@ -185,6 +192,7 @@ export function buildEntityIndex(snap: VaultSnapshot): EntityIndex {
           context: new Set(),
           groups: listsOfItem.get(p.id)?.filter((l) => !skip.has(l)) ?? [],
           needle: p.title.toLowerCase(),
+          names: p.names.map((x) => x.trim().toLowerCase()),
         },
         p.names,
       )
@@ -255,7 +263,8 @@ interface RawSpan {
   fuzzy?: boolean
 }
 
-function detect(tokens: Token[], ix: EntityIndex): RawSpan[] {
+function detect(tokens: Token[], ix: EntityIndex, kind?: EntityKind): RawSpan[] {
+  const known = (key: string) => (kind ? (ix.aliases.get(key) ?? []).some((a) => a.entity.kind === kind) : ix.aliases.has(key))
   const used = new Array<boolean>(tokens.length).fill(false)
   const spans: RawSpan[] = []
   // Longest span first, so "garlic confit" wins over "garlic".
@@ -263,7 +272,7 @@ function detect(tokens: Token[], ix: EntityIndex): RawSpan[] {
     for (let i = 0; i + n <= tokens.length; i++) {
       if (used.slice(i, i + n).some(Boolean)) continue
       const key = tokens.slice(i, i + n).map((t) => t.norm).join(" ")
-      if (!ix.aliases.has(key)) continue
+      if (!known(key)) continue
       if (n === 1 && contentWords(tokens[i]!.raw).length === 0) continue
       for (let k = i; k < i + n; k++) used[k] = true
       spans.push({ from: i, to: i + n, key })
@@ -274,7 +283,7 @@ function detect(tokens: Token[], ix: EntityIndex): RawSpan[] {
     if (used[i]) continue
     const w = tokens[i]!.norm
     if (w.length < 5) continue
-    const near = ix.fuzzyKeys.find((k) => k !== w && within1(w, k))
+    const near = ix.fuzzyKeys.find((k) => k !== w && within1(w, k) && known(k))
     if (near) {
       used[i] = true
       spans.push({ from: i, to: i + 1, key: near, fuzzy: true })
@@ -291,8 +300,9 @@ function rank(
   tokens: Token[],
   msgWords: Set<string>,
   firstTokenIndex: number,
+  kind?: EntityKind,
 ): EntityCandidate[] {
-  const entries = ix.aliases.get(span.key) ?? []
+  const entries = (ix.aliases.get(span.key) ?? []).filter((a) => !kind || a.entity.kind === kind)
   const mentionWords = new Set(tokens.slice(span.from, span.to).map((t) => t.norm))
   const first = tokens[span.from]!.raw
   const capitalized = /^\p{Lu}/u.test(first) && span.from !== firstTokenIndex
@@ -321,6 +331,40 @@ function rank(
   return out.sort((a, b) => b.score - a.score)
 }
 
+const SUB_RANK: Record<EntitySub, number> = { person: 0, list: 1, habit: 2, pen: 3, item: 4 }
+
+/**
+ * One candidate per name. The person's vault holds Elijah, Rebecca and Linda three times each as person
+ * items, plus a company pen and an item of the same name; those are one entity, not a choice. A person
+ * wins, then a list, habit, pen, item. A person stub whose whole name is another person's nickname is
+ * that person: "Elijah" is a nickname on "Elijah Gibbins-Croft", so the bare "Elijah" items fold into him.
+ * Two people with different names and no shared nickname ("Rebecca Ellis", "Rebecca Anne Smith") stay apart.
+ */
+export function collapseSameName(cands: EntityCandidate[], ix?: EntityIndex): EntityCandidate[] {
+  const label = (c: EntityCandidate) => c.label.trim().toLowerCase()
+  const owner = new Map<string, string>()
+  if (ix) {
+    for (const c of cands) {
+      if (c.kind !== "person") continue
+      for (const n of ix.entities.get(c.id)?.names ?? []) if (n !== label(c)) owner.set(n, label(c))
+    }
+  }
+  const byName = new Map<string, EntityCandidate>()
+  for (const c of cands) {
+    const key = (c.kind === "person" || c.sub === "pen" || c.sub === "item" ? owner.get(label(c)) : undefined) ?? label(c)
+    const have = byName.get(key)
+    if (!have) byName.set(key, { ...c })
+    else {
+      // The name's owner (the profile with the nickname) wins over a stub; else the better kind.
+      const ownsKey = (x: EntityCandidate) => label(x) === key
+      const best = ownsKey(c) && !ownsKey(have) ? { ...c } : !ownsKey(c) && ownsKey(have) ? have : SUB_RANK[c.sub] < SUB_RANK[have.sub] ? { ...c } : have
+      best.score = Math.max(have.score, c.score)
+      byName.set(key, best)
+    }
+  }
+  return [...byName.values()].sort((a, b) => b.score - a.score)
+}
+
 /** Link every known name and topic in `text`. Pure and deterministic. */
 export function linkEntities(ix: EntityIndex, text: string, opts: LinkOptions = {}): LinkedMention[] {
   const margin = opts.margin ?? 0.15
@@ -328,8 +372,8 @@ export function linkEntities(ix: EntityIndex, text: string, opts: LinkOptions = 
   const tokens = tokenize(text)
   if (tokens.length === 0) return []
   const msgWords = new Set(contentWords(text).map(normalizeWord))
-  const spans = detect(tokens, ix)
-  const ranked = spans.map((s) => ({ span: s, cands: rank(ix, s, tokens, msgWords, 0) }))
+  const spans = detect(tokens, ix, opts.kind)
+  const ranked = spans.map((s) => ({ span: s, cands: rank(ix, s, tokens, msgWords, 0, opts.kind) }))
 
   // Coherence: a candidate gains when another mention has a candidate on one of its lists.
   for (let i = 0; i < ranked.length; i++) {
@@ -351,7 +395,7 @@ export function linkEntities(ix: EntityIndex, text: string, opts: LinkOptions = 
   const mentions: LinkedMention[] = ranked.map(({ span, cands }) => {
     const first = tokens[span.from]!
     const last = tokens[span.to - 1]!
-    const kept = cands.slice(0, maxCandidates)
+    const kept = collapseSameName(cands, ix).slice(0, maxCandidates)
     const ambiguous = kept.length > 1 && kept[0]!.score - kept[1]!.score < margin
     return {
       text: text.slice(first.start, last.end),

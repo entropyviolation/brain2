@@ -23,6 +23,8 @@ import {
   flushPhoneOutbox,
   loadPhoneWindow,
   phoneOutboxSettled,
+  readPhoneHubTokenPin,
+  writePhoneHubTokenPin,
   phoneWindowNote,
   readPhoneWindowItem,
   resetPhoneWindowForTests,
@@ -239,6 +241,22 @@ describe("phone window", () => {
 
     expect(await loadPhoneWindow()).toBe("offline")
     expect(phoneWindowNote()).toContain("answered 401 (hub token).")
+  })
+
+  it("sends the hub token typed on the phone as a bearer header, and keeps it in localStorage", async () => {
+    asPhone()
+    writePhoneHubTokenPin("  typed-token ")
+    expect(readPhoneHubTokenPin()).toBe("typed-token")
+    const seen: Array<{ url: string; headers: Record<string, string> }> = []
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push({ url: String(input), headers: (init?.headers ?? {}) as Record<string, string> })
+      return new Response("no", { status: 401 })
+    }))
+
+    await loadPhoneWindow()
+    const persist = seen.filter((call) => call.url.includes("/api/persist"))
+    expect(persist.length).toBeGreaterThan(0)
+    expect(persist.every((call) => call.headers.Authorization === "Bearer typed-token")).toBe(true)
   })
 
   it("enqueues one patch of the changed field and does not send it again after success", async () => {

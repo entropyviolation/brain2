@@ -10,11 +10,12 @@
 
 import { ENTRIES } from "@/lib/bim-flow/entries"
 import { FLOWS } from "@/lib/bim-flow/flows"
+import { INTERVIEW_VARIANTS } from "@/lib/bim-flow/task-flows"
 import type { AnswerMode, ComputeFn, RouteDef, ExtractField, Flow, FlowNode, ProposeAction, RetrieveKind, SearchSource, TraceStep } from "@/lib/bim-flow/types"
 
 const SOURCES: SearchSource[] = ["items", "lists", "habits", "pens", "people"]
 const RETRIEVE_KINDS: RetrieveKind[] = ["entries", "text", "overlap", "day", "texts"]
-const MODES: AnswerMode[] = ["answer", "summarize", "check"]
+const MODES: AnswerMode[] = ["answer", "summarize", "check", "interview"]
 const ACTIONS: ProposeAction[] = ["add-to-list", "habit-done", "intake", "mood", "person-mention", "idea", "todo", "dream", "body", "location", "company", "drive"]
 
 const COMPUTE_FNS: ComputeFn[] = ["count", "minutes", "by-day", "streak", "days-since", "longest-gap", "top-pens", "compare"]
@@ -142,6 +143,42 @@ export function FlowInspector(props: {
         </label>
       ) : null}
 
+      {node.kind === "question" ? (
+        <>
+          <label className="bf-field">
+            <span>What the interview is asked (wired into an answer node set to interview)</span>
+            <textarea className="bf-input" rows={6} value={c.question ?? ""} onChange={(e) => set({ question: e.target.value })} />
+          </label>
+          <div className="bf-field">
+            <span>Wordings to try (click to use; the one in use is kept here too)</span>
+            {[...new Set([...(c.variants ?? []), ...INTERVIEW_VARIANTS])].map((v) => (
+              <button key={v} type="button" data-no95 className={`bf-cap${v === c.question ? " is-on" : ""}`} title={v} onClick={() => set({ question: v })}>
+                {v.length > 70 ? `${v.slice(0, 70)}…` : v}
+              </button>
+            ))}
+            <button type="button" data-no95 className="bf-cap" disabled={!c.question?.trim() || (c.variants ?? []).includes(c.question)} onClick={() => set({ variants: [...(c.variants ?? []), c.question!.trim()] })}>
+              Keep this wording
+            </button>
+          </div>
+        </>
+      ) : null}
+
+      {node.kind === "context" ? (
+        <>
+          <label className="bf-field">
+            <span>Unsure pairs (code keeps lines that share a rare word, drops BIM heads and long gaps)</span>
+            <select className="bf-input" value={c.contextMode ?? "ask"} onChange={(e) => set({ contextMode: e.target.value as "ask" | "code" })}>
+              <option value="ask">ask the model one yes/no each</option>
+              <option value="code">drop them (no model)</option>
+            </select>
+          </label>
+          <label className="bf-field">
+            <span>Never context when further back than (min)</span>
+            <input className="bf-input" type="number" value={c.maxGapMin ?? 90} onChange={(e) => set({ maxGapMin: Number(e.target.value) || undefined })} />
+          </label>
+        </>
+      ) : null}
+
       {node.kind === "gate" ? (
         <div className="bf-field">
           <span>Taught answers ({(c.examples ?? []).length})</span>
@@ -244,6 +281,10 @@ export function FlowInspector(props: {
           <label className="bf-field">
             <span>Most rows</span>
             <input className="bf-input" type="number" min={1} value={c.retrieve?.limit ?? 12} onChange={(e) => set({ retrieve: { kind: "text", ...c.retrieve, limit: Number(e.target.value) } })} />
+          </label>
+          <label className="bf-field">
+            <span>Whole day (day only: every view, texts, messages, datasets, blocks, health)</span>
+            <input type="checkbox" checked={!!c.retrieve?.everything} onChange={(e) => set({ retrieve: { kind: "day", ...c.retrieve, everything: e.target.checked } })} />
           </label>
           <label className="bf-field">
             <span>Days back (0 = plan decides)</span>

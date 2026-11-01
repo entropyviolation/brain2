@@ -128,6 +128,26 @@ export function insertText(el: HTMLElement, text: string): void {
   }
 }
 
+/** Dictation spot: where the words go, with a space before them when the text runs on. */
+export function dictationAnchor(el: HTMLElement): { start: number; lead: string } {
+  if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return { start: 0, lead: "" }
+  const start = caretOf(el)?.end ?? el.value.length
+  const before = el.value.slice(0, start)
+  return { start, lead: before && !/\s$/.test(before) ? " " : "" }
+}
+
+/** Swap `removeLength` characters at `start` for `text`. Dictation rewrites its words as they firm up. */
+export function spliceText(el: HTMLElement, start: number, removeLength: number, text: string): void {
+  if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
+    if (el.isContentEditable && removeLength === 0) insertText(el, text)
+    return
+  }
+  const value = el.value
+  const from = Math.min(start, value.length)
+  const next = value.slice(0, from) + text + value.slice(from + removeLength)
+  writeValue(el, next, from + text.length, text, "insertReplacementText")
+}
+
 export function backspace(el: HTMLElement): void {
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     const value = el.value

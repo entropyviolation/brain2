@@ -87,6 +87,27 @@
   flex: 1.8 1 0;
 }
 
+/* Dictation. Latched (the CRT) while it listens, with a slow glow. */
+.m-keyboard button.m-kb-key.is-mic {
+  flex: 1.15 1 0;
+}
+
+.m-keyboard button.m-kb-key.is-mic.is-latched {
+  animation: m-kb-listen 1.4s ease-in-out infinite;
+}
+
+@keyframes m-kb-listen {
+  50% {
+    text-shadow: 0 0 8px #7dffc4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-keyboard button.m-kb-key.is-mic.is-latched {
+    animation: none;
+  }
+}
+
 .m-keyboard button.m-kb-key.is-latched {
   border-color: #070c0a !important;
   background-color: #070c0a !important;

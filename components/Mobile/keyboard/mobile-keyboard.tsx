@@ -4,6 +4,8 @@
  * Focus on a text field hides the system keyboard (`inputmode=none`) and
  * shows this deck. Letters are silver caps. Shift, delete, 123, space,
  * return, and hide are the darker modifier caps. A latched shift is the CRT.
+ * The mic cap dictates (`lib/mobile/speech-bridge.ts`); while it listens it is
+ * latched and the words land at the caret as they are heard.
  */
 "use client"
 
@@ -16,16 +18,19 @@ import {
   backspace,
   boardForKind,
   cycleShift,
+  dictationAnchor,
   insertText,
   keyboardKind,
   letterGlyph,
   returnKey,
   revealField,
   runReturn,
+  spliceText,
   typingField,
   type Board,
   type ShiftMode,
 } from "@/components/Mobile/keyboard/keyboard-logic"
+import { isDictationAvailable, startDictation, type Dictation } from "@/lib/mobile/speech-bridge"
 import "@/components/Mobile/keyboard/mobile-keyboard.css"
 
 const LETTERS = [
@@ -52,6 +57,21 @@ export function MobileKeyboard() {
   const refocusing = useRef(false)
   const lastShift = useRef(0)
   const deckRef = useRef<HTMLDivElement>(null)
+  const [canDictate, setCanDictate] = useState(false)
+  const [listening, setListening] = useState(false)
+  const dictation = useRef<Dictation | null>(null)
+
+  useEffect(() => {
+    setCanDictate(isDictationAvailable())
+  }, [])
+
+  // Leaving the field (or hiding the deck) ends dictation.
+  useEffect(() => {
+    if (field) return
+    const live = dictation.current
+    dictation.current = null
+    if (live) void live.stop().catch(() => undefined)
+  }, [field])
 
   useEffect(() => {
     fieldRef.current = field
@@ -195,6 +215,51 @@ export function MobileKeyboard() {
     if (action !== "newline") finish()
     runReturn(el, action)
   }
+  const onMic = async () => {
+    if (listening || dictation.current) {
+      const live = dictation.current
+      dictation.current = null
+      setListening(false)
+      await live?.stop().catch(() => undefined)
+      return
+    }
+    const el = fieldRef.current
+    if (!el) return
+    const live = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
+    const { start, lead } = dictationAnchor(el)
+    let written = 0
+    const write = (words: string) => {
+      const target = fieldRef.current
+      if (!target || target !== el) return
+      const text = words ? lead + words : ""
+      spliceText(target, start, written, text)
+      written = text.length
+    }
+    setListening(true)
+    try {
+      const session = await startDictation(
+        (words) => {
+          if (live) write(words)
+        },
+        () => {
+          dictation.current = null
+          setListening(false)
+        },
+      )
+      // A contenteditable cannot be rewritten in place; it gets the final words once.
+      dictation.current = live
+        ? session
+        : {
+            stop: async () => {
+              const words = await session.stop()
+              if (words && fieldRef.current === el) insertText(el, lead + words)
+              return words
+            },
+          }
+    } catch {
+      setListening(false)
+    }
+  }
   const onHide = () => {
     finish()
     fieldRef.current?.blur()
@@ -235,6 +300,8 @@ export function MobileKeyboard() {
           onShift={onShift}
           onDelete={() => fieldRef.current && backspace(fieldRef.current)}
           onNumbers={() => setBoard("numbers")}
+          onMic={canDictate ? () => void onMic() : undefined}
+          listening={listening}
           onReturn={onReturn}
           onHide={onHide}
         />
@@ -337,6 +404,8 @@ function LetterBoard({
   onShift,
   onDelete,
   onNumbers,
+  onMic,
+  listening,
   onReturn,
   onHide,
 }: {
@@ -349,6 +418,8 @@ function LetterBoard({
   onShift: () => void
   onDelete: () => void
   onNumbers: () => void
+  onMic?: () => void
+  listening: boolean
   onReturn: () => void
   onHide: () => void
 }) {
@@ -376,6 +447,15 @@ function LetterBoard({
       </div>
       <div className="m-kb-row">
         <Key label="123" name="numbers" className="is-mod" onPress={onNumbers} />
+        {onMic ? (
+          <Key
+            label="mic"
+            name={listening ? "stop dictation" : "dictate"}
+            className={listening ? "is-mod is-mic is-latched" : "is-mod is-mic"}
+            pressed={listening}
+            onPress={onMic}
+          />
+        ) : null}
         {kind === "email" ? <Key label="@" name="at" onPress={() => onGlyph("@")} /> : null}
         {kind === "url" ? <Key label="/" name="slash" onPress={() => onGlyph("/")} /> : null}
         <Key label="space" name="space" className="is-space" onPress={() => onGlyph(" ")} />

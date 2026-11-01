@@ -7,7 +7,14 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { isPhoneWebStorage } from "@/lib/phone-device"
-import { getPhoneWindowSnapshot, loadPhoneWindow, phoneWindowNote, subscribePhoneWindow } from "@/lib/phone-window"
+import {
+  getPhoneWindowSnapshot,
+  loadPhoneWindow,
+  phoneWindowNote,
+  readPhoneHubTokenPin,
+  subscribePhoneWindow,
+  writePhoneHubTokenPin,
+} from "@/lib/phone-window"
 import {
   fetchMobileSyncStatus,
   pullAndRestoreMobileSync,
@@ -19,6 +26,7 @@ import {
 function PhoneWindowCard() {
   const [busy, setBusy] = useState(false)
   const [url, setUrl] = useState(readMobileSyncUrl)
+  const [token, setToken] = useState(readPhoneHubTokenPin)
   const [snap, setSnap] = useState(getPhoneWindowSnapshot)
   const status = snap.status
 
@@ -37,6 +45,7 @@ function PhoneWindowCard() {
   const refresh = async () => {
     setBusy(true)
     writeMobileSyncUrl(url.trim())
+    writePhoneHubTokenPin(token)
     try {
       await loadPhoneWindow()
     } finally {
@@ -63,6 +72,20 @@ function PhoneWindowCard() {
           spellCheck={false}
           value={url}
           onChange={(event) => setUrl(event.target.value)}
+        />
+      </label>
+      <label className="cogs-mobile-pullcard-row">
+        Hub token
+        <input
+          className="w-full border px-1"
+          type="password"
+          autoCapitalize="off"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="BRAIN2_PHONE_HUB_TOKEN"
+          value={token}
+          onChange={(event) => setToken(event.target.value)}
         />
       </label>
       <Button type="button" className="m-keycap w-full" disabled={busy} onClick={refresh}>

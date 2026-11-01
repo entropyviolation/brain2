@@ -1,7 +1,7 @@
 # Spec → Code Mapping (Brain2)
 
 This document maps every section of `Cognitive_Management_System_Spec.docx`
-("Personal Cognitive Management System", historically titled COGS v2) to the
+("Personal Cognitive Management System", historically titled COGS v2; COGS = cognitively optimizable generative system, Brain2's former name) to the
 current **Brain2** codebase. The running product’s header and window title are
 **BRAIN2** ([`lib/app-brand.ts`](../lib/app-brand.ts)).
 
@@ -104,7 +104,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   [`components/Mobile/README.md`](../components/Mobile/README.md)). There is no
   always-on multi-device engine. Telegram `npm run phone:hub` is message
   capture ([`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)), not vault sync across
-  devices.
+  devices. The phone-as-window plan is [`PHONE_WINDOW_PLAN.md`](PHONE_WINDOW_PLAN.md).
+  Sync away from home, through a temporary Oracle relay until a home server
+  exists, is [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md) (**Planned**).
 - **Speculation, not the storage plan:** MongoDB Atlas, a shared `@brain2/core`
   package, and an Expo / React Native app. They are not scheduled. The spec
   recommended SQLite; this repo did not adopt it, and Atlas is not the
@@ -168,7 +170,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `lib/ingest/apply-iphone-notes.ts` parks on Lists → **iPhone Notes Store** →
   **Parked**; **Phone Notes** (`components/iphone-notes-store.tsx`, Settings and
   Lists settings → **Notes and ingest**) is the queue. Separate from Mac From Notes.
-- **Message ingest (Telegram first)** — ✅ **BIM** (Brain2 Ingestion Messenger).
+- **Message ingest (Telegram first)** — ✅ **BIM** (Brain Interface Manager).
   Phone texts with short key phrases apply through the same capture / habit /
   tracking writes as the desktop UI, and **read back** lists, folders, inbox,
   habits, and status as plain text

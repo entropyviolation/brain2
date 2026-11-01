@@ -143,7 +143,7 @@ describe("book lookup", () => {
     vi.stubGlobal("fetch", fetchMock)
     vi.stubGlobal("indexedDB", undefined)
     const task = { id: "curious", title: "Curious", description: "Curious", type: "task", attributes: {} } as Task
-    let saved: Task | null = null
+    let saved = null as Task | null
     const report = await fetchShelfBookCovers([task], (next) => {
       saved = next
     })

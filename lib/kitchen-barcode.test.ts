@@ -15,7 +15,7 @@ describe("kitchen barcode lookup", () => {
   })
 
   it("maps an Open Food Facts product", async () => {
-    const fetchMock = vi.fn(async () => ({
+    const fetchMock = vi.fn(async (..._args: unknown[]) => ({
       ok: true,
       json: async () => ({
         status: 1,
@@ -42,7 +42,7 @@ describe("kitchen barcode lookup", () => {
   })
 
   it("returns a miss when the product status is 0", async () => {
-    const fetchMock = vi.fn(async () => ({
+    const fetchMock = vi.fn(async (..._args: unknown[]) => ({
       ok: true,
       json: async () => ({ status: 0, status_verbose: "product not found" }),
     }))

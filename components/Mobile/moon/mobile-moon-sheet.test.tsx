@@ -5,7 +5,7 @@
  * mobile shell, the Moon tile still opens the desktop sky dialog.
  */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { MoonTile } from "@/components/Home/home-moon-tile"
 import { MobileMoonSheet } from "@/components/Mobile/moon/mobile-moon-sheet"
 import type { MoonGlance } from "@/lib/lunar"

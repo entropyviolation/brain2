@@ -3,12 +3,15 @@
 _Last mapped: 2026-10-30_
 
 Next steps and lessons for whoever picks this up: [`docs/BIM_FLOW_HANDOFF.md`](../../../docs/BIM_FLOW_HANDOFF.md).
+The Tracking Helper has a smaller bench of its own: [`../TrackingHelper/README.md`](../TrackingHelper/README.md).
 Before adding a prompt that asks a model to guess something about the person, see [`docs/BIM_SIGNALS_PLAYBOOK.md`](../../../docs/BIM_SIGNALS_PLAYBOOK.md): learn the fact from their own data first, then hand it to the model.
 
 A bench for building BIM's routed model flow and testing it on real BIM text.
 Route: `/lab/bim-flow/` (`app/lab/bim-flow/page.tsx`). The BIM console's
 LLM tab opens it; **← Brain2** goes back to `/`. Chrome is a milled silver bay
 with house keycaps around phosphor glass wells. It writes nothing to the vault.
+
+_Last mapped: 2026-11-01_ **Agent rail.** A strip under the header lists every agent as a Blueprint (`components/Lab/Agents/AgentRail.tsx`, `lib/agents/`): one chip per BIM flow, plus the Tracking Helper, which opens `/lab/tracking-helper`. A chip for a BIM flow switches the flow, the same as the Flow menu. The grid has a fourth row for it.
 
 ## What it is for
 
@@ -44,7 +47,20 @@ much better. This bench is that shape, made visible and editable.
     days with a named person, or one day (`lib/bim-flow/retrieve.ts`). Code
     counts first, last, how many, minutes, and repeated words.
   - **answer** (SAY): the model writes from the evidence only. Modes: answer,
-    summarize, check (re-reads the draft against the evidence).
+    summarize, check (re-reads the draft against the evidence), interview.
+  - **question** (ASK, no model): holds the wording an `interview` answer is asked,
+    as its own node so you can edit it or try another. Keep wordings as variants
+    (`config.variants`, plus the shipped `INTERVIEW_VARIANTS` in `task-flows.ts`).
+    _Last mapped: 2026-10-31_ An `answer` in `interview` mode reads every row on its
+    path (`fromNodeIds`) and asks the person up to 8 questions about what the data
+    cannot say. The Recap a day view has this lane: a `retrieve` day read with
+    `everything` (all tracking views, phone texts, BIM messages, logs, notes, dated dataset rows,
+    confirmed blocks, gaps, Health), then `What to ask` and `Questions for you`. Code only de-duplicates; nothing is
+    cited or written. Shipped day graph bumped in `FLOW_REV` so saved copies refresh.
+- **context** (LINKED?, code first): which of the two earlier lines this message needs.
+  Later nodes on its path see only those. Code decides the clear pairs; the rest get one
+  yes/no each, or are dropped in code-only mode. First node of the routed BIM text view.
+  See "A labelled set from the real feed" below. _Last mapped: 2026-11-01_
 - Ten views, picked at the top, one start node each: Log a message (parallel
   baseline), Log: BIM text (routed), Log: phone capture, Log: time-grid note,
   Ask about me, Summarize a topic, Recap a day, Ritual: why-blocked reason,
@@ -210,6 +226,66 @@ notes, Ask, Ask: count it, Summarize, Recap a day, and the three rituals. A test
 check, so they read as "review". Instagram handles and phone numbers were left out; a
 stranger's name was swapped. The inputs are verbatim private text and are committed with the
 repo.
+
+_Last mapped: 2026-11-01_ Every pasted clock in `tests-real.ts` was UTC (66 of 66), so "Walking since
+4:46" ran as if sent at 00:09 and the walk landed at 4:46 am. They are local now. Eight more real
+tests carry hard checks: `noBlocks` (ideas, spending, people, feelings, links) and `blockStarts` (a
+block of that activity starts within 10 min of a clock, as in the walk at 16:46).
+
+## A labelled set from the real feed, and what it found
+
+_Last mapped: 2026-11-01_
+
+This is the plan's eval set ("label real feed messages per gate"). `lib/bim-flow/real-feed.ts` holds 108
+real BIM lines (Oct 14–31), each with its real send time and the two lines before it, labelled by hand
+with what a good run does: the first route (doing, keeping, self, people, none), the activity pen and
+relation (with a stated clock or minutes left), the list, the self lane, people, habits, places. Lines
+whose block the person painted or accepted say so. It also holds 48 pairs: is the earlier line needed to
+read the later one?
+
+- `label-model.ts` answers every model step from the labels. Running the real flow with it leaves only
+  code wrong: search that never offered the right pen or list, a misplaced block.
+- `real-feed.test.ts` runs everywhere, with no vault file and no model: the context check against the
+  pairs, the context node in the routed flow, block times against the painted walk (16:40–17:10) and the
+  accepted cleaning block (20:28–20:58), BIM's own heads.
+- `real-vault.test.ts` reads `data/shared-persist.json` (skipped when missing) and runs every labelled
+  line through the routed flow on the real vault.
+- `real-feed.live.test.ts` (opt-in, `BIM_LIVE=1`) scores a real model per room against the same labels,
+  next to the label-model ceiling, and writes `data/bim-flow-runs/real-eval-<model>-<date>.json`.
+
+Found and fixed on the real data:
+- **Context.** The person asked for this in BIM on Oct 30: "allow llm bimflow to ask for message
+  context… a layer like 'are these 2 messages connected?'". New node `context` (LINKED?,
+  `lib/bim-flow/context-link.ts`) sits first in **Log: BIM text (routed)**; only the earlier lines it keeps
+  are shown to later nodes. Code links two lines that share a word rare in the person's feed (learned
+  from the feed, so "brain2" and "elijah" do not count) or repeat each other ("O", then "Log o"). It drops
+  a line that opens with BIM's own head ("Brain2:", "Thought process:"), a bare link or scan before it,
+  and anything over 20 min apart with no shared word. In the labels, every line that leaned on the one
+  before without a shared word came within 4 min. Opening words ("also", "this", "thus") never decide:
+  "Thus spent 80$ on weed" pointed past the line right before it. The rest go to one yes/no each, or are
+  dropped in code-only mode (inspector). Over all 516 feed lines code settles 71% of pairs.
+- **People.** Elijah, Rebecca and Linda each exist three times as person items (stubs made from
+  company pens). "Elijah" is a nickname on Elijah Gibbins-Croft, so the stubs fold into him
+  (`collapseSameName`); "elijah" no longer asks "Which Elijah: Elijah or Elijah?". The two real Rebeccas
+  (Ellis, Anne Smith) stay a question. The list "tell elijah" no longer hides the person in "Tell elijah
+  about texts": the people lane links people only (`LinkOptions.kind`).
+- **Search.** Pens and lists whose names are pasted paragraphs (`isArtifactName`: over 9 words or 70
+  characters) and same-name repeats ("Text log" three times) are no longer offered. The list lane also
+  offers the list a head names ("Lyric:", "Merch:", "Get:" → needed, as BIM's grammar does) and the
+  lists the person's items with the same first word sit on (`cueLists`, learned: items that start
+  "need" sit mostly on Needed). With a perfect model, the right list was offered for 29 of 37 lines;
+  now 34. Still missed: "Gotta get shoes sole repair stuff", "Portable scanner", "Prevent mold on wood
+  counter tops".
+- **First live score** (`qwen2.5:14b-instruct` for every step, 108 lines, 701 s, report in
+  `data/bim-flow-runs/`). Model vs what code allows: first route 68% vs 100%, activity 20% vs 100%,
+  no invented block 98% vs 100%, list 22% vs 92%, body or mind 84% vs 100%, context yes/no 84%
+  (32 unsure pairs). Why activity is low: "Doing which?" may follow one output, and the model picks
+  `habit` for "Done with shower", "Taking a shower rn" and "Walking since 4:46" (showering and walking
+  read as habits), so the pen lane never runs. Why lists are low: the first route sends "Brain2: …",
+  "Lyric: …" and "Cleaning: …" heads to doing or body-or-mind. **Planned:** run the activity lane on
+  every `doing` line with habit and place as extra lanes, and route BIM's own heads to `keeping` by code.
+- **Clocks.** "nap since 10" was dropped (only H:MM was read); a bare hour now counts. A finished or
+  did-earlier line kept its default 30 min even with a stated start; it now starts at the clock.
 
 ## Scenarios, structures and a made-up week
 

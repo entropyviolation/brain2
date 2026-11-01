@@ -24,13 +24,13 @@ import { BIM_PAIR_OK } from "./bim"
 import { tryApplyGlossary } from "./apply-glossary"
 import { holdMorningReview, isMorningVoiceAdvance, isTelegramLocationPin } from "./apply-morning-gm"
 import { UNPAIRED_SUMMARY, pairingCodeValid } from "./pairing"
-import { intakeClassFromMessage, looksLikeVerb, parseMessage } from "./parse-message"
+import { intakeClassFromMessage, looksLikeQuestion, looksLikeVerb, parseMessage } from "./parse-message"
 import { applyCycle } from "./apply-cycle"
 import { expandIngestText } from "./expand"
 import { applyNowCapture } from "./apply-now"
 import { applyQuicklists } from "./apply-quicklists"
 import { claimIngestDedupeKeys, ingestDedupeKey, ingestDedupeKeys } from "./dedupe"
-import { peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history"
+import { isRestoring, peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history"
 import { parseSmartCapture } from "@/lib/smart-parse"
 import {
   isReplayableWrite,
@@ -234,7 +234,13 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
   return withItemWriteSource({ surface: "bim" }, () => ingestIncomingAsyncBody(message, now))
 }
 
+/** A write while an undo/restore settles is dropped by the stores. Wait it out (up to 5s) before applying. */
+async function untilSettled(): Promise<void> {
+  for (let i = 0; i < 50 && isRestoring(); i += 1) await new Promise((resolve) => setTimeout(resolve, 100))
+}
+
 async function ingestIncomingAsyncBody(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
+  await untilSettled()
   recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
@@ -520,8 +526,21 @@ function applyNamedText(message: IncomingMessage, now: Date, text: string): Appl
 
 /** `now` is the send time (`message.date`), so a backlog is not stamped when the poller woke up. */
 function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Date): ApplyResult {
+  // A lone `x` with no grocery line to check off is a one-letter log, not "Got what?".
+  if (intent.kind === "bought" && !intent.payload.trim() && /^x$/i.test((intent.raw ?? "").trim())) {
+    const logged = applyDiscreteLog("x", now, { keywordQuery: false })
+    if (logged.status === "ok") return logged
+  }
   if (intent.kind === "capture") {
     const raw = intent.raw || intent.payload
+    if (isDefaultLogText(raw, now) && looksLikeQuestion(raw)) {
+      return {
+        status: "ignored",
+        kind: "capture",
+        summary: "Question, not filed",
+        reply: "That reads as a question, so I did not log it. Questions about your data need BIM chat with LLM on. To log it anyway, send log: and the line.",
+      }
+    }
     if (isDefaultLogText(raw, now)) {
       const logged = applyDiscreteLog(raw, now, { keywordQuery: false })
       if (logged.status === "ok") return logged
@@ -535,7 +554,7 @@ function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Dat
   if (intent.kind === "gps" && message.locationUpdate && !bimLocationUpdateShouldApply(now, useTimeTrackingStore.getState().entries)) {
     return { status: "ignored", kind: "gps", summary: "iOS app is sharing location" }
   }
-  return dispatch(intent, now)
+  return dispatch(intent, now, message.source.channel === "simulate" && message.source.chatId === "bim-chat")
 }
 
 /**
@@ -605,7 +624,7 @@ function handlePair(message: IncomingMessage, intent: IngestIntent, now: Date): 
   })
 }
 
-function dispatch(intent: IngestIntent, now: Date): ApplyResult {
+function dispatch(intent: IngestIntent, now: Date, chat = false): ApplyResult {
   switch (intent.kind) {
     case "help":
       return { status: "ok", kind: "help", reply: INGEST_HELP, summary: "Help" }
@@ -666,7 +685,7 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
     case "thought-process":
       return applyThoughtProcess(intent.payload, now)
     case "info":
-      return applyInfo()
+      return applyInfo(chat)
     case "read":
       return applyRead(intent.payload, now)
     case "lists":

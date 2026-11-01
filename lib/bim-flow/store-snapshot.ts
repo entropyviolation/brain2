@@ -138,6 +138,54 @@ function hubState(items: Record<string, string>, key: string): Record<string, un
 }
 
 /**
+ * The vault from a persist dump (`/api/persist`, or `data/shared-persist.json` on disk), read only.
+ * No store is touched, so tests can run the flows on the person's real vault.
+ */
+export function snapshotFromPersistItems(items: Record<string, string>, now = new Date()): { snap: VaultSnapshot; feed: TelegramFeedRow[] } {
+  const task = hubState(items, "task-storage") as { tasks?: Task[]; lists?: { id: string; name: string }[] } | null
+  const habits = (hubState(items, "habits-store")?.tasks ?? []) as { id: string; name: string }[]
+  const tg = hubState(items, "timegrid-store")
+  const scopes = (tg?.scopes ?? []) as { id: string; name: string; pens: { id: string; name: string }[] }[]
+  const feed = (hubState(items, "telegram-feed")?.rows ?? []) as TelegramFeedRow[]
+  const lists = (task?.lists ?? []).map((l) => ({ id: l.id, name: l.name }))
+  const habitStore = hubState(items, "habits-store")
+  const reviewStore = hubState(items, "reviews-store")
+  const history = buildHistory({
+    entries: (tg?.entries ?? []) as RawEntry[],
+    scopes,
+    feed,
+    tasks: (task?.tasks ?? []) as unknown as { type?: string; title?: string; createdAt?: unknown }[],
+    dayNotes: (tg?.dayNotes ?? {}) as Record<string, string>,
+  })
+  return {
+    feed,
+    snap: {
+      items: (task?.tasks ?? [])
+        .map((t) => ({ id: t.id, title: itemTitle(t), type: t.type, listIds: t.lists ?? [] }))
+        .filter((t) => t.title),
+      lists,
+      habits: habits.map((h) => ({ id: h.id, title: h.name })),
+      scopes: scopes.map((s) => ({ id: s.id, name: s.name, pens: (s.pens ?? []).map((p) => ({ id: p.id, name: p.name })) })),
+      skipListIds: skipListIdsFor(lists),
+      people: buildPeople(task?.tasks ?? []),
+      history,
+      datasets: buildDatasets({
+        tasks: (task?.tasks ?? []) as Task[],
+        habits: habits as unknown as WeeklyTask[],
+        weeklyData: habitStore?.weeklyData as WeeklyData | undefined,
+        weeklyHabitData: habitStore?.weeklyHabitData as WeeklyData | undefined,
+        monthlyHabitData: habitStore?.monthlyHabitData as WeeklyData | undefined,
+        quarterlyHabitData: habitStore?.quarterlyHabitData as WeeklyData | undefined,
+        reviews: (reviewStore?.reviews ?? []) as PeriodReview[],
+        operationReviews: (reviewStore?.operationReviews ?? []) as OperationReview[],
+        history,
+        now,
+      }),
+    },
+  }
+}
+
+/**
  * Read `/api/persist` without touching the stores, for a window whose own
  * storage holds no vault (a plain browser tab; only Electron pulls the hub).
  * Returns null when the hub does not answer.
@@ -146,48 +194,7 @@ export async function loadHubVault(): Promise<{ snap: VaultSnapshot; feed: Teleg
   try {
     const res = await fetch("/api/persist")
     if (!res.ok) return null
-    const items = ((await res.json()) as HubItems).items ?? {}
-    const task = hubState(items, "task-storage") as { tasks?: Task[]; lists?: { id: string; name: string }[] } | null
-    const habits = (hubState(items, "habits-store")?.tasks ?? []) as { id: string; name: string }[]
-    const tg = hubState(items, "timegrid-store")
-    const scopes = (tg?.scopes ?? []) as { id: string; name: string; pens: { id: string; name: string }[] }[]
-    const feed = (hubState(items, "telegram-feed")?.rows ?? []) as TelegramFeedRow[]
-    const lists = (task?.lists ?? []).map((l) => ({ id: l.id, name: l.name }))
-    const habitStore = hubState(items, "habits-store")
-    const reviewStore = hubState(items, "reviews-store")
-    const history = buildHistory({
-      entries: (tg?.entries ?? []) as RawEntry[],
-      scopes,
-      feed,
-      tasks: (task?.tasks ?? []) as unknown as { type?: string; title?: string; createdAt?: unknown }[],
-      dayNotes: (tg?.dayNotes ?? {}) as Record<string, string>,
-    })
-    return {
-      feed,
-      snap: {
-        items: (task?.tasks ?? [])
-          .map((t) => ({ id: t.id, title: itemTitle(t), type: t.type, listIds: t.lists ?? [] }))
-          .filter((t) => t.title),
-        lists,
-        habits: habits.map((h) => ({ id: h.id, title: h.name })),
-        scopes: scopes.map((s) => ({ id: s.id, name: s.name, pens: (s.pens ?? []).map((p) => ({ id: p.id, name: p.name })) })),
-        skipListIds: skipListIdsFor(lists),
-        people: buildPeople(task?.tasks ?? []),
-        history,
-        datasets: buildDatasets({
-          tasks: (task?.tasks ?? []) as Task[],
-          habits: habits as unknown as WeeklyTask[],
-          weeklyData: habitStore?.weeklyData as WeeklyData | undefined,
-          weeklyHabitData: habitStore?.weeklyHabitData as WeeklyData | undefined,
-          monthlyHabitData: habitStore?.monthlyHabitData as WeeklyData | undefined,
-          quarterlyHabitData: habitStore?.quarterlyHabitData as WeeklyData | undefined,
-          reviews: (reviewStore?.reviews ?? []) as PeriodReview[],
-          operationReviews: (reviewStore?.operationReviews ?? []) as OperationReview[],
-          history,
-          now: new Date(),
-        }),
-      },
-    }
+    return snapshotFromPersistItems(((await res.json()) as HubItems).items ?? {})
   } catch {
     return null
   }

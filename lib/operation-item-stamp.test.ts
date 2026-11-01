@@ -8,7 +8,6 @@ function task(partial: Partial<Task> & Pick<Task, "id">): Task {
   const description = partial.description ?? partial.id
   const type = Object.prototype.hasOwnProperty.call(partial, "type") ? partial.type : "item"
   return {
-    id: partial.id,
     title: partial.title ?? description,
     description,
     type,
@@ -60,7 +59,7 @@ describe("stampUntypedOperations", () => {
   it("stamps a generic item that carries a task list, parts, or a tracking pen, and skips empty marks", () => {
     const rows = [
       task({ id: "list", type: "item", attributes: { [OPERATION_ATTR.taskListId]: "op-list-list" } }),
-      task({ id: "parts", type: "item", attributes: { [OPERATION_ATTR.partFormulas]: [{ id: "room", name: "Room" }] } }),
+      task({ id: "parts", type: "item", attributes: { [OPERATION_ATTR.partFormulas]: [{ id: "room", name: "Room", mime: "text/plain", uri: "idb:room" }] } }),
       task({ id: "pen", type: undefined, attributes: { [OPERATION_ATTR.trackingPenId]: "pen-1" } }),
       task({ id: "empty", type: "item", attributes: { [OPERATION_ATTR.panels]: [] } }),
       task({ id: "blank-pen", type: "item", attributes: { [OPERATION_ATTR.trackingPenId]: "" } }),

@@ -45,6 +45,26 @@ function loadLogFlow(): Flow {
   return saved?.nodes?.length ? saved : flowDef(FLOW_ID).build()
 }
 
+const CACHE_KEY = "bim-llm-suggestions-v1"
+
+type Cached = { suggestions: Suggestion[]; runId?: string; at: string }
+
+/** The last pass's suggestions, kept so the tab does not make you regenerate them. Decided ones drop out on read. */
+function loadCached(decided: Set<string>): Cached | null {
+  const c = readJson<Cached>(CACHE_KEY)
+  if (!c || !Array.isArray(c.suggestions)) return null
+  const suggestions = c.suggestions.filter((s) => !decided.has(s.id))
+  return suggestions.length ? { ...c, suggestions } : null
+}
+
+function saveCached(c: Cached) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(c))
+  } catch {
+    /* storage full or blocked: the pass still shows, it just is not kept */
+  }
+}
+
 const clock = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`
 
 type Phase = "idle" | "loading" | "running" | "done" | "no-ollama"
@@ -71,7 +91,16 @@ export function LlmSuggestions() {
   useEffect(() => {
     const v = loadVerdicts()
     setVerdicts(v)
-    setDecided(decidedIds(v))
+    const d = decidedIds(v)
+    setDecided(d)
+    const cached = loadCached(d)
+    if (cached && latest.current.length === 0) {
+      latest.current = cached.suggestions
+      setSuggestions(cached.suggestions)
+      setRunId(cached.runId)
+      setProgress(`Kept from the last pass (${new Date(cached.at).toLocaleString()}). Run again to look for more.`)
+      setPhase("done")
+    }
     return () => ctl.current?.abort()
   }, [])
 
@@ -80,7 +109,7 @@ export function LlmSuggestions() {
     const abort = new AbortController()
     ctl.current = abort
     setPhase("loading")
-    setProgress("LOOKING FOR OLLAMA…")
+    setProgress("Looking for Ollama…")
     const models = await listOllamaModels()
     if (!models) {
       setPhase("no-ollama")
@@ -89,7 +118,7 @@ export function LlmSuggestions() {
     const saved = readJson<string>("bimflow-model")
     const model = typeof saved === "string" && models.includes(saved) ? saved : models.includes(DEFAULT_MODEL) ? DEFAULT_MODEL : models[0]!
     const plan = readJson<ModelPlan>("bimflow-model-plan") ?? undefined
-    setProgress("READING THE WEEK…")
+    setProgress("Reading the week…")
     // A window whose stores are empty (a plain tab) reads the hub instead, as the bench does.
     const stores = snapshotFromStores()
     const hub = stores.items.length === 0 || feed.length === 0 ? await loadHubVault() : null
@@ -131,6 +160,7 @@ export function LlmSuggestions() {
       })
       setRunId(id)
     }
+    const cache = (runId?: string) => saveCached({ suggestions: latest.current, runId, at: new Date().toISOString() })
     try {
       await suggestWeek({
         snap,
@@ -151,23 +181,24 @@ export function LlmSuggestions() {
         onMessageRun: (r) => ran.push(r),
         onProgress: (done, total, cached) => {
           cachedCount = cached
-          setProgress(total === 0 ? `ALL ${cached} MESSAGES ALREADY READ` : `${done}/${total} NEW MESSAGES · ${cached} ALREADY READ · ${model.toUpperCase()}`)
+          setProgress(total === 0 ? `All ${cached} messages already read` : `${done}/${total} new messages · ${cached} already read · ${model}`)
         },
       })
       setPhase("done")
     } catch (err) {
-      setProgress(abort.signal.aborted ? "STOPPED" : `FAILED: ${err instanceof Error ? err.message.toUpperCase() : String(err)}`)
+      setProgress(abort.signal.aborted ? "Stopped" : `Failed: ${err instanceof Error ? err.message : String(err)}`)
       setPhase("done")
     } finally {
       // Kept even when stopped or failed part way: every model answer is worth reading back.
       keep()
+      cache(ran.length ? id : undefined)
     }
   }, [feed])
 
   const stop = () => {
     ctl.current?.abort()
     setPhase("done")
-    setProgress("STOPPED")
+    setProgress("Stopped")
   }
 
   const decide = (s: Suggestion, verdict: Verdict["verdict"]) => {
@@ -179,7 +210,7 @@ export function LlmSuggestions() {
 
   const accept = (s: Suggestion) => {
     const r = acceptSuggestion(s, words[s.id] ?? "")
-    setNote(`${r.ok ? "" : "NOT SAVED: "}${r.message}`)
+    setNote(`${r.ok ? "" : "Not saved: "}${r.message}`)
     if (r.ok) decide(s, "accepted")
   }
 
@@ -190,63 +221,62 @@ export function LlmSuggestions() {
 
   return (
     <div className="bim-llm-sug">
-      <p className="bim-crt-line">
-        LLM SUGGESTIONS — THE LAST 7 DAYS OF BIM MESSAGES, TEXTS YOU SENT, SCREEN TIME AND FILE SAVES, MINUS WHAT BRAIN2 ALREADY HOLDS. ACCEPT SAVES ONE (UNDO WORKS).
-      </p>
-      <div className="bim-crt-chips">
+      <p className="bim-legend">LLM suggestions</p>
+      <p>The last 7 days of BIM messages, texts you sent, screen time and file saves, minus what Brain2 already holds. Accept saves one (undo works).</p>
+      <div className="bim-chips">
         {busy ? (
           <button data-no95 type="button" onClick={stop}>
-            STOP
+            Stop
           </button>
         ) : (
-          <button data-no95 type="button" onClick={() => void run()}>
-            {phase === "idle" ? "SUGGEST FROM THE LAST WEEK" : "RUN AGAIN"}
+          <button data-no95 type="button" className="is-on" onClick={() => void run()}>
+            {phase === "idle" ? "Suggest from the last week" : "Run again"}
           </button>
         )}
       </div>
-      {phase === "no-ollama" ? <p className="bim-crt-line is-error">OLLAMA DID NOT ANSWER ON 127.0.0.1:11434. START IT, THEN RUN AGAIN.</p> : null}
-      {note ? <p className="bim-crt-line">{note}</p> : null}
-      {progress && phase !== "no-ollama" ? <p className="bim-crt-line bim-crt-dim">{progress}</p> : null}
+      {phase === "no-ollama" ? <p style={{ color: "var(--bim-fault)" }}>Ollama did not answer on 127.0.0.1:11434. Start it, then run again.</p> : null}
+      {note ? <p>{note}</p> : null}
+      {progress && phase !== "no-ollama" ? <p className="bim-dim">{progress}</p> : null}
       {verdicts.length || runId ? (
-        <p className="bim-crt-line bim-crt-dim">
-          {verdicts.length} VERDICTS KEPT ({rejectedCount} REJECTED WITH REASONS){runId ? " · THIS PASS IS KEPT AS A RUN" : ""} · REVIEW AND ANNOTATE IN FLOW BENCH → RUNS
+        <p className="bim-dim">
+          {verdicts.length} verdicts kept ({rejectedCount} rejected with reasons){runId ? " · this pass is kept as a run" : ""} · review and annotate in Flow bench → Runs
         </p>
       ) : null}
       {phase === "idle" ? null : SUGGESTION_KINDS.map(({ kind, label, empty }) => {
         const rows = shown.filter((s) => s.kind === kind)
         return (
           <section key={kind} className="bim-llm-sec" aria-label={label}>
-            <p className="bim-crt-line bim-llm-head">
+            <p className="bim-llm-head">
               {label} ({rows.length})
             </p>
-            {rows.length === 0 ? <p className="bim-crt-line bim-crt-dim">{busy ? "…" : empty}</p> : null}
+            {rows.length === 0 ? <p className="bim-dim">{busy ? "…" : empty}</p> : null}
             {rows.map((s) => (
               <div key={s.id} className="bim-llm-row">
                 <button data-no95 type="button" className="bim-llm-main" aria-expanded={open === s.id} onClick={() => setOpen(open === s.id ? null : s.id)}>
-                  <span>{s.title.toUpperCase()}</span>
-                  <span className="bim-crt-dim">
-                    {s.detail.toUpperCase()}
-                    {s.estimated ? " · ESTIMATED" : ""} · {s.source.toUpperCase()}
-                    {s.at.slice(0, 10) === today ? " · TODAY" : ""}
+                  <span>{s.title}</span>
+                  <span className="bim-dim">
+                    {s.detail}
+                    {s.estimated ? " · estimated" : ""} · {s.source}
+                    {s.at.slice(0, 10) === today ? " · today" : ""}
                   </span>
                 </button>
-                <button data-no95 type="button" aria-label={`Accept ${s.title}`} onClick={() => accept(s)}>
-                  ACCEPT
+                <button data-no95 type="button" className="bim-act bim-yes" aria-label={`Accept ${s.title}`} onClick={() => accept(s)}>
+                  Accept
                 </button>
-                <button data-no95 type="button" aria-label={`Reject ${s.title}`} onClick={() => { setRejecting(s.id); setOpen(s.id) }}>
-                  REJECT
+                <button data-no95 type="button" className="bim-act" aria-label={`Reject ${s.title}`} onClick={() => { setRejecting(s.id); setOpen(s.id) }}>
+                  Reject
                 </button>
                 {open === s.id ? (
                   <div className="bim-llm-why">
-                    {(s.detections?.length ?? 0) > 1 ? <p className="bim-crt-line">DETECTED {s.detections!.length} TIMES BY LLM</p> : null}
-                    <p className="bim-crt-line bim-crt-dim">WHY: {s.why.toUpperCase()}</p>
+                    {(s.detections?.length ?? 0) > 1 ? <p>Detected {s.detections!.length} times by the LLM</p> : null}
+                    <p className="bim-dim">Why: {s.why}</p>
                     {s.evidence.map((line, i) => (
-                      <p key={i} className="bim-crt-line bim-crt-dim">
+                      <p key={i} className="bim-dim">
                         &gt; {line}
                       </p>
                     ))}
-                    <label className="bim-crt-line" htmlFor={`bim-llm-words-${s.id}`}>
-                      {rejecting === s.id ? "WHY IS THIS WRONG? KEPT SO THE FLOW CAN LEARN FROM IT." : "NOTE (OPTIONAL). ACCEPT KEEPS IT ON THE BLOCK."}
+                    <label className="bim-legend" htmlFor={`bim-llm-words-${s.id}`}>
+                      {rejecting === s.id ? "Why is this wrong? Kept so the flow can learn from it." : "Note (optional). Accept keeps it on the block."}
                     </label>
                     <textarea
                       id={`bim-llm-words-${s.id}`}
@@ -258,12 +288,12 @@ export function LlmSuggestions() {
                       onChange={(e) => setWords((w) => ({ ...w, [s.id]: e.target.value }))}
                     />
                     {rejecting === s.id ? (
-                      <div className="bim-crt-chips">
+                      <div className="bim-chips">
                         <button data-no95 type="button" onClick={() => decide(s, "rejected")}>
-                          SAVE REJECTION
+                          Save rejection
                         </button>
                         <button data-no95 type="button" onClick={() => setRejecting(null)}>
-                          CANCEL
+                          Cancel
                         </button>
                       </div>
                     ) : null}
@@ -276,11 +306,11 @@ export function LlmSuggestions() {
       })}
       {overlaps.length ? (
         <section className="bim-llm-sec" aria-label="LLM blocks that overlap">
-          <p className="bim-crt-line bim-llm-head">ACCEPTED LLM BLOCKS THAT OVERLAP ({overlaps.length})</p>
-          <p className="bim-crt-line bim-crt-dim">OPEN THE DAY IN TRACKING, READ EACH BLOCK&apos;S NOTES, AND SET ITS TRUE START AND END. MOVING ONE EDGE TRIMS THE OTHER.</p>
+          <p className="bim-llm-head">Accepted LLM blocks that overlap ({overlaps.length})</p>
+          <p className="bim-dim">Open the day in Tracking, read each block&apos;s notes, and set its true start and end. Moving one edge trims the other.</p>
           {overlaps.map((o) => (
-            <p key={`${o.a.id}:${o.b.id}`} className="bim-crt-line">
-              {o.date} · {penName(o.a.penId).toUpperCase()} {clock(o.a.startMin)}–{clock(o.a.endMin)} × {penName(o.b.penId).toUpperCase()} {clock(o.b.startMin)}–{clock(o.b.endMin)} · {o.endMin - o.startMin} MIN SHARED
+            <p key={`${o.a.id}:${o.b.id}`}>
+              {o.date} · {penName(o.a.penId)} {clock(o.a.startMin)}–{clock(o.a.endMin)} × {penName(o.b.penId)} {clock(o.b.startMin)}–{clock(o.b.endMin)} · {o.endMin - o.startMin} min shared
             </p>
           ))}
         </section>

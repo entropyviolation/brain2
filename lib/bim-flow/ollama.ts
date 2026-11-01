@@ -10,6 +10,22 @@
 import { archive } from "./archive"
 
 export const OLLAMA_URL = "http://127.0.0.1:11434"
+
+/**
+ * Where model calls go. The Mac asks its own daemon. The iPhone app has no
+ * daemon, so BIM chat points this at the Mac's `/api/ollama` proxy
+ * (`scripts/persist-api.mjs`) with the hub token (`lib/bim-flow/chat-models.ts`).
+ */
+export interface ModelEndpoint {
+  base: string
+  headers?: Record<string, string>
+}
+
+let endpoint: ModelEndpoint = { base: OLLAMA_URL }
+
+export function setModelEndpoint(next: ModelEndpoint | null): void {
+  endpoint = next ?? { base: OLLAMA_URL }
+}
 export const DEFAULT_MODEL = "qwen2.5:14b-instruct"
 const NUM_CTX = 4096
 
@@ -30,10 +46,10 @@ export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: 
     const model = only || bound
     const key = JSON.stringify([model, system, user, schema])
     if (!opts.fresh && cache.has(key)) return cache.get(key)
-    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+    const res = await fetch(`${endpoint.base}/api/chat`, {
       method: "POST",
       signal,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...endpoint.headers },
       body: JSON.stringify({
         model,
         stream: false,
@@ -58,7 +74,7 @@ export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: 
 /** Installed model names, or `null` when the daemon does not answer. */
 export async function listOllamaModels(): Promise<string[] | null> {
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`)
+    const res = await fetch(`${endpoint.base}/api/tags`, { headers: endpoint.headers, signal: AbortSignal.timeout(5000) })
     if (!res.ok) return null
     const body = (await res.json()) as { models?: { name: string }[] }
     return (body.models ?? []).map((m) => m.name)

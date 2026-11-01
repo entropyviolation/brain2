@@ -151,7 +151,7 @@ describe("matchLogTimeBlock", () => {
         { scopeId: "activity", penId: "act-exercise" },
         { scopeId: "activity", penId: "act-work" },
       ],
-    } as Task
+    } as unknown as Task
     expect(operationPreferPenIds(operation)).toEqual(["act-work", "act-exercise"])
   })
 })

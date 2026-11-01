@@ -16,7 +16,7 @@ vi.mock("@/components/ingest-log-dialog", async (importOriginal) => {
       React.createElement(
         "div",
         { "data-testid": "ingest-door-host" },
-        React.createElement(real.IngestLogDialog, props),
+        React.createElement(real.IngestLogDialog as React.ComponentType<{ hideTrigger?: boolean }>, props),
       ),
   }
 })

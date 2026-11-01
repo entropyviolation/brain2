@@ -19,11 +19,26 @@ import {
   type PhonePatch,
   resetPhoneWindowCacheForTests,
 } from "@/lib/phone-window-cache"
-import { isDemoProfile, isPlanTextStorageKey } from "@/lib/storage-keys"
+import { isDemoProfile, isPlanTextStorageKey, persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 
 export type PhoneWindowStatus = "idle" | "loading" | "live" | "stale" | "offline"
 
-const PIN_SUFFIXES = ["mobile-sync-url", "nfc-hub", "nfc-chips"]
+const PIN_SUFFIXES = ["mobile-sync-url", "nfc-hub", "nfc-chips", "phone-hub-token"]
+
+const PHONE_HUB_TOKEN_KEY = "phone-hub-token"
+
+/**
+ * The hub token typed on the phone. It has to live outside the vault: the vault
+ * (which holds the ingest store) is behind this token, so the phone cannot read
+ * it from there the first time.
+ */
+export function readPhoneHubTokenPin(): string {
+  return readAliasedLocal(persistKey(PHONE_HUB_TOKEN_KEY))?.trim() ?? ""
+}
+
+export function writePhoneHubTokenPin(token: string): void {
+  writeAliasedLocal(persistKey(PHONE_HUB_TOKEN_KEY), token.trim())
+}
 
 const PATCH_STORES = new Set([
   "task-storage",
@@ -499,6 +514,8 @@ function tokenFromBlob(raw: string | null): string {
 }
 
 async function readPhoneHubToken(): Promise<string> {
+  const pinned = readPhoneHubTokenPin()
+  if (pinned) return pinned
   const fromMemory = tokenFromBlob(readPhoneWindowItem("brain2-ingest-store"))
   if (fromMemory) return fromMemory
   try {
@@ -514,6 +531,11 @@ async function authHeaders(): Promise<Record<string, string>> {
   const token = await readPhoneHubToken()
   if (!token) return {}
   return { Authorization: `Bearer ${token}` }
+}
+
+/** The Mac address that last answered and its auth header, for BIM chat's model calls. Empty url = no Mac yet. */
+export async function phoneHubRoute(): Promise<{ url: string; headers: Record<string, string> }> {
+  return { url: hubUrl, headers: await authHeaders() }
 }
 
 async function resolveHubCandidates(): Promise<string[]> {
@@ -909,14 +931,24 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   return status
 }
 
-/** POST each outbox row once. Deletes it after a 2xx. No-op while the Mac has not answered. */
+/**
+ * POST each outbox row once, oldest first. Deletes it after a 2xx. No-op while
+ * the Mac has not answered. A miss holds that store's later rows: sending them
+ * past it let an older patch land last and undo a newer one on the Mac.
+ */
 export async function flushPhoneOutbox(opts?: { force?: boolean }): Promise<number> {
   if (!opts?.force && !macAnswered) return 0
   if (!hubUrl) return 0
   const rows = await listOutbox()
+  const held = new Set<string>()
   let sent = 0
   for (const row of rows) {
-    if (inflight.has(row.id) || acked.has(row.id)) continue
+    if (acked.has(row.id)) continue
+    if (held.has(row.name) || inflight.has(row.id)) {
+      held.add(row.name)
+      continue
+    }
+    held.add(row.name)
     inflight.add(row.id)
     try {
       const headers: Record<string, string> = {
@@ -931,6 +963,7 @@ export async function flushPhoneOutbox(opts?: { force?: boolean }): Promise<numb
       })
       if (!response.ok) continue
       acked.add(row.id)
+      held.delete(row.name)
       sent += 1
       try {
         await deleteOutbox(row.id)

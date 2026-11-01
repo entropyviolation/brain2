@@ -285,6 +285,7 @@ export function OperationsView() {
                 <button
                   key={preset.id}
                   type="button"
+                  data-no95=""
                   className={`ops-preset-object${presetId === preset.id ? " is-on" : ""}`}
                   aria-pressed={presetId === preset.id}
                   title={preset.description}

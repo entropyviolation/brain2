@@ -1,7 +1,6 @@
 # Telegram bot research — what to build next on BIM
 
-Read-only look at the Brain2 phone bot on **9 Oct 2026**. BIM (Brain2 Ingestion
-Messenger) is already a capture, list, habit, tracking, and plan door. The
+Read-only look at the Brain2 phone bot on **9 Oct 2026**. BIM (Brain Interface Manager) is already a capture, list, habit, tracking, and plan door. The
 useful next work is making one text land once, and making the grocery pin and
 the questions the bot already asks easier to use in a private chat.
 

@@ -3,7 +3,7 @@ import { BUILTIN_ANALYSES, buildAnalysisFlow } from "./analyses"
 import type { ModelCall } from "./ollama"
 import { retrieve } from "./retrieve"
 import { runFlow } from "./run-flow"
-import { askFlow, nightRitualFlow, phoneCaptureFlow, reasonFlow, routedLogFlow, timeGridNoteFlow } from "./task-flows"
+import { askFlow, dayFlow, nightRitualFlow, phoneCaptureFlow, reasonFlow, routedLogFlow, timeGridNoteFlow } from "./task-flows"
 import type { Flow, FlowMessage } from "./types"
 import type { VaultSnapshot } from "./vault-search"
 
@@ -105,5 +105,26 @@ describe("datasets and insights", () => {
     const call: ModelCall = async () => ({ insights: [] })
     const r = await runFlow(buildAnalysisFlow({ ...a, minRows: 50 }), [msg(a.lens)], call, snap, { model: "t" })
     expect(r.messages[0]!.answers[0]!.text).toMatch(/Too few rows/)
+  })
+})
+
+describe("day interview", () => {
+  it("asks the wording on the question node, edits to it change the prompt, and keeps the questions", async () => {
+    const prompts: string[] = []
+    const call: ModelCall = async ({ schema, user }) => {
+      const props = (schema as { properties: Record<string, unknown> }).properties
+      if ("questions" in props) return (prompts.push(user), { questions: ["Why did the afternoon go quiet?", "Why did the afternoon go quiet?", "How did the evening call feel?"] })
+      if ("terms" in props) return { terms: [] }
+      if ("subject" in props) return { subject: "day", days: 1 }
+      return { answer: "A recap.", confidence: "medium", used: [] }
+    }
+    const flow = dayFlow()
+    const q = flow.nodes.find((n) => n.id === "q-day")!
+    q.config.question = "Ask me 2 things about how it felt."
+    const r = await runFlow(flow, [msg("Wed Oct 28", "day")], call, snap, { model: "t" })
+    const ask = r.messages[0]!.answers.find((a) => a.mode === "interview")!
+    expect(prompts[0]).toContain("QUESTION: Ask me 2 things about how it felt.")
+    expect(ask.questions).toEqual(["Why did the afternoon go quiet?", "How did the evening call feel?"])
+    expect(ask.text).toContain("2. How did the evening call feel?")
   })
 })

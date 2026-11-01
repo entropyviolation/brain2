@@ -1,8 +1,20 @@
 /**
  * components/Mobile/keyboard/keyboard-logic.test.ts — Board choice and caret edits.
  */
-import { describe, expect, it } from "vitest"
-import { afterLetter, autoCap, backspace, cycleShift, insertText, keyboardKind, letterGlyph } from "./keyboard-logic"
+import { describe, expect, it, vi } from "vitest"
+import {
+  afterLetter,
+  autoCap,
+  backspace,
+  boardForKind,
+  cycleShift,
+  insertText,
+  keyboardKind,
+  letterGlyph,
+  returnKey,
+  runReturn,
+  typingField,
+} from "./keyboard-logic"
 
 describe("keyboard kind", () => {
   it("picks a pad for tel and number, and letters for a password", () => {
@@ -82,5 +94,77 @@ describe("insert and backspace", () => {
     input.selectionEnd = 2
     backspace(input)
     expect(input.value).toBe("c")
+  })
+})
+
+describe("which fields get the deck", () => {
+  it("skips disabled, read-only, checkbox, and inputmode=none fields", () => {
+    const make = (setup: (el: HTMLInputElement) => void) => {
+      const el = document.createElement("input")
+      setup(el)
+      return typingField(el)
+    }
+    expect(make(() => {})).not.toBeNull()
+    expect(make((el) => (el.disabled = true))).toBeNull()
+    expect(make((el) => (el.readOnly = true))).toBeNull()
+    expect(make((el) => (el.type = "checkbox"))).toBeNull()
+    expect(make((el) => el.setAttribute("inputmode", "none"))).toBeNull()
+    // The deck sets inputmode=none itself on a field it armed.
+    expect(make((el) => {
+      el.setAttribute("inputmode", "none")
+      el.dataset.mKbArmed = "1"
+    })).not.toBeNull()
+    expect(boardForKind("decimal")).toBe("pad")
+    expect(boardForKind("email")).toBe("letters")
+  })
+})
+
+describe("return", () => {
+  it("names the key from the field", () => {
+    const form = document.createElement("form")
+    const inForm = document.createElement("input")
+    form.append(inForm)
+    const search = document.createElement("input")
+    search.type = "search"
+    const next = document.createElement("input")
+    next.enterKeyHint = "next"
+    expect(returnKey(document.createElement("textarea"))).toEqual({ label: "return", action: "newline" })
+    expect(returnKey(inForm)).toEqual({ label: "return", action: "submit" })
+    expect(returnKey(search)).toEqual({ label: "search", action: "submit" })
+    expect(returnKey(next)).toEqual({ label: "next", action: "next" })
+    expect(returnKey(document.createElement("input"))).toEqual({ label: "done", action: "blur" })
+  })
+
+  it("submits the form, moves to the next field, or hides", () => {
+    const form = document.createElement("form")
+    const first = document.createElement("input")
+    const second = document.createElement("input")
+    form.append(first, second)
+    document.body.append(form)
+    const submitted = vi.fn((e: Event) => e.preventDefault())
+    form.addEventListener("submit", submitted)
+
+    runReturn(first, "submit")
+    expect(submitted).toHaveBeenCalledTimes(1)
+
+    first.focus()
+    runReturn(first, "next")
+    expect(document.activeElement).toBe(second)
+    runReturn(second, "next")
+    expect(document.activeElement).not.toBe(second)
+
+    second.focus()
+    runReturn(second, "blur")
+    expect(document.activeElement).toBe(document.body)
+    form.remove()
+  })
+
+  it("a textarea return is a newline at the caret", () => {
+    const note = document.createElement("textarea")
+    note.value = "ab"
+    note.selectionStart = 1
+    note.selectionEnd = 1
+    runReturn(note, "newline")
+    expect(note.value).toBe("a\nb")
   })
 })

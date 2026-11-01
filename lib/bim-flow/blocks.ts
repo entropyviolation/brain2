@@ -34,12 +34,15 @@ interface OpenBlock {
 /**
  * Place a bare clock from the message ("4:46") at the latest moment that is
  * not after the message: 4:46 sent at 17:09 is 16:46, sent at 05:10 it is 04:46.
+ * A bare hour counts too, the way the person writes it ("nap since 10", "sleeping til 3").
  */
 export function placeSinceClock(clock: string, sentAt: Date): Date | null {
-  const m = /^(\d{1,2}):(\d{2})\s*(am|pm)?$/i.exec(clock.trim())
+  const m = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i.exec(clock.trim())
   if (!m) return null
   let hour = Number(m[1])
-  const minute = Number(m[2])
+  const minute = Number(m[2] ?? 0)
+  // A bare number with no colon and no am/pm is an hour only on a 12-hour face.
+  if (m[2] === undefined && !m[3] && (hour < 1 || hour > 12)) return null
   if (hour > 23 || minute > 59) return null
   const ampm = m[3]?.toLowerCase()
   if (ampm === "pm" && hour < 12) hour += 12
@@ -89,17 +92,21 @@ export function assembleBlocks(signals: ActivitySignal[], rules: BlockRules = DE
         open.evidence.push(s.messageId)
         close(at, "finished")
       } else {
-        // The assumed start reaches back, but never over a block already built: time has one thing in it.
+        // The start reaches back to a stated clock ("nap since 10"), else the default, but never over a
+        // block already built: time has one thing in it.
         const floor = blocks.reduce((m, b) => Math.max(m, Date.parse(b.end)), 0)
-        const start = Math.max(at.getTime() - rules.defaultMin * MIN, floor)
+        const placed = s.since ? placeSinceClock(s.since, at) : null
+        const stated = placed && at.getTime() - placed.getTime() >= MIN ? placed.getTime() : null
+        const start = Math.max(stated ?? at.getTime() - rules.defaultMin * MIN, floor)
         if (at.getTime() - start < MIN) continue
-        const cut = start > at.getTime() - rules.defaultMin * MIN
+        const cut = start > (stated ?? at.getTime() - rules.defaultMin * MIN)
+        const done = s.relation === "finished" ? "finished" : "did earlier"
         blocks.push({
           activity: s.activity,
           start: new Date(start).toISOString(),
           end: at.toISOString(),
-          estimated: true,
-          why: `${s.relation === "finished" ? "finished" : "did earlier"} with no start; ${cut ? "started where the last block ended" : `${rules.defaultMin}m assumed`}`,
+          estimated: stated === null || cut,
+          why: stated !== null ? `${done}, since ${s.since}${cut ? "; started where the last block ended" : ""}` : `${done} with no start; ${cut ? "started where the last block ended" : `${rules.defaultMin}m assumed`}`,
           evidence: [s.messageId],
         })
       }

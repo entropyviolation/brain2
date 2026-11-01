@@ -54,6 +54,8 @@ import { HeaderReminderBell } from "@/components/header-reminder-bell"
 import { Button } from "@/components/ui/button"
 import { CodeDocsViewer } from "@/components/CodeDocs/CodeDocsViewer"
 import { useUiNamesStore } from "@/lib/ui-names-store"
+import { dashSegmentFaces } from "@/lib/fonts/dash-segment-faces"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 import { Search } from "lucide-react"
 import "./shell-chrome.css"
 
@@ -191,6 +193,8 @@ export function AppHeader({
   const [friendFolded, toggleFriend] = useFold("brain2-shell-friend-folded")
   const [toolsOpen, setToolsOpen] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
+  /* The phone Go keys are Silkscreen, on every tab, not only Home. */
+  useStampFontVariables(dashSegmentFaces)
   useEffect(() => {
     performance.mark("brain2-shell-ready")
   }, [])

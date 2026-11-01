@@ -11,6 +11,8 @@
 import { useEffect, useRef, useState } from "react"
 import { useItemDetailPopup } from "@/components/friend-details/use-item-detail-popup"
 import { friendSourceLabel } from "@/lib/friend-copy"
+import { matchTaskIcon } from "@/lib/pixel-icon-match"
+import { PixelIcon } from "@/components/friend-details/PixelIcon"
 import {
   friendMissionItemId,
   friendMissionLogSentence,
@@ -73,6 +75,7 @@ export function FriendMissionDetail({
   return (
     <div className="friend-mission-pop" role="dialog" aria-modal="true" aria-labelledby="friend-mission-pop-title">
       <p className="friend-mission-pop-kicker">
+        <PixelIcon name={matchTaskIcon(title, mission.source)} />
         {friendMissionStatusLabel(mission.status)}
         {mission.source ? ` · ${friendSourceLabel(mission.source)}` : ""}
       </p>
@@ -93,7 +96,7 @@ export function FriendMissionDetail({
 
       {mission.status === "offered" && actionable && phase === "offer" ? (
         <div className="friend-mission-actions">
-          <button type="button" className="friend-key is-on" data-no95="" onClick={() => accept()}>
+          <button type="button" className="friend-key is-primary" data-no95="" onClick={() => accept()}>
             Accept mission
           </button>
           <button type="button" className="friend-key" data-no95="" onClick={() => setPhase("smaller")}>
@@ -107,7 +110,7 @@ export function FriendMissionDetail({
           <p>Break this into smaller tasks?</p>
           <button
             type="button"
-            className="friend-key is-on"
+            className="friend-key is-primary"
             data-no95=""
             onClick={() => {
               const lines = splitFriendTask(mission.taskId, mission.title)
@@ -138,7 +141,7 @@ export function FriendMissionDetail({
           <p>Just the first step?</p>
           <button
             type="button"
-            className="friend-key is-on"
+            className="friend-key is-primary"
             data-no95=""
             onClick={() => {
               const step = ensureFriendFirstStep(mission.taskId, mission.title)
@@ -190,7 +193,7 @@ export function FriendMissionDetail({
 
       {mission.status === "accepted" && mission.kind === "whim" ? (
         <div className="friend-mission-actions">
-          <button type="button" className="friend-key is-on" data-no95="" onClick={() => useBabyAnimalsStore.getState().completeMission(mission.taskId)}>
+          <button type="button" className="friend-key is-primary" data-no95="" onClick={() => useBabyAnimalsStore.getState().completeMission(mission.taskId)}>
             I did it
           </button>
         </div>

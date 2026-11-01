@@ -842,8 +842,79 @@ async function handleFileActivity(req, res) {
   return true
 }
 
+const OLLAMA_DAEMON = "http://127.0.0.1:11434"
+const OLLAMA_PATHS = new Set(["/api/ollama/api/chat", "/api/ollama/api/tags"])
+
+/** Bearer check for the model proxy. Open when no hub token is set, like the vault routes. */
+function ollamaProxyAuthorized(req) {
+  const token = process.env.BRAIN2_PHONE_HUB_TOKEN || ""
+  if (!token) return true
+  const header = Array.isArray(req.headers.authorization) ? req.headers.authorization[0] : req.headers.authorization
+  const given = typeof header === "string" ? header.replace(/^Bearer\s+/i, "") : ""
+  const a = Buffer.from(token)
+  const b = Buffer.from(given)
+  return a.length === b.length && require("node:crypto").timingSafeEqual(a, b)
+}
+
+/**
+ * BIM chat on the iPhone runs its flows on the phone and sends only model calls
+ * here, to this Mac's Ollama. Two paths, no streaming, a body cap. Not used by Telegram.
+ */
+async function handleOllamaProxy(req, res, pathname) {
+  if (req.method === "OPTIONS") {
+    sendJson(res, 204, {})
+    return true
+  }
+  if (!ollamaProxyAuthorized(req)) {
+    sendJson(res, 401, { ok: false, error: "hub token required" })
+    return true
+  }
+  const target = `${OLLAMA_DAEMON}${pathname.slice("/api/ollama".length)}`
+  try {
+    let upstream
+    if (pathname.endsWith("/tags")) {
+      if (req.method !== "GET") {
+        sendJson(res, 405, { ok: false, error: "Method not allowed" })
+        return true
+      }
+      upstream = await fetch(target)
+    } else {
+      if (req.method !== "POST") {
+        sendJson(res, 405, { ok: false, error: "Method not allowed" })
+        return true
+      }
+      const raw = await readBody(req)
+      if (raw.length > 256 * 1024) {
+        sendJson(res, 413, { ok: false, error: "body too large" })
+        return true
+      }
+      const body = JSON.parse(raw || "{}")
+      upstream = await fetch(target, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, stream: false }),
+      })
+    }
+    const text = await upstream.text()
+    let parsed
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      parsed = { ok: false, error: text.slice(0, 200) }
+    }
+    sendJson(res, upstream.status, parsed)
+  } catch (error) {
+    sendJson(res, 502, { ok: false, error: `Ollama: ${error instanceof Error ? error.message : String(error)}` })
+  }
+  return true
+}
+
 /** @returns {Promise<boolean>} true if handled */
 export async function handlePersistApi(req, res, pathname) {
+  if (OLLAMA_PATHS.has(pathname)) {
+    if (!guardBrowserOrigin(req, res)) return true
+    return handleOllamaProxy(req, res, pathname)
+  }
   if (pathname === "/api/phone-texts") {
     if (!guardBrowserOrigin(req, res)) return true
     return handlePhoneTexts(req, res)

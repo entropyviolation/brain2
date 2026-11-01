@@ -229,10 +229,11 @@ type HubSnapshot = { items?: Record<string, string> } | null
 
 let hubPromise: Promise<HubSnapshot> | null = null
 
+/** `?canon=1`: one key per vault, half the bytes. `hubItem` finds a `cogs-*` name through its `brain2-*` twin. */
 function loadHub(): Promise<HubSnapshot> {
   if (!hubEnabled()) return Promise.resolve(null)
   if (!hubPromise) {
-    hubPromise = fetch("/api/persist")
+    hubPromise = fetch("/api/persist?canon=1")
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
   }

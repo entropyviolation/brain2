@@ -1,6 +1,10 @@
 # Oracle capture box — always-on BIM that cannot read your data
 
-_Last mapped: 2026-10-20_
+_Last mapped: 2026-10-31_
+
+> **Temporary, and a bandaid.** This box is a stopgap until Brain2 has a
+> reliable always-on device (Boa, or a Mac mini). Do not build on it. It will also carry sealed phone patches. Plan, tiers and exit:
+> [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md).
 
 Decision (2026-10-20): the Oracle Free VM runs a **sealed capture box**, not the
 full hub. It long-polls Telegram and stores each text **encrypted to your public
