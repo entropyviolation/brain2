@@ -31,6 +31,11 @@ export interface KgNode {
   label: string
   /** Item type id for `item:` nodes. */
   typeId?: string
+  /**
+   * The address prefix when it is not a `KgNodeKind` (`who`, `stream`,
+   * `capture`, `value`, `review`, `period`). `kind` is then the nearest kind.
+   */
+  prefix?: string
 }
 
 export interface KgEdge {
