@@ -80,6 +80,7 @@ import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
 import { useLinksViewStore } from "@/lib/graph/links-view-store"
+import { useGraphUsageStore } from "@/lib/graph/graph-usage-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useCountStatusesStore } from "@/lib/count-statuses"
 import { useKitchenDayNotes } from "@/lib/kitchen-day-note"
@@ -187,6 +188,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("item-types-store"), rehydrate: persistRehydrate(useItemTypeStore) },
   { key: persistKey("graph-inbox"), rehydrate: persistRehydrate(useGraphInboxStore) },
   { key: persistKey("links-view"), rehydrate: persistRehydrate(useLinksViewStore) },
+  { key: persistKey("graph-usage"), rehydrate: persistRehydrate(useGraphUsageStore) },
   { key: persistKey("workflows-store"), rehydrate: persistRehydrate(useWorkflowsStore) },
   { key: persistKey("module-definitions"), rehydrate: persistRehydrate(useModuleDefinitionsStore) },
   { key: persistKey("module-html"), rehydrate: persistRehydrate(useModuleHtmlStore) },
