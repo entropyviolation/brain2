@@ -865,6 +865,7 @@ clear. Families:
 | KG-NL2, KG-NL3 | Template sentences in that same module and in Cmd-K. | BIM, read-aloud, a full phrase table per predicate. |
 | KG-M2, KG-M3 | `lib/graph/machinery.ts` `whereFrom` and `whatReadsThis`. Shown under the weekly graph review. | Delete-confirm chrome. A row for every store key (KG-M1 stays planned). |
 | E3 | Observation addresses count in `lib/belief-strength.ts` at trust 1. `evidenceMissingFromSpine` lists addresses the spine no longer has. The belief is not rewritten. | No `formulation` type (GS-5 is still planned). Beliefs are the records that carry evidence links. |
+| KG-A1, KG-A2, KG-A4, KG-A5, KG-L1 (edges), KG-F1 (feedback) | `lib/graph/insights.ts`: PageRank, degree, betweenness, bridges and cut nodes, label-propagation communities, orphans, and length-2 chain rules mined over recorded edges as off rule drafts, each with a template sentence carrying `n`, subset, and range. `lib/graph/feedback.ts` + `graph-usage-store.ts`: accept and dismiss counts per source and relation, a smoothed rate that lowers a suggestion score, visit decay. _2026-11-01._ | No room shows them. Day-fact rule mining (KG-L1 proper), HITS (KG-A3), exceptions (KG-L4). Nothing records visits or actions yet. |
 
 ### 5.1 Data model (KG-D)
 
