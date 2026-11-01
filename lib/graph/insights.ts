@@ -493,7 +493,7 @@ export function insightSentences(
   }
 
   for (const h of hubs(p, { minDegree: floor, limit: top })) {
-    out.push({ id: `hub:${h.id}`, kind: "hub", nodeIds: [h.id], sentence: `${among}, ${label(h.id)} links to ${h.degree} of the other ${p.ids.length - 1} nodes.`, n: linked, order: "derived" })
+    out.push({ id: `hub:${h.id}`, kind: "hub", nodeIds: [h.id], sentence: `${among}, ${label(h.id)} links to ${h.degree} of the other ${linked - 1} nodes.`, n: linked, order: "derived" })
   }
 
   const cut = bridges(p)

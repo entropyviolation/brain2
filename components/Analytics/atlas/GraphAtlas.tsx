@@ -122,13 +122,14 @@ export function GraphAtlas({
   }, [layout])
 
   // viewBox pan / zoom
-  const fit = useMemo<View>(() => ({ x: -20, y: -20, w: layout.width + 40, h: layout.height + 40 }), [layout])
+  const fit = useMemo<View>(() => ({ x: -20, y: -20, w: layout.width + 40, h: layout.height + 40 }), [layout.width, layout.height])
   const [view, setView] = useState<View>(fit)
   useEffect(() => setView(fit), [fit])
   const svgRef = useRef<SVGSVGElement | null>(null)
   const drag = useRef<{ px: number; py: number; view: View } | null>(null)
   const zoom = (factor: number, cx = view.x + view.w / 2, cy = view.y + view.h / 2) =>
     setView((v) => ({ x: cx - (cx - v.x) * factor, y: cy - (cy - v.y) * factor, w: v.w * factor, h: v.h * factor }))
+  const hasSvg = layout.shown > 0
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
@@ -144,7 +145,7 @@ export function GraphAtlas({
     }
     svg.addEventListener("wheel", onWheel, { passive: false })
     return () => svg.removeEventListener("wheel", onWheel)
-  }, [])
+  }, [hasSvg])
   const onPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if ((event.target as Element).closest?.(".atlas-node")) return
     drag.current = { px: event.clientX, py: event.clientY, view }
@@ -293,7 +294,7 @@ export function GraphAtlas({
               ref={svgRef}
               className="atlas-svg"
               viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
-              role="img"
+              role="group"
               aria-label="Vault graph"
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}

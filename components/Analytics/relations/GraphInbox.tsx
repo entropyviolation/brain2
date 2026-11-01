@@ -89,7 +89,10 @@ export function GraphInbox() {
   }
 
   const scanVault = () => {
-    const rows = extractProposals(tasks, allRelations(), new Date(), { title: (t) => itemTitleOrUntitled(t) })
+    const rows = extractProposals(tasks, allRelations(), new Date(), {
+      title: (t) => itemTitleOrUntitled(t),
+      typeOf: (id) => (byId.get(id) ? itemLinkTypeId(byId.get(id)!, lists) : undefined),
+    })
     const added = addProposals(rows)
     setLine(`Read the text of ${tasks.length} items. Found ${rows.length} written link${rows.length === 1 ? "" : "s"}; ${added} new in the inbox.`)
   }
