@@ -51,7 +51,7 @@ import {
 } from "@/lib/instagram-analysis"
 import { applyListLinksToTask } from "@/lib/list-links"
 import { useListsUiStore } from "@/lib/lists-ui-store"
-import { useTaskStore } from "@/lib/task-store"
+import { appendTombstoneIds, useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, List, Task } from "@/lib/types"
 
 export const INSTAGRAM_FOLLOWING_LIST_ID = "people-i-follow-on-instagram"
@@ -365,8 +365,58 @@ export function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
 
 export const INSTAGRAM_ANALYSIS_ONLY_KEYS = Object.keys(INSTAGRAM_ANALYSIS_LIST_IDS) as AnalysisOnlyKey[]
 
+/**
+ * Fold copies of the five analysis lists into one each. A copy appears when a
+ * restore or a second device brings a vault whose lists arrive after the
+ * empty ones were made (the made-again id in `ensureInstagramAnalysisList`).
+ * Keeps the list on the fixed id, else the fullest, else the oldest. Moves
+ * the copies' items and folder slots onto it, then drops the copies with a
+ * tombstone. `deleteList` refuses these lists, so this edits the store
+ * directly. Returns how many copies went.
+ */
+export function mergeDuplicateInstagramAnalysisLists(): number {
+  const before = useTaskStore.getState()
+  const groups = INSTAGRAM_ANALYSIS_ONLY_KEYS.map((key) => {
+    const fixed = INSTAGRAM_ANALYSIS_LIST_IDS[key]
+    const same = before.lists.filter(
+      (list) => list.id === fixed || list.instagramAnalysisList === key || sameName(list.name, IG_ANALYSIS_LISTS[key].name),
+    )
+    return { fixed, same }
+  }).filter((g) => g.same.length > 1)
+  if (!groups.length) return 0
+
+  const size = new Map<string, number>()
+  for (const task of before.tasks) for (const id of task.lists ?? []) size.set(id, (size.get(id) ?? 0) + 1)
+  const into = new Map<string, string>()
+  for (const { fixed, same } of groups) {
+    const keep =
+      same.find((list) => list.id === fixed) ??
+      [...same].sort(
+        (a, b) =>
+          (size.get(b.id) ?? 0) - (size.get(a.id) ?? 0) || +new Date(a.createdAt) - +new Date(b.createdAt),
+      )[0]!
+    for (const list of same) if (list.id !== keep.id) into.set(list.id, keep.id)
+  }
+
+  const swap = (ids: string[]) => [...new Set(ids.map((id) => into.get(id) ?? id))]
+  useTaskStore.setState((state) => ({
+    lists: state.lists.filter((list) => !into.has(list.id)).map((list) => (list.parentListId && into.has(list.parentListId) ? { ...list, parentListId: into.get(list.parentListId) } : list)),
+    tasks: state.tasks.map((task) =>
+      task.lists?.some((id) => into.has(id)) ? { ...task, lists: swap(task.lists) } : task,
+    ),
+    folders: state.folders.map((folder) =>
+      folder.listIds.some((id) => into.has(id)) ? { ...folder, listIds: swap(folder.listIds) } : folder,
+    ),
+    removedListIds: appendTombstoneIds(state.removedListIds, [...into.keys()]),
+  }))
+  const ui = useListsUiStore.getState()
+  if (ui.homePinned?.some((id) => into.has(id))) useListsUiStore.setState({ homePinned: swap(ui.homePinned) })
+  return into.size
+}
+
 /** Create or adopt all five analysis lists. Returns their ids in report order. */
 export function ensureInstagramAnalysisLists(): string[] {
+  mergeDuplicateInstagramAnalysisLists()
   return INSTAGRAM_ANALYSIS_ONLY_KEYS.map((key) => ensureInstagramAnalysisList(key))
 }
 
@@ -390,6 +440,7 @@ function analysisSnapshot(task: Task) {
  * recorded as a manual opt-out of a connected list.
  */
 export function applyInstagramAnalysisImport(parsed: ParsedInstagramAnalysis): { added: number; updated: number } {
+  mergeDuplicateInstagramAnalysisLists()
   const listIds: Record<IgAnalysisListKey, string> = {
     followers: ensureInstagramFollowersList(),
     following: ensureInstagramFollowingList(),
