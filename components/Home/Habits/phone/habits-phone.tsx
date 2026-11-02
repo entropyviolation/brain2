@@ -6,8 +6,10 @@
  * rendered here.
  * One scrolling page: sticky header, period keys, one grade strip, a
  * one-period list with a horizontal drag between periods, and a thumb bar.
- * Week opens the desktop grid. Tools opens the control panel and the
+ * Week opens the phone week grid. Tools opens the control panel and the
  * willpower plate in a bottom sheet. Writes go through the same cells.
+ * On Daily the chevrons step one day, the same lens as the drag; on the Week
+ * sheet they step a week. Today shows only off the current period.
  */
 "use client"
 
@@ -24,6 +26,9 @@ import {
   type ReactNode,
 } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { format } from "date-fns"
+import { isOnCurrentPeriod } from "@/components/Home/Habits/period/habits-period-cursor"
+import { isLampHabit, phoneNavLens } from "@/components/Home/Habits/phone/habits-phone-week"
 import { usePeriodPicker } from "@/components/Home/Habits/period/period-picker"
 import { HabitEditGemButton } from "@/components/Home/Habits/habit-gems"
 import { HabitCompletionCell } from "@/components/Home/Habits/sheet/habit-completion-cell"
@@ -33,7 +38,13 @@ import { HabitPercentReadout } from "@/components/Home/Habits/sheet/habit-percen
 import { HabitPeriodBreakdown } from "@/components/Home/Habits/dialogs/habit-period-breakdown"
 import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit-span-breakdown"
 import { habitSpanBreakdown, type SpanUnit } from "@/lib/habit-span-breakdown"
-import { habitStatReadingContext, loggedAmountForColumn } from "@/lib/habit-stat-pipeline"
+import {
+  bindingReadsGradeScale,
+  bindingSelectsLoggedAmount,
+  habitStatReadingContext,
+  loggedAmountForColumn,
+} from "@/lib/habit-stat-pipeline"
+import { liveHabitStatEvaluation } from "@/lib/habit-source-square"
 import { listRoutingFromLink } from "@/lib/habit-completion-pipeline"
 import { isGoalType, normalizeTaskType } from "@/lib/habit-utils"
 import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
@@ -51,6 +62,10 @@ import { pointerBeforeId, reorderIdList } from "@/lib/habit-order"
 import { isExemptKind, type ExemptionKind } from "@/lib/habit-exemption"
 import { habitContributesWillpowerStone } from "@/lib/willpower-stones"
 import { useHabitsStore } from "@/lib/habits-store"
+import { habitCompletionDetail } from "@/lib/habit-completion-detail"
+import { useTaskStore } from "@/lib/task-store"
+import { useLiveToday } from "@/lib/use-current-date"
+import { formatLocalDateKey } from "@/lib/date-utils"
 import { TaskType, type HabitFrequency, type TaskCompletion, type WeeklyData, type WeeklyTask } from "@/lib/types"
 import "./habits-phone.css"
 
@@ -104,6 +119,10 @@ export interface HabitsPhoneProps {
   nextAria: string
   onPrevious: () => void
   onNext: () => void
+  /** Daily Week sheet: the chevrons step this lens one week. */
+  onWeekStep?: (dir: -1 | 1) => void
+  /** Daily Week sheet title, the viewed week range. */
+  weekLabel?: string
   onCurrent: () => void
   /** Double-tap the date key to pick a date. The caller snaps it to the period. */
   onPick?: (date: Date) => void
@@ -142,7 +161,7 @@ export interface HabitsPhoneProps {
   good: HabitsPhoneMeter | null
   through: string | null
   wand: ReactNode
-  /** Desktop grid for this tab. Mounted from the Week key. */
+  /** Phone week grid. Mounted from the Week key. */
   columns: ReactNode
   /** Daily heatmap. Replaces the list while Heatmap View is on. */
   heatmap: ReactNode | null
@@ -293,6 +312,8 @@ export function HabitsPhone(props: HabitsPhoneProps) {
   const [spanTaskId, setSpanTaskId] = useState<string | null>(null)
   const [periodOpen, setPeriodOpen] = useState(false)
   const [pendingEdge, setPendingEdge] = useState<-1 | 1 | 0>(0)
+  const pendingKeyRef = useRef<string | null>(null)
+  const today = useLiveToday()
   const tabRef = useRef(props.frequency)
   const periodsKey = props.periods.map((period) => period.key).join("\0")
 
@@ -305,7 +326,12 @@ export function HabitsPhone(props: HabitsPhoneProps) {
       setPendingEdge(0)
       return
     }
-    if (pendingEdge === 1) setFocus(0)
+    const pendingKey = pendingKeyRef.current
+    const pendingIndex = pendingKey ? props.periods.findIndex((item) => item.key === pendingKey) : -1
+    if (pendingIndex >= 0) {
+      pendingKeyRef.current = null
+      setFocus(pendingIndex)
+    } else if (pendingEdge === 1) setFocus(0)
     else if (pendingEdge === -1) setFocus(Math.max(0, props.periods.length - 1))
     else if (props.periods.length <= 1) setFocus(0)
     else {
@@ -334,8 +360,19 @@ export function HabitsPhone(props: HabitsPhoneProps) {
     [focus, props],
   )
 
+  const lens = phoneNavLens(props.frequency, sheet, Boolean(props.heatmap))
+  const dayNav = lens === "day"
+  const weekSheetNav = props.frequency === "daily" && lens === "week" && Boolean(props.onWeekStep)
+
   const goCurrent = () => {
     props.onCurrent()
+    if (props.frequency === "daily") {
+      const todayKey = props.periods.find((item) => item.date && isOnCurrentPeriod(item.date, "day", today))?.key
+      pendingKeyRef.current = todayKey ?? formatLocalDateKey(today)
+      const index = props.periods.findIndex((item) => item.key === pendingKeyRef.current)
+      if (index >= 0) setFocus(index)
+      return
+    }
     const preferred = props.periods.findIndex((item) => item.key === props.preferredKey)
     const current = props.periods.findIndex((item) => item.isCurrent)
     if (preferred >= 0) setFocus(preferred)
@@ -503,7 +540,23 @@ export function HabitsPhone(props: HabitsPhoneProps) {
       })
     : null
 
-  const title = props.periods.length <= 1 || props.heatmap || sheet ? props.windowLabel : period?.title ?? props.windowLabel
+  const title =
+    dayNav && period
+      ? format(period.date, "EEE, MMM d")
+      : weekSheetNav && props.weekLabel
+        ? props.weekLabel
+        : props.periods.length <= 1 || props.heatmap || sheet
+          ? props.windowLabel
+          : period?.title ?? props.windowLabel
+  const onCurrentPeriod = dayNav
+    ? Boolean(period) && isOnCurrentPeriod(period.date, "day", today)
+    : props.isCurrentPeriod && (sheet || Boolean(props.heatmap) || !period || period.isCurrent || props.periods.length <= 1)
+  const step = (dir: -1 | 1) => {
+    if (dayNav) commit(dir)
+    else if (weekSheetNav) props.onWeekStep?.(dir)
+    else if (dir < 0) props.onPrevious()
+    else props.onNext()
+  }
   const showWindow = !props.heatmap && !sheet && props.periods.length > 1
   const freqLabel = (id: HabitFrequency, name: string, count: number) =>
     props.hydrated ? `${name} (${count})` : name
@@ -528,21 +581,33 @@ export function HabitsPhone(props: HabitsPhoneProps) {
           </button>
         </div>
         <div className="hab-phone-nav">
-          <button type="button" className="hab-phone-key hab-phone-key-icon" data-no95="" aria-label={props.previousAria} onClick={props.onPrevious}>
+          <button
+            type="button"
+            className="hab-phone-key hab-phone-key-icon"
+            data-no95=""
+            aria-label={dayNav ? "Previous day" : weekSheetNav ? "Previous Week" : props.previousAria}
+            onClick={() => step(-1)}
+          >
             <ChevronLeft aria-hidden="true" />
           </button>
           <button
             type="button"
             className="hab-phone-key hab-phone-date"
             data-no95=""
-            aria-pressed={props.isCurrentPeriod}
+            aria-pressed={onCurrentPeriod}
             onClick={onDateKey}
             title={props.onPick ? "Double-tap to pick a date" : undefined}
           >
             {title}
           </button>
           {picker.input}
-          <button type="button" className="hab-phone-key hab-phone-key-icon" data-no95="" aria-label={props.nextAria} onClick={props.onNext}>
+          <button
+            type="button"
+            className="hab-phone-key hab-phone-key-icon"
+            data-no95=""
+            aria-label={dayNav ? "Next day" : weekSheetNav ? "Next Week" : props.nextAria}
+            onClick={() => step(1)}
+          >
             <ChevronRight aria-hidden="true" />
           </button>
         </div>
@@ -697,9 +762,11 @@ export function HabitsPhone(props: HabitsPhoneProps) {
           <button type="button" className="hab-phone-key" data-no95="" onClick={props.onNewHabit}>
             New habit
           </button>
-          <button type="button" className="hab-phone-key" data-no95="" aria-pressed={props.isCurrentPeriod} onClick={goCurrent}>
-            {props.currentLabel}
-          </button>
+          {onCurrentPeriod ? null : (
+            <button type="button" className="hab-phone-key" data-no95="" onClick={goCurrent}>
+              {dayNav ? "Today" : weekSheetNav ? "This week" : props.currentLabel}
+            </button>
+          )}
           {props.heatmap ? null : (
             <button type="button" className="hab-phone-key" data-no95="" aria-pressed={sheet} onClick={() => setSheet((on) => !on)}>
               Week
@@ -838,7 +905,17 @@ function PhoneRow({
           showMarks={props.showStreakMarks}
           ritualMultiplier={ritual ? props.ritualMultiplier : 0}
         />
-        {props.detail ? <div className="hab-phone-detail"><HabitCompletionDetail task={task} completion={shown} now={period.date} /></div> : null}
+        {!props.detail ? null : props.frequency === "daily" ? (
+          isLampHabit(task) ? null : (
+            <div className="hab-phone-detail">
+              <PhoneDayAmount task={task} completion={shown} now={period.date} />
+            </div>
+          )
+        ) : (
+          <div className="hab-phone-detail">
+            <HabitCompletionDetail task={task} completion={shown} now={period.date} />
+          </div>
+        )}
       </div>
       <div className="hab-phone-mark">
         <HabitCompletionCell
@@ -879,6 +956,35 @@ function PhoneRow({
           <HabitPercentReadout value={props.taskPercent(task.id)} label={`${task.name} span`} />
         </button>
       )}
+    </div>
+  )
+}
+
+/** Day view keeps the amount only. The source line is a week-sheet detail. */
+function PhoneDayAmount({
+  task,
+  completion,
+  now,
+}: {
+  task: WeeklyTask
+  completion: TaskCompletion | undefined
+  now: Date
+}) {
+  const items = useTaskStore((s) => s.tasks)
+  const lists = useTaskStore((s) => s.lists)
+  const live =
+    bindingReadsGradeScale(task) || bindingSelectsLoggedAmount(task) ? liveHabitStatEvaluation(task) : null
+  const detail = habitCompletionDetail({
+    task,
+    completion,
+    items,
+    lists,
+    now,
+    liveStat: live && !live.error && live.value != null ? { value: live.value, label: live.label } : null,
+  })
+  return (
+    <div className="habit-detail">
+      <span className="habit-detail-amount">{detail.amount}</span>
     </div>
   )
 }

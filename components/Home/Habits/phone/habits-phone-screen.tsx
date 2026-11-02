@@ -11,11 +11,17 @@ import { useState, type ReactNode } from "react"
 import { format } from "date-fns"
 import { HabitsPhone, type HabitsPhonePeriod } from "@/components/Home/Habits/phone/habits-phone"
 import { HabitWandBanner } from "@/components/Home/Habits/wands/habit-wand-banner"
-import { TaskGrid } from "@/components/Home/Habits/sheet/task-grid"
 import {
-  PeriodHabitList,
+  monthPeriodColumns,
+  seasonPeriodColumns,
+  weekPeriodColumns,
   type PeriodColumn,
 } from "@/components/Home/Habits/period-habit-list"
+import { HabitsPhoneWeekGrid, type PhoneWeekColumn, type PhoneWeekSection } from "@/components/Home/Habits/phone/habits-phone-week-grid"
+import { phoneVisibleHabits } from "@/components/Home/Habits/phone/habits-phone-week"
+import { isOnCurrentPeriod } from "@/components/Home/Habits/period/habits-period-cursor"
+import { useHabitsStore } from "@/lib/habits-store"
+import { useLiveToday } from "@/lib/use-current-date"
 import { HabitHeatmap } from "@/components/Home/Habits/sheet/habit-heatmap"
 import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit-span-breakdown"
 import { habitSpanBreakdown } from "@/lib/habit-span-breakdown"
@@ -29,6 +35,7 @@ import {
   calculateDayPercentageAV,
   calculatePeriodColumnPercentage,
 } from "@/lib/calculations"
+import { addMonths, endOfMonth } from "date-fns"
 import {
   addCalendarDays,
   formatDateRange,
@@ -54,6 +61,10 @@ function phoneDay(date: Date, homeKey: string): HabitsPhonePeriod {
     title: format(date, "EEEE, MMM d"),
     isCurrent: key === homeKey,
   }
+}
+
+function weekColumn(column: PeriodColumn, kicker: string, num: string, title: string, end: Date): PhoneWeekColumn {
+  return { key: column.key, date: column.date, end, kicker, num, title, isCurrent: column.isCurrent }
 }
 
 function phoneColumn(column: PeriodColumn, title: string): HabitsPhonePeriod {
@@ -84,6 +95,7 @@ export type HabitsPhoneScreenProps = {
   viewingCurrentPeriod: boolean
   weekWindowRange: string
   monthWindowAsOf: Date
+  weekWindowAsOf: Date
   weekDates: Date[]
   weekPeriods: PeriodColumn[]
   monthPeriods: PeriodColumn[]
@@ -184,6 +196,11 @@ export type HabitsPhoneScreenProps = {
 
 export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
   const [heatSpanId, setHeatSpanId] = useState<string | null>(null)
+  const today = useLiveToday()
+  const todayKey = formatLocalDateKey(today)
+  // Session A adds `showPausedHabits` to the store. Until then it reads false.
+  const showPaused = useHabitsStore((s) => Boolean((s as { showPausedHabits?: boolean }).showPausedHabits))
+  const unpaused = <T extends WeeklyTask>(rows: T[]) => phoneVisibleHabits(rows, todayKey, showPaused)
   const tab = props.habitTab
   const homeKey = formatLocalDateKey(props.currentDate)
   // Day View shows its own day (today in this week, else Monday), not Home's cursor.
@@ -217,7 +234,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
         spanPeriods[spanPeriods.length - 1] ??
         phoneDay(props.currentDate, homeKey))
 
-  const rows = tab === "weekly" ? props.weeklyRows : tab === "monthly" ? props.monthlyRows : tab === "quarterly" ? props.quarterlyRows : props.dailyRows
+  const rows = unpaused(tab === "weekly" ? props.weeklyRows : tab === "monthly" ? props.monthlyRows : tab === "quarterly" ? props.quarterlyRows : props.dailyRows)
   const shown = tab === "weekly" ? props.weeklyShown : tab === "monthly" ? props.monthlyShown : tab === "quarterly" ? props.quarterlyShown : props.dailyShown
   const data = tab === "weekly" ? props.weeklyHabitData : tab === "monthly" ? props.monthlyHabitData : tab === "quarterly" ? props.quarterlyHabitData : props.weeklyData
   const kind = tab === "weekly" ? props.weeklyKind : tab === "monthly" ? props.monthlyKind : tab === "quarterly" ? props.quarterlyKind : props.dailyKind
@@ -271,69 +288,71 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
     </div>
   )
 
-  const columns = !props.hydrated ? (
-    loading
-  ) : tab === "daily" ? (
-    <TaskGrid
-      groupByKind={props.groupHabitsByKind}
-      tasks={props.dailyRows}
-      weeklyData={props.weeklyData}
-      weekDates={props.weekDates}
-      onUpdateTaskCompletion={props.updateCompletion}
-      onEditTask={props.handleEditTask}
-      calculateTaskPercentage={taskPercent}
-      calculateDayPercentage={(date, index) => {
+  // Week sheet: every frequency at once. Span columns follow the windows picked in Tools.
+  const weekSections: PhoneWeekSection[] = [
+    {
+      id: "daily",
+      title: "Daily",
+      columns: props.weekDates.map((date) => {
         const key = formatLocalDateKey(date)
-        if (props.dailyTasks.length > 0 && props.dailyTasks.every((task) => props.dailyExempt(task, key))) return null
-        return calculateDayPercentageAV(key, props.dailyTasks, props.weeklyData, index, props.dailyExempt)
-      }}
-      hideCompleted={props.hideCompletedToday}
-      exemptionWand={props.exemptionWand}
-      missedOpWand={props.missedOpWand}
-      hideCompletedAndMissed={props.hideCompletedAndMissed}
-      exemptionKindFor={props.dailyKind}
-      onSetExempt={(taskId, date, exempted) => props.setHabitExemption("daily", formatLocalDateKey(date), taskId, exempted)}
-      viewMode="day"
-      dayView={props.habitDayView}
-      selectedDate={props.habitDayView ? day : props.currentDate}
-      {...priority}
-      onReorder={onReorder}
-    />
-  ) : (
-    <PeriodHabitList
-      tasks={rows}
-      periods={tab === "weekly" ? props.weekSheetPeriods : tab === "monthly" ? props.monthSheetPeriods : props.seasonSheetPeriods}
-      data={data}
-      onUpdate={update}
-      onEdit={props.handleEditTask}
-      hideCompleted={props.hideCompletedToday}
-      exemptionWand={props.exemptionWand}
-      missedOpWand={props.missedOpWand}
-      hideCompletedAndMissed={props.hideCompletedAndMissed}
-      exemptionKindFor={kind}
-      onSetExempt={(taskId, periodKey, _periodDate, exempted) => props.setHabitExemption(tab, periodKey, taskId, exempted)}
-      calculateTaskPercentage={taskPercent}
-      calculatePeriodPercentage={(periodKey) => {
-        const column = columnsForMath.find((item) => item.key === periodKey)
-        if (!column) return 0
-        if (tasksForMath.length > 0 && tasksForMath.every((task) => exempt(task, periodKey))) return null
-        return calculatePeriodColumnPercentage(column, tasksForMath, data, exempt)
-      }}
-      completionLabel={tab === "weekly" ? "Weekly completion" : tab === "monthly" ? "Monthly completion" : "Season completion"}
-      emptyLabel={
-        tab === "weekly"
-          ? "No weekly habits yet. Add one to get started."
-          : tab === "monthly"
-            ? "No monthly habits yet. Add one to get started."
-            : "No season habits yet. Add one to get started."
-      }
-      asOf={props.currentDate}
-      frequency={tab}
-      detailColumn={tab === "weekly" ? props.habitWeekView : tab === "monthly" ? props.habitMonthView : props.habitSeasonView}
-      {...priority}
-      onReorder={onReorder}
-    />
-  )
+        return {
+          key,
+          date,
+          end: date,
+          kicker: format(date, "EEEEE"),
+          num: format(date, "d"),
+          title: format(date, "EEE, MMM d"),
+          isCurrent: key === todayKey,
+        }
+      }),
+      tasks: unpaused(props.dailyRows),
+      data: props.weeklyData,
+      kindFor: props.dailyKind,
+      onUpdate: props.updateCompletion,
+    },
+    {
+      id: "weekly",
+      title: "Weekly",
+      columns: weekPeriodColumns(props.weekWindowAsOf, props.habitWeekWindow).map((column) => {
+        const end = addCalendarDays(column.date, 6)
+        return weekColumn(column, format(column.date, "MMM"), format(column.date, "d"), formatDateRange(column.date, end), end)
+      }),
+      tasks: unpaused(props.weeklyRows),
+      data: props.weeklyHabitData,
+      kindFor: props.weeklyKind,
+      onUpdate: props.updateWeeklyHabitCompletion,
+    },
+    {
+      id: "monthly",
+      title: "Monthly",
+      columns: monthPeriodColumns(props.monthWindowAsOf, props.habitMonthWindow, props.habitBirthday).map((column) =>
+        weekColumn(column, format(column.date, "MMM"), format(column.date, "yy"), format(column.date, "MMMM yyyy"), endOfMonth(column.date)),
+      ),
+      tasks: unpaused(props.monthlyRows),
+      data: props.monthlyHabitData,
+      kindFor: props.monthlyKind,
+      onUpdate: props.updateMonthlyHabitCompletion,
+    },
+    {
+      id: "quarterly",
+      title: "Season",
+      columns: seasonPeriodColumns(props.currentQuarter, props.currentDate).map((column) =>
+        weekColumn(
+          column,
+          column.label.slice(0, 3),
+          column.sublabel,
+          quarterLabel(column.key),
+          addCalendarDays(addMonths(column.date, 3), -1),
+        ),
+      ),
+      tasks: unpaused(props.quarterlyRows),
+      data: props.quarterlyHabitData,
+      kindFor: props.quarterlyKind,
+      onUpdate: props.updateQuarterlyHabitCompletion,
+    },
+  ]
+
+  const columns = !props.hydrated ? loading : <HabitsPhoneWeekGrid sections={weekSections} />
 
   const heatmap =
     tab === "daily" && props.habitViewMode === "heatmap" && props.hydrated ? (
@@ -447,7 +466,15 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
       onFrequency={props.setHabitTab}
       windowLabel={windowLabel}
       currentLabel={tab === "quarterly" ? "This season" : tab === "weekly" ? "This week" : tab === "monthly" ? "This month" : "Today"}
-      isCurrentPeriod={dayMode ? props.dayLens.isToday : props.viewingCurrentPeriod}
+      isCurrentPeriod={
+        tab === "quarterly"
+          ? isOnCurrentPeriod(props.currentQuarter, "season", today)
+          : tab === "monthly"
+            ? isOnCurrentPeriod(props.currentMonth, "month", today)
+            : isOnCurrentPeriod(props.currentWeekStart, "week", today)
+      }
+      onWeekStep={tab === "daily" ? (dir) => props.setWeekLens(addCalendarDays(props.currentWeekStart, dir * 7)) : undefined}
+      weekLabel={formatDateRange(props.currentWeekStart, props.weekEndDate)}
       previousAria={tab === "quarterly" ? "Previous season" : tab === "monthly" ? "Previous Month" : dayMode ? "Previous day" : "Previous Week"}
       nextAria={tab === "quarterly" ? "Next season" : tab === "monthly" ? "Next Month" : dayMode ? "Next day" : "Next Week"}
       onPrevious={() => {
@@ -533,20 +560,15 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
                 ? { streak: props.goodStreak, last30Count: props.goodLast30, onClick: props.openGoodDays }
                 : props.periodWells
             }
-            weekWindow={
-              tab === "weekly" ? (
-                <HabitWeekWindowControl mode={props.habitWeekWindow} onMode={props.setHabitWeekWindow} />
-              ) : undefined
-            }
+            // The Week sheet shows every frequency, so both windows stay in Tools on the phone.
+            weekWindow={<HabitWeekWindowControl mode={props.habitWeekWindow} onMode={props.setHabitWeekWindow} />}
             monthWindow={
-              tab === "monthly" ? (
-                <HabitMonthWindowControl
-                  mode={props.habitMonthWindow}
-                  birthday={props.habitBirthday}
-                  onMode={props.setHabitMonthWindow}
-                  onBirthday={props.setHabitBirthday}
-                />
-              ) : undefined
+              <HabitMonthWindowControl
+                mode={props.habitMonthWindow}
+                birthday={props.habitBirthday}
+                onMode={props.setHabitMonthWindow}
+                onBirthday={props.setHabitBirthday}
+              />
             }
             exemptionWand={props.exemptionWand}
             onExemptionWand={props.setExemptionWand}

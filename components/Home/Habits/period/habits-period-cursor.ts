@@ -69,3 +69,16 @@ export function habitsLensFromStored(asOf: Date, stored: Date | null | undefined
         : habitsViewedQuarter(asOf, stored)
   return habitsCalendarKey(lens) === habitsCalendarKey(home) ? null : lens
 }
+
+/** True when the cursor already shows the period that contains today. */
+export function isOnCurrentPeriod(cursor: Date, period: "day" | "week" | "month" | "season", today: Date): boolean {
+  const anchor =
+    period === "day"
+      ? habitsCalendarKey
+      : period === "week"
+        ? (date: Date) => habitsCalendarKey(habitsViewedWeekStart(date))
+        : period === "month"
+          ? (date: Date) => habitsCalendarKey(habitsViewedMonth(date))
+          : (date: Date) => habitsCalendarKey(habitsViewedQuarter(date))
+  return anchor(cursor) === anchor(today)
+}
