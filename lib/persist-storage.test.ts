@@ -553,3 +553,49 @@ describe("persist-storage", () => {
     })
   })
 })
+
+describe("isForeignHubWrite", () => {
+  it("pulls for the phone and the phone hub, not this desktop's own saves", async () => {
+    const { isForeignHubWrite } = await import("@/lib/persist-storage")
+    expect(isForeignHubWrite("phone")).toBe(true)
+    expect(isForeignHubWrite("phone-hub")).toBe(true)
+    expect(isForeignHubWrite("electron")).toBe(false)
+    expect(isForeignHubWrite("chrome")).toBe(false)
+    expect(isForeignHubWrite(undefined)).toBe(false)
+  })
+})
+
+describe("createHubStampWatch", () => {
+  it("pulls after a phone write, retries a throttled pull, and ignores this desktop's saves", async () => {
+    const { createHubStampWatch } = await import("@/lib/hub-stamp-watch")
+    let allow = false
+    const pull = vi.fn(() => allow)
+    const tick = createHubStampWatch(pull, (source) => source === "electron")
+    tick({ updatedAt: "1", source: "phone" })
+    expect(pull).not.toHaveBeenCalled()
+    tick({ updatedAt: "2", source: "electron" })
+    expect(pull).not.toHaveBeenCalled()
+    tick({ updatedAt: "3", source: "phone" })
+    expect(pull).toHaveBeenCalledTimes(1)
+    tick({ updatedAt: "4", source: "electron" })
+    expect(pull).toHaveBeenCalledTimes(2)
+    allow = true
+    tick({ updatedAt: "4", source: "electron" })
+    expect(pull).toHaveBeenCalledTimes(3)
+    tick({ updatedAt: "4", source: "electron" })
+    expect(pull).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe("createHubStampWatch with contentAt", () => {
+  it("ignores a heartbeat that only moved updatedAt", async () => {
+    const { createHubStampWatch } = await import("@/lib/hub-stamp-watch")
+    const pull = vi.fn(() => true)
+    const tick = createHubStampWatch(pull, (source) => source === "electron")
+    tick({ updatedAt: "1", source: "phone-hub", contentAt: "c1", contentSource: "electron" })
+    tick({ updatedAt: "2", source: "phone-hub", contentAt: "c1", contentSource: "electron" })
+    expect(pull).not.toHaveBeenCalled()
+    tick({ updatedAt: "3", source: "phone", contentAt: "c2", contentSource: "phone" })
+    expect(pull).toHaveBeenCalledTimes(1)
+  })
+})

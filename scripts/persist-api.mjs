@@ -99,6 +99,9 @@ const hub = {
   loaded: false,
   updatedAt: null,
   source: null,
+  /** Like `updatedAt` / `source`, but heartbeat keys do not move it, so a watcher pulls only for data. */
+  contentAt: null,
+  contentSource: null,
   /** canonical key -> value */
   items: {},
   /** Canonical keys changed since the last successful write. */
@@ -194,6 +197,8 @@ function parseDisk() {
     return {
       updatedAt: parsed.updatedAt ?? null,
       source: parsed.source ?? null,
+      contentAt: parsed.contentAt ?? null,
+      contentSource: parsed.contentSource ?? null,
       items: collapseAliases(stripFriendPicItems(parsed.items && typeof parsed.items === "object" ? parsed.items : {})),
     }
   } catch {
@@ -228,9 +233,15 @@ function syncFromDisk() {
       }
     }
     hub.updatedAt = new Date().toISOString()
+    if (disk.contentAt && (!hub.contentAt || disk.contentAt > hub.contentAt)) {
+      hub.contentAt = disk.contentAt
+      hub.contentSource = disk.contentSource
+    }
   } else {
     hub.updatedAt = disk.updatedAt
     hub.source = disk.source
+    hub.contentAt = disk.contentAt
+    hub.contentSource = disk.contentSource
   }
   hub.items = disk.items
   hub.loaded = true
@@ -238,7 +249,13 @@ function syncFromDisk() {
 }
 
 function serialize() {
-  return JSON.stringify({ updatedAt: hub.updatedAt, source: hub.source ?? "hub", items: expandAliases(hub.items) })
+  return JSON.stringify({
+    updatedAt: hub.updatedAt,
+    source: hub.source ?? "hub",
+    contentAt: hub.contentAt,
+    contentSource: hub.contentSource,
+    items: expandAliases(hub.items),
+  })
 }
 
 function hubTmpPath() {
@@ -334,7 +351,16 @@ function touch(key, source) {
   hub.version++
   hub.updatedAt = new Date().toISOString()
   hub.source = source ?? hub.source ?? "hub"
+  if (!isHeartbeatKey(key)) {
+    hub.contentAt = hub.updatedAt
+    hub.contentSource = hub.source
+  }
   scheduleFlush()
+}
+
+/** Stamps a writer refreshes on its own; they say nothing changed in the vault. */
+function isHeartbeatKey(key) {
+  return typeof key === "string" && key.endsWith("last-persist-ok")
 }
 
 function expandedKeyCount() {
@@ -952,6 +978,8 @@ export async function handlePersistApi(req, res, pathname) {
       keyCount: store.keyCount,
       updatedAt: store.updatedAt,
       source: store.source,
+      contentAt: hub.contentAt ?? store.updatedAt,
+      contentSource: hub.contentSource ?? store.source,
     })
     return true
   }

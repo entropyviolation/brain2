@@ -8,6 +8,7 @@
  * Demo profile never calls the hub. Electron and a desktop browser never
  * engage this module.
  */
+import { createHubFocusPull, createHubStampWatch } from "@/lib/hub-stamp-watch"
 import { isPhoneWebStorage } from "@/lib/phone-device"
 import {
   deleteOutbox,
@@ -778,9 +779,19 @@ async function replayOutbox() {
   }
 }
 
-async function rehydrateMemory() {
+/** Stores whose memory copy differs from `before`: added, changed, or gone. */
+function changedSuffixes(before: Map<string, string>): Set<string> {
+  const out = new Set<string>()
+  for (const [key, value] of memory) if (before.get(key) !== value) out.add(bareVault(key))
+  for (const key of before.keys()) if (!memory.has(key)) out.add(bareVault(key))
+  return out
+}
+
+/** Rehydrate every store in memory, or only `only`. */
+async function rehydrateMemory(only?: Set<string>) {
   const suffixes = new Set<string>()
   for (const key of memory.keys()) suffixes.add(bareVault(key))
+  if (only) for (const suffix of suffixes) if (!only.has(suffix)) suffixes.delete(suffix)
   await Promise.all(
     [...suffixes].map((suffix) => {
       const load = REHYDRATE[suffix] ?? refills.get(suffix)
@@ -910,13 +921,17 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   // launch-cache write is slow enough for list builders to save in it).
   acceptPatches = false
   installingWindow = true
+  // A reload over a painted window re-reads only the stores whose copy moved.
+  // Re-reading all of them on every desk save flashed Habits to its loading
+  // line (and half-filled rows) about once a minute.
+  const before = windowInstalled ? new Map(memory) : null
   try {
     installMap(collapseItems(items), "mac")
     setDetail("(saving the launch copy)")
     await writeLaunchCache(memory)
     await replayOutbox()
     setDetail("(drawing the vault)")
-    await rehydrateMemory()
+    await rehydrateMemory(before ? changedSuffixes(before) : undefined)
     await settleWithoutPatches()
   } finally {
     installingWindow = false
@@ -927,6 +942,7 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   loadedAt = Date.now()
   detail = null
   setStatus("live")
+  followMacStamp()
   if ((await listOutbox()).length > 0) await flushPhoneOutbox()
   return status
 }
@@ -936,6 +952,32 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
  * the Mac has not answered. A miss holds that store's later rows: sending them
  * past it let an older patch land last and undo a newer one on the Mac.
  */
+/** How often the open phone reads the Mac's write stamp. */
+export const PHONE_STAMP_POLL_MS = 15_000
+
+/** A reload moves the whole vault over Wi-Fi, so another device's writes reload at most this often. */
+export const PHONE_FOREIGN_RELOAD_MS = 60_000
+
+let stampTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * Reload the window when the desktop (or the phone hub) wrote, so a desk edit
+ * reaches an open phone without pull-to-refresh. The phone's own patches do not.
+ */
+function followMacStamp(): void {
+  if (stampTimer || typeof document === "undefined") return
+  const reload = createHubFocusPull(() => void loadPhoneWindow(), PHONE_FOREIGN_RELOAD_MS)
+  const onStamp = createHubStampWatch(reload, (source) => source === "phone")
+  stampTimer = setInterval(() => {
+    if (document.visibilityState !== "visible" || !hubUrl || loading) return
+    void authHeaders()
+      .then((headers) => fetch(`${hubUrl}/api/persist/health`, { cache: "no-store", headers: { Accept: "application/json", ...headers } }))
+      .then((r) => (r.ok ? r.json() : null))
+      .then(onStamp)
+      .catch(() => {})
+  }, PHONE_STAMP_POLL_MS)
+}
+
 export async function flushPhoneOutbox(opts?: { force?: boolean }): Promise<number> {
   if (!opts?.force && !macAnswered) return 0
   if (!hubUrl) return 0
@@ -980,6 +1022,8 @@ export async function flushPhoneOutbox(opts?: { force?: boolean }): Promise<numb
 }
 
 export function resetPhoneWindowForTests(): void {
+  if (stampTimer) clearInterval(stampTimer)
+  stampTimer = null
   memory.clear()
   engaged = false
   macAnswered = false

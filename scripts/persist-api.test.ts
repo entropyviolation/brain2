@@ -336,6 +336,20 @@ describe("persist HTTP canon and phone patch", () => {
   })
   const patch = { upserts: [{ id: "a", title: "New" }], removedIds: [] as string[] }
 
+  it("health contentAt moves for data and not for the persist heartbeat", async () => {
+    setup({ updatedAt: "t0", source: "desk", items: { legacy: "L" } })
+    mergeSharedPersistItems({ legacy: "L2" }, "phone")
+    const data = (await persistHttp("GET", "/api/persist/health")).body as Record<string, string>
+    expect(data.contentSource).toBe("phone")
+    await new Promise((r) => setTimeout(r, 5))
+    mergeSharedPersistItems({ "brain2-last-persist-ok": new Date().toISOString() }, "phone-hub")
+    const beat = (await persistHttp("GET", "/api/persist/health")).body as Record<string, string>
+    expect(beat.source).toBe("phone-hub")
+    expect(beat.updatedAt).not.toBe(data.updatedAt)
+    expect(beat.contentAt).toBe(data.contentAt)
+    expect(beat.contentSource).toBe("phone")
+  })
+
   it("GET ?canon=1 omits cogs twins and leaves the file unchanged", async () => {
     const file = setup({
       updatedAt: "t0",

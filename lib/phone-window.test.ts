@@ -398,4 +398,38 @@ describe("phone window", () => {
     expect(await loadPhoneWindow()).toBe("live")
     expect(usePointsStore.getState().pointsHistory.map((row) => row.date)).toEqual(["2026-10-30"])
   })
+
+  it("a reload leaves a store whose copy did not move alone", async () => {
+    asPhone()
+    const points = JSON.stringify({ state: { pointsHistory: [{ date: "2026-10-01", points: 3 }] }, version: 0 })
+    let tasks = JSON.stringify(notedTask)
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/api/persist")) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, items: { "points-store": points, "brain2-task-storage": tasks } }) }
+      }
+      return { ok: false, status: 404, json: async () => ({}) }
+    }))
+
+    expect(await loadPhoneWindow()).toBe("live")
+    await usePointsStore.persist.rehydrate()
+    const reread = vi.spyOn(usePointsStore.persist, "rehydrate")
+    tasks = JSON.stringify({ ...notedTask, state: { ...notedTask.state, tasks: [{ ...notedTask.state.tasks[0], title: "Oat milk" }] } })
+    expect(await loadPhoneWindow()).toBe("live")
+    expect(reread).not.toHaveBeenCalled()
+    expect(useTaskStore.getState().tasks.map((task) => task.title)).toEqual(["Oat milk"])
+    reread.mockRestore()
+  })
+})
+
+describe("phone follows the Mac's write stamp", () => {
+  it("reloads after a desk write and not after its own patch", async () => {
+    const { createHubStampWatch } = await import("@/lib/hub-stamp-watch")
+    const reload = vi.fn(() => true)
+    const tick = createHubStampWatch(reload, (source) => source === "phone")
+    tick({ updatedAt: "1", source: "electron" })
+    tick({ updatedAt: "2", source: "phone" })
+    expect(reload).not.toHaveBeenCalled()
+    tick({ updatedAt: "3", source: "electron" })
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
 })

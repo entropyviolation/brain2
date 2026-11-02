@@ -70,6 +70,7 @@
  * blob; it does not re-apply an old pin onto that blob (that was resetting
  * Percent LED tint to a previous purple on refresh).
  */
+import { createHubFocusPull, createHubStampWatch } from "@/lib/hub-stamp-watch"
 import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 import { overlayHabitCompletionsParsed, overlayIngestAllowlistParsed, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, stampAppearancePinsParsed, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, vaultRecordCount, vaultRecordCountRoot } from "@/lib/vault-guard.js"
@@ -406,20 +407,7 @@ async function pullHubIntoStores(names?: string[]): Promise<string[]> {
   return mergeHubIntoStores(await loadHub(), names)
 }
 
-/** Focus and visibility re-reads run at most once per this window. */
-export const HUB_FOCUS_PULL_MS = 10_000
-
-/** Throttle for focus pulls. Pure apart from the clock. */
-export function createHubFocusPull(pull: () => unknown, minMs = HUB_FOCUS_PULL_MS, now: () => number = Date.now) {
-  let last = -Infinity
-  return () => {
-    const at = now()
-    if (at - last < minMs) return false
-    last = at
-    void pull()
-    return true
-  }
-}
+export { createHubFocusPull, HUB_FOCUS_PULL_MS } from "@/lib/hub-stamp-watch"
 
 let hubFollowInstalled = false
 
@@ -434,6 +422,29 @@ function installHubFollow(): void {
   })
   // Launch: the preload and getItem both kept the local copy, so merge once now.
   setTimeout(onFocus, 2000)
+  // A phone edit lands while this window stays focused: watch the hub stamp.
+  const onStamp = createHubStampWatch(
+    createHubFocusPull(() => pullHubIntoStores().catch(() => []), HUB_FOREIGN_PULL_MS),
+    (source) => !isForeignHubWrite(source),
+  )
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return
+    void fetch("/api/persist/health")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(onStamp)
+      .catch(() => {})
+  }, HUB_STAMP_POLL_MS)
+}
+
+/** How often a visible window reads the hub's write stamp. */
+export const HUB_STAMP_POLL_MS = 5_000
+
+/** A pull reads the whole vault, so another device's writes pull at most this often. */
+export const HUB_FOREIGN_PULL_MS = 30_000
+
+/** The phone, the phone hub, and scripts write the hub too; this desktop's own saves do not need a pull. */
+export function isForeignHubWrite(source: string | undefined | null): boolean {
+  return typeof source === "string" && source !== "electron" && source !== "chrome"
 }
 
 /**
