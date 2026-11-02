@@ -11,6 +11,7 @@
  */
 
 import type { Flow, FlowNodeKind } from "@/lib/bim-flow/types"
+import type { Skill } from "@/lib/skills/types"
 import type { HelperFlow } from "@/lib/tracking-helper/flow"
 
 /** The four kinds of memory a cognitive architecture names. */
@@ -53,7 +54,7 @@ export interface PolicyRule {
 
 export type Mind =
   | { kind: "graph"; flow: Flow }
-  | { kind: "pipeline"; stages: PipelineStage[]; flow: HelperFlow }
+  | { kind: "pipeline"; stages: PipelineStage[]; flow?: HelperFlow }
   | { kind: "policy"; rules: PolicyRule[] }
 
 export interface ToolUse {
@@ -97,6 +98,8 @@ export interface Blueprint {
   senses: SenseKind[]
   memory: { reads: MemoryKind[]; writes: MemoryKind[] }
   tools: ToolUse[]
+  /** The skills the agent ships with (`lib/skills/`). Prompt text only: a skill never writes. Learned ones live in the per-device bank. */
+  skills: Skill[]
   models: ModelPlanSpec
   limits: Limits
   door: Door
@@ -106,7 +109,7 @@ export interface Blueprint {
 }
 
 /** The envelope's keys, in order. Every Blueprint has exactly these. */
-export const ENVELOPE_KEYS = ["id", "name", "owner", "rev", "purpose", "senses", "memory", "tools", "models", "limits", "door", "checks", "mind"] as const
+export const ENVELOPE_KEYS = ["id", "name", "owner", "rev", "purpose", "senses", "memory", "tools", "skills", "models", "limits", "door", "checks", "mind"] as const
 
 /**
  * What each BIM node kind is in the loop. A new node kind must be added here; the table is exhaustive on
@@ -149,6 +152,12 @@ export function validateBlueprint(b: Blueprint): string[] {
   for (const t of b.tools) {
     if (seenTools.has(t.name)) out.push(`tool "${t.name}" is listed twice`)
     seenTools.add(t.name)
+  }
+  const seenSkills = new Set<string>()
+  for (const s of b.skills) {
+    if (seenSkills.has(s.id)) out.push(`skill "${s.id}" is listed twice`)
+    seenSkills.add(s.id)
+    if (!s.name.trim() || !s.principle.trim() || !s.whenToApply.trim()) out.push(`skill "${s.id}" has an empty name, principle, or whenToApply`)
   }
   for (const [k, v] of Object.entries(b.limits)) if (v !== undefined && !(v > 0)) out.push(`limit ${k} must be above zero`)
   const m = b.mind

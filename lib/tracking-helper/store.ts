@@ -11,8 +11,13 @@ import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
+import { loadBank } from "@/lib/skills/bank"
+import type { Reaction } from "@/lib/skills/experience"
+import { recordReaction } from "@/lib/skills/learn"
+import { TRACKING_HELPER_SKILLS } from "@/lib/skills/seeds"
 import { acceptBlocks, buildContext } from "./accept"
 import { loadFlow } from "./flow"
+import { HELPER_AGENT_ID, reactionOfCorrection, reactionOfDismiss, reactionsOfAdd } from "./learn"
 import { QUESTION_REPLY, runHelper } from "./run"
 import type { HelperRoute, ProposedBlock, TraceStage } from "./types"
 
@@ -32,7 +37,18 @@ export interface HelperLine {
   ms?: number
   note?: string
   trace?: TraceStage[]
+  /** The blocks as the Helper proposed them, so what the person changed before Add can be learned from. */
+  proposed?: ProposedBlock[]
+  /** Ids of the learned skills that were in the prompt (`lib/skills/`). */
+  skillsUsed?: string[]
 }
+
+/** Learn from the person's reaction to a line's blocks. Credit goes to the skills once per block, on its first reaction. */
+function learn(reactions: Reaction[][]): void {
+  for (const group of reactions) group.forEach((r, i) => recordReaction(i === 0 ? r : { ...r, skillsUsed: [] }, TRACKING_HELPER_SKILLS))
+}
+
+const reactionBase = (line: HelperLine) => ({ input: line.account ?? line.text, skillsUsed: line.skillsUsed ?? [] })
 
 interface HelperState {
   lines: HelperLine[]
@@ -67,7 +83,10 @@ export const useTrackingHelper = create<HelperState>()(
           const flow = loadFlow()
           const crew = await chatCrew().catch(() => null)
           const ladder = flow.wire.ladder.length ? flow.wire.ladder : crew?.extract ?? []
-          const run = await runHelper({ text, flow, ctx: buildContext(), call: crew ? ollamaCall(crew.main) : null, ladder, pending: pendingLine?.account ?? null })
+          // The shipped seeds restate WIRE_SYSTEM, so only skills learned on this device ride in the prompt.
+          const bank = loadBank(HELPER_AGENT_ID, TRACKING_HELPER_SKILLS)
+          const learned = { ...bank, skills: bank.skills.filter((s) => s.source !== "hand") }
+          const run = await runHelper({ text, flow, ctx: buildContext(), call: crew ? ollamaCall(crew.main) : null, ladder, pending: pendingLine?.account ?? null, bank: learned })
           const found = run.blocks.length
           const note =
             run.route === "question"
@@ -79,7 +98,11 @@ export const useTrackingHelper = create<HelperState>()(
                 ]
                   .filter(Boolean)
                   .join(" ")
-          const line: HelperLine = { id: newId(), who: "helper", text: note, at: new Date().toISOString(), route: run.route, blocks: run.blocks, decided: {}, account: run.route === "question" ? undefined : run.text, model: run.model, ms: Date.now() - t0, trace: run.trace }
+          const line: HelperLine = { id: newId(), who: "helper", text: note, at: new Date().toISOString(), route: run.route, blocks: run.blocks, decided: {}, account: run.route === "question" ? undefined : run.text, model: run.model, ms: Date.now() - t0, trace: run.trace, proposed: run.blocks, skillsUsed: run.skillsUsed }
+          if (run.route === "revise" && pendingLine) {
+            const base = { ...reactionBase(pendingLine), skillsUsed: pendingLine.skillsUsed ?? [] }
+            learn(openBlocks(pendingLine).map((b) => [reactionOfCorrection(b, text, base)]))
+          }
           set((s) => ({
             busy: false,
             lines: [
@@ -102,11 +125,18 @@ export const useTrackingHelper = create<HelperState>()(
         const result = acceptBlocks(pick, { force })
         const refused = new Set(result.refused.map((r) => r.id))
         const wrote = pick.filter((b) => !refused.has(b.id))
+        const was = new Map((line.proposed ?? []).map((b) => [b.id, b]))
+        learn(wrote.flatMap((b) => (was.has(b.id) ? [reactionsOfAdd(was.get(b.id)!, b, reactionBase(line))] : [])))
         set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, ...Object.fromEntries(wrote.map((b) => [b.id, "added" as const])) } } : l)) }))
         return result.message + (result.refused.length ? ` (${result.refused.map((r) => r.why).join(", ")})` : "")
       },
 
-      dismiss: (lineId, blockId) => set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, [blockId]: "dismissed" as const } } : l)) })),
+      dismiss: (lineId, blockId) => {
+        const line = get().lines.find((l) => l.id === lineId)
+        const block = line?.blocks?.find((b) => b.id === blockId)
+        if (line && block && !line.decided?.[blockId]) learn([[reactionOfDismiss(block, reactionBase(line))]])
+        set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, [blockId]: "dismissed" as const } } : l)) }))
+      },
 
       clear: () => set({ lines: [] }),
     }),

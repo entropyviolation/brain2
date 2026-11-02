@@ -5,6 +5,7 @@
  * call), PLACE, WHERE. The `HelperFlow` is carried as it is; `helperOfBlueprint` returns it for the old runtime.
  */
 
+import { TRACKING_HELPER_SKILLS } from "@/lib/skills/seeds"
 import { starterFlow, type HelperFlow } from "@/lib/tracking-helper/flow"
 import { HELPER_SURFACE } from "@/lib/tracking-helper/accept"
 import type { Blueprint, PipelineStage } from "../blueprint"
@@ -32,6 +33,7 @@ export function helperBlueprint(flow: HelperFlow = starterFlow()): Blueprint {
       { name: "place-from-history", writes: false },
       { name: "assemble-blocks", writes: false },
     ],
+    skills: TRACKING_HELPER_SKILLS,
     models: { ladders: flow.wire.ladder.length ? { extract: flow.wire.ladder } : {}, pinned: {}, localOnly: true },
     limits: { maxCalls: 1, maxTokens: flow.wire.maxTokens },
     door: { proposes: ["time-block"], surface: HELPER_SURFACE },
@@ -42,5 +44,5 @@ export function helperBlueprint(flow: HelperFlow = starterFlow()): Blueprint {
 
 /** The flow inside a pipeline Blueprint, for the old runtime. Null for any other mind. */
 export function helperOfBlueprint(b: Blueprint): HelperFlow | null {
-  return b.mind.kind === "pipeline" ? b.mind.flow : null
+  return b.mind.kind === "pipeline" ? (b.mind.flow ?? null) : null
 }

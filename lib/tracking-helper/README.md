@@ -53,14 +53,26 @@ empty answer. Questions, corrections' routing, clocks, days, certainty, chaining
 | `tokens.ts` | `tokenize`: days, clocks, lengths, hedge/strong cues, the marked text |
 | `clock.ts` | `resolveDay`, `placeClocks` (continuity), `clockText`, `parseTyped` |
 | `places.ts` | `matchPen`, `learnedPlace`, `resolvePlace` |
-| `wire.ts` | `wireSchema`, `systemText`, `wire` (ladder via `escalate`), `wireByRules`, `cleanWiring` |
+| `wire.ts` | `wireSchema`, `systemText(flow, skills?)`, `wire` (ladder via `escalate`), `wireByRules`, `cleanWiring` |
 | `assemble.ts` | `assemble`, `adoptOrphans`: wiring → `ProposedBlock[]` |
 | `flow.ts` | `HelperFlow` (editable prompts, routes, ladder, defaults), `starterFlow`, `loadFlow`/`saveFlow` (`trackinghelper-flow-v1`), `TRACKING_HELPER_REV` |
-| `run.ts` | `runHelper`: route, stages, trace |
+| `run.ts` | `runHelper`: route, stages, trace. Takes an optional skill `bank`; the skills that fit ride in the WIRE prompt and come back as `skillsUsed` |
+| `learn.ts` | What a reaction teaches: `reactionsOfAdd` (block as proposed vs as added), `reactionOfDismiss`, `reactionOfCorrection`. Pure. |
 | `accept.ts` | `buildContext` (pens + 180 days of history), `conflictsOf`, `acceptBlocks` (one undo step) |
 | `store.ts` | `useTrackingHelper`: chat lines, proposals, per-card decisions (`trackinghelper-chat-v1`) |
 | `tests.ts` | Shared test cases (`SHIPPED_TESTS`), `replay`, `compare`; user cases in `trackinghelper-tests-v1` |
+| `learn.test.ts` | Reactions, and learned skills reaching the WIRE prompt |
 | `tracking-helper.test.ts`, `accept.test.ts` | Unit tests, including the 7-block Friday account and two slips the live 14B made |
+
+## Skills (from SkillRL)
+
+_Last mapped: 2026-11-02_ The Helper learns from what the person does with its blocks (`lib/skills/`, research in
+[`docs/SKILLRL_RESEARCH.md`](../../docs/SKILLRL_RESEARCH.md)). On Add, each block is compared with the block as
+proposed (`HelperLine.proposed`): unchanged is a success for activity, edges and place; a changed value is a
+failure that carries the corrected value. A dismissed block and a revise line are failures too. Rows go to the
+per-device log `skillexp:tracking-helper`. Skills never touch a write: they only add a block to the WIRE prompt.
+The shipped seeds (`TRACKING_HELPER_SKILLS`) restate `WIRE_SYSTEM`, so only learned skills (`source` not `hand`)
+are put in the prompt, and an empty bank leaves the prompt byte for byte as it was. Review and the evolve key live in the lab's Skills panel.
 
 ## Writes
 

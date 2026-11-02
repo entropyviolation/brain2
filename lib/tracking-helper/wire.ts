@@ -47,10 +47,10 @@ export function wireSchema(tokens: Token[]): Record<string, unknown> {
   }
 }
 
-/** The system text the model sees: the prompt, the flow's extra line, then the examples. */
-export function systemText(flow: HelperFlow): string {
+/** The system text the model sees: the prompt, the flow's extra line, learned skills (`lib/skills/`), then the examples. */
+export function systemText(flow: HelperFlow, skills = ""): string {
   const ex = flow.wire.examples.map((e, i) => `EXAMPLE ${i + 1}\nTEXT: ${e.text}\nANSWER: ${e.json}`).join("\n\n")
-  return [flow.wire.system, flow.wire.extra, ex].filter((s) => s.trim()).join("\n\n")
+  return [flow.wire.system, flow.wire.extra, skills, ex].filter((s) => s.trim()).join("\n\n")
 }
 
 export function userText(marked: string, tokens: Token[], ctx: HelperContext): string {
@@ -76,8 +76,8 @@ export interface WireResult {
   fallback?: string
 }
 
-export async function wire(call: ModelCall | null, ladder: string[], flow: HelperFlow, marked: string, tokens: Token[], ctx: HelperContext): Promise<WireResult> {
-  const system = systemText(flow)
+export async function wire(call: ModelCall | null, ladder: string[], flow: HelperFlow, marked: string, tokens: Token[], ctx: HelperContext, skills = ""): Promise<WireResult> {
+  const system = systemText(flow, skills)
   const user = userText(marked, tokens, ctx)
   const prompt = `${system}\n\n---\n\n${user}`
   if (!call || !ladder.length) return { wiring: wireByRules(marked, tokens, ctx), hops: [], prompt, fallback: call ? "no model installed" : "no model reachable" }

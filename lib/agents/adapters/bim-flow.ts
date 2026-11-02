@@ -83,6 +83,7 @@ export function bimBlueprint(def: FlowDef, flow: Flow = def.build(), rev: string
     senses: [SENSE_OF_INPUT[def.input]],
     memory: { reads: memoryReads(flow), writes: [] },
     tools: toolsOf(flow),
+    skills: [],
     models: { ladders: {}, pinned: pinnedModels(flow), localOnly: true },
     limits: {},
     door: { proposes: proposesOf(flow), surface: BIM_SURFACE },

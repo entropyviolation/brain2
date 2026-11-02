@@ -1,5 +1,7 @@
 # Tracking Helper flow lab
 
+The Tracking Helper is a **BIMBY** (BIM + baby): a small sub-agent that does one specific job. See `lib/agents/README.md`.
+
 _Last mapped: 2026-11-01_
 
 Route: `/lab/tracking-helper/` (`app/lab/tracking-helper/page.tsx`). The Tracking Helper dialog has a **Flow lab** key.
@@ -11,6 +13,8 @@ the `HelperFlow` the chat reads (`trackinghelper-flow-v1`, `lib/tracking-helper/
 | `TrackingHelperLab.tsx` | The bench, built on the agent Blueprint (`lib/agents/adapters/tracking-helper.ts`, `components/Lab/Agents/AgentRail.tsx`): the five stages and the Blueprint's facts, the editable parts of the selected stage, and a run panel with each stage's time, prompt and output |
 | `tracking-helper-lab.css` | Its styling, over `../BimFlow/bim-flow.css` |
 | `helper-tests.tsx` / `.css` | The test panel under the bench (below) |
+| `SkillsPanel.tsx` / `skills-panel.css` | The skills panel under the tests: success per part, **Find new skills**, and Accept / Edit / Retire for each skill |
+| `SkillsPanel.test.tsx` | Lists seeds, proposes and accepts, retires |
 
 _Last mapped: 2026-11-01_ **Run with model** uses the ladder typed in WIRE, or the crew's extract ladder. **Run rules only** shows what the Helper does with Ollama off.
 The bench sits in the page's flow (not fixed to the screen) so the test panel below it can be scrolled to.
@@ -28,6 +32,14 @@ The bench sits in the page's flow (not fixed to the screen) so the test panel be
 | WHERE | learn a missing place from history on or off; the places learned from the person's rows right now (at least 2 sightings and 60%) |
 
 A shipped change to the flow bumps `TRACKING_HELPER_REV`; the lab then loads the new one and keeps the old under a `:backup:` key.
+
+## Skills (`SkillsPanel.tsx`)
+
+_Last mapped: 2026-11-02_ Under the tests. Reads the per-device log and bank (`skillexp:tracking-helper`, `skillbank:tracking-helper`).
+**Find new skills** runs `lib/skills/evolve.ts`: only parts under 80% accepted (at least 3 cases) are looked at, with the
+crew's extract ladder when Ollama answers and plain lessons otherwise. Results are `proposed`; **Accept** makes one
+reach the Helper's WIRE prompt, **Reject / Retire** removes it, **Edit** rewrites it. Shipped skills show as "shipped" and
+are not sent in the prompt (they restate it). Research: `docs/SKILLRL_RESEARCH.md`.
 
 ## Tests (`helper-tests.tsx`)
 

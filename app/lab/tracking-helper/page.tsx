@@ -7,6 +7,7 @@
 "use client"
 
 import { HelperTests } from "@/components/Lab/TrackingHelper/helper-tests"
+import { SkillsPanel } from "@/components/Lab/TrackingHelper/SkillsPanel"
 import { TrackingHelperLab } from "@/components/Lab/TrackingHelper/TrackingHelperLab"
 
 export default function TrackingHelperLabPage() {
@@ -14,6 +15,7 @@ export default function TrackingHelperLabPage() {
     <>
       <TrackingHelperLab />
       <HelperTests />
+      <SkillsPanel />
     </>
   )
 }
