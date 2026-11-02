@@ -33,6 +33,15 @@
  * GET `/api/recovery-backups` is read-only listing of `data/recovery-backups/`
  * when that folder already exists. It never mkdir, never writes persist.
  *
+ * `GET /api/persist/rows?since=<seq>` reads the task vault as rows with a change
+ * cursor (`scripts/row-store.mjs`, a derived SQLite mirror; the blob stays the
+ * source of truth). `docs/ORACLE_INTERIM_SYNC.md` → Row store.
+ *
+ * Storage: `BRAIN2_STORE=json|shadow|sqlite` (`scripts/vault-store.mjs`). Default
+ * `shadow`: this JSON file is the truth and a SQLite copy follows it. `sqlite`:
+ * SQLite is the truth and this file is a periodic export. Stage 4a in
+ * `docs/ORACLE_INTERIM_SYNC.md`.
+ *
  * Append-only logs (Tracking, Sleep, Reviews, Metrics, Points, Regret) only
  * *grow* in this file: `mergeIntoHub` refuses a write with fewer rows than the
  * stored copy. Reads are untouched, so deleting a block in the app still
@@ -53,6 +62,8 @@ import { fileURLToPath } from "node:url"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
 import { applyVaultPatch } from "../lib/vault-guard.js"
 import { readBody } from "./local-api-json.mjs"
+import { openVaultStore, closeVaultStore, loadAll, writeKeys, replaceAll, storeRev, storeIsEmpty } from "./vault-store.mjs"
+import { TASK_VAULT, openRowStore, closeRowStore, mirrorTaskVault, changesSince, rowOrder, patchApplied, recordPatch, rowSeqs } from "./row-store.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
@@ -114,7 +125,80 @@ const hub = {
   syncGen: 0,
   tmpSeq: 0,
   hooked: false,
+  /** Row mirror (`scripts/row-store.mjs`). Derived from the blob; off with BRAIN2_ROW_MIRROR=0. */
+  rowMirror: process.env.BRAIN2_ROW_MIRROR !== "0",
+  rows: null,
+  /**
+   * Vault store (`scripts/vault-store.mjs`). `json`: the file only. `shadow`
+   * (default): the file is the truth and SQLite is kept in step and checked.
+   * `sqlite`: SQLite is the truth and the file is an export.
+   */
+  storeMode: initialStoreMode(),
+  vaults: null,
+  seeded: false,
+  exportTimer: null,
+  exportDirty: false,
+  replaceAllNext: false,
+  shadow: { checked: 0, fixed: 0, lastAt: null, error: null },
 }
+
+function initialStoreMode() {
+  const v = String(process.env.BRAIN2_STORE || "").toLowerCase()
+  return v === "json" || v === "sqlite" ? v : "shadow"
+}
+
+/** How long a changed vault waits before the JSON export is rewritten (sqlite mode). */
+const EXPORT_MS = Number(process.env.BRAIN2_EXPORT_MS) > 0 ? Number(process.env.BRAIN2_EXPORT_MS) : 5000
+
+/** The vault store's handle, opened on first use. Null in json mode. A failure drops to json mode: the file stays the truth. */
+function vaultStore() {
+  if (hub.storeMode === "json") return null
+  if (hub.vaults) return hub.vaults
+  try {
+    hub.vaults = openVaultStore(`${hub.file}.vaults.sqlite`)
+  } catch (err) {
+    if (hub.storeMode === "sqlite") console.error("[persist-api] vault store did not open; using the JSON file:", err)
+    hub.storeMode = "json"
+  }
+  return hub.vaults
+}
+
+function stamps() {
+  return { updatedAt: hub.updatedAt, source: hub.source, contentAt: hub.contentAt, contentSource: hub.contentSource }
+}
+
+/** The mirror's SQLite handle, opened on first use. Null when disabled or it cannot open. */
+function rowStore() {
+  if (!hub.rowMirror) return null
+  if (hub.rows) return hub.rows
+  try {
+    hub.rows = openRowStore(`${hub.file}.rows.sqlite`)
+  } catch {
+    hub.rowMirror = false
+  }
+  return hub.rows
+}
+
+/** Copy the task vault into rows. Never throws: the JSON file is what matters. */
+function mirrorRows() {
+  const store = rowStore()
+  if (!store) return false
+  try {
+    const blob = hub.items[TASK_VAULT]
+    if (typeof blob === "string") mirrorTaskVault(store, blob)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function mirrorRowsSoon(keys) {
+  if (!hub.rowMirror || !keys.includes(TASK_VAULT)) return
+  const timer = setImmediate(mirrorRows)
+  timer.unref?.()
+}
+
+export { expandAliases, collapseAliases, stripFriendPicItems }
 
 export function sharedPersistPath() {
   return hub.file
@@ -183,6 +267,10 @@ function persistQuery(req) {
 }
 
 function fileSig() {
+  if (hub.storeMode === "sqlite") {
+    const store = vaultStore()
+    if (store) return `rev:${storeRev(store)}`
+  }
   try {
     const st = fs.statSync(hub.file)
     return `${st.mtimeMs}:${st.size}`
@@ -192,6 +280,13 @@ function fileSig() {
 }
 
 function parseDisk() {
+  if (hub.storeMode === "sqlite") {
+    const store = vaultStore()
+    if (store) {
+      const all = loadAll(store)
+      return { ...all, items: collapseAliases(stripFriendPicItems(all.items)) }
+    }
+  }
   try {
     const parsed = JSON.parse(fs.readFileSync(hub.file, "utf8"))
     return {
@@ -213,6 +308,7 @@ function parseDisk() {
  */
 function syncFromDisk() {
   ensureDataDir()
+  seedVaultStore()
   const sig = fileSig()
   if (hub.loaded && sig === hub.sig) return
   if (hub.loaded && sig === null) return // file removed under us: keep memory, next flush recreates it
@@ -246,6 +342,136 @@ function syncFromDisk() {
   hub.items = disk.items
   hub.loaded = true
   hub.sig = sig
+  shadowReconcile()
+}
+
+/** First run in sqlite mode: fill an empty store from the JSON file. The file is never deleted. */
+function seedVaultStore() {
+  if (hub.seeded || hub.storeMode !== "sqlite") return
+  const store = vaultStore()
+  if (!store || hub.storeMode !== "sqlite") return
+  hub.seeded = true
+  if (!storeIsEmpty(store) || fileSigOfJson() === null) return
+  const disk = readJsonFile()
+  replaceAll(store, collapseAliases(stripFriendPicItems(disk.items)), stamps2(disk))
+}
+
+function stamps2(disk) {
+  return { updatedAt: disk.updatedAt, source: disk.source, contentAt: disk.contentAt, contentSource: disk.contentSource }
+}
+
+function fileSigOfJson() {
+  try {
+    const st = fs.statSync(hub.file)
+    return `${st.mtimeMs}:${st.size}`
+  } catch {
+    return null
+  }
+}
+
+function readJsonFile() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(hub.file, "utf8"))
+    return {
+      updatedAt: parsed.updatedAt ?? null,
+      source: parsed.source ?? null,
+      contentAt: parsed.contentAt ?? null,
+      contentSource: parsed.contentSource ?? null,
+      items: parsed.items && typeof parsed.items === "object" ? parsed.items : {},
+    }
+  } catch {
+    return { updatedAt: null, source: null, contentAt: null, contentSource: null, items: {} }
+  }
+}
+
+/**
+ * Shadow mode: after the hub reads the file, make the store match it and count
+ * what had drifted. Never throws; the file is the truth here.
+ */
+function shadowReconcile() {
+  if (hub.storeMode !== "shadow") return
+  const store = vaultStore()
+  if (!store) return
+  try {
+    const diff = replaceAll(store, hub.items, stamps())
+    hub.shadow.checked++
+    hub.shadow.fixed += diff.missing.length + diff.differing.length + diff.extra.length
+    hub.shadow.lastAt = new Date().toISOString()
+    hub.shadow.error = null
+  } catch (err) {
+    hub.shadow.error = err instanceof Error ? err.message : String(err)
+  }
+}
+
+/** After a file write in shadow mode: the keys just written go to the store too. */
+function shadowWrite(keys) {
+  if (hub.storeMode !== "shadow" || !keys.length) return
+  const store = vaultStore()
+  if (!store) return
+  try {
+    writeKeys(store, hub.items, keys, stamps())
+    hub.shadow.error = null
+  } catch (err) {
+    hub.shadow.error = err instanceof Error ? err.message : String(err)
+  }
+}
+
+/**
+ * sqlite mode: commit the dirty keys in one transaction. False when the store
+ * would not take them (they stay dirty and retry). Schedules the JSON export.
+ */
+function commitToStore() {
+  const store = vaultStore()
+  if (!store || hub.storeMode !== "sqlite") return false
+  try {
+    syncFromDisk()
+    if (hub.replaceAllNext) {
+      replaceAll(store, hub.items, stamps())
+      hub.replaceAllNext = false
+    } else if (hub.dirty.size) {
+      writeKeys(store, hub.items, [...hub.dirty], stamps())
+    }
+    if (hub.dirty.size || hub.exportDirty) {
+      hub.exportDirty = true
+      scheduleExport()
+    }
+    hub.dirty.clear()
+    hub.sig = fileSig()
+    return true
+  } catch (err) {
+    console.error("[persist-api] vault store write failed; will retry:", err)
+    return false
+  }
+}
+
+/** sqlite mode: rewrite the JSON file for the readers that still open it. */
+export function exportJsonSync() {
+  if (hub.exportTimer) {
+    clearTimeout(hub.exportTimer)
+    hub.exportTimer = null
+  }
+  if (!hub.loaded || !hub.exportDirty) return false
+  try {
+    ensureDataDir()
+    const tmp = hubTmpPath()
+    fs.writeFileSync(tmp, serialize(), "utf8")
+    fs.renameSync(tmp, hub.file)
+    hub.exportDirty = false
+    return true
+  } catch {
+    return false
+  }
+}
+
+function scheduleExport() {
+  hookProcessExit()
+  if (hub.exportTimer) return
+  hub.exportTimer = setTimeout(() => {
+    hub.exportTimer = null
+    exportJsonSync()
+    if (hub.exportDirty) scheduleExport()
+  }, EXPORT_MS)
+  hub.exportTimer.unref?.()
 }
 
 function serialize() {
@@ -272,7 +498,13 @@ function clearTimer() {
 /** Write the file now, synchronously. For exit, signals, and the legacy `writeSharedPersist`. */
 export function flushSharedPersistSync() {
   clearTimer()
+  if (hub.storeMode === "sqlite" && hub.loaded) {
+    const ok = hub.dirty.size || hub.replaceAllNext ? commitToStore() : true
+    if (hub.exportDirty) exportJsonSync()
+    return ok
+  }
   if (!hub.loaded || !hub.dirty.size) return false
+  const written = [...hub.dirty]
   try {
     syncFromDisk()
     ensureDataDir()
@@ -282,6 +514,7 @@ export function flushSharedPersistSync() {
     fs.renameSync(tmp, hub.file)
     hub.dirty.clear()
     hub.sig = fileSig()
+    shadowWrite(written)
     return true
   } catch {
     return false
@@ -293,10 +526,18 @@ export function flushSharedPersist() {
   clearTimer()
   if (hub.flushing) return hub.flushing
   const run = (async () => {
+    if (hub.storeMode === "sqlite") {
+      if (hub.loaded && (hub.dirty.size || hub.replaceAllNext)) {
+        const keys = [...hub.dirty]
+        if (commitToStore()) mirrorRowsSoon(keys)
+      }
+      return
+    }
     if (!hub.loaded || !hub.dirty.size) return
     syncFromDisk()
     const version = hub.version
     const gen = hub.syncGen
+    const flushed = [...hub.dirty]
     const tmp = hubTmpPath()
     try {
       await fs.promises.writeFile(tmp, serialize(), "utf8")
@@ -312,6 +553,8 @@ export function flushSharedPersist() {
     }
     hub.sig = fileSig()
     if (version === hub.version) hub.dirty.clear()
+    shadowWrite(flushed)
+    mirrorRowsSoon(flushed)
   })()
   // Clear after the promise settles (an async body with no await would otherwise clear first).
   // Anything still dirty (failed write, or edits made mid-write) gets the next debounce window.
@@ -332,7 +575,10 @@ function onProcessSignal(signal) {
 function hookProcessExit() {
   if (hub.hooked) return
   hub.hooked = true
-  process.on("exit", flushSharedPersistSync)
+  process.on("exit", () => {
+    flushSharedPersistSync()
+    exportJsonSync()
+  })
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(signal, () => onProcessSignal(signal))
 }
 
@@ -392,6 +638,7 @@ export function writeSharedPersist(next) {
   const items = collapseAliases(stripFriendPicItems(next.items && typeof next.items === "object" ? next.items : {}))
   hub.items = items
   hub.dirty = new Set(Object.keys(items))
+  hub.replaceAllNext = true
   hub.version++
   hub.updatedAt = new Date().toISOString()
   hub.source = next.source ?? hub.source ?? "hub"
@@ -410,6 +657,18 @@ export function _resetSharedPersistForTests(file = DEFAULT_DATA_FILE, opts = {})
   hub.items = {}
   hub.dirty = new Set()
   hub.sig = null
+  if (hub.rows) closeRowStore(hub.rows)
+  hub.rows = null
+  hub.rowMirror = opts.rowMirror === true
+  if (hub.exportTimer) clearTimeout(hub.exportTimer)
+  hub.exportTimer = null
+  if (hub.vaults) closeVaultStore(hub.vaults)
+  hub.vaults = null
+  hub.storeMode = opts.store === "shadow" || opts.store === "sqlite" ? opts.store : "json"
+  hub.seeded = false
+  hub.exportDirty = false
+  hub.replaceAllNext = false
+  hub.shadow = { checked: 0, fixed: 0, lastAt: null, error: null }
 }
 
 function isFriendPicPersistName(name) {
@@ -520,10 +779,23 @@ function handlePhonePersistPost(res, body) {
     return
   }
   syncFromDisk()
+  const patchId = typeof body.patchId === "string" && body.patchId ? body.patchId : null
+  const store = patchId || body.baseCursor != null ? rowStore() : null
+  // A retry after a lost answer: already applied, so say so and do nothing.
+  try {
+    if (store && patchId && patchApplied(store, patchId)) {
+      sendJson(res, 200, { ok: true, duplicate: true, skipped: false, updatedAt: hub.updatedAt })
+      return
+    }
+  } catch {
+    /* the mirror is optional; apply the patch */
+  }
+  const stale = staleRows(store, body)
+  const patch = body.strict === true && stale.length ? withoutStale(body.patch, stale) : body.patch
   const storedJson = existingVaultItem(body.name)
   let result
   try {
-    result = applyVaultPatch(body.name, storedJson, body.patch)
+    result = applyVaultPatch(body.name, storedJson, patch)
   } catch (err) {
     rejectPhoneWrite(res, err instanceof Error ? err.message : "patch refused")
     return
@@ -533,11 +805,48 @@ function handlePhonePersistPost(res, body) {
     return
   }
   const stored = upsertSharedPersistItem(body.name, result.value, body.source)
+  try {
+    if (store && patchId && !stored.skipped) recordPatch(store, patchId)
+  } catch {
+    /* a missed record only means a retry applies twice, which a field merge tolerates */
+  }
   sendJson(res, 200, {
     ok: true,
     skipped: stored.skipped ?? false,
     updatedAt: stored.updatedAt,
+    ...(stale.length ? { stale, refused: body.strict === true } : {}),
   })
+}
+
+/**
+ * Task-vault rows this patch touches that changed on the hub after the
+ * writer's `baseCursor` (its last row pull). Other vaults and writers without a
+ * cursor report none. A field patch merges onto the newer row anyway; `strict`
+ * refuses those rows instead, which is what a second writer needs.
+ */
+function staleRows(store, body) {
+  if (!store || body.name !== TASK_VAULT || !Number.isFinite(body.baseCursor)) return []
+  const patch = body.patch
+  const ids = []
+  for (const row of Array.isArray(patch.upserts) ? patch.upserts : []) if (row && typeof row.id === "string") ids.push(row.id)
+  for (const id of Array.isArray(patch.removedIds) ? patch.removedIds : []) if (typeof id === "string") ids.push(id)
+  if (!ids.length) return []
+  try {
+    mirrorRows()
+    const seqs = rowSeqs(store, ids)
+    return [...new Set(ids)].filter((id) => (seqs.get(id) ?? 0) > body.baseCursor)
+  } catch {
+    return []
+  }
+}
+
+function withoutStale(patch, stale) {
+  const drop = new Set(stale)
+  return {
+    ...patch,
+    upserts: (patch.upserts ?? []).filter((row) => !drop.has(row?.id)),
+    removedIds: (patch.removedIds ?? []).filter((id) => !drop.has(id)),
+  }
 }
 
 /** The vault read is ~16 MB of JSON; the phone gets it gzipped (about a tenth) when it asks. */
@@ -954,11 +1263,11 @@ export async function handlePersistApi(req, res, pathname) {
     return handleBimFlowArchive(req, res)
   }
   const recovery = pathname === "/api/recovery-backups" || pathname.startsWith("/api/recovery-backups/")
-  const persist = pathname === "/api/persist" || pathname === "/api/persist/health"
+  const persist = pathname === "/api/persist" || pathname === "/api/persist/health" || pathname === "/api/persist/rows"
   if (!recovery && !persist) return false
   if (!guardBrowserOrigin(req, res)) return true
   if (recovery) return handleRecoveryBackupsApi(req, res, pathname)
-  if (pathname !== "/api/persist" && pathname !== "/api/persist/health") return false
+  if (pathname !== "/api/persist" && pathname !== "/api/persist/health" && pathname !== "/api/persist/rows") return false
 
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
@@ -980,13 +1289,42 @@ export async function handlePersistApi(req, res, pathname) {
       source: store.source,
       contentAt: hub.contentAt ?? store.updatedAt,
       contentSource: hub.contentSource ?? store.source,
+      store: { mode: hub.storeMode, shadow: hub.shadow },
     })
+    return true
+  }
+
+  if (pathname === "/api/persist/rows") {
+    if (req.method !== "GET") {
+      sendJson(res, 405, { ok: false, error: "Method not allowed" })
+      return true
+    }
+    syncFromDisk()
+    const store = rowStore()
+    if (!store || !mirrorRows()) {
+      sendJson(res, 503, { ok: false, error: "Row mirror is off" })
+      return true
+    }
+    const q = persistQuery(req)
+    try {
+      const page = changesSince(store, q.get("since"), { limit: q.get("limit") })
+      sendJson(res, 200, { ok: true, ...page, ...(q.get("order") === "1" ? { order: rowOrder(store) } : {}) }, req)
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err instanceof Error ? err.message : "Row read failed" })
+    }
     return true
   }
 
   if (req.method === "GET") {
     const stored = readSharedPersist()
     if (persistQuery(req).get("canon") === "1") stored.items = omitCogsTwins(stored.items)
+    // `skip=<vault>,…` leaves whole vaults out: a client that pulls them as rows does not download them twice.
+    const skip = (persistQuery(req).get("skip") || "").split(",").map((n) => canonKey(n.trim())).filter(Boolean)
+    if (skip.length) {
+      const kept = {}
+      for (const [k, v] of Object.entries(stored.items)) if (!skip.includes(canonKey(k))) kept[k] = v
+      stored.items = kept
+    }
     sendJson(res, 200, { ok: true, ...stored }, req)
     return true
   }

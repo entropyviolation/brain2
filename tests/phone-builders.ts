@@ -49,6 +49,8 @@ export type HubFetchOptions = {
   /** One answer per patch `POST`, in order. Default 200. */
   post?: (body: { name: string; patch: PhonePatch }, at: number) => Answer
   status?: () => Answer
+  /** `GET /api/persist/rows?…`. Default 404, like a hub from before the row mirror. */
+  rows?: (url: string) => Answer
 }
 
 function respond(answer: Answer) {
@@ -60,15 +62,23 @@ function respond(answer: Answer) {
 export function hubFetch(opts: HubFetchOptions = {}) {
   const posts: Array<{ name: string; source: string; patch: PhonePatch }> = []
   const canonCalls: string[] = []
+  /** The row-write fields (`patchId`, `baseCursor`) of each accepted patch, kept out of `posts`. */
+  const extras: Array<{ patchId?: string; baseCursor?: number }> = []
   const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     if (init?.method === "POST" && url.endsWith("/api/persist")) {
       const body = JSON.parse(String(init.body))
       const at = posts.length
       const answer = opts.post?.(body, at) ?? { status: 200, body: { ok: true } }
-      if (answer !== "throw" && answer.status >= 200 && answer.status < 300) posts.push(body)
+      if (answer !== "throw" && answer.status >= 200 && answer.status < 300) {
+        const { patchId, baseCursor, ...legacy } = body as typeof body & { patchId?: string; baseCursor?: number }
+        posts.push(legacy)
+        extras.push({ patchId, baseCursor })
+      }
       return respond(answer)
     }
+    // An older hub has no row endpoint; the phone then downloads the whole vault.
+    if (url.includes("/api/persist/rows")) return respond(opts.rows?.(url) ?? { status: 404 })
     if (url.includes("/api/persist")) {
       canonCalls.push(url)
       return respond(opts.canon?.() ?? { status: 200, body: { ok: true, items: opts.items ?? canonItems() } })
@@ -78,5 +88,5 @@ export function hubFetch(opts: HubFetchOptions = {}) {
     }
     return respond({ status: 404 })
   })
-  return { fn, posts, canonCalls }
+  return { fn, posts, canonCalls, extras }
 }

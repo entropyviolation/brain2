@@ -69,6 +69,12 @@ beforeEach(() => {
   useTaskStore.getState().clearAllData()
 })
 
+/** The patch body without the row-write fields (`patchId`, `baseCursor`), which have their own test. */
+function legacyBody(raw: string) {
+  const { patchId: _id, baseCursor: _cursor, ...rest } = JSON.parse(raw)
+  return rest
+}
+
 describe("phone window", () => {
   it("a phone setItem of the task store does not call localStorage", () => {
     asPhone()
@@ -203,7 +209,7 @@ describe("phone window", () => {
     asPhone()
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "POST") {
-        posts.push(JSON.parse(String(init.body)))
+        posts.push(legacyBody(String(init.body)))
         return { ok: true, status: 200, json: async () => ({ ok: true }) }
       }
       if (String(input).includes("/api/persist")) {
@@ -273,7 +279,7 @@ describe("phone window", () => {
     localStorage.clear()
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "POST") {
-        posts.push(JSON.parse(String(init.body)))
+        posts.push(legacyBody(String(init.body)))
         return { ok: true, status: 200, json: async () => ({ ok: true }) }
       }
       if (String(input).includes("/api/persist")) {
@@ -320,7 +326,7 @@ describe("phone window", () => {
     localStorage.clear()
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "POST") {
-        posts.push(JSON.parse(String(init.body)))
+        posts.push(legacyBody(String(init.body)))
         return { ok: true, status: 200, json: async () => ({ ok: true }) }
       }
       if (String(input).includes("/api/persist")) {
@@ -360,7 +366,7 @@ describe("phone window", () => {
     asPhone()
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "POST") {
-        posts.push(JSON.parse(String(init.body)))
+        posts.push(legacyBody(String(init.body)))
         return { ok: true, status: 200, json: async () => ({ ok: true }) }
       }
       if (String(input).includes("/api/persist")) {

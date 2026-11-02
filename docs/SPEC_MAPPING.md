@@ -30,7 +30,10 @@ Legend:
 > working source of truth). The sync that exists is the manual phone hub
 > (`lib/mobile-sync.ts`). MongoDB Atlas, a shared `@brain2/core` package, and
 > an Expo app are speculation, not the storage plan. The spec's original
-> SQLite recommendation was not adopted. Store catalog:
+> SQLite recommendation is being adopted in stages, server side only: the hub
+> mirrors the task vault into SQLite rows with a change cursor (stage 1,
+> **Built**); the JSON file is still the source of truth. See
+> [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md) → Row store. Store catalog:
 > [`lib/README.md`](../lib/README.md).
 
 Screenshots and per-screen write-ups: [`docs/screenshots/`](screenshots/).
@@ -109,8 +112,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   exists, is [`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md) (**Planned**).
 - **Speculation, not the storage plan:** MongoDB Atlas, a shared `@brain2/core`
   package, and an Expo / React Native app. They are not scheduled. The spec
-  recommended SQLite; this repo did not adopt it, and Atlas is not the
-  replacement plan.
+  recommended SQLite; the hub now mirrors the task vault into SQLite rows
+  (stage 1), and Atlas is not the replacement plan.
 - **Gap vs spec:** the working store is localStorage plus JSON export/import.
   A numbered schema-migration runner separate from each store's Zustand
   `migrate` is not wired. Multi-device sync beyond the manual phone hub is

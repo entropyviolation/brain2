@@ -10,6 +10,7 @@
  */
 import { createHubFocusPull, createHubStampWatch } from "@/lib/hub-stamp-watch"
 import { isPhoneWebStorage } from "@/lib/phone-device"
+import { TASK_VAULT_KEY, pullTaskVaultRows, readRowHead, rowBaseFrom, type RowBase } from "@/lib/phone-row-pull"
 import {
   deleteOutbox,
   enqueueOutbox,
@@ -602,14 +603,44 @@ async function settleWithoutPatches() {
 /** Long enough for the whole vault over Wi-Fi; short enough that a dead socket names itself. */
 const CANON_TIMEOUT_MS = 90_000
 
-type CanonResult = { ok: true; items: Record<string, unknown> } | { ok: false; reason: string }
+type CanonResult = { ok: true; items: Record<string, unknown>; base?: RowBase | null } | { ok: false; reason: string }
 
-async function fetchCanon(url: string): Promise<CanonResult> {
+/** The whole task vault as the hub last sent it, plus a row cursor. Memory only; a miss means a whole download. */
+let rowBase: RowBase | null = null
+
+/**
+ * Task vault as changed rows when a base is held for this hub, else the whole
+ * download. Any doubt in the row path falls back to the whole download.
+ */
+async function fetchVault(url: string): Promise<CanonResult> {
+  const headers: Record<string, string> = { Accept: "application/json", ...(await authHeaders()) }
+  const get = async (path: string): Promise<unknown | null> => {
+    try {
+      const response = await fetch(`${url}${path}`, { cache: "no-store", headers })
+      return response.ok ? await response.json() : null
+    } catch {
+      return null
+    }
+  }
+  if (rowBase && rowBase.hub === url) {
+    try {
+      const [rest, rows] = await Promise.all([fetchCanon(url, TASK_VAULT_KEY), pullTaskVaultRows(get, rowBase)])
+      if (rest.ok && rows) return { ok: true, items: { ...rest.items, [TASK_VAULT_KEY]: rows.blob }, base: rows.base }
+    } catch {
+      /* whole download below */
+    }
+  }
+  const head = await readRowHead(get).catch(() => null)
+  const whole = await fetchCanon(url)
+  return whole.ok ? { ...whole, base: rowBaseFrom(url, head, whole.items) } : whole
+}
+
+async function fetchCanon(url: string, skip?: string): Promise<CanonResult> {
   const controller = typeof AbortController === "function" ? new AbortController() : null
   const timer = controller ? setTimeout(() => controller.abort(), CANON_TIMEOUT_MS) : null
   try {
     const headers: Record<string, string> = { Accept: "application/json", ...(await authHeaders()) }
-    const response = await fetch(`${url}/api/persist?canon=1`, { cache: "no-store", headers, signal: controller?.signal })
+    const response = await fetch(`${url}/api/persist?canon=1${skip ? `&skip=${encodeURIComponent(skip)}` : ""}`, { cache: "no-store", headers, signal: controller?.signal })
     if (!response.ok) {
       const hint = response.status === 401 ? " (hub token)" : ""
       return { ok: false, reason: `${hostOf(url)} answered ${response.status}${hint}.` }
@@ -882,12 +913,12 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   }
   if (gen !== loadGen) return status
   let url = ""
-  let first: { ok: true; items: Record<string, unknown> } | null = null
+  let first: Extract<CanonResult, { ok: true }> | null = null
   const misses: string[] = []
   for (const candidate of candidates) {
     if (gen !== loadGen) return status
     setDetail(`(asking ${hostOf(candidate)})`)
-    const attempt = await fetchCanon(candidate)
+    const attempt = await fetchVault(candidate)
     if (gen !== loadGen) return status
     if (!attempt.ok) {
       misses.push(attempt.reason)
@@ -911,9 +942,13 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   const flushed = await flushPhoneOutbox({ force: true })
   if (gen !== loadGen) return status
   let items = first.items
+  let base = first.base ?? null
   if (flushed > 0) {
-    const second = await fetchCanon(url)
-    if (second.ok) items = second.items
+    const second = await fetchVault(url)
+    if (second.ok) {
+      items = second.items
+      base = second.base ?? null
+    }
   }
   if (gen !== loadGen) return status
   // Stores still hold the seed until rehydrate. A save in this window would
@@ -927,6 +962,7 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   const before = windowInstalled ? new Map(memory) : null
   try {
     installMap(collapseItems(items), "mac")
+    rowBase = base
     setDetail("(saving the launch copy)")
     await writeLaunchCache(memory)
     await replayOutbox()
@@ -1001,7 +1037,14 @@ export async function flushPhoneOutbox(opts?: { force?: boolean }): Promise<numb
       const response = await fetch(`${hubUrl}/api/persist`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ name: row.name, source: row.source, patch: row.patch }),
+        // `patchId` lets the hub ignore a retry it already applied; `baseCursor` lets it name rows that moved since our last pull.
+        body: JSON.stringify({
+          name: row.name,
+          source: row.source,
+          patch: row.patch,
+          patchId: row.id,
+          ...(row.name === TASK_VAULT_KEY && rowBase ? { baseCursor: rowBase.cursor } : {}),
+        }),
       })
       if (!response.ok) continue
       acked.add(row.id)
@@ -1031,6 +1074,7 @@ export function resetPhoneWindowForTests(): void {
   installingWindow = false
   windowInstalled = false
   installedFrom = null
+  rowBase = null
   loading = false
   readers.clear()
   inflightLoad = null

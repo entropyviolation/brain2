@@ -145,3 +145,47 @@ You do: the Oracle account and VM, Healthchecks, Tailscale sign-ins, the Mac tok
 ## Where this plan is mentioned
 
 [`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md), [`BIM_HOSTING_OPTIONS.md`](BIM_HOSTING_OPTIONS.md), [`BIM_ALWAYS_ON_PLAN.md`](BIM_ALWAYS_ON_PLAN.md), [`BIM_CONNECTION_MAP.md`](BIM_CONNECTION_MAP.md), [`BIM_SETUP_FOR_BEGINNERS.md`](BIM_SETUP_FOR_BEGINNERS.md), [`PHONE_SYNC_PLAN.md`](PHONE_SYNC_PLAN.md), [`PHONE_WINDOW_PLAN.md`](PHONE_WINDOW_PLAN.md), [`phone-sync/README.md`](phone-sync/README.md), [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md), [`SPEC_MAPPING.md`](SPEC_MAPPING.md), [`../deploy/oracle/README.md`](../deploy/oracle/README.md), [`../deploy/mac/README.md`](../deploy/mac/README.md), `lib/phone-sync/README.md`, and the root `README.md`.
+
+## Row store — per-item sync, in stages
+
+_Last mapped: 2026-11-02_ (stages 2 and 3 added)
+
+Why: the task vault is one 21 MB JSON blob (about 41,000 tasks). Every save and every sync moves and compares the whole blob. Rows with a change cursor let a client move only what changed. This also holds for the home server and for more than one user later (every row carries an `owner`).
+
+Choice: SQLite through Node's built-in `node:sqlite`, on the server. No native dependency, so the Electron build is not affected. Not IndexedDB: it lives in one browser and cannot be the shared server store. Not `better-sqlite3`: a native build for no gain here.
+
+Rule for every stage: the JSON file keeps working and stays restorable until a later stage is proven on real data.
+
+| Stage | What | State |
+| --- | --- | --- |
+| **1. Row mirror** | After a hub flush, `scripts/row-store.mjs` copies `brain2-task-storage` into `<hub file>.rows.sqlite`: one row per task, list and folder, a `state` row for the rest. A row gets a new `seq` only when its JSON changes. A removed row becomes a tombstone that keeps its last JSON. `GET /api/persist/rows?since=<seq>&limit=N` returns `{ rows, cursor, more, head }`. Same token gate as `/api/persist`. The mirror is derived and can be deleted; it rebuilds. A mirror failure never touches the JSON. Off with `BRAIN2_ROW_MIRROR=0`. | **Built** |
+| **2. Clients pull by row** | **Phone window: Built.** After one whole download the phone keeps the task vault and a cursor in memory. A reload (another device wrote, at most once a minute) fetches `/api/persist?canon=1&skip=brain2-task-storage` plus `/api/persist/rows?since=<cursor>`, rebuilds the vault, and checks it against the hub's row counts, order hash and database epoch. Order differs: it asks `rows?order=1`. Any mismatch, a new epoch, a cursor ahead of the hub, or a hub without the endpoint: it downloads the whole vault as before. The cursor is read before the whole download so a write during it is replayed, not missed. Nothing new is stored on the phone. **Electron and desktop Chrome: Planned** (they hydrate through the preload and `persist-storage`, which need their own care). Writes still go through the existing merge guards. | **Built** (phone), **Planned** (desktop) |
+| **3. Clients push by row** | **Built, additive.** The phone's patch `POST /api/persist` now also sends `patchId` (the outbox row id) and, for the task vault, `baseCursor` (its last row pull). The hub records applied patch ids in the mirror database (newest 5,000) and answers a retry with `{ ok, duplicate: true }` without applying it again. It names the touched rows that changed after `baseCursor` as `stale`. By default a stale row is still merged, as before, because a patch is a field merge. With `strict: true` the hub drops the stale rows from the patch, applies the rest, and answers `refused: true`. The phone does not send `strict` yet; it is the seam for a second writer. The patch still runs through `applyVaultPatch`, the merge guards and the recovery journal, so the shrink guards are unchanged. Old phones and old hubs ignore the new fields. **Planned:** a tier 2 relay patch carries the same `patchId`; per-row replacement of the vault guards waits for stage 4. | **Built** |
+| **4. SQLite is the source of truth** | The JSON file becomes an export and a backup. Hub saves stop re-serialising 21 MB. Needed before several users. | **Planned** |
+
+Measured on the live vault (2026-11-02, copy): first build 0.5 s for 42,398 rows, one edit 0.16 s (mostly parsing the blob, which stage 4 removes), SQLite file 31 MB.
+
+### Stage 4 plan (**Planned**)
+
+_Last mapped: 2026-11-02_
+
+Direct readers of `data/shared-persist.json` that stage 4 must keep working: `electron/preload.js` and `electron/persist-hub-cache.js`, the `scripts/bim-screentime-*.py` scripts, `scripts/backup-data.mjs`, `scripts/dump-chrome-localstorage.mjs`, and the mtime watch in `scripts/phone-hub.ts`. So the JSON file stays, as a generated export, until each is moved.
+
+| Step | What | Risk |
+| --- | --- | --- |
+| **4a. Every vault in SQLite** | **Built.** `scripts/vault-store.mjs`: a `vaults` table (`owner, key, value, hash, rev, updated_at`) beside the hub file as `<file>.vaults.sqlite`. A save commits only the changed vaults in one transaction. The merge guards, shrink checks and journal still run on strings, unchanged. Modes by `BRAIN2_STORE`: `json` (the file only, as before), **`shadow` (default)** (the file is the truth; the store follows each write and is repaired and counted on each reload, shown on `/api/persist/health` as `store`), `sqlite` (the store is the truth; `shared-persist.json` is rewritten at most every `BRAIN2_EXPORT_MS`, 5 s, and on exit). Another process is noticed through the store's `rev`. A store that will not open drops to the JSON file. | Low |
+| **4b. Task vault as rows is the truth** | `brain2-task-storage` is materialised from rows on demand (cached, dropped on a row change) for the old readers. A whole-blob write from Electron or Chrome is split and diffed into row writes. Union-by-id, `removedTaskIds` and the shrink guards are redone per row. | High |
+
+4a status (2026-11-02): **Built, running in shadow mode**. Steps 1 to 3 below exist; step 4 (the flip) is yours to decide after a clean run. Commands: `npm run store:check` (file versus store, exit 1 on a difference), `npm run store:import` (refuses a store that already differs unless `--force`), `npm run store:export` (copies the old file aside first). The JSON file is never deleted.
+
+Measured on a copy of the live vault (861 vaults, 62 MB file with `cogs-*` twins, 21 MB task vault), one edit per save: `json` about 360 ms, `shadow` about 480 ms (the extra work is the store write, on the hub's event loop), `sqlite` about 80 ms. Import 0.5 s. A round trip import then export gave identical values for all 1,337 keys. The launchd hub loads `persist-api.mjs` through jiti, which breaks `import "node:sqlite"`; both stores load it with `createRequire` (`scripts/hub-loader.test.ts` guards this). Restarted in shadow on 2026-11-02: `launchctl kickstart -k gui/$(id -u)/com.brain2.hub`. The `electron:dev` server on port 3000 is a second process on the same files and keeps its old code until it is restarted. Flip: start the hub with `BRAIN2_STORE=sqlite`. Roll back: stop it, `npm run store:export`, start without the variable.
+
+Order and gates, both steps: (1) one-time import of the JSON into SQLite, idempotent, checked by per-vault record count and hash, never deleting the JSON; (2) dual-write with the JSON still the truth; (3) shadow compare: after every write, the SQLite copy must equal the JSON copy, mismatches are logged and counted; (4) flip behind `BRAIN2_STORE=sqlite` only after a clean run of days; (5) rollback is the flag plus `npm run store:export`, and a full copy is taken before the flip. 4b waits for 4a to run clean, and is needed only before a second user.
+
+Open items: two processes can host the hub (`phone-hub.ts` and `cogs-dev-server.mjs`); SQLite WAL with a busy timeout and a `rev` check replaces the file-signature check. Stale `shared-persist.json.*.tmp` files in `data/` show earlier writes were cut short. The 278 MB `data/recovery-backups/` journal stays as files for now.
+
+Phone numbers: the task vault is 21 of the 27 MB a reload moves. Rebuilding a vault with 3 changed rows from a 21 MB base took 0.5 s on the Mac (parse and stringify), checked equal to the hub's copy, including an insert in the middle.
+
+Known limits: only the phone window reads the endpoint. The phone holds the base as a second 21 MB string. Exit flushes do not mirror; the next flush or the next `/rows` read catches up. Only the task vault is mirrored. Other vaults (habits, time grid, logs) join in the same way.
+
+Test: `npx vitest run scripts/vault-store.test.ts scripts/row-store.test.ts scripts/persist-api.test.ts lib/phone-row-pull.test.ts lib/phone-window-rows.test.ts lib/phone-window.test.ts`
