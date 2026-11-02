@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useIngestStore } from "./ingest-store"
-import { BIM_CHAT_ID, bimChoices, sendToBim, useBimChatStore } from "./bim-chat"
+import { BIM_CHAT_ID, bimChoices, sendToBim, useBimChatStore, useBimFactsStore } from "./bim-chat"
 import { BIM_PING } from "./bim"
 import type { ApplyResult } from "./types"
 
@@ -96,5 +96,31 @@ describe("photos in BIM chat", () => {
     const lines = useBimChatStore.getState().lines
     expect(lines[0]?.text).toContain("📷")
     expect(lines).toHaveLength(2)
+  })
+})
+
+describe("told facts", () => {
+  beforeEach(() => {
+    resetAllStores()
+    useBimFactsStore.setState({ facts: [] })
+  })
+
+  it("keeps a moment, counts down to it, and does not assume it repeats", async () => {
+    const midnight = new Date(2026, 10, 2, 0, 0)
+    const told = await sendToBim("Claude limit resets at 2:00am", midnight)
+    expect(told.text).toContain("2:00 am")
+    const soon = await sendToBim("how long until claude limit resets?", new Date(2026, 10, 2, 1, 5))
+    expect(soon.text).toBe("In 55 minutes (at 2:00 am).")
+    const later = await sendToBim("how long until claude limit resets?", new Date(2026, 10, 3, 1, 5))
+    expect(later.text).toContain("I don't know")
+    expect(later.text).toContain("I'll remember")
+    const again = await sendToBim("it resets at 3am", new Date(2026, 10, 3, 1, 6))
+    expect(again.text).toContain("3:00 am")
+  })
+
+  it("resolves 'in 2 hours' when told", async () => {
+    await sendToBim("Claude limit resets in 2 hours", new Date(2026, 10, 2, 0, 0))
+    const r = await sendToBim("when does claude limit reset?", new Date(2026, 10, 2, 1, 5))
+    expect(r.text).toBe("In 55 minutes (at 2:00 am).")
   })
 })

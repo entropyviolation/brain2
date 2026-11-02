@@ -15,6 +15,18 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import { answerTell, applyTell, type TellPending, type TellReply } from "./apply-tell"
+import {
+  answerFact,
+  looksLikeFactQuestion,
+  matchFact,
+  parseBareWhen,
+  parseInstantStatement,
+  parseNoteStatement,
+  pruneFacts,
+  rememberedText,
+  rememberFact,
+  type Fact,
+} from "./bim-facts"
 import { runSwitchboard, useBimLlmMode, type SwitchboardResult } from "./bim-switchboard"
 import { parseTell } from "./bim-tell"
 import { ingestIncomingAsync } from "./executor"
@@ -134,6 +146,58 @@ function tryTell(text: string, now: Date): BimLine | null {
   pendingTell = reply.pending ?? null
   logTell(text, reply, now)
   return tellLine(reply)
+}
+
+// ---------------------------------------------------------------- told facts
+
+/**
+ * Facts you tell BIM in passing ("Claude limit resets at 2am", "remember that the gate code is 4412"),
+ * kept on this device. A moment is trusted only until it passes (`bim-facts.ts`).
+ */
+export const useBimFactsStore = create<{ facts: Fact[]; set: (facts: Fact[]) => void }>()(
+  persist((set) => ({ facts: [], set: (facts) => set({ facts }) }), {
+    name: "bimchat-facts",
+    storage: createJSONStorage(() => localStorage),
+  }),
+)
+
+/** After "I don't know", the next bare time ("at 3am") is the answer for this fact. In memory only. */
+let awaitingFact: Pick<Fact, "label" | "tokens"> | null = null
+
+function factLine(text: string, extra: Partial<BimLine> = {}): BimLine {
+  return { id: lineId(), at: new Date().toISOString(), who: "bim", text, status: "ok", kind: "tell", ...extra }
+}
+
+function keepFact(draft: Omit<Fact, "id" | "toldAt">, now: Date): BimLine {
+  const store = useBimFactsStore.getState()
+  const full = { ...draft, toldAt: now.getTime() }
+  store.set(rememberFact(pruneFacts(store.facts, now), full, `fact-${now.getTime().toString(36)}`))
+  return factLine(rememberedText(full, now))
+}
+
+/**
+ * Told facts and questions about them. Runs after `tryTell` and before the router, only in chat. A statement is
+ * kept; a question that matches a kept fact is answered from it, with no model. Null leaves the line to the rest.
+ */
+function tryFact(text: string, now: Date): BimLine | null {
+  if (useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID) || looksLikeVerb(text, now)) return null
+  const waiting = awaitingFact
+  awaitingFact = null
+  if (waiting) {
+    const when = parseBareWhen(text, now)
+    if (when !== null) return keepFact({ kind: "instant", label: waiting.label, tokens: waiting.tokens, at: when }, now)
+  }
+  const instant = parseInstantStatement(text, now)
+  if (instant) return keepFact(instant, now)
+  const note = parseNoteStatement(text)
+  if (note) return keepFact(note, now)
+  if (!looksLikeFactQuestion(text)) return null
+  const facts = pruneFacts(useBimFactsStore.getState().facts, now)
+  const hit = matchFact(facts, text)
+  if (!hit) return null
+  const answer = answerFact(hit, now)
+  if (answer.state === "unknown" || answer.state === "just-passed") awaitingFact = { label: hit.label, tokens: hit.tokens }
+  return factLine(answer.text, { route: "FACT · memory · code" })
 }
 
 // ---------------------------------------------------------------- BIM asks you
@@ -282,6 +346,9 @@ export async function sendToBim(
     }
     const answered = await answerAskBack(text, now)
     if (answered) return answered
+    // A question about a fact you told BIM comes before the tell shapes, which would answer "when does X?" from events.
+    const fact = pendingTell ? null : tryFact(text, now)
+    if (fact) return fact
     const told = tryTell(text, now)
     if (told) return told
     const heldBefore = !!useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID)
