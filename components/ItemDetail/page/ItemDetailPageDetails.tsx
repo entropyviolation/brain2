@@ -5,6 +5,8 @@ import { useCallback, type Dispatch, type SetStateAction } from "react"
 import { ComputerProjectDetail } from "@/components/ItemDetail/type-views/ComputerProjectDetail"
 import { HabitLinkedDetail } from "@/components/ItemDetail/type-views/HabitLinkedDetail"
 import { isLogItemDetailType, LogItemDetail } from "@/components/ItemDetail/type-views/LogItemDetail"
+import { InstagramAccountDetail } from "@/components/ItemDetail/type-views/InstagramAccountDetail"
+import { INSTAGRAM_ACCOUNT_TYPE_ID } from "@/lib/instagram-account-type"
 import { TimeblockItemDetail } from "@/components/ItemDetail/type-views/TimeblockItemDetail"
 import { ItemAttributesSection } from "@/components/ItemDetail/attributes/ItemAttributesSection"
 import { ItemDetailPageRail } from "@/components/ItemDetail/page/ItemDetailPageRail"
@@ -231,6 +233,7 @@ export function ItemDetailPageDetails({
           ) : null}
           {isLogItemDetailType(activeTypeId) ? <LogItemDetail task={task} typeId={activeTypeId} /> : null}
           {activeTypeId === TIMEBLOCK_TYPE_ID ? <TimeblockItemDetail task={task} /> : null}
+          {activeTypeId === INSTAGRAM_ACCOUNT_TYPE_ID ? <InstagramAccountDetail task={task} /> : null}
           <div className="id-bay">
             <ItemAttributesSection
               attributes={task.attributes || {}}

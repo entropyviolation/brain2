@@ -5,6 +5,7 @@ import { formatAttributeValue, listAttributeSchema } from "@/components/Lists/at
 import { useSpreadsheetCatalog } from "@/components/spreadsheet/use-spreadsheet-catalog"
 import { itemTitle, listIsNextActions } from "@/lib/item-utils"
 import { isFolderAllItemsCategoryId, isTaskUncategorizedGlobally, isTaskUncategorizedInFolder } from "@/lib/folder-all-items"
+import { instagramProfileKeyHandle } from "@/lib/instagram-account-type"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/lib/spreadsheet-catalog"
 import { resolveDetailsColumnIds } from "@/lib/details-columns"
 import type { AttributeDefinition, Folder, List, Task } from "@/lib/types"
+import { InstagramProfileKey } from "./InstagramProfileKey"
 import type { ListContentDetailsProps } from "./types"
 import { useWindowedSlice } from "./use-windowed-slice"
 
@@ -206,6 +208,10 @@ export function ListContentDetails({
               >
                 Open
               </button>
+              {(() => {
+                const handle = instagramProfileKeyHandle(task, tableCat)
+                return handle ? <InstagramProfileKey handle={handle} /> : null
+              })()}
             </td>
           </tr>
         ))}

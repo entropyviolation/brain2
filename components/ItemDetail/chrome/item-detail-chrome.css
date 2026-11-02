@@ -882,7 +882,7 @@ body.win95-app :is(.id95, .id95-dialog) button.id-clarify-key:active {
 }
 
 /* Pale silver keycap. Beats .id-btn and the global Win95 button. */
-body.win95-app :is(.id95, .id95-dialog) button.id-keycap {
+body.win95-app :is(.id95, .id95-dialog) :is(button, a).id-keycap {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -906,16 +906,16 @@ body.win95-app :is(.id95, .id95-dialog) button.id-keycap {
     0 1px 0 rgba(0, 0, 0, 0.35) !important;
 }
 
-body.win95-app :is(.id95, .id95-dialog) button.id-keycap:hover:not(:disabled) {
+body.win95-app :is(.id95, .id95-dialog) :is(button, a).id-keycap:hover:not(:disabled) {
   filter: brightness(1.02);
 }
 
-body.win95-app :is(.id95, .id95-dialog) button.id-keycap:focus-visible {
+body.win95-app :is(.id95, .id95-dialog) :is(button, a).id-keycap:focus-visible {
   outline: 2px solid #9ad7ff;
   outline-offset: 1px;
 }
 
-body.win95-app :is(.id95, .id95-dialog) button.id-keycap:active:not(:disabled) {
+body.win95-app :is(.id95, .id95-dialog) :is(button, a).id-keycap:active:not(:disabled) {
   transform: translateY(2px);
   box-shadow:
     inset 2px 0 0 #b3b8be,

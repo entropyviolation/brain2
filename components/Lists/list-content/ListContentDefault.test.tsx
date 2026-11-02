@@ -119,27 +119,32 @@ describe("ListContentDefault chrome", () => {
 })
 
 describe("ListContentDefault Instagram key", () => {
-  it("rows with an Instagram username get a Go to Instagram link that does not open the row", () => {
+  it("Instagram Account rows get a Visit profile link that does not open the row", () => {
     const onTaskSelect = vi.fn()
     renderDefault({
-      tasks: [item({ id: "ig", description: "Some.One", attributes: { "ig-username": "@Some.One" } })],
+      tasks: [item({ id: "ig", type: "instagram-account", description: "Some.One", attributes: { "ig-username": "@Some.One" } })],
       onTaskSelect,
     })
     const link = screen.getByTestId("list-row-instagram")
     expect(link).toHaveAttribute("href", "https://www.instagram.com/some.one/")
     expect(link).toHaveAttribute("target", "_blank")
-    expect(link).toHaveAccessibleName("Go to @some.one on Instagram")
+    expect(link).toHaveAccessibleName("Visit @some.one on Instagram")
     fireEvent.click(link)
     expect(onTaskSelect).not.toHaveBeenCalled()
   })
 
   it("an analysis profile attribute also counts", () => {
-    renderDefault({ tasks: [item({ attributes: { "ig-profile": "instagram.com/fan_1" } })] })
+    renderDefault({ tasks: [item({ type: "instagram-account", attributes: { "ig-profile": "instagram.com/fan_1" } })] })
     expect(screen.getByTestId("list-row-instagram")).toHaveAttribute("href", "https://www.instagram.com/fan_1/")
   })
 
   it("rows without one have no key", () => {
     renderDefault()
+    expect(screen.queryByTestId("list-row-instagram")).not.toBeInTheDocument()
+  })
+
+  it("a plain item with a stray username has no key", () => {
+    renderDefault({ tasks: [item({ attributes: { "ig-username": "someone" } })] })
     expect(screen.queryByTestId("list-row-instagram")).not.toBeInTheDocument()
   })
 })

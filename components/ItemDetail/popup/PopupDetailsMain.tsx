@@ -11,6 +11,8 @@ import type { AttributeDefinition, AttributeValue, ItemTypeCapabilities, List, T
 import { AlertTriangle, FileText, Star } from "lucide-react"
 import { ComputerProjectDetail } from "@/components/ItemDetail/type-views/ComputerProjectDetail"
 import { isLogItemDetailType, LogItemDetail } from "@/components/ItemDetail/type-views/LogItemDetail"
+import { InstagramAccountDetail } from "@/components/ItemDetail/type-views/InstagramAccountDetail"
+import { INSTAGRAM_ACCOUNT_TYPE_ID } from "@/lib/instagram-account-type"
 import { TimeblockItemDetail } from "@/components/ItemDetail/type-views/TimeblockItemDetail"
 import { ItemAttributesSection } from "@/components/ItemDetail/attributes/ItemAttributesSection"
 import { ItemEstimateField } from "@/components/ItemDetail/tabs/details/ItemEstimateField"
@@ -113,6 +115,7 @@ export function PopupDetailsMain({
                       ) : null}
                       {isLogItemDetailType(activeTypeId) ? <LogItemDetail task={task} typeId={activeTypeId} /> : null}
                       {activeTypeId === TIMEBLOCK_TYPE_ID ? <TimeblockItemDetail task={task} /> : null}
+                      {activeTypeId === INSTAGRAM_ACCOUNT_TYPE_ID ? <InstagramAccountDetail task={task} /> : null}
                       <div className="id-bay">
                         <ItemAttributesSection
                           attributes={task.attributes || {}}

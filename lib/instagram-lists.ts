@@ -27,6 +27,8 @@
  * so all seven sit on Lists Home before the first import. Delete is refused
  * on all seven, as on the two built-ins.
  */
+import { INSTAGRAM_ACCOUNT_TYPE_ID, igAccountId } from "@/lib/instagram-account-type"
+import { instagramUsernameOf } from "@/lib/instagram-profile-link"
 import { createListItem, itemTitle } from "@/lib/item-utils"
 import {
   IG_FOLLOWER_COUNT,
@@ -143,6 +145,9 @@ function withColumns(list: List, defs: AttributeDefinition[], columnIds: readonl
   return patch
 }
 
+/** Every built-in Instagram list holds this type, so its rows and its detail view get the account behavior. */
+const accountType = () => ({ itemTypeId: INSTAGRAM_ACCOUNT_TYPE_ID, itemTypeIds: [INSTAGRAM_ACCOUNT_TYPE_ID] })
+
 function ensureSingleton(opts: {
   id: string
   name: string
@@ -156,12 +161,14 @@ function ensureSingleton(opts: {
   const store = useTaskStore.getState()
   const existing = opts.find(store.lists)
   if (existing) {
-    if (!existing[opts.flag]) {
+    if (!existing[opts.flag] || !existing.itemTypeId) {
       store.updateList({
         ...existing,
         [opts.flag]: true,
         scheduleable: false,
         itemLabel: existing.itemLabel || "account",
+        ...accountType(),
+        ...(existing.itemTypeId ? { itemTypeId: existing.itemTypeId, itemTypeIds: existing.itemTypeIds } : {}),
         ...withColumns(existing, opts.defs, opts.columns),
       })
     }
@@ -175,6 +182,7 @@ function ensureSingleton(opts: {
     itemLabel: "account",
     scheduleable: false,
     [opts.flag]: true,
+    ...accountType(),
     description: opts.description,
     itemAttributes: opts.defs,
     displayedAttributes: [...opts.columns],
@@ -262,6 +270,7 @@ function withDisplayName(task: Task, name: string): Task {
 export function applyInstagramImport(parsed: ParsedInstagramExport): { added: number; updated: number } {
   const followingListId = ensureInstagramFollowingList()
   const followersListId = ensureInstagramFollowersList()
+  mergeDuplicateInstagramAccounts()
   const store = useTaskStore.getState()
   const changes = planInstagramImport(
     store.tasks.map(snapshot),
@@ -277,7 +286,8 @@ export function applyInstagramImport(parsed: ParsedInstagramExport): { added: nu
         ...item,
         // createListItem ids are a millisecond plus four random characters, so
         // thousands of rows in one loop collide and addTask drops the repeat.
-        id: `ig-${change.username.toLowerCase()}-${item.id}`,
+        id: igAccountId(change.username),
+        type: INSTAGRAM_ACCOUNT_TYPE_ID,
         attributes: attributesFromChange(change, undefined),
       })
       added += 1
@@ -330,12 +340,13 @@ export function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
   const spec = IG_ANALYSIS_LISTS[key]
   const existing = findInstagramAnalysisList(store.lists, key)
   if (existing) {
-    if (existing.instagramAnalysisList !== key) {
+    if (existing.instagramAnalysisList !== key || !existing.itemTypeId) {
       store.updateList({
         ...existing,
         instagramAnalysisList: key,
         scheduleable: false,
         itemLabel: existing.itemLabel || "account",
+        ...(existing.itemTypeId ? {} : accountType()),
       })
     }
     return existing.id
@@ -355,6 +366,7 @@ export function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
     itemLabel: "account",
     scheduleable: false,
     instagramAnalysisList: key,
+    ...accountType(),
     description: spec.description,
     itemAttributes: columns,
     displayedAttributes: ids,
@@ -417,7 +429,79 @@ export function mergeDuplicateInstagramAnalysisLists(): number {
 /** Create or adopt all five analysis lists. Returns their ids in report order. */
 export function ensureInstagramAnalysisLists(): string[] {
   mergeDuplicateInstagramAnalysisLists()
-  return INSTAGRAM_ANALYSIS_ONLY_KEYS.map((key) => ensureInstagramAnalysisList(key))
+  const ids = INSTAGRAM_ANALYSIS_ONLY_KEYS.map((key) => ensureInstagramAnalysisList(key))
+  mergeDuplicateInstagramAccounts()
+  return ids
+}
+
+/** A plain Item or untyped row becomes an Instagram Account; a type the person chose stays. */
+function asAccountType(type: Task["type"]): Task["type"] {
+  return !type || type === "item" ? INSTAGRAM_ACCOUNT_TYPE_ID : type
+}
+
+/**
+ * One account is one item. Folds every item that carries the same Instagram
+ * username (and sits on an Instagram list, is typed as an account, or has an
+ * `ig-` id) into the oldest one: lists and tags are unioned, the newest
+ * report values win, links aimed at a copy are re-aimed at the survivor, and
+ * the copies get a tombstone. Every survivor is typed Instagram Account.
+ * Idempotent, so a vault union that brings copies back is folded on the next
+ * run. Copies past the tombstone cap are not remembered, which is why this
+ * runs on every load and import instead of once.
+ */
+export function mergeDuplicateInstagramAccounts(): { merged: number; typed: number } {
+  const state = useTaskStore.getState()
+  const igLists = new Set(
+    state.lists.filter((l) => isInstagramPeopleList(l)).map((l) => l.id),
+  )
+  const groups = new Map<string, Task[]>()
+  for (const task of state.tasks) {
+    const name = instagramUsernameOf(task).toLowerCase()
+    if (!name) continue
+    const ours =
+      task.type === INSTAGRAM_ACCOUNT_TYPE_ID || task.id.startsWith("ig-") || (task.lists ?? []).some((id) => igLists.has(id))
+    if (!ours) continue
+    const group = groups.get(name)
+    if (group) group.push(task)
+    else groups.set(name, [task])
+  }
+  const replace = new Map<string, Task>()
+  const gone = new Map<string, string>()
+  let typed = 0
+  for (const group of groups.values()) {
+    const ordered = [...group].sort(
+      (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt) || (a.id < b.id ? -1 : 1),
+    )
+    const keep = ordered[0]!
+    let next: Task = keep
+    if (ordered.length > 1) {
+      const rest = ordered.slice(1)
+      const lists = [...new Set(ordered.flatMap((t) => t.lists ?? []))]
+      const tags = [...new Set(ordered.flatMap((t) => t.tags ?? []))]
+      const attributes = Object.assign({}, ...ordered.map((t) => t.attributes ?? {})) as Task["attributes"]
+      next = { ...keep, lists, tags, attributes }
+      for (const t of rest) gone.set(t.id, keep.id)
+    }
+    const type = asAccountType(next.type)
+    if (type !== next.type) {
+      next = { ...next, type }
+      typed += 1
+    }
+    if (next !== keep) replace.set(keep.id, next)
+  }
+  if (!replace.size && !gone.size) return { merged: 0, typed: 0 }
+  const tasks = state.tasks.flatMap((task): Task[] => {
+    if (gone.has(task.id)) return []
+    const swapped = replace.get(task.id) ?? task
+    return swapped.links?.some((l) => gone.has(l.targetId))
+      ? [{ ...swapped, links: swapped.links.map((l) => (gone.has(l.targetId) ? { ...l, targetId: gone.get(l.targetId)! } : l)) }]
+      : [swapped]
+  })
+  state.setTasks(tasks)
+  if (gone.size) {
+    useTaskStore.setState((s) => ({ removedTaskIds: appendTombstoneIds(s.removedTaskIds, [...gone.keys()]) }))
+  }
+  return { merged: gone.size, typed }
 }
 
 /** Add the report's columns a list is missing. A column the person renamed keeps its name. */
@@ -441,6 +525,7 @@ function analysisSnapshot(task: Task) {
  */
 export function applyInstagramAnalysisImport(parsed: ParsedInstagramAnalysis): { added: number; updated: number } {
   mergeDuplicateInstagramAnalysisLists()
+  mergeDuplicateInstagramAccounts()
   const listIds: Record<IgAnalysisListKey, string> = {
     followers: ensureInstagramFollowersList(),
     following: ensureInstagramFollowingList(),
@@ -464,16 +549,17 @@ export function applyInstagramAnalysisImport(parsed: ParsedInstagramAnalysis): {
     const change = byId.get(task.id)
     if (!change) return task
     updated += 1
-    const next: Task = { ...task, lists: change.lists, attributes: change.attributes }
+    const next: Task = { ...task, type: asAccountType(task.type), lists: change.lists, attributes: change.attributes }
     return applyListLinksToTask(next, next, store.lists)
   })
-  // createListItem ids are a millisecond plus four random characters, which
-  // collide across thousands of rows made in one loop.
-  const batch = Date.now().toString(36)
+  // The id is the handle, so two runs or two devices that make the same account make the same id.
+  const taken = new Set(tasks.map((task) => task.id))
   for (const change of changes) {
     if (!change.create) continue
-    const item: Task = { ...createListItem(change.name, change.lists), attributes: change.attributes }
-    item.id = `ig-${batch}-${added.toString(36)}`
+    const id = igAccountId(change.name)
+    if (taken.has(id)) continue
+    taken.add(id)
+    const item: Task = { ...createListItem(change.name, change.lists), id, type: INSTAGRAM_ACCOUNT_TYPE_ID, attributes: change.attributes }
     tasks.push(applyListLinksToTask(item, item, store.lists))
     added += 1
   }

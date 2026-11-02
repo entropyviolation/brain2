@@ -36,6 +36,7 @@ import { withLogItemTypes } from "@/lib/log-item-types"
 import { withTimeblockType } from "@/lib/timeblock-types"
 import { withFilmType } from "@/lib/film-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
+import { withInstagramAccountType } from "@/lib/instagram-account-type"
 import { withPersonPhoneAttribute, withPersonType } from "@/lib/person-types"
 import { listAllowedTypeIds } from "@/lib/list-item-types"
 
@@ -83,7 +84,7 @@ export function getBuiltinItemTypes(): ItemTypeDefinition[] {
   // Item + Task ship first; Operation, Note, Book, Person, Flight, and catalog
   // starters merge in via idempotent helpers so each module owns its definition.
   return withComputerProjectType(
-    withPersonType(
+    withInstagramAccountType(withPersonType(
       withCatalogTypes(
         withFilmType(
           withTimeblockType(
@@ -93,7 +94,7 @@ export function getBuiltinItemTypes(): ItemTypeDefinition[] {
           ),
         ),
       ),
-    ),
+    )),
   )
 }
 
