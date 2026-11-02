@@ -78,14 +78,15 @@ describe("callService", () => {
 })
 
 describe("call cursor", () => {
-  it("round-trips the date exactly", () => {
-    const c = { date: 783_000_000.123456, uniqueId: "A|B" }
-    expect(decodeCallCursor(encodeCallCursor(c))).toEqual(c)
+  it("round-trips the row key", () => {
+    expect(encodeCallCursor({ pk: 3256 })).toBe("pk:3256")
+    expect(decodeCallCursor("pk:3256")).toEqual({ pk: 3256 })
   })
 
-  it("treats a missing or broken cursor as a fresh start", () => {
+  it("treats a missing, broken, or old time cursor as a fresh start", () => {
     expect(decodeCallCursor(undefined)).toBeUndefined()
     expect(decodeCallCursor("42")).toBeUndefined()
-    expect(decodeCallCursor("x|id")).toBeUndefined()
+    expect(decodeCallCursor("pk:x")).toBeUndefined()
+    expect(decodeCallCursor("815275670.7870469|944415D7-9E34-4624-A95C-576DBC07E1F5")).toBeUndefined()
   })
 })

@@ -33,7 +33,7 @@ Read the call history the Mac receives from the iPhone, and pick up iOS call rec
 ## Read
 
 - Table `ZCALLRECORD`: `ZADDRESS` (number), `ZNAME`, `ZDATE` (seconds since 2001-01-01), `ZDURATION`, `ZORIGINATED` (outgoing), `ZANSWERED`, `ZCALLTYPE` (phone, FaceTime audio/video), `ZUNIQUE_ID`.
-- Id (`sourceId`): `ZUNIQUE_ID`. Cursor: the pair `(ZDATE, ZUNIQUE_ID)`, stored as `"<ZDATE>|<ZUNIQUE_ID>"`. Read `WHERE ZDATE > :d OR (ZDATE = :d AND ZUNIQUE_ID > :id) ORDER BY ZDATE, ZUNIQUE_ID`, so two calls with the same timestamp are neither skipped nor read twice.
+- Id (`sourceId`): `ZUNIQUE_ID`. Cursor: the row key, stored as `"pk:<Z_PK>"`. Read `WHERE Z_PK > :pk ORDER BY Z_PK`. Not `ZDATE`: iPhone calls reach the Mac late and out of order, and a time cursor skipped them (fixed 2026-11-02).
 - Missed calls are instants. Answered calls are intervals of `ZDURATION`.
 - A call is company time for the matched person.
 

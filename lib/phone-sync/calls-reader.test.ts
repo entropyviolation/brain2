@@ -32,20 +32,20 @@ afterEach(() => {
 })
 
 describe("callsReader", () => {
-  it("reads every call on the first run, oldest first", async () => {
+  it("reads every call on the first run, in stored order", async () => {
     vi.stubEnv("BRAIN2_CALLS_DB", fakeCallHistory([
       ["C", T + 60, 0, 0, 0, "+15550000002"],
       ["A", T, 300.7, 1, 0, "+15550000001"],
     ]))
     expect(callsReader.source).toBe("calls")
     const { records, cursor } = await callsReader.read(undefined)
-    expect(records.map((r) => r.sourceId)).toEqual(["A", "C"])
-    expect(records[0]).toMatchObject({ at: coreDataToMs(T), direction: "out", answered: true, durationSec: 301, service: "phone", party: { handle: "+15550000001", displayName: "Jane" } })
-    expect(records[1]).toMatchObject({ direction: "in", answered: false, durationSec: 0 })
-    expect(cursor).toBe(`${T + 60}|C`)
+    expect(records.map((r) => r.sourceId)).toEqual(["C", "A"])
+    expect(records[1]).toMatchObject({ at: coreDataToMs(T), direction: "out", answered: true, durationSec: 301, service: "phone", party: { handle: "+15550000001", displayName: "Jane" } })
+    expect(records[0]).toMatchObject({ direction: "in", answered: false, durationSec: 0 })
+    expect(cursor).toBe("pk:2")
   })
 
-  it("pages through ties on ZDATE without skipping or repeating", () => {
+  it("pages in stored order without skipping or repeating", () => {
     const file = fakeCallHistory([
       ["A", T, 10, 0, 1, "1"],
       ["B", T, 10, 0, 1, "2"],
@@ -63,7 +63,26 @@ describe("callsReader", () => {
     }
     db.close()
     expect(seen).toEqual(["A", "B", "C", "D", "E"])
-    expect(cursor).toBe(`${T + 1}|E`)
+    expect(cursor).toBe("pk:5")
+  })
+
+  it("still reads a call that reaches the Mac after a later one", () => {
+    const file = fakeCallHistory([["FaceTime", T + 120, 0, 0, 0, "1"]])
+    const db = new DatabaseSync(file)
+    const first = readCallPage(db, undefined)
+    // The iPhone's earlier call syncs over after the hub has read past it in time.
+    db.prepare("INSERT INTO ZCALLRECORD (ZUNIQUE_ID, ZDATE, ZDURATION, ZORIGINATED, ZANSWERED, ZADDRESS, ZCALLTYPE) VALUES ('Phone', ?, 0, 0, 0, '1', 1)").run(T)
+    const second = readCallPage(db, first.cursor)
+    db.close()
+    expect(first.records.map((r) => r.sourceId)).toEqual(["FaceTime"])
+    expect(second.records.map((r) => r.sourceId)).toEqual(["Phone"])
+  })
+
+  it("starts over from an old time cursor or a rebuilt file", () => {
+    const db = new DatabaseSync(fakeCallHistory([["A", T, 10, 0, 1, "1"], ["B", T + 1, 10, 0, 1, "2"]]), { readOnly: true })
+    expect(readCallPage(db, `${T + 1}|B`).records.map((r) => r.sourceId)).toEqual(["A", "B"])
+    expect(readCallPage(db, "pk:900").records.map((r) => r.sourceId)).toEqual(["A", "B"])
+    db.close()
   })
 
   it("never lets a row with no id become the cursor", () => {
@@ -81,7 +100,7 @@ describe("callsReader", () => {
 
   it("keeps the cursor when nothing is new", async () => {
     vi.stubEnv("BRAIN2_CALLS_DB", fakeCallHistory([["A", T, 10, 0, 1, "1"]]))
-    expect(await callsReader.read(`${T}|A`)).toEqual({ records: [], cursor: `${T}|A` })
+    expect(await callsReader.read("pk:1")).toEqual({ records: [], cursor: "pk:1" })
   })
 
   it("says what to fix when the file cannot be opened", async () => {

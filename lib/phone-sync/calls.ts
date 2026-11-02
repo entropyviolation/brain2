@@ -3,9 +3,11 @@
  *
  * The Mac keeps the iPhone's calls in `CallHistory.storedata`, table
  * `ZCALLRECORD` (Core Data). `ZDATE` is float seconds since 2001-01-01 UTC.
- * The id is `ZUNIQUE_ID`. The cursor is the pair `(ZDATE, ZUNIQUE_ID)` as
- * `"<ZDATE>|<ZUNIQUE_ID>"`, so two calls with one timestamp are neither
- * skipped nor read twice. The reader is `calls-reader.ts`. Pure.
+ * The id is `ZUNIQUE_ID`. The cursor is the row key `Z_PK` as `"pk:<Z_PK>"`.
+ * It is not the call time: the iPhone's calls reach the Mac late and out of
+ * order, so a time cursor skipped a call that arrived after a later one. An
+ * old `"<ZDATE>|<ZUNIQUE_ID>"` cursor decodes as a fresh start, and the re-read
+ * writes only the calls it missed. The reader is `calls-reader.ts`. Pure.
  * Brief: docs/phone-sync/02-calls.md.
  */
 import type { CallRecord } from "./types"
@@ -23,6 +25,7 @@ export function msToCoreData(ms: number): number {
 
 /** One `ZCALLRECORD` row, only the columns the reader selects. */
 export interface CallHistoryRow {
+  Z_PK?: number
   ZUNIQUE_ID: string
   ZDATE: number
   ZDURATION?: number | null
@@ -91,21 +94,16 @@ export function rowToCallRecord(row: CallHistoryRow): CallRecord | null {
 }
 
 export interface CallCursor {
-  date: number
-  uniqueId: string
+  /** `Z_PK` of the last row read. Core Data hands these out in insert order. */
+  pk: number
 }
 
-/** `"<ZDATE>|<ZUNIQUE_ID>"`. A JS number prints back to the same double. */
 export function encodeCallCursor(cursor: CallCursor): string {
-  return `${cursor.date}|${cursor.uniqueId}`
+  return `pk:${cursor.pk}`
 }
 
-/** Undefined for a missing or broken cursor, so the reader starts over (re-reads write nothing new). */
+/** Undefined for a missing, broken, or old time-based cursor, so the reader starts over (re-reads write nothing new). */
 export function decodeCallCursor(raw: string | undefined): CallCursor | undefined {
-  if (!raw) return undefined
-  const bar = raw.indexOf("|")
-  if (bar <= 0) return undefined
-  const date = Number(raw.slice(0, bar))
-  if (!Number.isFinite(date)) return undefined
-  return { date, uniqueId: raw.slice(bar + 1) }
+  const m = raw ? /^pk:(\d+)$/.exec(raw) : null
+  return m ? { pk: Number(m[1]) } : undefined
 }
