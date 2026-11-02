@@ -56,6 +56,7 @@ import {
   type MorningGmDraft,
   type MorningGmStep,
 } from "./apply-morning-gm"
+import { logStartPlans } from "@/lib/start-plans"
 import { isRitualSkip } from "./ritual-skip"
 import type { ApplyResult, PendingClarify } from "./types"
 
@@ -652,6 +653,14 @@ function saveStart(ritual: StartRitualDraft, now: Date): ApplyResult {
     pulledTaskIds: ritual.draft.pulledTaskIds,
     source: "telegram",
   }
+  slice.planLogged = logStartPlans({
+    period: ritual.period,
+    periodKey: ritual.periodKey,
+    own: ritual.draft.nextPlans ?? "",
+    children: {},
+    logged: undefined,
+    now,
+  })
   useReviewsStore.getState().replaceStartRitual(ritual.period, ritual.periodKey, slice)
   return {
     status: "ok",

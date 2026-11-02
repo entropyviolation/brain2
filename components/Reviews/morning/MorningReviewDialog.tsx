@@ -451,7 +451,7 @@ export function MorningReviewDialog({
           />
         )
       case "plan":
-        return <PlanStep dayPlan={dayPlan} setDayPlan={setDayPlan} />
+        return <PlanStep dayKey={dayKey} dayPlan={dayPlan} setDayPlan={setDayPlan} />
       case "circumstances":
         return (
           <CircumstancesStep

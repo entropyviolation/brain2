@@ -505,6 +505,35 @@
   align-items: center;
   gap: 6px;
 }
+.rv-row-keys > button { flex: 0 0 auto; white-space: nowrap; }
+/* Small, quiet, last: delete is never the first thing to reach for. */
+.rv-delete {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--rst-quiet);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rv-delete:hover { color: #a3342a; }
+
+/* ── Plan tab glimpse and child plans (PlanLogGlimpse.tsx, StartRitualDialog.tsx) ── */
+
+.rv-plan-glimpse {
+  padding: 6px 10px;
+  border-left: 3px solid var(--rst-accent);
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 12.5px;
+}
+.rv-plan-glimpse > summary { cursor: pointer; font-weight: 600; color: var(--rst-accent); }
+.rv-plan-glimpse ol { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.rv-plan-glimpse-stamp { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rst-quiet); }
+.rv-plan-glimpse-stamp strong { margin-left: 6px; font-size: 10px; font-weight: 800; color: var(--rst-ink); }
+.rv-plan-glimpse pre { margin: 2px 0 0; white-space: pre-wrap; font: inherit; }
+.rv-child-plan { display: grid; gap: 4px; }
+.rv-child-plan > span { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rst-accent); }
 
 /* ── Look back step (LookBackSection.tsx) ─────────────────── */
 
@@ -583,14 +612,14 @@
 .la-done { font-size: 11px; font-weight: 600; color: #1f7a54; }
 
 /* ── Tone by rite (RitualStepper `tone`) ─────────────────────
-   Dawn for morning and start, dusk for night and end, north for Star Lord.
+   Dawn (cool green) for morning and start, dusk for night and end, north for Star Lord.
    Only the accent, the paper, and the current lamp change. */
 
 .rst[data-tone="dawn"] {
-  --rst-paper: #fbf5ec;
-  --rst-rule: rgba(176, 112, 40, 0.08);
-  --rst-rule-major: rgba(176, 112, 40, 0.16);
-  --rst-accent: #b0641c;
+  --rst-paper: #eef5f2;
+  --rst-rule: rgba(31, 122, 90, 0.08);
+  --rst-rule-major: rgba(31, 122, 90, 0.16);
+  --rst-accent: #1f7a5a;
 }
 .rst[data-tone="dusk"] {
   --rst-paper: #eef1f8;

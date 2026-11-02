@@ -68,6 +68,9 @@ import { DayReviewTomorrowSection } from "@/components/Reviews/end/DayReviewTomo
 import { AssumedTimesSection, pendingAssumedTasks } from "@/components/Reviews/end/AssumedTimesSection"
 import { NightTimeGlance } from "@/components/Reviews/end/NightTimeGlance"
 import { WhyBlockedControl } from "@/components/Reviews/WhyBlockedControl"
+import { RitualSummaryStep } from "@/components/Reviews/end/RitualSummaryStep"
+import { summaryKeyForRitual } from "@/lib/tracking-summaries"
+import { summaryProse, useDayNote } from "@/lib/day-notes-persist"
 import { PeriodReviewStudio } from "@/components/Reviews/end/PeriodReviewStudio"
 import { unfinishedTasksForRitual } from "@/lib/ritual-unfinished"
 import {
@@ -201,6 +204,20 @@ function ReviewDialog({
     }
   }
 
+  const summaryAnchor = useMemo(() => dateFromPeriodKey(period, periodKey), [period, periodKey])
+  const summaryKey = summaryKeyForRitual(period, summaryAnchor, periodKey)
+  const sharedSummary = summaryProse(useDayNote(summaryKey))
+  const deleteTask = useTaskStore((s) => s.deleteTask)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const deleteUnfinished = (task: Task) => {
+    if (confirmDeleteId !== task.id) {
+      setConfirmDeleteId(task.id)
+      return
+    }
+    setConfirmDeleteId(null)
+    deleteTask(task.id)
+  }
+
   const setReason = (taskId: string, reason: StoredBlockedReason) => {
     setBlockedReasons((prev) => ({ ...prev, [taskId]: reason }))
   }
@@ -213,6 +230,7 @@ function ReviewDialog({
   const snapshot = () =>
     JSON.stringify({
       summary,
+      sharedSummary,
       nextPlans,
       gratitude,
       reflections,
@@ -245,7 +263,7 @@ function ReviewDialog({
       periodKey,
       completedAt: existing?.completedAt ?? new Date(),
       endCompleted: done ? true : false,
-      summary,
+      summary: sharedSummary.trim() || summary,
       gratitude: grateful,
       nextPlans,
       reflections,
@@ -276,7 +294,7 @@ function ReviewDialog({
       assumedTouched:
         assumedPending < baselineAssumed.current ||
         pendingAssumedTasks(tasks, period, periodKey).some((task) => task.timeRough),
-      summary,
+      summary: sharedSummary.trim() || summary,
       gratitude: grateful,
       planShown: !!storedPlanText,
       planReflection,
@@ -407,6 +425,14 @@ function ReviewDialog({
                           value={blockedReasons[task.id]}
                           onChange={(reason) => setReason(task.id, reason)}
                         />
+                        <button
+                          type="button"
+                          className="rv-delete"
+                          title="Delete this item for good"
+                          onClick={() => deleteUnfinished(task)}
+                        >
+                          {confirmDeleteId === task.id ? "Sure? Delete" : "Delete"}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -463,18 +489,17 @@ function ReviewDialog({
         },
     {
       id: "summary",
-      label: "Summary",
-      answered: !!summary.trim(),
+      label: period === "day" ? "Day summary" : `${period === "quarter" ? "Season" : period[0].toUpperCase() + period.slice(1)} summary`,
+      answered: !!sharedSummary.trim() || !!summary.trim(),
       body: (
-        <section className="space-y-2">
-          <Label className="mr-lede">What happened this {period}?</Label>
-          <Textarea
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            rows={3}
-            placeholder="A short recap…"
-          />
-        </section>
+        <RitualSummaryStep
+          period={period}
+          periodKey={periodKey}
+          anchor={summaryAnchor}
+          summaryKey={summaryKey}
+          legacy={summary}
+          onLegacyMoved={() => setSummary("")}
+        />
       ),
     },
     {

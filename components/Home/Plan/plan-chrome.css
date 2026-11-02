@@ -2254,6 +2254,12 @@ body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-
 .plan95[data-plan-dark="true"] .plan-group > legend,
 .plan95[data-plan-dark="true"] .plan-group-label,
 .plan95[data-plan-dark="true"] .plan-status,
+.append-log-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
 .plan95[data-plan-dark="true"] .append-log-stamp {
   color: var(--p-sage);
   text-shadow: none;

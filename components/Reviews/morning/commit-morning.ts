@@ -9,6 +9,7 @@ import { createScheduledTodoTask } from "@/components/Home/ToDo/todo-utils"
 import type { SleepClockSource } from "@/lib/estimated-values"
 import { applyTodoWalkSlots, emptyTodoWalkForm, formToTodoWalkReply, parseTodoWalkReply, type TodoWalkFormFields } from "@/lib/morning-todo-walk"
 import { appendPlanEntry } from "@/lib/plan-text"
+import { MORNING_PLAN_LABEL } from "@/lib/start-plans"
 import { morningReviewPhase } from "@/lib/reviews-store"
 import { parseBedtime, parseWakeTime } from "@/lib/sleep-log"
 import type { SleepState } from "@/lib/sleep-store"
@@ -116,7 +117,7 @@ export function commitMorning(input: {
   let dayPlanLogged = !!existing?.dayPlanLogged
   let dayPlanText = existing?.dayPlanText
   if (planText && planText !== (existing?.dayPlanText ?? "")) {
-    appendPlanEntry("day", dayKey, planText, now)
+    appendPlanEntry("day", dayKey, planText, now, { stampSuffix: MORNING_PLAN_LABEL })
     dayPlanLogged = true
     dayPlanText = planText
   } else if (!planText) {

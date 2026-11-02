@@ -2322,6 +2322,14 @@ export interface PeriodStartRitual {
   summary?: string
   /** Concrete plan for the coming period. */
   nextPlans?: string
+  /**
+   * Plans for the smaller periods inside this one (week → days, month → weeks,
+   * season → months, year → seasons), keyed `${plan period}:${plan key}`.
+   * Appended to those periods' Plan logs when the ritual is finished.
+   */
+  childPlans?: Record<string, string>
+  /** Last text appended to the Plan tab per target (`lib/start-plans.ts`), so a re-save does not repeat it. */
+  planLogged?: Record<string, string>
   gratitude?: string[]
   reflections?: Record<string, string>
   source?: "telegram" | "desktop"

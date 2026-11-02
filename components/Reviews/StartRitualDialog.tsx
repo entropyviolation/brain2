@@ -32,6 +32,8 @@ import { taskIsPrioritized, taskIsRequired, tasksWithCommitment } from "@/lib/to
 import { CommitmentMarkList } from "@/components/Reviews/CommitmentMarkList"
 import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
 import { LookAheadSection, type LookAheadTarget } from "@/components/Reviews/LookAheadSection"
+import { PlanLogGlimpse } from "@/components/Reviews/PlanLogGlimpse"
+import { childPlanTargets, logStartPlans, ownPlanTarget, startPlanLabel } from "@/lib/start-plans"
 
 export function StartRitualDialog({
   open,
@@ -54,6 +56,7 @@ export function StartRitualDialog({
   const [undoneNotes, setUndoneNotes] = useState(existing?.undoneNotes ?? "")
   const [summary, setSummary] = useState(existing?.summary ?? "")
   const [nextPlans, setNextPlans] = useState(existing?.nextPlans ?? "")
+  const [childPlans, setChildPlans] = useState<Record<string, string>>(existing?.childPlans ?? {})
   const [gratitude, setGratitude] = useState<string[]>(
     existing?.gratitude?.length ? existing.gratitude : [""],
   )
@@ -108,13 +111,15 @@ export function StartRitualDialog({
     setPulled((p) => [...new Set([...p, task.id])])
   }
 
-  const buildSlice = (completed: boolean): PeriodStartRitual => ({
+  const buildSlice = (completed: boolean, planLogged = existing?.planLogged): PeriodStartRitual => ({
     completed,
     priorities: priorities.trim() || undefined,
     mustDo: mustDo.trim() || undefined,
     undoneNotes: undoneNotes.trim() || undefined,
     summary: summary.trim() || undefined,
     nextPlans: nextPlans.trim() || undefined,
+    childPlans: Object.values(childPlans).some((t) => t.trim()) ? childPlans : undefined,
+    planLogged: planLogged && Object.keys(planLogged).length ? planLogged : undefined,
     gratitude: gratitude.map((g) => g.trim()).filter(Boolean),
     pulledTaskIds: pulled.length ? pulled : undefined,
     source: "desktop",
@@ -123,7 +128,7 @@ export function StartRitualDialog({
   const submittedRef = useRef(false)
   const baselineRef = useRef("")
   const snapshot = () =>
-    JSON.stringify({ priorities, mustDo, undoneNotes, summary, nextPlans, gratitude, pulled, requiredIds, prioritizedIds })
+    JSON.stringify({ priorities, mustDo, undoneNotes, summary, nextPlans, childPlans, gratitude, pulled, requiredIds, prioritizedIds })
 
   useEffect(() => {
     baselineRef.current = snapshot()
@@ -139,7 +144,15 @@ export function StartRitualDialog({
   const handleSave = () => {
     submittedRef.current = true
     stampMarks()
-    replaceStartRitual(period, periodKey, buildSlice(true))
+    // Plans reach the Plan tab only on Finish, so a half-typed step is never logged.
+    const logged = logStartPlans({
+      period,
+      periodKey,
+      own: nextPlans,
+      children: childPlans,
+      logged: existing?.planLogged,
+    })
+    replaceStartRitual(period, periodKey, buildSlice(true, logged))
     onClose()
   }
 
@@ -150,6 +163,9 @@ export function StartRitualDialog({
   }
 
   const [visited, setVisited] = useState<string[]>([])
+  const ownPlan = ownPlanTarget(period, periodKey)
+  const innerTargets = useMemo(() => childPlanTargets(period, periodKey), [period, periodKey])
+  const innerWord = period === "week" ? "days" : period === "month" ? "weeks" : period === "quarter" ? "months" : "seasons"
   const unitName = period === "quarter" ? "season" : period
   const periodStart = dateFromPeriodKey(period, periodKey)
   const monthKeyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
@@ -327,13 +343,45 @@ export function StartRitualDialog({
       answered: !!nextPlans.trim(),
       body: (
         <section className="space-y-2">
-          <Label className="mr-lede">A concrete plan for the {period} ahead</Label>
+          <Label className="mr-lede">A concrete plan for the {unitName} ahead</Label>
+          <p className="text-xs text-muted-foreground">
+            {ownPlan
+              ? `On Finish this is added to Plan → ${ownPlan.label} as ${startPlanLabel(period)}. Optional.`
+              : "The year has no plan log on the Plan tab. Plan its seasons on the next step. Optional."}
+          </p>
           <Textarea
             value={nextPlans}
             onChange={(e) => setNextPlans(e.target.value)}
             rows={3}
             placeholder="Concrete plan for the period ahead…"
           />
+          {ownPlan ? <PlanLogGlimpse period={ownPlan.period} periodKey={ownPlan.key} heading={`Plan tab · ${ownPlan.label}`} /> : null}
+        </section>
+      ),
+    },
+    {
+      id: "inner",
+      label: `Plan the ${innerWord}`,
+      answered: innerTargets.some((t) => !!childPlans[t.id]?.trim()),
+      body: (
+        <section className="space-y-3">
+          <p className="mr-lede">Plan the {innerWord} inside this {unitName}. Optional.</p>
+          <p className="text-xs text-muted-foreground">
+            On Finish each one is added to its own Plan log as {startPlanLabel(period)}.
+          </p>
+          {innerTargets.map((t) => (
+            <label key={t.id} className="rv-child-plan">
+              <span>{t.label}</span>
+              <Textarea
+                aria-label={`Plan for ${t.label}`}
+                value={childPlans[t.id] ?? ""}
+                onChange={(e) => setChildPlans((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                rows={2}
+                placeholder="Optional"
+              />
+              <PlanLogGlimpse period={t.period} periodKey={t.key} heading="Plan tab" />
+            </label>
+          ))}
         </section>
       ),
     },

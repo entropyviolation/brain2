@@ -126,6 +126,12 @@ export function formatAppendStampLine(entry: AppendLogEntry, now = new Date()): 
   return suffix ? `${stamp} ${suffix}` : stamp
 }
 
+/** How a stamp suffix reads in the UI: plan labels take a colon (`WEEK START PLAN:`). */
+export function planLogLabel(suffix: string): string {
+  const s = suffix.trim()
+  return /PLAN$/.test(s) ? `${s}:` : s
+}
+
 export function formatAppendLog(entries: AppendLogEntry[], mode: "all" | "latest" = "all", now = new Date()): string {
   const ordered = sortAppendLogNewestFirst(entries)
   const slice = mode === "latest" ? ordered.slice(0, 1) : ordered
