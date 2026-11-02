@@ -8,6 +8,7 @@
 "use client"
 
 import { useState, useEffect, useLayoutEffect, useMemo } from "react"
+import { useHabitsDayLens } from "@/components/Home/Habits/period/habits-day-lens"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 import {
   habitsCalendarKey,
@@ -262,6 +263,7 @@ export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Da
   const currentWeekStart = weekLens ?? habitsViewedWeekStart(currentDate)
   const currentMonth = monthLens ?? habitsViewedMonth(currentDate)
   const currentQuarter = quarterLens ?? habitsViewedQuarter(currentDate)
+  const dayLens = useHabitsDayLens(currentWeekStart, setWeekLens)
 
   useLayoutEffect(() => {
     const asOf = resolveHomeCursor(new Date())
@@ -1078,6 +1080,7 @@ export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Da
         setWeekLens={setWeekLens}
         setMonthLens={setMonthLens}
         setQuarterLens={setQuarterLens}
+        dayLens={dayLens}
         viewingCurrentPeriod={viewingCurrentPeriod}
         weekWindowRange={weekWindowRange}
         monthWindowAsOf={monthWindowAsOf}

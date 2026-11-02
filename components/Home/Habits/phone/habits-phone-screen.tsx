@@ -33,9 +33,11 @@ import {
   addCalendarDays,
   formatDateRange,
   formatLocalDateKey,
+  getWeekStartDate,
   parseLocalDate,
 } from "@/lib/date-utils"
-import { quarterLabel, quarterKey, shiftQuarter } from "@/lib/seasons"
+import { quarterLabel, quarterKey, quarterStartDate, shiftQuarter } from "@/lib/seasons"
+import type { useHabitsDayLens } from "@/components/Home/Habits/period/habits-day-lens"
 import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
 import { isExemptKind, type ExemptionKind } from "@/lib/habit-exemption"
 import type { WillpowerStone } from "@/lib/willpower-stones"
@@ -78,6 +80,7 @@ export type HabitsPhoneScreenProps = {
   setWeekLens: (date: Date | null) => void
   setMonthLens: (date: Date | null) => void
   setQuarterLens: (date: Date | null) => void
+  dayLens: ReturnType<typeof useHabitsDayLens>
   viewingCurrentPeriod: boolean
   weekWindowRange: string
   monthWindowAsOf: Date
@@ -183,6 +186,9 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
   const [heatSpanId, setHeatSpanId] = useState<string | null>(null)
   const tab = props.habitTab
   const homeKey = formatLocalDateKey(props.currentDate)
+  // Day View shows its own day (today in this week, else Monday), not Home's cursor.
+  const dayMode = tab === "daily" && props.habitDayView
+  const day = props.dayLens.dayViewDate
   const dailySpan = props.weekDates.map((date) => phoneDay(date, homeKey))
   const weeklySpan = props.weekPeriods.map((column) =>
     phoneColumn(column, formatDateRange(column.date, addCalendarDays(column.date, 6))),
@@ -192,7 +198,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
   const periods =
     tab === "daily"
       ? props.habitDayView
-        ? [phoneDay(props.currentDate, homeKey)]
+        ? [phoneDay(day, formatLocalDateKey(new Date()))]
         : dailySpan
       : tab === "weekly"
         ? props.weekSheetPeriods.map((column) =>
@@ -202,9 +208,10 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
           ? props.monthSheetPeriods.map((column) => phoneColumn(column, format(column.date, "MMMM yyyy")))
           : props.seasonSheetPeriods.map((column) => phoneColumn(column, quarterLabel(column.key)))
   const spanPeriods = tab === "daily" ? dailySpan : tab === "weekly" ? weeklySpan : tab === "monthly" ? monthlySpan : seasonSpan
-  const preferredKey = tab === "daily" ? homeKey : (spanPeriods.find((period) => period.isCurrent)?.key ?? periods[0]?.key ?? homeKey)
-  const hidePeriod =
-    tab === "daily"
+  const preferredKey = dayMode ? formatLocalDateKey(day) : tab === "daily" ? homeKey : (spanPeriods.find((period) => period.isCurrent)?.key ?? periods[0]?.key ?? homeKey)
+  const hidePeriod = dayMode
+    ? periods[0]
+    : tab === "daily"
       ? phoneDay(props.currentDate, homeKey)
       : (spanPeriods.find((period) => period.isCurrent) ??
         spanPeriods[spanPeriods.length - 1] ??
@@ -288,7 +295,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
       onSetExempt={(taskId, date, exempted) => props.setHabitExemption("daily", formatLocalDateKey(date), taskId, exempted)}
       viewMode="day"
       dayView={props.habitDayView}
-      selectedDate={props.currentDate}
+      selectedDate={props.habitDayView ? day : props.currentDate}
       {...priority}
       onReorder={onReorder}
     />
@@ -385,7 +392,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
         target={habitsScratchTarget({
           habitTab: tab,
           dayView: props.habitDayView,
-          currentDate: props.currentDate,
+          currentDate: day,
           currentWeekStart: props.currentWeekStart,
           currentMonth: props.currentMonth,
           currentQuarter: props.currentQuarter,
@@ -423,7 +430,9 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
             : props.monthPeriods.length === 1
               ? format(props.monthPeriods[0].date, "MMMM yyyy")
               : `${format(props.monthPeriods[0].date, "MMM yyyy")} – ${format(props.monthPeriods[props.monthPeriods.length - 1].date, "MMM yyyy")}`
-          : formatDateRange(props.currentWeekStart, props.weekEndDate)
+          : dayMode
+            ? format(day, "EEEE, MMM d")
+            : formatDateRange(props.currentWeekStart, props.weekEndDate)
 
   return (
     <HabitsPhone
@@ -438,23 +447,33 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
       onFrequency={props.setHabitTab}
       windowLabel={windowLabel}
       currentLabel={tab === "quarterly" ? "This season" : tab === "weekly" ? "This week" : tab === "monthly" ? "This month" : "Today"}
-      isCurrentPeriod={props.viewingCurrentPeriod}
-      previousAria={tab === "quarterly" ? "Previous season" : tab === "monthly" ? "Previous Month" : "Previous Week"}
-      nextAria={tab === "quarterly" ? "Next season" : tab === "monthly" ? "Next Month" : "Next Week"}
+      isCurrentPeriod={dayMode ? props.dayLens.isToday : props.viewingCurrentPeriod}
+      previousAria={tab === "quarterly" ? "Previous season" : tab === "monthly" ? "Previous Month" : dayMode ? "Previous day" : "Previous Week"}
+      nextAria={tab === "quarterly" ? "Next season" : tab === "monthly" ? "Next Month" : dayMode ? "Next day" : "Next Week"}
       onPrevious={() => {
-        if (tab === "quarterly") props.setQuarterLens(shiftQuarter(props.currentQuarter, -1))
+        if (dayMode) props.dayLens.stepDay(-1)
+        else if (tab === "quarterly") props.setQuarterLens(shiftQuarter(props.currentQuarter, -1))
         else if (tab === "monthly") props.setMonthLens(new Date(props.currentMonth.getFullYear(), props.currentMonth.getMonth() - 1, 1))
         else props.setWeekLens(addCalendarDays(props.currentWeekStart, -7))
       }}
       onNext={() => {
-        if (tab === "quarterly") props.setQuarterLens(shiftQuarter(props.currentQuarter, 1))
+        if (dayMode) props.dayLens.stepDay(1)
+        else if (tab === "quarterly") props.setQuarterLens(shiftQuarter(props.currentQuarter, 1))
         else if (tab === "monthly") props.setMonthLens(new Date(props.currentMonth.getFullYear(), props.currentMonth.getMonth() + 1, 1))
         else props.setWeekLens(addCalendarDays(props.currentWeekStart, 7))
       }}
       onCurrent={() => {
         if (tab === "quarterly") props.setQuarterLens(null)
         else if (tab === "monthly") props.setMonthLens(null)
+        else if (tab === "daily") props.dayLens.goToToday()
         else props.setWeekLens(null)
+      }}
+      pickValue={dayMode ? day : tab === "quarterly" ? props.currentQuarter : tab === "monthly" ? props.currentMonth : props.currentWeekStart}
+      onPick={(date) => {
+        if (dayMode) props.dayLens.goToDay(date)
+        else if (tab === "quarterly") props.setQuarterLens(quarterStartDate(date))
+        else if (tab === "monthly") props.setMonthLens(new Date(date.getFullYear(), date.getMonth(), 1))
+        else props.setWeekLens(getWeekStartDate(date))
       }}
       periods={periods}
       spanPeriods={spanPeriods}

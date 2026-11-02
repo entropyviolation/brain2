@@ -41,6 +41,7 @@ import { useHabitTrackingSync } from "@/lib/habit-tracking-sync"
 import { effectiveSortDescending } from "@/lib/habit-sort"
 import type { HabitFrequency, WeeklyTask } from "@/lib/types"
 import { useHabitsDeskStore } from "@/components/Home/Habits/tracker/use-habits-desk-store"
+import { useHabitsDayLens } from "@/components/Home/Habits/period/habits-day-lens"
 import { useHabitPeriodLens } from "@/components/Home/Habits/tracker/use-habit-period-lens"
 import { useHabitFormSession } from "@/components/Home/Habits/tracker/use-habit-form-session"
 import { computeDailyBundle } from "@/components/Home/Habits/tracker/daily-model"
@@ -66,6 +67,7 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
   const hydrated = usePersistHydrated(useHabitsStore.persist)
   const store = useHabitsDeskStore(currentDate)
   const lens = useHabitPeriodLens(currentDate)
+  const dayLens = useHabitsDayLens(lens.currentWeekStart, lens.setWeekLens)
   const form = useHabitFormSession({
     addTaskToStore: store.addTaskToStore,
     updateTaskInStore: store.updateTaskInStore,
@@ -461,6 +463,8 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           weekWindowAsOf={weekWindowAsOf}
           monthPeriods={monthPeriods}
           monthWindowAsOf={monthWindowAsOf}
+          dayView={store.habitDayView}
+          dayLens={dayLens}
           onOpenSettings={() => form.setShowSettings(true)}
         />
         <HabitPeriodKeys
@@ -477,7 +481,7 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           dailyRows={dailyRows}
           dailyShown={dailyShown}
           weeklyData={store.weeklyData}
-          currentDate={currentDate}
+          currentDate={store.habitDayView ? dayLens.dayViewDate : currentDate}
           onEditTask={form.handleEditTask}
           hideCompletedToday={store.hideCompletedToday}
           hideCompletedAndMissed={store.hideCompletedAndMissed}
@@ -610,7 +614,7 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           target={habitsScratchTarget({
             habitTab,
             dayView: store.habitDayView,
-            currentDate,
+            currentDate: dayLens.dayViewDate,
             currentWeekStart,
             currentMonth,
             currentQuarter,

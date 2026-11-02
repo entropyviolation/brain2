@@ -3,6 +3,7 @@
  *
  * Previous / next period, Today / This month, and the date-range nameplate.
  * Raised metal keys + engraved range inside the milled Habits fascia.
+ * Double-clicking the nameplate opens a date picker when `onPick` is set.
  *
  * Spec: §9.3 (display & interaction).
  */
@@ -10,6 +11,7 @@
 
 import { formatDateRange } from "@/lib/date-utils"
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
+import { usePeriodPicker } from "@/components/Home/Habits/period/period-picker"
 
 interface WeekNavigationProps {
   currentWeekStart: Date
@@ -23,6 +25,10 @@ interface WeekNavigationProps {
   nextAriaLabel?: string
   /** Current period is a state (sunken), not a larger control. */
   isCurrentPeriod?: boolean
+  /** Double-click the nameplate to jump. The caller snaps the day to its period. */
+  onPick?: (date: Date) => void
+  /** Day the picker opens on. Defaults to `currentWeekStart`. */
+  pickValue?: Date
 }
 
 export function WeekNavigation({
@@ -36,7 +42,10 @@ export function WeekNavigation({
   previousAriaLabel = "Previous Week",
   nextAriaLabel = "Next Week",
   isCurrentPeriod = false,
+  onPick,
+  pickValue,
 }: WeekNavigationProps) {
+  const picker = usePeriodPicker(pickValue ?? currentWeekStart, onPick)
   return (
     <div className="habit-week-nav">
       <button type="button" className="habit-chrome-btn" onClick={onPreviousWeek}>
@@ -54,8 +63,13 @@ export function WeekNavigation({
         {currentButtonLabel}
       </button>
 
-      <span className="habit-week-nav-range">
+      <span
+        className="habit-week-nav-range"
+        onDoubleClick={onPick ? picker.open : undefined}
+        title={onPick ? "Double-click to pick a date" : undefined}
+      >
         {rangeLabel ?? formatDateRange(currentWeekStart, weekEndDate)}
+        {picker.input}
       </span>
 
       <button type="button" className="habit-chrome-btn" onClick={onNextWeek}>

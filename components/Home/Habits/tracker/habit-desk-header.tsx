@@ -2,7 +2,9 @@
  * tracker/habit-desk-header.tsx — Fascia title, period nameplate, Settings.
  *
  * Season, week, month, and day each keep their own range and lens update.
- * The daily nameplate still adds six days with `setDate`.
+ * The daily nameplate still adds six days with `setDate`. With Day View on,
+ * the daily nameplate names one day and its keys step one day. Double-click
+ * any nameplate to pick a date.
  */
 "use client"
 
@@ -10,8 +12,9 @@ import { format } from "date-fns"
 import { Settings } from "lucide-react"
 import { WeekNavigation } from "@/components/Home/Habits/period/week-navigation"
 import { habitsCalendarKey, habitsViewedMonth } from "@/components/Home/Habits/period/habits-period-cursor"
-import { addCalendarDays, formatDateRange, isSameLocalWeek } from "@/lib/date-utils"
-import { quarterKey, quarterLabel, shiftQuarter } from "@/lib/seasons"
+import { addCalendarDays, formatDateRange, getWeekStartDate, isSameLocalWeek } from "@/lib/date-utils"
+import { quarterKey, quarterLabel, quarterStartDate, shiftQuarter } from "@/lib/seasons"
+import type { useHabitsDayLens } from "@/components/Home/Habits/period/habits-day-lens"
 import type { HabitFreqTab } from "@/lib/app-navigation"
 import type { PeriodColumn } from "@/components/Home/Habits/period-habit-list"
 
@@ -28,6 +31,8 @@ export function HabitDeskHeader({
   weekWindowAsOf,
   monthPeriods,
   monthWindowAsOf,
+  dayView,
+  dayLens,
   onOpenSettings,
 }: {
   habitTab: HabitFreqTab
@@ -42,6 +47,8 @@ export function HabitDeskHeader({
   weekWindowAsOf: Date
   monthPeriods: PeriodColumn[]
   monthWindowAsOf: Date
+  dayView: boolean
+  dayLens: ReturnType<typeof useHabitsDayLens>
   onOpenSettings: () => void
 }) {
   const weekEndDate = new Date(currentWeekStart)
@@ -73,6 +80,7 @@ export function HabitDeskHeader({
             onPreviousWeek={() => setQuarterLens(shiftQuarter(currentQuarter, -1))}
             onNextWeek={() => setQuarterLens(shiftQuarter(currentQuarter, 1))}
             onCurrentWeek={() => setQuarterLens(null)}
+            onPick={(date) => setQuarterLens(quarterStartDate(date))}
           />
         ) : habitTab === "weekly" ? (
           <WeekNavigation
@@ -90,6 +98,7 @@ export function HabitDeskHeader({
             onPreviousWeek={() => setWeekLens(addCalendarDays(currentWeekStart, -7))}
             onNextWeek={() => setWeekLens(addCalendarDays(currentWeekStart, 7))}
             onCurrentWeek={() => setWeekLens(null)}
+            onPick={(date) => setWeekLens(getWeekStartDate(date))}
           />
         ) : habitTab === "monthly" ? (
           <WeekNavigation
@@ -113,6 +122,20 @@ export function HabitDeskHeader({
               setMonthLens(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
             }
             onCurrentWeek={() => setMonthLens(null)}
+            onPick={(date) => setMonthLens(new Date(date.getFullYear(), date.getMonth(), 1))}
+          />
+        ) : dayView ? (
+          <WeekNavigation
+            currentWeekStart={dayLens.dayViewDate}
+            weekEndDate={dayLens.dayViewDate}
+            rangeLabel={format(dayLens.dayViewDate, "EEE, MMM d, yyyy")}
+            previousAriaLabel="Previous day"
+            nextAriaLabel="Next day"
+            isCurrentPeriod={dayLens.isToday}
+            onPreviousWeek={() => dayLens.stepDay(-1)}
+            onNextWeek={() => dayLens.stepDay(1)}
+            onCurrentWeek={dayLens.goToToday}
+            onPick={dayLens.goToDay}
           />
         ) : (
           <WeekNavigation
@@ -121,7 +144,8 @@ export function HabitDeskHeader({
             isCurrentPeriod={viewingCurrentPeriod}
             onPreviousWeek={() => setWeekLens(addCalendarDays(currentWeekStart, -7))}
             onNextWeek={() => setWeekLens(addCalendarDays(currentWeekStart, 7))}
-            onCurrentWeek={() => setWeekLens(null)}
+            onCurrentWeek={dayLens.goToToday}
+            onPick={(date) => setWeekLens(getWeekStartDate(date))}
           />
         )}
       </div>

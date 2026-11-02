@@ -24,6 +24,7 @@ import {
   type ReactNode,
 } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { usePeriodPicker } from "@/components/Home/Habits/period/period-picker"
 import { HabitEditGemButton } from "@/components/Home/Habits/habit-gems"
 import { HabitCompletionCell } from "@/components/Home/Habits/sheet/habit-completion-cell"
 import { HabitCompletionDetail } from "@/components/Home/Habits/sheet/habit-completion-detail"
@@ -104,6 +105,9 @@ export interface HabitsPhoneProps {
   onPrevious: () => void
   onNext: () => void
   onCurrent: () => void
+  /** Double-tap the date key to pick a date. The caller snaps it to the period. */
+  onPick?: (date: Date) => void
+  pickValue?: Date
   periods: HabitsPhonePeriod[]
   spanPeriods: HabitsPhonePeriod[]
   preferredKey: string
@@ -338,6 +342,27 @@ export function HabitsPhone(props: HabitsPhoneProps) {
     else if (current >= 0) setFocus(current)
   }
 
+  // Date key: one tap goes to the current period, a double tap opens the picker.
+  // The single tap waits out the double-tap window so a pick does not jump first.
+  const picker = usePeriodPicker(props.pickValue ?? new Date(), props.onPick)
+  const dateTapRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (dateTapRef.current) clearTimeout(dateTapRef.current)
+  }, [])
+  const onDateKey = () => {
+    if (!props.onPick) return goCurrent()
+    if (dateTapRef.current) {
+      clearTimeout(dateTapRef.current)
+      dateTapRef.current = null
+      picker.open()
+      return
+    }
+    dateTapRef.current = setTimeout(() => {
+      dateTapRef.current = null
+      goCurrent()
+    }, 300)
+  }
+
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
@@ -511,10 +536,12 @@ export function HabitsPhone(props: HabitsPhoneProps) {
             className="hab-phone-key hab-phone-date"
             data-no95=""
             aria-pressed={props.isCurrentPeriod}
-            onClick={goCurrent}
+            onClick={onDateKey}
+            title={props.onPick ? "Double-tap to pick a date" : undefined}
           >
             {title}
           </button>
+          {picker.input}
           <button type="button" className="hab-phone-key hab-phone-key-icon" data-no95="" aria-label={props.nextAria} onClick={props.onNext}>
             <ChevronRight aria-hidden="true" />
           </button>
