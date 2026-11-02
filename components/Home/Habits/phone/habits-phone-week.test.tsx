@@ -161,7 +161,7 @@ describe("phone habits shell", () => {
     useHabitsStore.getState().updateCompletion("g1", today, { value: 2, goal: 5 })
     const user = userEvent.setup()
     render(<WeeklyTaskTracker currentDate={today} />)
-    await user.click(screen.getByRole("button", { name: "Week" }))
+    await user.click(screen.getByRole("switch", { name: "Grid view" }))
     const grid = screen.getByRole("grid", { name: "Daily grid" })
     expect(within(grid).getByText("gym")).toBeInTheDocument()
     expect(within(grid).getAllByRole("columnheader")).toHaveLength(7)
@@ -177,8 +177,36 @@ describe("phone habits shell", () => {
     await user.click(todayCell)
     const sheet = screen.getByRole("dialog", { name: /Exercise/ })
     expect(within(sheet).getByRole("textbox", { name: /Exercise .* value/ })).toHaveValue("2")
-    expect(within(sheet).getByText("No history yet")).toBeInTheDocument()
+    expect(within(sheet).getByRole("list", { name: "History" })).toBeInTheDocument()
     await user.click(within(sheet).getByRole("button", { name: "Close" }))
     expect(screen.queryByRole("dialog")).toBeNull()
+  })
+
+  it("shows only this tab's grid, and every frequency on All in Detail and Grid", async () => {
+    const today = new Date()
+    const weekly: WeeklyTask = { id: "w1", name: "Long run", type: TaskType.BOOLEAN, frequency: "weekly" }
+    useHabitsStore.getState().setTasks([goal, weekly])
+    const user = userEvent.setup()
+    render(<WeeklyTaskTracker currentDate={today} />)
+
+    await user.click(screen.getByRole("switch", { name: "Grid view" }))
+    expect(screen.getByRole("grid", { name: "Daily grid" })).toBeInTheDocument()
+    expect(screen.queryByRole("grid", { name: "Weekly grid" })).toBeNull()
+
+    await user.click(screen.getByRole("tab", { name: "All" }))
+    expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("grid", { name: "Daily grid" })).toBeInTheDocument()
+    expect(screen.getByRole("grid", { name: "Weekly grid" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("switch", { name: "Grid view" }))
+    const all = screen.getByTestId("habits-phone-all")
+    expect(within(all).getByRole("region", { name: "Daily" })).toBeInTheDocument()
+    expect(within(all).getByRole("region", { name: "Weekly" })).toBeInTheDocument()
+    expect(all.querySelector('[data-habit-id="w1"]')).toBeTruthy()
+    expect(all.querySelector('[data-habit-id="g1"]')).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Previous day" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: /^Weekly/ }))
+    expect(screen.queryByTestId("habits-phone-all")).toBeNull()
   })
 })

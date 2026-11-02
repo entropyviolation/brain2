@@ -6,10 +6,12 @@
  * rendered here.
  * One scrolling page: sticky header, period keys, one grade strip, a
  * one-period list with a horizontal drag between periods, and a thumb bar.
- * Week opens the phone week grid. Tools opens the control panel and the
- * willpower plate in a bottom sheet. Writes go through the same cells.
- * On Daily the chevrons step one day, the same lens as the drag; on the Week
- * sheet they step a week. Today shows only off the current period.
+ * The Detail / Grid switch swaps the list for the phone week grid: this
+ * tab's frequency only, or every frequency on All. All, Detail lists each
+ * frequency's period that holds the viewed day. Tools opens the control panel
+ * and the willpower plate in a bottom sheet. Writes go through the same cells.
+ * On Daily and All the chevrons step one day, the same lens as the drag; on
+ * the Daily or All grid they step a week. Today shows only off the current period.
  */
 "use client"
 
@@ -100,6 +102,14 @@ export function stepPeriodIndex(
   return { index: next, edge: false }
 }
 
+/** One frequency on the All tab's Detail list. `props` overrides the page's for its rows. */
+export type HabitsPhoneAllSection = {
+  id: HabitFrequency
+  title: string
+  period: HabitsPhonePeriod
+  props: Partial<HabitsPhoneProps>
+}
+
 export type HabitsPhoneMeter = {
   label: string
   value: string
@@ -110,6 +120,11 @@ export type HabitsPhoneMeter = {
 export interface HabitsPhoneProps {
   hydrated: boolean
   frequency: HabitFrequency
+  /** The All tab is on. `frequency` then reads "daily" for the nav. */
+  all?: boolean
+  onAll?: () => void
+  /** All, Detail: one list per frequency. */
+  allSections?: HabitsPhoneAllSection[]
   counts: { daily: number; weekly: number; monthly: number; quarterly: number }
   onFrequency: (frequency: HabitFrequency) => void
   windowLabel: string
@@ -161,7 +176,7 @@ export interface HabitsPhoneProps {
   good: HabitsPhoneMeter | null
   through: string | null
   wand: ReactNode
-  /** Phone week grid. Mounted from the Week key. */
+  /** Phone week grid. Mounted from the Grid side of the Detail / Grid switch. */
   columns: ReactNode
   /** Daily heatmap. Replaces the list while Heatmap View is on. */
   heatmap: ReactNode | null
@@ -232,6 +247,27 @@ function shownCompletion(
   const sum = loggedAmountForColumn(task, period, statContext)
   if (sum == null) return completion
   return { ...(completion ?? {}), value: sum, goal: completion?.goal ?? task.goal }
+}
+
+/** Hide Done, against the props' own `hidePeriod`. */
+function visibleTasks(props: HabitsPhoneProps, statContext: ReturnType<typeof useStatContext>): WeeklyTask[] {
+  if (!props.hideCompleted) return props.tasks
+  return props.tasks.filter((task) => {
+    const kind = props.exemptionKindFor?.(task, props.hidePeriod.key)
+    const completion = shownCompletion(
+      task,
+      props.hidePeriod,
+      props.data[props.hidePeriod.key]?.[task.id],
+      props.variant,
+      statContext,
+    )
+    return !habitHiddenWhenComplete(task, completion, {
+      date: props.hidePeriod.date,
+      weeklyData: props.data,
+      exempt: isExemptKind(kind),
+      periodPercent: props.taskPercent(task.id),
+    })
+  })
 }
 
 function ToolsSheet({
@@ -310,6 +346,7 @@ export function HabitsPhone(props: HabitsPhoneProps) {
     return current >= 0 ? current : 0
   })
   const [spanTaskId, setSpanTaskId] = useState<string | null>(null)
+  const [spanSectionId, setSpanSectionId] = useState<HabitFrequency | null>(null)
   const [periodOpen, setPeriodOpen] = useState(false)
   const [pendingEdge, setPendingEdge] = useState<-1 | 1 | 0>(0)
   const pendingKeyRef = useRef<string | null>(null)
@@ -485,25 +522,10 @@ export function HabitsPhone(props: HabitsPhoneProps) {
     }, 180)
   }
 
-  const visible = useMemo(() => {
-    if (!props.hideCompleted || !period) return props.tasks
-    return props.tasks.filter((task) => {
-      const kind = props.exemptionKindFor?.(task, props.hidePeriod.key)
-      const completion = shownCompletion(
-        task,
-        props.hidePeriod,
-        props.data[props.hidePeriod.key]?.[task.id],
-        props.variant,
-        statContext,
-      )
-      return !habitHiddenWhenComplete(task, completion, {
-        date: props.hidePeriod.date,
-        weeklyData: props.data,
-        exempt: isExemptKind(kind),
-        periodPercent: props.taskPercent(task.id),
-      })
-    })
-  }, [props, period, statContext])
+  const visible = useMemo(
+    () => (period ? visibleTasks(props, statContext) : props.tasks),
+    [props, period, statContext],
+  )
 
   const groups = useMemo(() => {
     if (!props.groupByKind || props.frequency !== "daily") {
@@ -522,20 +544,23 @@ export function HabitsPhone(props: HabitsPhoneProps) {
     )
   }, [visible, props.groupByKind, props.frequency])
 
-  const spanTask = spanTaskId ? props.tasks.find((task) => task.id === spanTaskId) ?? null : null
+  const allSections = props.all && !sheet && !props.heatmap ? props.allSections : undefined
+  const spanSection = spanSectionId ? allSections?.find((section) => section.id === spanSectionId) : undefined
+  const spanSource: HabitsPhoneProps = spanSection ? { ...props, ...spanSection.props } : props
+  const spanTask = spanTaskId ? spanSource.tasks.find((task) => task.id === spanTaskId) ?? null : null
   const spanBreakdown = spanTask
     ? habitSpanBreakdown({
         task: spanTask,
-        data: props.data,
-        columns: props.spanPeriods.map((item) => ({
+        data: spanSource.data,
+        columns: spanSource.spanPeriods.map((item) => ({
           key: item.key,
           title: item.title,
           date: item.date,
         })),
-        unit: props.spanUnit,
-        asOf: props.asOf,
-        isExempt: props.exemptionKindFor
-          ? (task, key) => isExemptKind(props.exemptionKindFor?.(task, key))
+        unit: spanSource.spanUnit,
+        asOf: spanSource.asOf,
+        isExempt: spanSource.exemptionKindFor
+          ? (task, key) => isExemptKind(spanSource.exemptionKindFor?.(task, key))
           : undefined,
       })
     : null
@@ -627,12 +652,24 @@ export function HabitsPhone(props: HabitsPhoneProps) {
               role="tab"
               className="hab-phone-key"
               data-no95=""
-              aria-selected={props.frequency === id}
+              aria-selected={!props.all && props.frequency === id}
               onClick={() => props.onFrequency(id)}
             >
               {freqLabel(id, name, count)}
             </button>
           ))}
+          {props.onAll ? (
+            <button
+              type="button"
+              role="tab"
+              className="hab-phone-key hab-phone-all-tab"
+              data-no95=""
+              aria-selected={Boolean(props.all)}
+              onClick={props.onAll}
+            >
+              All
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -685,6 +722,50 @@ export function HabitsPhone(props: HabitsPhoneProps) {
             {props.columns}
             {props.plan ? <div className="hab-phone-plan">{props.plan}</div> : null}
           </div>
+        ) : allSections ? (
+          <>
+            <div className="hab-phone-swipe hab-phone-all" data-testid="habits-phone-all">
+              {allSections.every((section) => (section.props.tasks ?? []).length === 0) ? (
+                <p className="hab-phone-empty">{props.emptyLabel}</p>
+              ) : (
+                allSections.map((section) => {
+                  const sectionProps: HabitsPhoneProps = { ...props, ...section.props }
+                  const rows = visibleTasks(sectionProps, statContext)
+                  if (sectionProps.tasks.length === 0) return null
+                  return (
+                    <section key={section.id} aria-label={section.title}>
+                      <h4 className="hab-phone-kind">
+                        {section.title}
+                        {section.id === "daily" ? null : <span className="hab-phone-kind-sub"> · {section.period.title}</span>}
+                      </h4>
+                      <div className="hab-phone-group" role="list">
+                        {rows.length === 0 ? (
+                          <p className="hab-phone-empty">Nothing left.</p>
+                        ) : (
+                          rows.map((task) => (
+                            <PhoneRow
+                              key={task.id}
+                              task={task}
+                              period={section.period}
+                              props={sectionProps}
+                              statContext={statContext}
+                              onSpan={() => {
+                                setSpanSectionId(section.id)
+                                setSpanTaskId(task.id)
+                              }}
+                              reorderRef={reorderRef}
+                              visibleIds={rows.map((row) => row.id)}
+                            />
+                          ))
+                        )}
+                      </div>
+                    </section>
+                  )
+                })
+              )}
+            </div>
+            {props.plan ? <div className="hab-phone-plan">{props.plan}</div> : null}
+          </>
         ) : (
           <>
             <div
@@ -715,7 +796,10 @@ export function HabitsPhone(props: HabitsPhoneProps) {
                             period={period}
                             props={props}
                             statContext={statContext}
-                            onSpan={() => setSpanTaskId(task.id)}
+                            onSpan={() => {
+                              setSpanSectionId(null)
+                              setSpanTaskId(task.id)
+                            }}
                             reorderRef={reorderRef}
                             visibleIds={visible.map((row) => row.id)}
                           />
@@ -768,8 +852,17 @@ export function HabitsPhone(props: HabitsPhoneProps) {
             </button>
           )}
           {props.heatmap ? null : (
-            <button type="button" className="hab-phone-key" data-no95="" aria-pressed={sheet} onClick={() => setSheet((on) => !on)}>
-              Week
+            <button
+              type="button"
+              role="switch"
+              className="hab-phone-key hab-phone-view"
+              data-no95=""
+              aria-checked={sheet}
+              aria-label="Grid view"
+              onClick={() => setSheet((on) => !on)}
+            >
+              <span className={sheet ? undefined : "is-on"}>Detail</span>
+              <span className={sheet ? "is-on" : undefined}>Grid</span>
             </button>
           )}
           <button type="button" className="hab-phone-key" data-no95="" aria-pressed={tools} onClick={() => setTools(true)}>
@@ -800,7 +893,10 @@ export function HabitsPhone(props: HabitsPhoneProps) {
       <HabitSpanBreakdownDialog
         open={Boolean(spanBreakdown)}
         onOpenChange={(next) => {
-          if (!next) setSpanTaskId(null)
+          if (!next) {
+            setSpanTaskId(null)
+            setSpanSectionId(null)
+          }
         }}
         breakdown={spanBreakdown}
       />

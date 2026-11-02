@@ -5,8 +5,11 @@
 
 .hab-phone {
   --hab-phone-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  /* The BIM console chat history face (`--bim-mono` in components/Bim/bim-ink.css). */
-  --hab-phone-chat: var(--font-dotgothic), "DotGothic16", "w95fa", ui-monospace, monospace;
+  /* The BIM console chat history face (`--bim-mono` in components/Bim/bim-ink.css).
+     DotGothic16, the house face `--face-dotgothic` in app/win95.css. */
+  --hab-phone-chat: var(--face-dotgothic, var(--font-dotgothic), "DotGothic16", "w95fa", ui-monospace, monospace);
+  /* Sage: the phone's default light for squares, the heatmap, and the day highlight. */
+  --hab-phone-sage: #aacdb8;
   min-height: 100%;
   background: #f2f2f7;
   color: #1c1c1e;
@@ -133,6 +136,11 @@
   letter-spacing: 0;
 }
 
+/* Five keys on 390pt: All has no count, so it takes less room. */
+.hab-phone .hab-phone-segment button.hab-phone-all-tab {
+  flex: 0.6 1 0;
+}
+
 .hab-phone-days {
   display: flex;
   gap: 6px;
@@ -168,7 +176,13 @@
 
 .hab-phone-day.is-on .hab-phone-day-kicker,
 .hab-phone-day[aria-selected="true"] .hab-phone-day-kicker {
-  color: rgba(125, 255, 196, 0.78);
+  color: color-mix(in srgb, var(--hab-phone-sage) 78%, transparent);
+}
+
+.hab-phone button.hab-phone-day.hab-phone-key[aria-selected="true"],
+body.win95-app .hab-phone button.hab-phone-day.hab-phone-key[aria-selected="true"] {
+  color: var(--hab-phone-sage) !important;
+  text-shadow: 0 0 3px color-mix(in srgb, var(--hab-phone-sage) 70%, transparent) !important;
 }
 
 .hab-phone-day.is-today:not(.is-on) .hab-phone-day-num {
@@ -252,6 +266,12 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #6d6d72;
+}
+
+.hab-phone-kind-sub {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .hab-phone-group {
@@ -587,19 +607,20 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
 }
 
 /* The tube sits on the dark CRT a latched key uses, so the bar stands out. */
+/* Edge to edge: the dark band runs the full screen width, with no tray
+   showing at either side. The bar inside keeps its gutters. */
 .hab-phone-day-tube {
   display: flex;
   align-items: center;
-  width: calc(100% - 24px);
+  width: 100%;
   box-sizing: border-box;
   min-height: 64px;
-  margin: 10px 12px 0;
-  padding: 8px 12px;
+  margin: 0;
+  padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
   border: 0;
-  border-radius: 12px;
+  border-radius: 0;
   background: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.12), transparent 60%), #070c0a;
   box-shadow:
-    0 0 0 1px #000,
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 8px 12px rgba(0, 0, 0, 0.45);
   color: inherit;
@@ -903,6 +924,19 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
   overflow-x: auto;
 }
 
+/* Heatmap on the phone lights in sage. The fill floor is 30% so a small
+   partial still reads. Desktop keeps `heatmapCellFill`. */
+.hab-phone .habit-heat-cell.is-lit {
+  background-color: color-mix(in srgb, var(--hab-phone-sage) calc(30% + var(--heat-ratio, 1) * 70%), #eef3ef) !important;
+}
+
+.hab-phone .habit-heat-head.is-today,
+.hab-phone .habit-heat-cell.is-today:not(.is-exempt) {
+  background: var(--hab-phone-sage) !important;
+  background-color: var(--hab-phone-sage) !important;
+  box-shadow: inset 0 0 0 1px #7fa58e !important;
+}
+
 /* Week percent sticks to the right of the heatmap cells. Desktop omits the column. */
 .hab-phone .habit-heat-pct,
 .hab-phone .habit-heat-pct-head {
@@ -1166,7 +1200,7 @@ body.win95-app .home-pane:has(.hab-phone-wk),
 }
 
 .hab-phone-wk-col.is-current .hab-phone-wk-num {
-  color: #0a7a4a;
+  color: #4f7d62;
 }
 
 .hab-phone-wk-name {
@@ -1222,12 +1256,12 @@ body.win95-app .hab-phone button.hab-phone-wk-cell {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 35%, #c8ffe6, #7dffc4 45%, #2fbf86);
+  background: radial-gradient(circle at 50% 35%, #e6f2ea, var(--hab-phone-sage) 45%, #86ad96);
   opacity: var(--wk-lit, 0);
 }
 
 .hab-phone-wk-cell.is-current .hab-phone-wk-square {
-  box-shadow: 0 0 0 2px #0a7a4a, inset 0 2px 3px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 2px var(--hab-phone-sage), inset 0 2px 3px rgba(0, 0, 0, 0.5);
 }
 
 .hab-phone-wk-cell.is-rest .hab-phone-wk-square {
@@ -1373,4 +1407,25 @@ body.win95-app .hab-phone button.hab-phone-wk-cell {
 .hab-phone-cell-note {
   grid-column: 1 / -1;
   color: #3a3a3c;
+}
+
+/* Detail / Grid switch in the thumb bar. One key, both words; the live side
+   is lit, so the key says which view is on. */
+.hab-phone button.hab-phone-view.hab-phone-key {
+  flex-direction: row;
+  gap: 0;
+  padding-inline: 4px;
+}
+
+.hab-phone-view > span {
+  flex: 1 1 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #6d6d72;
+}
+
+.hab-phone-view > span.is-on {
+  background: #070c0a;
+  color: var(--hab-phone-sage);
+  text-shadow: 0 0 3px color-mix(in srgb, var(--hab-phone-sage) 70%, transparent);
 }

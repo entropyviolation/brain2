@@ -14,7 +14,7 @@ describe("PercentLed", () => {
     render(<PercentLed value={46.4} label="row" />)
     const meter = screen.getByRole("meter", { name: "row 46%" })
     expect(meter).toHaveAttribute("aria-valuenow", "46")
-    expect(meter).toHaveStyle({ "--hab-led-tint": "#7d6bb8" })
+    expect(meter).toHaveStyle({ "--hab-led-tint": "#aacdb8" })
   })
 
   it("uses the stored tint", () => {

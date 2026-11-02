@@ -530,7 +530,7 @@ function HeatmapRow({
             className={`habit-heat-cell ${ratio > 0 ? "is-lit" : ""} ${ratio >= 1 ? "is-full" : ""} ${isToday(col.date) ? "is-today" : ""}`}
             style={
               ratio > 0 && !isToday(col.date)
-                ? { backgroundColor: heatmapCellFill(ratio) }
+                ? ({ backgroundColor: heatmapCellFill(ratio), "--heat-ratio": Math.min(1, ratio) } as CSSProperties)
                 : undefined
             }
             title={`${task.name} · ${format(col.date, "EEE MMM d")} · ${Math.round(ratio * 100)}%`}

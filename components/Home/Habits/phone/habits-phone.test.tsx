@@ -106,7 +106,7 @@ describe("Habits phone", () => {
     expect(document.querySelector(".hab-phone-sheet.is-gems .hab-willpower-gems")).toBeTruthy()
 
     await user.click(screen.getByRole("button", { name: "Close tools" }))
-    await user.click(screen.getByRole("button", { name: "Week" }))
+    await user.click(screen.getByRole("switch", { name: "Grid view" }))
     expect(screen.getByTestId("habits-phone-week")).toBeInTheDocument()
     expect(document.querySelector(".habit-grid")).toBeNull()
     expect(screen.getByRole("button", { name: "Previous Week" })).toBeInTheDocument()

@@ -9,7 +9,11 @@
 
 import { useState, type ReactNode } from "react"
 import { format } from "date-fns"
-import { HabitsPhone, type HabitsPhonePeriod } from "@/components/Home/Habits/phone/habits-phone"
+import {
+  HabitsPhone,
+  type HabitsPhoneAllSection,
+  type HabitsPhonePeriod,
+} from "@/components/Home/Habits/phone/habits-phone"
 import { HabitWandBanner } from "@/components/Home/Habits/wands/habit-wand-banner"
 import {
   monthPeriodColumns,
@@ -40,7 +44,9 @@ import {
   addCalendarDays,
   formatDateRange,
   formatLocalDateKey,
+  formatLocalMonthKey,
   getWeekStartDate,
+  getWeekString,
   parseLocalDate,
 } from "@/lib/date-utils"
 import { quarterLabel, quarterKey, quarterStartDate, shiftQuarter } from "@/lib/seasons"
@@ -201,10 +207,13 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
   // Session A adds `showPausedHabits` to the store. Until then it reads false.
   const showPaused = useHabitsStore((s) => Boolean((s as { showPausedHabits?: boolean }).showPausedHabits))
   const unpaused = <T extends WeeklyTask>(rows: T[]) => phoneVisibleHabits(rows, todayKey, showPaused)
-  const tab = props.habitTab
+  // All is a phone-only tab: every frequency for the Day View's day. It reads
+  // as Daily for the nav and the day tube, so the store's tab type stays four.
+  const [allTab, setAllTab] = useState(false)
+  const tab = allTab ? "daily" : props.habitTab
   const homeKey = formatLocalDateKey(props.currentDate)
   // Day View shows its own day (today in this week, else Monday), not Home's cursor.
-  const dayMode = tab === "daily" && props.habitDayView
+  const dayMode = allTab || (tab === "daily" && props.habitDayView)
   const day = props.dayLens.dayViewDate
   const dailySpan = props.weekDates.map((date) => phoneDay(date, homeKey))
   const weeklySpan = props.weekPeriods.map((column) =>
@@ -214,7 +223,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
   const seasonSpan = props.seasonPeriods.map((column) => phoneColumn(column, quarterLabel(column.key)))
   const periods =
     tab === "daily"
-      ? props.habitDayView
+      ? dayMode
         ? [phoneDay(day, formatLocalDateKey(new Date()))]
         : dailySpan
       : tab === "weekly"
@@ -234,14 +243,25 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
         spanPeriods[spanPeriods.length - 1] ??
         phoneDay(props.currentDate, homeKey))
 
-  const rows = unpaused(tab === "weekly" ? props.weeklyRows : tab === "monthly" ? props.monthlyRows : tab === "quarterly" ? props.quarterlyRows : props.dailyRows)
-  const shown = tab === "weekly" ? props.weeklyShown : tab === "monthly" ? props.monthlyShown : tab === "quarterly" ? props.quarterlyShown : props.dailyShown
-  const data = tab === "weekly" ? props.weeklyHabitData : tab === "monthly" ? props.monthlyHabitData : tab === "quarterly" ? props.quarterlyHabitData : props.weeklyData
-  const kind = tab === "weekly" ? props.weeklyKind : tab === "monthly" ? props.monthlyKind : tab === "quarterly" ? props.quarterlyKind : props.dailyKind
-  const tasksForMath = tab === "weekly" ? props.weeklyTasks : tab === "monthly" ? props.monthlyTasks : tab === "quarterly" ? props.quarterlyTasks : props.dailyTasks
-  const exempt = tab === "weekly" ? props.weeklyExempt : tab === "monthly" ? props.monthlyExempt : tab === "quarterly" ? props.quarterlyExempt : props.dailyExempt
-  const percentMap = tab === "weekly" ? props.weeklyPeriodPercent : tab === "monthly" ? props.monthlyPeriodPercent : tab === "quarterly" ? props.quarterlyPeriodPercent : props.dailyWeekPercent
-  const columnsForMath = tab === "weekly" ? props.weekPeriods : tab === "monthly" ? props.monthPeriods : tab === "quarterly" ? props.seasonPeriods : []
+  const lane = (f: HabitFrequency) => ({
+    rows: unpaused(f === "weekly" ? props.weeklyRows : f === "monthly" ? props.monthlyRows : f === "quarterly" ? props.quarterlyRows : props.dailyRows),
+    shown: f === "weekly" ? props.weeklyShown : f === "monthly" ? props.monthlyShown : f === "quarterly" ? props.quarterlyShown : props.dailyShown,
+    data: f === "weekly" ? props.weeklyHabitData : f === "monthly" ? props.monthlyHabitData : f === "quarterly" ? props.quarterlyHabitData : props.weeklyData,
+    kind: f === "weekly" ? props.weeklyKind : f === "monthly" ? props.monthlyKind : f === "quarterly" ? props.quarterlyKind : props.dailyKind,
+    tasksForMath: f === "weekly" ? props.weeklyTasks : f === "monthly" ? props.monthlyTasks : f === "quarterly" ? props.quarterlyTasks : props.dailyTasks,
+    exempt: f === "weekly" ? props.weeklyExempt : f === "monthly" ? props.monthlyExempt : f === "quarterly" ? props.quarterlyExempt : props.dailyExempt,
+    percentMap: f === "weekly" ? props.weeklyPeriodPercent : f === "monthly" ? props.monthlyPeriodPercent : f === "quarterly" ? props.quarterlyPeriodPercent : props.dailyWeekPercent,
+    columnsForMath: f === "weekly" ? props.weekPeriods : f === "monthly" ? props.monthPeriods : f === "quarterly" ? props.seasonPeriods : [],
+    update:
+      f === "weekly"
+        ? props.updateWeeklyHabitCompletion
+        : f === "monthly"
+          ? props.updateMonthlyHabitCompletion
+          : f === "quarterly"
+            ? props.updateQuarterlyHabitCompletion
+            : props.updateCompletion,
+  })
+  const { rows, shown, data, kind, tasksForMath, exempt, percentMap, columnsForMath } = lane(tab)
 
   const priority = {
     highlightPriorities: props.highlightHabitPriorities,
@@ -251,16 +271,18 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
   }
   const onReorder = props.editingFrequency === tab ? (ids: string[]) => props.reorderVisible(tab, ids) : undefined
 
-  const taskPercent = (taskId: string): number | null => {
-    const task = tasksForMath.find((row) => row.id === taskId)
+  const taskPercentFor = (f: HabitFrequency) => (taskId: string): number | null => {
+    const l = lane(f)
+    const task = l.tasksForMath.find((row) => row.id === taskId)
     if (!task) return 0
-    if (tab === "daily") {
-      if (props.weekDates.length > 0 && props.weekDates.every((date) => exempt(task, formatLocalDateKey(date)))) return null
-      return percentMap.get(taskId) ?? 0
+    if (f === "daily") {
+      if (props.weekDates.length > 0 && props.weekDates.every((date) => l.exempt(task, formatLocalDateKey(date)))) return null
+      return l.percentMap.get(taskId) ?? 0
     }
-    if (columnsForMath.length > 0 && columnsForMath.every((period) => exempt(task, period.key))) return null
-    return percentMap.get(taskId) ?? 0
+    if (l.columnsForMath.length > 0 && l.columnsForMath.every((period) => l.exempt(task, period.key))) return null
+    return l.percentMap.get(taskId) ?? 0
   }
+  const taskPercent = taskPercentFor(tab)
 
   const periodPercent = (period: HabitsPhonePeriod): number | null => {
     if (tab === "daily") {
@@ -275,12 +297,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
     return calculatePeriodColumnPercentage(column, tasksForMath, periodData, exempt)
   }
 
-  const update = (taskId: string, date: Date, completion: TaskCompletion) => {
-    if (tab === "weekly") props.updateWeeklyHabitCompletion(taskId, date, completion)
-    else if (tab === "monthly") props.updateMonthlyHabitCompletion(taskId, date, completion)
-    else if (tab === "quarterly") props.updateQuarterlyHabitCompletion(taskId, date, completion)
-    else props.updateCompletion(taskId, date, completion)
-  }
+  const update = (taskId: string, date: Date, completion: TaskCompletion) => lane(tab).update(taskId, date, completion)
 
   const loading = (
     <div className="habit-grid-wrap" aria-busy="true">
@@ -352,10 +369,86 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
     },
   ]
 
-  const columns = !props.hydrated ? loading : <HabitsPhoneWeekGrid sections={weekSections} />
+  const columns = !props.hydrated ? (
+    loading
+  ) : (
+    <HabitsPhoneWeekGrid sections={allTab ? weekSections : weekSections.filter((section) => section.id === tab)} />
+  )
+
+  // All, Detail: each frequency's period that holds the Day View's day.
+  const weekStart = getWeekStartDate(day)
+  const monthStart = new Date(day.getFullYear(), day.getMonth(), 1)
+  const seasonStart = quarterStartDate(day)
+  const allPeriods: Record<HabitFrequency, HabitsPhonePeriod> = {
+    daily: phoneDay(day, todayKey),
+    weekly: {
+      key: getWeekString(weekStart),
+      date: weekStart,
+      label: format(weekStart, "MMM"),
+      sublabel: format(weekStart, "d"),
+      title: formatDateRange(weekStart, addCalendarDays(weekStart, 6)),
+      isCurrent: isOnCurrentPeriod(weekStart, "week", today),
+    },
+    monthly: {
+      key: formatLocalMonthKey(monthStart),
+      date: monthStart,
+      label: format(monthStart, "MMM"),
+      sublabel: format(monthStart, "yyyy"),
+      title: format(monthStart, "MMMM yyyy"),
+      isCurrent: isOnCurrentPeriod(monthStart, "month", today),
+    },
+    quarterly: {
+      key: quarterKey(seasonStart),
+      date: seasonStart,
+      label: quarterLabel(quarterKey(seasonStart)),
+      sublabel: "",
+      title: quarterLabel(quarterKey(seasonStart)),
+      isCurrent: isOnCurrentPeriod(seasonStart, "season", today),
+    },
+  }
+  const allSpans: Record<HabitFrequency, HabitsPhonePeriod[]> = {
+    daily: dailySpan,
+    weekly: weeklySpan,
+    monthly: monthlySpan,
+    quarterly: seasonSpan,
+  }
+  const allSections: HabitsPhoneAllSection[] | undefined = allTab
+    ? (
+        [
+          ["daily", "Daily", "day"],
+          ["weekly", "Weekly", "week"],
+          ["monthly", "Monthly", "month"],
+          ["quarterly", "Season", "season"],
+        ] as const
+      ).map(([id, title, unit]) => {
+        const l = lane(id)
+        return {
+          id,
+          title,
+          period: allPeriods[id],
+          props: {
+            frequency: id,
+            tasks: l.rows,
+            data: l.data,
+            variant: id === "daily" ? "daily" : "period",
+            spanUnit: unit,
+            exemptionNoun: unit,
+            exemptionKindFor: l.kind,
+            spanPeriods: allSpans[id],
+            hidePeriod: allPeriods[id],
+            onUpdate: l.update,
+            onSetExempt: (taskId, periodKey, _date, exempted) => props.setHabitExemption(id, periodKey, taskId, exempted),
+            taskPercent: taskPercentFor(id),
+            detail: id === "daily" ? props.habitDayView : id === "weekly" ? props.habitWeekView : id === "monthly" ? props.habitMonthView : props.habitSeasonView,
+            groupByKind: false,
+            onReorder: undefined,
+          },
+        }
+      })
+    : undefined
 
   const heatmap =
-    tab === "daily" && props.habitViewMode === "heatmap" && props.hydrated ? (
+    !allTab && tab === "daily" && props.habitViewMode === "heatmap" && props.hydrated ? (
       <HabitHeatmap
         tasks={props.dailyRows}
         data={props.weeklyData}
@@ -410,7 +503,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
       <HabitsScratchPad
         target={habitsScratchTarget({
           habitTab: tab,
-          dayView: props.habitDayView,
+          dayView: dayMode,
           currentDate: day,
           currentWeekStart: props.currentWeekStart,
           currentMonth: props.currentMonth,
@@ -457,13 +550,19 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
     <HabitsPhone
       hydrated={props.hydrated}
       frequency={tab}
+      all={allTab}
+      onAll={() => setAllTab(true)}
+      allSections={allSections}
       counts={{
         daily: props.dailyTasks.length,
         weekly: props.weeklyTasks.length,
         monthly: props.monthlyTasks.length,
         quarterly: props.quarterlyTasks.length,
       }}
-      onFrequency={props.setHabitTab}
+      onFrequency={(frequency) => {
+        setAllTab(false)
+        props.setHabitTab(frequency)
+      }}
       windowLabel={windowLabel}
       currentLabel={tab === "quarterly" ? "This season" : tab === "weekly" ? "This week" : tab === "monthly" ? "This month" : "Today"}
       isCurrentPeriod={

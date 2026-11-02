@@ -449,7 +449,10 @@ Lights already in the house, to make more of:
 
 **LED colors: green, blue, purple. No orange.** A lamp, LED, meter, or
 glowing indicator lights in phosphor green (`--hab-crt-green`, `#7dffc4`),
-ice blue (`#9ad7ff`), or dusty violet (`#7d6bb8`). Red is
+ice blue (`#9ad7ff`), or dusty violet (`#7d6bb8`). Sage `#aacdb8` is the
+default habit LED tint (`DEFAULT_PERCENT_LED_TINT` in `lib/habit-led.ts`,
+since 2026-11-02; it was the violet). On the phone it also lights the week
+grid squares, the heatmap, and the selected day (`--hab-phone-sage`). Red is
 kept for the now line and for a true fault. Do not use orange or amber
 light: no amber LED, no amber “ghost” or “warning” lamp, no orange plasma.
 Keep orange out of chrome as much as possible. A pen color the person
