@@ -10,6 +10,8 @@ import {
   cycleShift,
   insertText,
   keyboardKind,
+  nearestKey,
+  typingFieldsIn,
   letterGlyph,
   returnKey,
   runReturn,
@@ -166,5 +168,71 @@ describe("return", () => {
     note.selectionEnd = 1
     runReturn(note, "newline")
     expect(note.value).toBe("a\nb")
+  })
+})
+
+describe("nearestKey", () => {
+  const row = [
+    { left: 0, top: 0, right: 30, bottom: 46 },
+    { left: 35, top: 0, right: 65, bottom: 46 },
+    { left: 0, top: 52, right: 30, bottom: 98 },
+  ]
+  it("takes the key under the touch", () => {
+    expect(nearestKey(row, 50, 20)).toBe(1)
+  })
+  it("gives a gap tap to the nearest key, never nothing", () => {
+    expect(nearestKey(row, 33, 20)).toBe(1)
+    expect(nearestKey(row, 31, 20)).toBe(0)
+    expect(nearestKey(row, 10, 48)).toBe(0)
+    expect(nearestKey(row, 10, 51)).toBe(2)
+    expect(nearestKey(row, 200, -10)).toBe(1)
+  })
+  it("returns -1 with no keys", () => {
+    expect(nearestKey([], 0, 0)).toBe(-1)
+  })
+})
+
+describe("native typing", () => {
+  it("types into a focused field through the browser's editor, so the caret moves past a space", () => {
+    const input = document.createElement("input")
+    input.value = "hi"
+    document.body.append(input)
+    input.focus()
+    input.setSelectionRange(2, 2)
+    const exec = vi.fn(() => true)
+    const original = document.execCommand
+    document.execCommand = exec
+    try {
+      insertText(input, " ")
+      backspace(input)
+    } finally {
+      document.execCommand = original
+      input.remove()
+    }
+    expect(exec).toHaveBeenCalledWith("insertText", false, " ")
+    expect(exec).toHaveBeenCalledWith("delete", false, undefined)
+  })
+
+  it("falls back to the value setter when the editor does not take it", () => {
+    const input = document.createElement("input")
+    document.body.append(input)
+    input.focus()
+    const original = document.execCommand
+    document.execCommand = vi.fn(() => false)
+    try {
+      insertText(input, "hi ")
+    } finally {
+      document.execCommand = original
+      input.remove()
+    }
+    expect(input.value).toBe("hi ")
+  })
+})
+
+describe("typingFieldsIn", () => {
+  it("finds text fields and skips checkboxes and read-only ones", () => {
+    const root = document.createElement("div")
+    root.innerHTML = '<input /><input type="checkbox" /><textarea readonly></textarea><textarea></textarea>'
+    expect(typingFieldsIn(root).map((el) => el.tagName)).toEqual(["INPUT", "TEXTAREA"])
   })
 })

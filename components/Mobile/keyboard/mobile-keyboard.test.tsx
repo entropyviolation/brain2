@@ -52,4 +52,35 @@ describe("MobileKeyboard", () => {
     })
     expect(note).not.toHaveAttribute("inputmode")
   })
+
+  it("gives a tap between caps to a key instead of dropping it", () => {
+    render(<Note />)
+    const note = screen.getByLabelText("Note")
+    act(() => note.focus())
+    const row = screen.getByRole("button", { name: "q" }).parentElement as HTMLElement
+    fireEvent.pointerDown(row)
+    expect(note).toHaveValue("q")
+  })
+
+  it("keeps the deck up through a blur nobody asked for, and a key brings the field back", async () => {
+    render(<Note />)
+    const note = screen.getByLabelText("Note")
+    act(() => note.focus())
+    act(() => note.blur())
+    await act(() => new Promise((done) => setTimeout(done, 20)))
+    expect(screen.getByRole("group", { name: "Keyboard" })).toBeInTheDocument()
+    press("n")
+    expect(note).toHaveFocus()
+    expect(note).toHaveValue("n")
+  })
+
+  it("closes after the grace moment when nothing is typed", async () => {
+    render(<Note />)
+    const note = screen.getByLabelText("Note")
+    act(() => note.focus())
+    act(() => note.blur())
+    await waitFor(() => {
+      expect(screen.queryByRole("group", { name: "Keyboard" })).toBeNull()
+    })
+  })
 })

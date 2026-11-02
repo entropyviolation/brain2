@@ -7,6 +7,12 @@
 //  stop ends listening and resolves the final words.
 //  Recognition prefers the phone itself (on-device) when the model is there.
 //
+//  After a pause iOS starts a fresh transcript, and `formattedString` holds
+//  only the new words. The words before the pause are kept in `committed`, so
+//  "hello", a pause, then "world" reads "hello world", not "world".
+//  Once both permissions are granted, start skips asking and begins at once,
+//  and the audio session is set up only the first time.
+//
 //  Needs NSMicrophoneUsageDescription and NSSpeechRecognitionUsageDescription.
 //
 //  JS side: lib/mobile/speech-bridge.ts. Registered in AppViewController.swift.
@@ -30,9 +36,19 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var heard = ""
+    /// Words from transcripts that ended at a pause.
+    private var committed = ""
+    /// The transcript iOS is still revising.
+    private var segment = ""
+    private var lastPartial = Date.distantPast
+    private var sessionReady = false
     private var stopping: CAPPluginCall?
 
     @objc func start(_ call: CAPPluginCall) {
+        if SFSpeechRecognizer.authorizationStatus() == .authorized && micGranted() {
+            DispatchQueue.main.async { self.beginNow(call) }
+            return
+        }
         SFSpeechRecognizer.requestAuthorization { status in
             guard status == .authorized else {
                 call.reject("Speech recognition is off for BRAIN2 in Settings.")
@@ -44,16 +60,45 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
                         call.reject("The microphone is off for BRAIN2 in Settings.")
                         return
                     }
-                    do {
-                        try self.begin()
-                        call.resolve()
-                    } catch {
-                        self.finish()
-                        call.reject(error.localizedDescription)
-                    }
+                    self.beginNow(call)
                 }
             }
         }
+    }
+
+    private func beginNow(_ call: CAPPluginCall) {
+        do {
+            try begin()
+            call.resolve()
+        } catch {
+            finish()
+            call.reject(error.localizedDescription)
+        }
+    }
+
+    private func micGranted() -> Bool {
+        if #available(iOS 17.0, *) {
+            return AVAudioApplication.shared.recordPermission == .granted
+        }
+        return AVAudioSession.sharedInstance().recordPermission == .granted
+    }
+
+    /// A pause ended the last transcript when a partial arrives after a gap and
+    /// starts on a different word. A revision keeps its first word.
+    private func startsNewTranscript(_ next: String, gap: TimeInterval) -> Bool {
+        guard !segment.isEmpty, !next.isEmpty, gap >= 0.7 else { return false }
+        return firstWord(next) != firstWord(segment)
+    }
+
+    private func firstWord(_ text: String) -> String {
+        let word = text.split(whereSeparator: { $0.isWhitespace }).first.map(String.init) ?? ""
+        return word.lowercased().trimmingCharacters(in: .punctuationCharacters)
+    }
+
+    private func joined(_ head: String, _ tail: String) -> String {
+        if head.isEmpty { return tail }
+        if tail.isEmpty { return head }
+        return head + " " + tail
     }
 
     @objc func stop(_ call: CAPPluginCall) {
@@ -80,7 +125,10 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
             throw NSError(domain: "BrainSpeech", code: 1, userInfo: [NSLocalizedDescriptionKey: "Dictation is not available right now."])
         }
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker, .allowBluetooth])
+        if !sessionReady {
+            try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker, .allowBluetooth])
+            sessionReady = true
+        }
         try session.setActive(true)
 
         let request = SFSpeechAudioBufferRecognitionRequest()
@@ -88,6 +136,9 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
         if recognizer.supportsOnDeviceRecognition { request.requiresOnDeviceRecognition = true }
         self.request = request
         heard = ""
+        committed = ""
+        segment = ""
+        lastPartial = Date()
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
@@ -102,7 +153,14 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
             DispatchQueue.main.async {
                 guard let self else { return }
                 if let result {
-                    self.heard = result.bestTranscription.formattedString
+                    let next = result.bestTranscription.formattedString
+                    let now = Date()
+                    if self.startsNewTranscript(next, gap: now.timeIntervalSince(self.lastPartial)) {
+                        self.committed = self.joined(self.committed, self.segment)
+                    }
+                    self.lastPartial = now
+                    self.segment = next
+                    self.heard = self.joined(self.committed, next)
                     self.notifyListeners("partial", data: ["text": self.heard])
                 }
                 if error != nil || result?.isFinal == true { self.finish() }

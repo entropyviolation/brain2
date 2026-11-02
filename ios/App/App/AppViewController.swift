@@ -5,6 +5,11 @@
 //  Capacitor 7 finds npm plugins on its own; plugins that live in this app
 //  target are registered here.
 //
+//  BrainKeyboard lives here too. While the keycap deck is up, the bottom edge
+//  is deferred, so iOS stops holding taps on the bottom row while it checks
+//  for a home swipe. Home then takes a second swipe, the same as a game.
+//  JS side: lib/mobile/keyboard-bridge.ts.
+//
 
 import Capacitor
 import UIKit
@@ -32,6 +37,17 @@ struct StaticExportRouter: Router {
 }
 
 class AppViewController: CAPBridgeViewController {
+    var deckOpen = false {
+        didSet {
+            guard deckOpen != oldValue else { return }
+            setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
+        }
+    }
+
+    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
+        deckOpen ? .bottom : []
+    }
+
     override func router() -> Router {
         StaticExportRouter()
     }
@@ -41,5 +57,23 @@ class AppViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(NfcPlugin())
         bridge?.registerPluginInstance(HealthPlugin())
         bridge?.registerPluginInstance(SpeechPlugin())
+        bridge?.registerPluginInstance(KeyboardPlugin())
+    }
+}
+
+@objc(KeyboardPlugin)
+public class KeyboardPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "KeyboardPlugin"
+    public let jsName = "BrainKeyboard"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "setDeck", returnType: CAPPluginReturnPromise),
+    ]
+
+    @objc func setDeck(_ call: CAPPluginCall) {
+        let open = call.getBool("open") ?? false
+        DispatchQueue.main.async {
+            (self.bridge?.viewController as? AppViewController)?.deckOpen = open
+            call.resolve()
+        }
     }
 }

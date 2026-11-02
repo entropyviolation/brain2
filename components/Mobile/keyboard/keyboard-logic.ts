@@ -2,7 +2,10 @@
  * components/Mobile/keyboard/keyboard-logic.ts — Which board, and how a key writes.
  *
  * The phone shell draws its own keys. This module decides the board from the
- * field, and writes through the native value setter so a React input sees it.
+ * field. A focused field is written with the browser's own editing command, the
+ * same path as a hardware key, so iOS moves its caret (a trailing space shows at
+ * once) and undo works. Otherwise it writes through the native value setter, so
+ * a React input still sees it.
  */
 
 export type ShiftMode = "off" | "once" | "lock"
@@ -11,6 +14,15 @@ export type FieldKind = "text" | "email" | "url" | "pad" | "decimal"
 export type ReturnAction = "newline" | "submit" | "next" | "blur"
 
 const TEXT_TYPES = new Set(["", "text", "search", "email", "url", "password", "tel", "number"])
+
+/** Every field under `root` the deck types into, `root` included. */
+export function typingFieldsIn(root: Element): HTMLElement[] {
+  const found = root.matches(FIELD_SELECTOR) ? [root] : []
+  found.push(...root.querySelectorAll(FIELD_SELECTOR))
+  return found.map(fieldOf).filter((el): el is HTMLElement => el != null)
+}
+
+const FIELD_SELECTOR = "input, textarea, [contenteditable]"
 
 export function typingField(target: EventTarget | null): HTMLElement | null {
   const el = fieldOf(target)
@@ -118,6 +130,7 @@ export function insertText(el: HTMLElement, text: string): void {
       if (room <= 0) return
       chunk = text.slice(0, room)
     }
+    if (!chunk || editNatively(el, "insertText", chunk)) return
     const next = value.slice(0, range.start) + chunk + value.slice(range.end)
     writeValue(el, next, range.start + chunk.length, chunk, "insertText")
     return
@@ -144,6 +157,14 @@ export function spliceText(el: HTMLElement, start: number, removeLength: number,
   }
   const value = el.value
   const from = Math.min(start, value.length)
+  if (document.activeElement === el) {
+    try {
+      el.setSelectionRange(from, Math.min(from + removeLength, value.length))
+    } catch {
+      /* type=number has no caret */
+    }
+    if (text ? editNatively(el, "insertText", text) : removeLength === 0 || editNatively(el, "delete")) return
+  }
   const next = value.slice(0, from) + text + value.slice(from + removeLength)
   writeValue(el, next, from + text.length, text, "insertReplacementText")
 }
@@ -154,6 +175,7 @@ export function backspace(el: HTMLElement): void {
     const range = caretOf(el) ?? { start: value.length, end: value.length }
     const cut = deleteBefore(value, range.start, range.end)
     if (cut.value === value && cut.caret === range.start) return
+    if (editNatively(el, "delete")) return
     writeValue(el, cut.value, cut.caret, null, "deleteContentBackward")
     return
   }
@@ -183,9 +205,46 @@ export function runReturn(el: HTMLElement, action: ReturnAction): void {
   el.blur()
 }
 
+/**
+ * Lift the field above the deck, and only as far as needed. Only its nearest
+ * scrolling box moves; the page itself moves only when the field is not inside a
+ * fixed layer (a dialog). `scrollIntoView` scrolled every ancestor, and on iOS
+ * that jerked the whole screen down under the status bar.
+ */
 export function revealField(el: HTMLElement, keyboardHeight: number): void {
-  el.style.scrollMarginBottom = `${keyboardHeight + 16}px`
-  el.scrollIntoView({ block: "nearest", inline: "nearest" })
+  const rect = el.getBoundingClientRect()
+  // A tall box only needs its first lines in view, where the caret starts.
+  const bottom = Math.min(rect.bottom, rect.top + 64)
+  const over = bottom - (window.innerHeight - keyboardHeight - 16)
+  if (over <= 0) return
+  const box = scrollParent(el)
+  if (box) box.scrollBy({ top: over, behavior: "smooth" })
+  else if (!inFixedLayer(el)) window.scrollBy({ top: over, behavior: "smooth" })
+}
+
+function scrollParent(el: HTMLElement): HTMLElement | null {
+  for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node)
+    if (/(auto|scroll|overlay)/.test(overflowY) && node.scrollHeight > node.clientHeight) return node
+  }
+  return null
+}
+
+function inFixedLayer(el: HTMLElement): boolean {
+  for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+    if (getComputedStyle(node).position === "fixed") return true
+  }
+  return false
+}
+
+/** Type through the browser's editor. Only a focused field; false when it did not take. */
+function editNatively(el: HTMLElement, command: "insertText" | "delete", text?: string): boolean {
+  if (document.activeElement !== el || typeof document.execCommand !== "function") return false
+  try {
+    return document.execCommand(command, false, text)
+  } catch {
+    return false
+  }
 }
 
 function caretOf(el: HTMLInputElement | HTMLTextAreaElement): { start: number; end: number } | null {
@@ -242,4 +301,27 @@ function insertIntoSelection(text: string): void {
   range.collapse(true)
   sel.removeAllRanges()
   sel.addRange(range)
+}
+
+export type KeyRect = { left: number; top: number; right: number; bottom: number }
+
+/**
+ * The key a touch belongs to: the one under it, else the nearest one. The
+ * gaps between caps and the deck's edges have no dead zone, the same as the
+ * system keyboard. Returns -1 with no keys.
+ */
+export function nearestKey(rects: readonly KeyRect[], x: number, y: number): number {
+  let best = -1
+  let bestDistance = Infinity
+  rects.forEach((rect, index) => {
+    const dx = Math.max(rect.left - x, 0, x - rect.right)
+    const dy = Math.max(rect.top - y, 0, y - rect.bottom)
+    // A row is closer than a column: a slip off a key is usually sideways.
+    const distance = dx * dx + 4 * dy * dy
+    if (distance < bestDistance) {
+      best = index
+      bestDistance = distance
+    }
+  })
+  return best
 }
