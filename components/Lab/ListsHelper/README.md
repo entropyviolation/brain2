@@ -1,0 +1,61 @@
+# Lists helper lab
+
+_Last mapped: 2026-11-02_
+
+The Lists helper is the **Lists BIMBY**: a small, single-job sub-agent (BIM + baby; all such agents are called BIMBIES).
+
+Route: `/lab/lists-helper/` (`app/lab/lists-helper/page.tsx`). A chat that finds duplicate items and makes one-time bulk changes to lists and items. It is an agent on the rail (`lib/agents/adapters/lists-helper.ts`): a chip on the BIM flow lab and Tracking Helper lab opens it. It runs on this machine with **no model**. It reads the real task, list and item-type stores, and writes nothing until you approve a plan.
+
+## How it is built
+
+The helper is a set of typed **tools**, not a prompt. A tool reads a snapshot and returns an answer or a **plan**; it never writes. The chat only picks a tool and fills its slots (`lib/lists-helper/parse.ts`). The engine is `lib/lists-helper/`:
+
+| File | Role |
+|------|------|
+| `tools.ts` | The tool registry and every tool: `find-items`, `find-duplicates`, `merge-items`, `exclusive-type`, `copy-attributes`, `retype-items`, `add-items`, `collect-items`, `lookup-id` |
+| `duplicates.ts` | Same name after case, punctuation and "the/a", or one typo in a name of eight letters or more; types must be compatible; steps and logged actions are skipped |
+| `resolve.ts` | Names to ids for types, lists and items. A name that fits two things is asked about; a name that fits none gets the closest names (`closest`) |
+| `parse.ts` | Line to one `ToolCall` (code grammar) |
+| `session.ts` | The conversation: working list, the one plan waiting, a duplicate review, five undos |
+| `apply.ts` | Re-plans, compares the signature, writes, and undoes |
+| `port.ts` | The doors into the stores. One edit goes through `commitItemEdit`; a plan goes through `commitMany` (one store write, one History save, History reads "agent · Lists helper"); a merge uses `setTasks` with tombstones like the Lists merge; "not duplicates" is kept in `listshelper-dismissed` |
+| `guard.ts` | What a write may never do: allowed fields per tool, size caps, no blanking a type or a list set, only a merge may remove items (25 at most). Checks the plan before, the store after (item count and every patched value), and keeps a journal across the write |
+| `history.ts` | Saves the chat on this device (`listshelper-chat`) so reopening the window shows what was said and done |
+| `trace.ts` | The thought process as lines: heard, tool picked with slots (names, not ids), the tool's stages, outcome |
+| `dates.ts` | "from now until Dec 25", "this week" to a due range |
+| `types.ts` | `World`, `ToolCall`, `Plan`, `Port`, `Undo` |
+
+## What it does
+
+- **Duplicates.** "help me find and merge duplicate items" (add "in list X" or "among Book items"). One group at a time: Merge, Not duplicates, Skip, Stop. Merge is the Lists merge (`lib/item-merge.ts`): every held value is kept. A dismissal is remembered.
+- **One type primary.** "Remove the Task item type from all Book type items": a Book item becomes primary Book and leaves lists that exist only for Task (those lists will not take it back). An item whose only list is a Task list is left alone so it does not vanish. Smart and aggregate lists are never edited. One time: new items are not affected.
+- **Copy attributes.** "Make all Book items have at least the attributes item id `<id>` has." Each item gains the attribute definitions it lacks, empty. A held value is never touched; an attribute it already has by id or name is not duplicated.
+- **Collect items.** _2026-11-02:_ "add all task items due from now until Dec 25 to list `<id or name>`", "... to new list called Soon in Home folder", or "add all items in list "Books I want to own" that aren't in "Books I own" to new list called "christmas list" with items of new item type "Wishlist Item"". The filter (type, due range, on all / any / none of some lists) is `CollectFilter`; the set algebra is `lib/list-sets.ts` (union, intersection, difference over any number of lists), pure so a screen can use it too. A new list, folder or item type is made only on approval and undo removes them. Items already on the destination are skipped.
+- **Look up an id.** _2026-11-02:_ "what is the list id for the All Items list of Next actions folder?", "what is the item id for Book Doors of Perception?" (a leading item type narrows), also folder and item type ids. One fit gives the id; several give clickable candidates (name, folder or type, id). Clicking one sends the exact-id line, which answers with that id alone. Names are matched exact, starts-with, contains, then every word; the best tier wins, so a loose name still lists all its fits.
+- **Thought process.** _2026-11-02:_ every line gets a "Thought process" block above the answer (`ListsHelperChat.tsx`, `.lh-trace`): what was heard, the tool and slots picked, each stage with counts ("on "Books I want to own": 12 remain"), and the outcome. Meant for developing the cognitive architecture: a wrong pick or slot shows at once. Same shape for other BIMBIES to copy.
+- **Apply a type to a list.** _2026-11-02:_ "apply new item type "Instagram Account" to all items in instagram mutuals list". `retype-items` takes `newTypeName`: the type is made on approval (reusing one of that name if it exists) and every item in the list gets it as primary type. Without the word "new", an unknown type name is also made; "existing" refuses to make one. Undo removes the type again. `guard.ts` lets `retype-items` make an item type only, never a list or folder.
+- **Doubt gets options and "Other…".** _2026-11-02:_ when a name fits nothing exactly, the helper offers the closest names (word overlap, so "i follow no follow back" finds "I follow (not following back)"), plus an **Other…** key. Other (`search lists`) asks for new words, searches every list (or folder, or item type), and each hit is a key that finishes the stuck request with the exact name. For an id lookup the hits are id candidates. State is `Session.lost`; "cancel" leaves search. Same for an id lookup with no match, or several.
+- **Change type**, **add items** ("add Dune, Emma to list `<id>` with attributes author: Frank Herbert; pageCount: 412"; names already in the list are skipped; values are checked against the attribute type), **find / count** ("how many Book items lack an author?"). "focus on list `<id>`" sets the list "add" goes to.
+- **Big plans do not freeze the window.** _2026-11-02:_ the first version wrote each item through `commitItemEdit`. On about 1,100 items that re-saved the whole store (and the whole History ledger) per item, froze the window, and the write was lost on refresh. A plan is now one `commitMany` write. Above 25 items a "Rewriting Book items…" bar shows at the bottom right while it runs (`Plan.working` names it). Undo is one write too.
+- **Guardrails.** _2026-11-02:_ before a plan is written `guard.ts` refuses a patch to a field the tool may not touch, an empty list set, a blank type, more than 5,000 edits or 500 adds, or a merge that removes over 25. The old values go to a journal (`listshelper-journal`) first. After the write the store is checked: same item count, every patched value present. If not, everything is put back in the same step and the person is told. If the window dies mid-write, the next opening offers "Put them back" or "Keep as is". Only a merge ever removes an item.
+- **Chat memory.** The chat, the working list and edit undos are kept between openings (`history.ts`). A plan that was waiting is not brought back, and buttons on older turns are dead. "Clear chat" forgets it. A merge undo is not kept across openings.
+- **Keys for doubt.** A line that names two item types and says one should not be the other gets two keys with the exact sentence to send ("Book stays, Task goes" and the reverse). A name that fits two types or lists ("Lo") gets one key per candidate, the same line with the exact name filled in. This is the pattern for every BIMBY: answer doubt with choices on screen and in chat, never a dead end. Ideas to extend it: `docs/BIMBY_IDEAS.md`.
+- **Safety.** Every write shows a plan first: counts, eight real rows, what is left alone. Apply re-plans on today's data and refuses if the effect differs. Over 25 items you type the count back ("yes 137"). Undo restores old values, merged rows (and their tombstones), and removes what was added.
+
+## Where it lives
+
+- The lab page above, with the flow and tools beside the chat.
+- A **Helper** key in the Lists toolbar (`components/Lists/toolbar/ListsHelperKey.tsx`) opens the same chat (`ListsHelperChat.tsx`) in a dialog over the window, starting in the open list so "add Dune" lands there. Esc or Close hides it; the conversation is kept.
+
+## Layout
+
+Left: the flow (read, plan, approve, apply, undo, lit where the conversation is) and the tool cards (click one to put an example in the box). Right: the chat.
+
+_2026-11-02:_ the chat now looks like BIM Chat (`components/Bim/console/`). `ListsHelperChat.tsx` is its own silver handheld (`.lh-chat.bim-crt.bim-ink`) and reuses `bim-console.css` and `bim-ink.css` classes: title plate with lamp, a "WORKING IN" row where MODE sits, CRT glass log, `YOU` / `BIMBY` lines with times (`Turn.at`), three-bar wait while a plan writes (replaces the corner progress bar), compose well with the primary SEND keycap, quick keys (duplicates, help, undo, clear), and a foot line. Answer keys are the BIM chips. Plan, duplicate, result and thought-process cards keep all their content, drawn in the drifting ink (`lists-helper-lab.css`). The Lists dialog is the same handheld with a `KeycapClose`. No BIM features that need a model (photos, MODE, dossier, tabs) were copied. _Not checked on a device._ The direct `/lab/lists-helper/` route threw a circular-import error (`NA_SMART_COMPLETED` in `lib/scheduled-lists-sync.ts`) in the dev server; the Lists dialog path loads fine.
+
+## Planned
+
+- A local model that picks the tool for free-form lines. It would emit the same `ToolCall`; the tools and the approval gate do not change.
+- Standing rules ("every new Book is not a Task"). Today every change is one time.
+- A BIM flow graph for the helper on the flow bench. Today the flow is the pipeline on this page.
+- Not checked on a device or in the live app: the UI is covered by `ListsHelperLab.test.tsx` against the real stores, and the tools by `lib/lists-helper/lists-helper.test.ts`.

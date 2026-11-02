@@ -695,6 +695,47 @@ export function recordItemWrite(
 }
 
 /**
+ * `recordItemWrite` for many items at once: the ledger is read and written one time, not once per line.
+ * A bulk edit of a thousand items would otherwise re-save the whole ledger a thousand times.
+ */
+export function recordItemWritesBatch(
+  pairs: { before: Task; after: Task }[],
+  lookup?: ItemActivityLookup,
+  at: Date = new Date(),
+  meta?: ItemActivityMeta,
+): number {
+  const all = readAll()
+  let wrote = 0
+  for (const { before, after } of pairs) {
+    if (!after?.id || before?.id !== after.id) continue
+    const lines = collectHistoryLines(before, after, lookup)
+    if (!lines.length) continue
+    const rows = all[after.id] ?? []
+    const added = [...lines].reverse().map(
+      (draft): ItemActivityEntry => ({
+        id: newEntryId(),
+        itemId: after.id,
+        at: at.toISOString(),
+        summary: draft.summary,
+        changes: draft.changes,
+        ...(draft.dedupeKey ? { dedupeKey: draft.dedupeKey } : {}),
+        ...activityFields(meta, !!draft.sitting),
+      }),
+    )
+    const next = [...rows, ...added]
+    all[after.id] = next.length > MAX_ACTIVITY_PER_ITEM ? next.slice(next.length - MAX_ACTIVITY_PER_ITEM) : next
+    wrote += added.length
+  }
+  if (!wrote) return 0
+  writeAll(all)
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(ITEM_ACTIVITY_STORAGE_KEY))
+    window.dispatchEvent(new Event("cogs-item-activity"))
+  }
+  return wrote
+}
+
+/**
  * A pen sitting shorter than a minute never reaches `timeLogs`. Record it once,
  * on the task that was on the clock. A later read does not call this.
  */

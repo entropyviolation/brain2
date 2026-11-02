@@ -11,7 +11,7 @@ Route: `/lab/bim-flow/` (`app/lab/bim-flow/page.tsx`). The BIM console's
 LLM tab opens it; **← Brain2** goes back to `/`. Chrome is a milled silver bay
 with house keycaps around phosphor glass wells. It writes nothing to the vault.
 
-_Last mapped: 2026-11-01_ **Agent rail.** A strip under the header lists every agent as a Blueprint (`components/Lab/Agents/AgentRail.tsx`, `lib/agents/`): one chip per BIM flow, plus the Tracking Helper, which opens `/lab/tracking-helper`. A chip for a BIM flow switches the flow, the same as the Flow menu. The grid has a fourth row for it.
+_Last mapped: 2026-11-01_ **Agent rail.** A strip under the header lists every agent as a Blueprint (`components/Lab/Agents/AgentRail.tsx`, `lib/agents/`): one chip per BIM flow, plus the Tracking Helper (`/lab/tracking-helper`) and the Lists helper (`/lab/lists-helper`), which open their own labs (`../Agents/agent-href.ts`). A chip for a BIM flow switches the flow, the same as the Flow menu. The grid has a fourth row for it.
 
 ## What it is for
 

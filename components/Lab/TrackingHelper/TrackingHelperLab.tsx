@@ -22,6 +22,7 @@ import { tokenize } from "@/lib/tracking-helper/tokens"
 import type { TraceStage } from "@/lib/tracking-helper/types"
 import { systemText } from "@/lib/tracking-helper/wire"
 import { AgentRail } from "../Agents/AgentRail"
+import { agentLabHref } from "../Agents/agent-href"
 import "../BimFlow/bim-flow.css"
 import "./tracking-helper-lab.css"
 
@@ -129,7 +130,10 @@ export function TrackingHelperLab() {
         <span className="bf-k">saved on this device · live in Tracking</span>
       </header>
 
-      <AgentRail agents={AGENTS} activeId="tracking-helper" onPick={(a) => (a.id === "tracking-helper" ? undefined : (window.location.href = "/lab/bim-flow"))} />
+      <AgentRail agents={AGENTS} activeId="tracking-helper" onPick={(a) => {
+          if (a.id === "tracking-helper") return
+          window.location.href = agentLabHref(a) ?? "/lab/bim-flow"
+        }} />
 
       <div className="bf-main th-main">
         <section className="th-stages" aria-label="Stages">
