@@ -463,3 +463,7 @@
 .lh-chat .bim-crt-x {
   margin-left: auto;
 }
+
+/* A choice with a small Details key beside it: look inside before picking. */
+.lh-keypair { display: inline-flex; align-items: stretch; gap: 2px; }
+.lh-keypair .lh-peek { font-size: 0.85em; padding-inline: 6px; }

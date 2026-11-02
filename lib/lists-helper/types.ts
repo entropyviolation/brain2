@@ -28,6 +28,7 @@ export type ToolName =
   | "retype-items"
   | "add-items"
   | "collect-items"
+  | "merge-lists"
   | "lookup-id"
 
 /** One call to one tool, with every name already resolved to an id. */
@@ -40,6 +41,7 @@ export type ToolCall =
   | { tool: "retype-items"; to: string; from?: string; listId?: string; /** Make this item type first, and use it as `to` (which is then ignored). */ newTypeName?: string }
   | { tool: "add-items"; listId: string; titles: string[]; attributes: Record<string, string> }
   | { tool: "collect-items"; filter: CollectFilter; dest: CollectDest }
+  | { tool: "merge-lists"; listIds: string[]; /** The list that stays. Defaults to the one holding the most items. */ keepId?: string; /** An existing item type every merged item becomes. */ typeId?: string; /** Make this item type first, and use it (then `typeId` is ignored). */ newTypeName?: string }
   | { tool: "lookup-id"; what: LookupKind; words: string; /** Narrow lists to those in this folder. */ folderId?: string; /** Narrow items to this primary type. */ typeId?: string }
 
 export type LookupKind = "list" | "item" | "folder" | "type"
@@ -52,6 +54,8 @@ export interface Candidate {
   detail?: string
   /** The line sent when it is clicked. */
   text: string
+  /** The line that opens this one's detail (items, folder, types) so it can be judged before it is picked. */
+  peek?: string
   /** The "Other…" key: it opens a search by other words rather than naming one thing. */
   other?: boolean
 }
@@ -124,6 +128,8 @@ export interface Plan {
   creates?: Task[]
   /** A list, folder, or item type made first so the changes have somewhere to land. Undo takes them away again. */
   setup?: { list?: List; folder?: Folder; fileInFolderId?: string; type?: ItemTypeDefinition }
+  /** Lists folded into another and taken away once their items have moved (`merge-lists` only). Undo puts them back. */
+  dropLists?: { list: List; folderId?: string }[]
   /** Items touched in all (changes, discards, creates). Over `CONFIRM_COUNT_ABOVE` the person types the number. */
   total: number
   /** Stable text for the exact effect. Apply recomputes the plan and refuses if this differs. */
@@ -185,4 +191,6 @@ export interface Undo {
   tombstoned: string[]
   /** What a plan made besides items. */
   made?: { listId?: string; folderId?: string; typeId?: string }
+  /** Lists a merge took away, and the folder each was in. */
+  removedLists?: { list: List; folderId?: string }[]
 }

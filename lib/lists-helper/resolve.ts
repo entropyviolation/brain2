@@ -18,6 +18,8 @@ export type Resolved =
       options?: string[]
       /** The kind of thing that was being named ("list", "item type"), so "Other…" can search that kind. */
       noun?: string
+      /** The same fits with their ids, so two things with one name can still be told apart and chosen. */
+      choices?: { id: string; name: string; detail?: string }[]
     }
 
 const clean = (s: string) =>
@@ -49,7 +51,8 @@ export function closest<T extends { id: string; name: string }>(rows: T[], typed
   return scored.sort((a, b) => b.score - a.score).slice(0, limit).map((x) => x.r)
 }
 
-function pick<T extends { id: string; name: string }>(rows: T[], words: string, noun: string): Resolved {
+function pick<T extends { id: string; name: string }>(rows: T[], words: string, noun: string, detail?: (r: T) => string | undefined): Resolved {
+  const choice = (r: T) => ({ id: r.id, name: r.name, detail: detail?.(r) })
   const q = clean(words)
   if (!q) return { ok: false, error: `Which ${noun}?` }
   const key = (r: T) => [clean(r.id), clean(r.name)]
@@ -63,12 +66,12 @@ function pick<T extends { id: string; name: string }>(rows: T[], words: string, 
     if (hits.length === 1) return { ok: true, id: hits[0]!.id, name: hits[0]!.name }
     if (hits.length > 1) {
       const names = hits.slice(0, 6).map((h) => `"${h.name}"`).join(", ")
-      return { ok: false, error: `"${words.trim()}" fits more than one ${noun}: ${names}. Say which.`, options: hits.slice(0, 6).map((h) => h.name), noun }
+      return { ok: false, error: `"${words.trim()}" fits more than one ${noun}: ${names}. Say which.`, options: hits.slice(0, 6).map((h) => h.name), noun, choices: hits.slice(0, 6).map(choice) }
     }
   }
   const near = closest(rows, words)
   if (near.length) {
-    return { ok: false, error: `I don't know a ${noun} called "${words.trim()}". Did you mean one of these?`, options: near.map((h) => h.name), noun }
+    return { ok: false, error: `I don't know a ${noun} called "${words.trim()}". Did you mean one of these?`, options: near.map((h) => h.name), noun, choices: near.map(choice) }
   }
   return { ok: false, error: `I don't know a ${noun} called "${words.trim()}".`, noun }
 }
@@ -83,7 +86,21 @@ export function resolveType(world: World, words: string): Resolved {
 export function resolveList(world: World, words: string): Resolved {
   const byId = world.lists.find((l) => l.id === words.trim())
   if (byId) return { ok: true, id: byId.id, name: byId.name }
-  return pick(world.lists.map((l) => ({ id: l.id, name: l.name })), words, "list")
+  return pick(world.lists.map((l) => ({ id: l.id, name: l.name })), words, "list", (l) => listDetail(world, l.id))
+}
+
+/** "Home · 42 items": where a list is filed and how full it is, so two with one name can be told apart. */
+export function listDetail(world: World, id: string): string {
+  const folder = world.folders?.find((f) => f.listIds.includes(id))?.name
+  const on = world.tasks.filter((t) => (t.lists ?? []).includes(id))
+  const first = on.slice(0, 2).map(titleOrBlank).join(", ")
+  return [folder, `${on.length} ${on.length === 1 ? "item" : "items"}`, first && `${first}${on.length > 2 ? "…" : ""}`].filter(Boolean).join(" · ")
+}
+
+/** Every list whose name is exactly these words (ignoring case, quotes, "the"), for "merge all 3 X lists". */
+export function listsNamed(world: World, words: string): { id: string; name: string }[] {
+  const q = clean(words)
+  return q ? world.lists.filter((l) => !/^__/.test(l.id) && clean(l.name) === q).map((l) => ({ id: l.id, name: l.name })) : []
 }
 
 export function resolveFolder(world: World, words: string): Resolved {
@@ -108,3 +125,4 @@ export function itemIdsIn(world: World, text: string): { known: string[]; unknow
 }
 
 export const titleOf = (t: Task) => itemTitleOrUntitled(t)
+const titleOrBlank = titleOf

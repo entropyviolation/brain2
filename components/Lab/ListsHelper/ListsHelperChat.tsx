@@ -58,9 +58,16 @@ function Keys({ choices, live, onPick }: { choices?: Choice[]; live: boolean; on
   return (
     <div className="bim-chips lh-keys">
       {choices.map((c) => (
-        <button key={c.label} type="button" data-no95 disabled={!live} className={`lh-key is-${c.tone ?? "plain"}${c.tone === "go" ? " is-primary" : ""}`} onClick={() => onPick(c.text)}>
-          {c.label}
-        </button>
+        <span key={`${c.label}|${c.text}`} className="lh-keypair">
+          <button type="button" data-no95 disabled={!live} className={`lh-key is-${c.tone ?? "plain"}${c.tone === "go" ? " is-primary" : ""}`} onClick={() => onPick(c.text)}>
+            {c.label}
+          </button>
+          {c.peek ? (
+            <button type="button" data-no95 disabled={!live} className="lh-key is-mod lh-peek" title="See what is on this one before picking it" aria-label={`Details of ${c.label}`} onClick={() => onPick(c.peek!)}>
+              Details
+            </button>
+          ) : null}
+        </span>
       ))}
     </div>
   )
@@ -89,13 +96,21 @@ function ReplyView({ reply, live, onPick }: { reply: Reply; live: boolean; onPic
           {reply.candidates?.length ? (
             <div className="bim-chips lh-cands">
               {reply.candidates.map((c) => (
-                <button key={c.id} type="button" data-no95 disabled={!live} className="lh-cand" onClick={() => onPick(c.text)}>
-                  <b>{c.label}</b>
-                  <small>{[c.detail, c.id].filter(Boolean).join(" · ")}</small>
-                </button>
+                <span key={c.id} className="lh-keypair">
+                  <button type="button" data-no95 disabled={!live} className="lh-cand" onClick={() => onPick(c.text)}>
+                    <b>{c.label}</b>
+                    <small>{[c.detail, c.id].filter(Boolean).join(" · ")}</small>
+                  </button>
+                  {c.peek ? (
+                    <button type="button" data-no95 disabled={!live} className="lh-key is-mod lh-peek" title="See what is on this one before picking it" aria-label={`Details of ${c.label}`} onClick={() => onPick(c.peek!)}>
+                      Details
+                    </button>
+                  ) : null}
+                </span>
               ))}
             </div>
           ) : null}
+          <Keys choices={reply.choices} live={live} onPick={onPick} />
         </div>
       )
     case "result":

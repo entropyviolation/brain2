@@ -62,6 +62,14 @@ export function applyPlan(port: Port, call: ToolCall, approved: Plan): ApplyOutc
   for (const change of plan.changes) undo.patches.push({ id: change.id, before: change.before })
   // One write for the whole plan. Item by item re-saves the entire store each time and freezes on a thousand.
   port.commitMany(plan.changes.map((c) => ({ id: c.id, patch: c.patch })))
+  // Items have moved off the folded lists, so they can go. Undo puts them back where they were filed.
+  if (plan.dropLists?.length) {
+    undo.removedLists = []
+    for (const { list, folderId } of plan.dropLists) {
+      port.removeList(list.id)
+      undo.removedLists.push({ list, folderId })
+    }
+  }
   for (const item of plan.creates ?? []) {
     port.addItem(item)
     undo.created.push(item.id)
@@ -69,6 +77,7 @@ export function applyPlan(port: Port, call: ToolCall, approved: Plan): ApplyOutc
   const after = port.world()
   const problem =
     verification(plan, after.tasks, countBefore) ??
+    (plan.dropLists?.find((d) => after.lists.some((l) => l.id === d.list.id)) ? "a folded list is still there." : null) ??
     (plan.setup?.list && !after.lists.some((l) => l.id === plan.setup!.list!.id) ? `the new list "${plan.setup.list.name}" is missing.` : null)
   if (problem) {
     undoPlan(port, undo)
@@ -81,6 +90,7 @@ export function applyPlan(port: Port, call: ToolCall, approved: Plan): ApplyOutc
 
 function doneText(plan: Plan): string {
   if (plan.merge) return `Merged. ${plan.merge.discardedIds.length} folded into "${plan.title.split('"')[1] ?? "the survivor"}". Say "undo" to bring them back.`
+  if (plan.tool === "merge-lists") return `Merged ${plan.dropLists?.length ?? 0} ${plan.dropLists?.length === 1 ? "list" : "lists"} into "${plan.title.split('"')[1] ?? "one list"}", ${plan.changes.length} ${plan.changes.length === 1 ? "item" : "items"} edited${plan.setup?.type ? `, item type "${plan.setup.type.name}" made` : ""}. Say "undo" to bring it all back.`
   if (plan.setup?.list) return `Made the list "${plan.setup.list.name}" and added ${plan.total} ${plan.total === 1 ? "item" : "items"} to it. Say "undo" to take it all back.`
   if (plan.tool === "collect-items") return `Added ${plan.total} ${plan.total === 1 ? "item" : "items"} to the list. Say "undo" to take them off again.`
   if (plan.tool === "retype-items" && plan.setup?.type) return `Made the item type "${plan.setup.type.name}" and applied it to ${plan.total} ${plan.total === 1 ? "item" : "items"}. Say "undo" to take it all back.`
@@ -91,6 +101,11 @@ function doneText(plan: Plan): string {
 /** Put back what `applyPlan` changed. Items edited since are restored to their old values for the fields it touched only. */
 export function undoPlan(port: Port, undo: Undo): string {
   let restored = 0
+  // Folded lists come back first, so the old list memberships have somewhere to point.
+  for (const { list, folderId } of undo.removedLists ?? []) {
+    if (!port.world().lists.some((l) => l.id === list.id)) port.addList(list)
+    if (folderId && port.world().folders?.some((f) => f.id === folderId)) port.fileList(folderId, list.id)
+  }
   if (undo.rows.length) {
     const byId = new Map(undo.rows.map((r) => [r.id, r]))
     port.untombstone(undo.tombstoned)

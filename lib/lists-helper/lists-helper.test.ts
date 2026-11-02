@@ -260,7 +260,7 @@ describe("big plans and loose wording", () => {
     const r = h.say("Book items that are also Task items should not be Task items anymore")[0]!
     expect(r.kind).toBe("say")
     const texts = (r as Extract<typeof r, { kind: "say" }>).choices?.map((c) => c.text)
-    expect(texts).toEqual(["Remove the Task item type from all Book type items", "Remove the Book item type from all Task type items"])
+    expect(texts).toEqual(["Remove the Task item type from all Book type items", "Remove the Book item type from all Task type items", "cancel"])
     expect(h.say(texts![0]!)[0]).toMatchObject({ kind: "plan" })
   })
 })
@@ -498,5 +498,76 @@ describe("apply a type to a list's items; pick when unsure", () => {
     const choice = (found[0] as { choices?: { label: string; text: string }[] }).choices!.find((c) => c.label.includes("Instagram Mutuals"))!
     expect(choice.text).toContain('"Instagram Mutuals"')
     expect(JSON.stringify(h.say(choice.text))).toContain('"kind":"plan"')
+  })
+
+  describe("three lists with one name", () => {
+    const mut = [list("m1", "Instagram mutuals"), list("m2", "Instagram mutuals"), list("m3", "Instagram mutuals")]
+    const folders: Folder[] = [{ id: "f1", name: "Social", createdAt: new Date(), listIds: ["m1", "m2"] }]
+    const items = () => [
+      task("a", "alice", { lists: ["m1"] }),
+      task("b", "bob", { lists: ["m1", "m2"] }),
+      task("c", "cara", { lists: ["m2"] }),
+      task("d", "dee", { lists: ["m3"], type: "book" }),
+    ]
+
+    it("offers every fit as its own key (told apart by folder and count), with Details and Cancel", () => {
+      const h = harness(items(), mut, folders)
+      const r = h.say('apply new item type "Instagram Account" to all items in instagram mutuals list')[0] as { choices: { label: string; text: string; peek?: string }[] }
+      const picks = r.choices.filter((c) => c.peek)
+      expect(picks).toHaveLength(3)
+      expect(new Set(picks.map((c) => c.label)).size).toBe(3)
+      expect(picks[0]!.label).toContain("Social")
+      expect(picks.map((c) => c.text).join()).toContain("m3")
+      expect(r.choices.at(-1)!.text).toBe("cancel")
+    })
+
+    it("Details shows the list's items, then Pick this one finishes the request; Back returns to the choices", () => {
+      const h = harness(items(), mut, folders)
+      const r = h.say('apply new item type "Instagram Account" to all items in instagram mutuals list')[0] as { choices: { text: string; peek?: string }[] }
+      const first = r.choices.find((c) => c.peek?.endsWith("m1"))!
+      const look = h.say(first.peek!)[0] as { text: string; rows: string[]; choices: { label: string; text: string }[] }
+      expect(look.text).toContain("2 items")
+      expect(look.rows.join()).toContain("alice")
+      expect(h.session.pending).toBeUndefined()
+      const back = h.say(look.choices.find((c) => c.label === "Back to the choices")!.text)[0] as { choices: unknown[] }
+      expect(back.choices.length).toBeGreaterThan(3)
+      const again = h.say(first.peek!)[0] as { choices: { label: string; text: string }[] }
+      const plan = h.say(again.choices.find((c) => c.label === "Pick this one")!.text)[0]
+      expect(plan.kind).toBe("plan")
+    })
+
+    it("Cancel always works and writes nothing", () => {
+      const h = harness(items(), mut, folders)
+      h.say('apply new item type "Instagram Account" to all items in instagram mutuals list')
+      const out = h.say("cancel")[0] as { text: string }
+      expect(out.text).toContain("cancelled")
+      expect(h.state.writes).toBe(0)
+    })
+
+    it("merges all three into one list, keeps every item, and makes the new item type; undo restores", () => {
+      const h = harness(items(), mut, folders)
+      const plan = h.say('Merge all 3 instagram mutuals lists into 1 list (keep all items) and make the item type new item type "Instagram Account"')[0] as { kind: string; plan: { title: string; changes: unknown[]; dropLists: unknown[] } }
+      expect(plan.kind).toBe("plan")
+      expect(plan.plan.dropLists).toHaveLength(2)
+      h.say("yes")
+      expect(h.state.lists.map((l) => l.id)).toEqual(["m1"])
+      expect(h.state.tasks).toHaveLength(4)
+      expect(h.state.tasks.every((t) => t.lists?.length === 1 && t.lists[0] === "m1")).toBe(true)
+      const made = h.state.types.find((t) => t.name === "Instagram Account")!
+      expect(h.state.tasks.every((t) => t.type === String(made.id))).toBe(true)
+      h.say("undo")
+      expect(h.state.lists.map((l) => l.id).sort()).toEqual(["m1", "m2", "m3"])
+      expect(h.state.folders[0]!.listIds).toEqual(expect.arrayContaining(["m1", "m2"]))
+      expect(h.state.tasks.find((t) => t.id === "b")!.lists).toEqual(["m1", "m2"])
+      expect(h.state.tasks.find((t) => t.id === "d")!.type).toBe("book")
+      expect(h.state.types.some((t) => t.name === "Instagram Account")).toBe(false)
+    })
+
+    it("says so when the stated count is not the count found", () => {
+      const h = harness(items(), mut, folders)
+      const r = h.say("merge all 2 instagram mutuals lists into one list")[0] as { text: string; choices: { text: string }[] }
+      expect(r.text).toContain("found 3")
+      expect(r.choices[0]!.text).toContain("3 instagram mutuals")
+    })
   })
 })

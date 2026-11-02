@@ -44,6 +44,7 @@ export const TOOLS: ToolSpec[] = [
   { name: "copy-attributes", label: "Copy attributes", does: "Gives items every attribute a model item has, empty unless they already hold a value.", writes: true, params: ["from item id", "type or list"] },
   { name: "retype-items", label: "Change type", does: "Sets the primary type of items in a type or list.", writes: true, params: ["to type", "from type", "list"] },
   { name: "add-items", label: "Add items", does: "Adds items to a list with attribute values, skipping names already there.", writes: true, params: ["list", "titles", "attributes"] },
+  { name: "merge-lists", label: "Merge lists", does: "Folds several lists into one: every item is kept and moves to the list that stays, the others are taken away, and the items can all be given one item type.", writes: true, params: ["lists", "list to keep", "item type"] },
   { name: "lookup-id", label: "Look up an id", does: "Finds the id of a list (optionally in a folder), item, folder or item type, and offers clickable candidates when more than one fits.", writes: false, params: ["kind", "name", "folder", "type"] },
   { name: "collect-items", label: "Collect items", does: "Puts items that match (a type, a list, not on another list, due between two days) on a list, or on a new list with its own folder and item type.", writes: true, params: ["type", "in list", "not in list", "due", "to list or new list", "folder", "item type"] },
 ]
@@ -607,6 +608,95 @@ function collectItems(w: World, c: Extract<ToolCall, { tool: "collect-items" }>,
   return { kind: "plan", plan }
 }
 
+// ---------------------------------------------------------------- merge-lists
+
+/** A list the app makes and guards itself: it cannot be taken away, so it can only be the one that stays. */
+const isGuardedList = (l: List) =>
+  isNaSmartCategoryId(l.id) || isFolderAllItemsCategoryId(l.id) || l.id === "reminders" || l.id === "people-i-know" || !!(l.reminderList || l.peopleList || l.instagramFollowingList || l.instagramFollowersList || l.instagramAnalysisList)
+
+function mergeLists(w: World, c: Extract<ToolCall, { tool: "merge-lists" }>): ToolResult {
+  const lists = [...new Set(c.listIds)].map((id) => w.lists.find((l) => l.id === id))
+  if (lists.some((l) => !l)) return { kind: "error", text: "One of those lists no longer exists." }
+  const all = lists as List[]
+  if (all.length < 2) return { kind: "error", text: "Merge needs two or more lists." }
+  const smart = all.find((l) => isNaSmartCategoryId(l.id) || isFolderAllItemsCategoryId(l.id))
+  if (smart) return { kind: "error", text: `"${smart.name}" fills itself, so it can't be merged into another list.` }
+  const count = (id: string) => w.tasks.filter((t) => (t.lists ?? []).includes(id)).length
+  const guarded = all.filter(isGuardedList)
+  if (guarded.length > 1) return { kind: "error", text: `${guarded.map((l) => `"${l.name}"`).join(" and ")} are lists the app keeps, so they can't be folded into each other.` }
+  const keep = (c.keepId && all.find((l) => l.id === c.keepId)) || guarded[0] || [...all].sort((a, b) => count(b.id) - count(a.id))[0]!
+  const drop = all.filter((l) => l.id !== keep.id)
+  const dropIds = new Set(drop.map((l) => l.id))
+
+  let to = c.typeId
+  let made: ItemTypeDefinition | undefined
+  const warnings: string[] = []
+  if (c.newTypeName?.trim()) {
+    const existing = w.types.find((t) => sameName(t.name, c.newTypeName!))
+    if (existing) {
+      to = String(existing.id)
+      warnings.push(`An item type "${existing.name}" already exists, so I use that one.`)
+    } else {
+      made = newType(w, c.newTypeName)
+      to = String(made.id)
+    }
+  }
+  const toName = made ? made.name : to ? typeName(w, to) : undefined
+
+  const trace = all.map((l) => `"${l.name}"${l.id === keep.id ? " (stays)" : ""}: ${plural(count(l.id), "item")}.`)
+  const rows = w.tasks.filter((t) => (t.lists ?? []).some((id) => id === keep.id || dropIds.has(id)))
+  const changes: ItemChange[] = []
+  for (const t of rows) {
+    const had = t.lists ?? []
+    const lists2 = [...had.filter((id) => !dropIds.has(id)), ...(had.includes(keep.id) ? [] : [keep.id])]
+    const patch: Record<string, unknown> = {}
+    const before: Record<string, unknown> = {}
+    const notes: string[] = []
+    if (JSON.stringify(lists2) !== JSON.stringify(had)) {
+      patch.lists = lists2
+      before.lists = t.lists
+      notes.push(had.includes(keep.id) ? "leaves the other list" : `moves to "${keep.name}"`)
+    }
+    const ex = t.listMembershipExclusions ?? []
+    if (ex.includes(keep.id) || ex.some((id) => dropIds.has(id))) {
+      patch.listMembershipExclusions = ex.filter((id) => id !== keep.id && !dropIds.has(id))
+      before.listMembershipExclusions = t.listMembershipExclusions
+    }
+    if (to && String(t.type ?? "") !== to) {
+      patch.type = to
+      before.type = t.type
+      notes.push(`${String(t.type ?? "item")} → ${toName}`)
+    }
+    if (Object.keys(patch).length) changes.push({ id: t.id, title: titleOf(t), patch, before, note: notes.join("; ") })
+  }
+  const onMany = rows.filter((t) => (t.lists ?? []).filter((id) => id === keep.id || dropIds.has(id)).length > 1).length
+  if (onMany) warnings.push(`${plural(onMany, "item")} sat on more than one of these lists, so each ends up once on "${keep.name}".`)
+  if (keep.itemTypeId && to && keep.itemTypeId !== to) warnings.push(`"${keep.name}" pins the "${typeName(w, keep.itemTypeId)}" item type, so its items still read as that type there.`)
+  warnings.push(`The other ${plural(drop.length, "list")} (${drop.map((l) => `"${l.name}"`).join(", ")}) are taken away, with their own settings. Say "undo" to bring them back.`)
+  trace.push(`Plan: ${plural(changes.length, "item")} change; ${plural(drop.length, "list")} go.`)
+  const plan: Plan = {
+    trace,
+    tool: "merge-lists",
+    working: `Merging into ${keep.name}`,
+    title: `Merge ${plural(all.length, "list")} into "${keep.name}"`,
+    summary: [`Every item stays and ends up on "${keep.name}".`, ...(toName ? [`Every item on them becomes ${toName}.`] : [])],
+    impacts: [
+      ...(made ? [{ count: 1, label: `new item type "${made.name}"` }] : []),
+      { count: drop.length, label: `${drop.length === 1 ? "list" : "lists"} folded into "${keep.name}" and removed` },
+      { count: changes.length, label: `${changes.length === 1 ? "item" : "items"} edited${toName ? `, type → ${toName}` : ""}` },
+    ],
+    samples: sample(changes.map((x) => x.title)),
+    warnings,
+    oneTime: true,
+    changes,
+    ...(made ? { setup: { type: made } } : {}),
+    dropLists: drop.map((list) => ({ list, folderId: w.folders?.find((f) => f.listIds.includes(list.id))?.id })),
+    total: Math.max(changes.length, drop.length),
+    signature: signatureOf({ keep: keep.id, drop: drop.map((l) => l.id), c: changes.map((x) => [x.id, x.patch]), made: made?.name }),
+  }
+  return { kind: "plan", plan }
+}
+
 // ---------------------------------------------------------------- lookup-id
 
 const norm = (s: string) => s.toLowerCase().replace(/["“”'‘’]/g, "").replace(/[^a-z0-9]+/g, " ").trim()
@@ -652,10 +742,10 @@ function lookupId(w: World, c: Extract<ToolCall, { tool: "lookup-id" }>): ToolRe
     // Nothing fits as typed: offer the closest names, and always a way to search by other words.
     const near = closest(pool, c.words, 8)
     trace.push(near.length ? `No name fits; ${plural(near.length, "close name")}.` : "No name is close.")
-    const candidates: Candidate[] = [...near.map((r) => ({ id: r.id, label: r.name, detail: r.detail, text: `what is the ${c.what} id for ${r.id}` })), other]
+    const candidates: Candidate[] = [...near.map((r) => ({ id: r.id, label: r.name, detail: r.detail, text: `what is the ${c.what} id for ${r.id}`, ...(c.what === "list" ? { peek: `peek list ${r.id}` } : {}) })), other]
     return { kind: "answer", text: near.length ? `No ${c.what} is called "${c.words}". Is it one of these?` : `No ${c.what} fits "${c.words}". Search for it with other words:`, trace, candidates }
   }
-  const candidates: Candidate[] = kept.slice(0, 12).map(({ r }) => ({ id: r.id, label: r.name, detail: r.detail, text: `what is the ${c.what} id for ${r.id}` }))
+  const candidates: Candidate[] = kept.slice(0, 12).map(({ r }) => ({ id: r.id, label: r.name, detail: r.detail, text: `what is the ${c.what} id for ${r.id}`, ...(c.what === "list" ? { peek: `peek list ${r.id}` } : {}) }))
   if (kept.length === 1) return { kind: "answer", text: `The ${c.what} id for "${candidates[0]!.label}" is ${candidates[0]!.id}`, trace, candidates }
   return { kind: "answer", text: `${plural(kept.length, "possible match", "possible matches")} for "${c.words}". Click the one you mean, or Other to search:`, trace, candidates: [...candidates, other] }
 }
@@ -682,6 +772,8 @@ export function runTool(w: World, call: ToolCall, opts: { now?: Date; isDismisse
       return addItems(w, call, now)
     case "collect-items":
       return collectItems(w, call, now)
+    case "merge-lists":
+      return mergeLists(w, call)
     case "lookup-id":
       return lookupId(w, call)
   }

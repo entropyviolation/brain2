@@ -22,6 +22,7 @@ export const WRITABLE: Record<ToolName, readonly string[]> = {
   "retype-items": ["type"],
   "add-items": [],
   "collect-items": ["lists", "listMembershipExclusions"],
+  "merge-lists": ["lists", "listMembershipExclusions", "type"],
 }
 
 export const LIMITS = {
@@ -30,6 +31,8 @@ export const LIMITS = {
   creates: 500,
   /** Items one merge may fold away. */
   discards: 25,
+  /** Lists one merge may fold away. */
+  lists: 10,
 } as const
 
 /** Why this plan must not be written, or null. */
@@ -39,7 +42,9 @@ export function refusal(plan: Plan): string | null {
   if ((plan.creates?.length ?? 0) > LIMITS.creates) return `That would add ${plan.creates!.length} items at once. I stop at ${LIMITS.creates}.`
   if ((plan.merge?.discardedIds.length ?? 0) > LIMITS.discards) return `That merge would remove ${plan.merge!.discardedIds.length} items. I stop at ${LIMITS.discards}.`
   if (plan.merge && plan.tool !== "merge-items") return "Only a merge may remove items."
-  if (plan.setup && plan.tool !== "collect-items" && !(plan.tool === "retype-items" && !plan.setup.list && !plan.setup.folder)) return "Only collecting items may make a list or folder, and only collecting or changing a type may make an item type."
+  if (plan.dropLists?.length && plan.tool !== "merge-lists") return "Only merging lists may take a list away."
+  if (plan.dropLists && plan.dropLists.length > LIMITS.lists) return `That merge would remove ${plan.dropLists.length} lists. I stop at ${LIMITS.lists}.`
+  if (plan.setup && plan.tool !== "collect-items" && !((plan.tool === "retype-items" || plan.tool === "merge-lists") && !plan.setup.list && !plan.setup.folder)) return "Only collecting items may make a list or folder, and only collecting or changing a type may make an item type."
   for (const c of plan.changes) {
     if (plan.tool === "collect-items") {
       const was = (c.before.lists as string[] | undefined) ?? []

@@ -8,7 +8,7 @@
  */
 
 import { parseDueClause } from "./dates"
-import { itemIdsIn, resolveFolder, resolveList, resolveType, type Resolved } from "./resolve"
+import { itemIdsIn, listsNamed, resolveFolder, resolveList, resolveType, type Resolved } from "./resolve"
 import type { CollectDest, CollectFilter, ToolCall, World } from "./types"
 
 export type Intent =
@@ -20,7 +20,7 @@ export type Intent =
       kind: "error"
       text: string
       /** Whole lines the person can send as they are, each with a short key label. */
-      suggest?: { label: string; text: string }[]
+      suggest?: { label: string; text: string; /** The line that opens this choice's detail, so it can be judged before it is picked. */ peek?: string }[]
       /** Words that matched nothing for sure. The session offers "Other…", which searches this kind by new words and puts the pick back into `line`. */
       other?: { noun: string; words: string; line: string }
     }
@@ -70,10 +70,16 @@ export function swapName(text: string, words: string, name: string): string | nu
  */
 function failed(text: string, words: string, r: Extract<Resolved, { ok: false }>): Intent {
   const w = unquote(words)
-  const suggest = (r.options ?? []).flatMap((name) => {
-    const line = swapName(text, w, name)
-    return line ? [{ label: name, text: line }] : []
-  })
+  // Two things can share a name, so a key swaps in the exact id and says where the thing lives.
+  const suggest = r.choices?.length
+    ? r.choices.flatMap((c) => {
+        const line = swapName(text, w, c.id)
+        return line ? [{ label: c.detail ? `${c.name} · ${c.detail}` : c.name, text: line, ...(r.noun === "list" ? { peek: `peek list ${c.id}` } : {}) }] : []
+      })
+    : (r.options ?? []).flatMap((name) => {
+        const line = swapName(text, w, name)
+        return line ? [{ label: name, text: line }] : []
+      })
   const other = r.noun && w ? { noun: r.noun, words: w, line: text } : undefined
   if (!suggest.length && !other) return { kind: "error", text: r.error }
   return { kind: "error", text: r.error, ...(suggest.length ? { suggest } : {}), ...(other ? { other } : {}) }
@@ -135,6 +141,9 @@ export function parseIntent(w: World, text: string, ctx: Context = {}): Intent {
 
   const lookup = parseLookup(w, t)
   if (lookup) return lookup
+
+  const merge = parseMergeLists(w, t)
+  if (merge) return merge
 
   const collect = parseCollect(w, t, ctx.now ?? new Date())
   if (collect) return collect
@@ -430,4 +439,59 @@ function suggestWording(w: World, t: string): Intent | null {
       { label: `${b} stays, ${a} goes`, text: `Remove the ${a} item type from all ${b} type items` },
     ],
   }
+}
+
+
+// ---------------------------------------------------------------- merge lists
+
+const COUNT_WORDS: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 }
+
+/**
+ * "Merge all 3 instagram mutuals lists into 1 list (keep all items) and make the item type new item type "X"".
+ * The lists are every list with that exact name (or a list per name joined by "and"); a stated count that does
+ * not match is said back, never guessed past.
+ */
+function parseMergeLists(w: World, t: string): Intent | null {
+  const m = new RegExp(`^(?:please\\s+)?merge\\s+(?:all\\s+)?(?:(\\d+|${Object.keys(COUNT_WORDS).join("|")})\\s+)?(?:of\\s+)?(?:the\\s+)?(.+?)\\s+lists?\\s+(?:together\\s+)?(?:in)?to\\s+(?:1|one|a|single|one single|a single)\\s+list\\b([\\s\\S]*)$`, "i").exec(t)
+  if (!m) return null
+  const said = m[1] ? (COUNT_WORDS[m[1].toLowerCase()] ?? Number(m[1])) : undefined
+  const words = unquote(m[2]!)
+  const rest = m[3] ?? ""
+  let ids: string[] = []
+  const same = listsNamed(w, words)
+  if (same.length >= 2) ids = same.map((l) => l.id)
+  else {
+    const parts = words.split(/\s*(?:,|\band\b|&)\s*/i).map(unquote).filter(Boolean)
+    if (parts.length < 2) {
+      return err(same.length === 1 ? `Only one list is called "${same[0]!.name}", so there is nothing to merge it with. Name the lists to merge, like "merge A and B into one list".` : `I can't find two or more lists called "${words}". Name them, like "merge A and B into one list".`)
+    }
+    for (const p of parts) {
+      const r = resolveList(w, p)
+      if (!r.ok) return failed(t, p, r)
+      ids.push(r.id)
+    }
+  }
+  ids = [...new Set(ids)]
+  if (ids.length < 2) return err("That is the same list twice. Name two or more different lists.")
+  if (said && said !== ids.length) {
+    return {
+      kind: "error",
+      text: `You said ${said} lists, but I found ${ids.length} called "${words}". Merge those ${ids.length}?`,
+      suggest: [{ label: `Merge all ${ids.length}`, text: t.replace(new RegExp(`\\b${m[1]}\\b`), String(ids.length)) }],
+    }
+  }
+  const call: Extract<ToolCall, { tool: "merge-lists" }> = { tool: "merge-lists", listIds: ids }
+  const tm = new RegExp(`\\btype\\s+(?:to\\s+)?(new\\s+|existing\\s+)?(?:item\\s+)?(?:type\\s+)?${REF}\\s*[?.!]*$`, "i").exec(rest)
+  if (tm) {
+    const flag = tm[1]?.trim().toLowerCase()
+    const typeWords = unquote(tm[2] ?? tm[3]!)
+    if (flag === "new") call.newTypeName = typeWords
+    else {
+      const ty = resolveType(w, typeWords)
+      if (ty.ok) call.typeId = ty.id
+      else if (flag !== "existing" && !ty.options?.length) call.newTypeName = typeWords
+      else return failed(t, typeWords, ty)
+    }
+  }
+  return { kind: "tool", call }
 }

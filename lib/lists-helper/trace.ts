@@ -79,6 +79,11 @@ export function describeCall(w: World, c: ToolCall): string[] {
       add("type", c.typeId && typeName(w, c.typeId))
       add("list", c.listId && ln(c.listId))
       break
+    case "merge-lists":
+      add("lists", c.listIds.map(ln).join(", "))
+      add("keeps", c.keepId && ln(c.keepId))
+      add("item type", c.newTypeName ? `NEW ${q(c.newTypeName)}` : c.typeId && typeName(w, c.typeId))
+      break
     case "retype-items":
       add("from", c.from && typeName(w, c.from))
       add("to", c.newTypeName ? `NEW ${q(c.newTypeName)}` : typeName(w, c.to))

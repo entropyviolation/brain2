@@ -18,7 +18,12 @@ export interface Choice {
   label: string
   text: string
   tone?: "go" | "stop" | "plain"
+  /** A second small key on this choice that opens its detail (items, folder) without picking it. */
+  peek?: string
 }
+
+/** The one key every question carries, so no question is a dead end. */
+export const CANCEL: Choice = { label: "Cancel", text: "cancel", tone: "stop" }
 
 export interface DupCard {
   group: DupGroup
@@ -29,7 +34,7 @@ export interface DupCard {
 
 export type Reply =
   | { kind: "say"; text: string; choices?: Choice[] }
-  | { kind: "answer"; text: string; rows?: string[]; candidates?: Candidate[] }
+  | { kind: "answer"; text: string; rows?: string[]; candidates?: Candidate[]; choices?: Choice[] }
   | { kind: "plan"; plan: Plan; confirm: string; choices: Choice[] }
   | { kind: "dup"; card: DupCard; choices: Choice[] }
   | { kind: "result"; text: string; undoable: boolean }
@@ -46,6 +51,8 @@ export interface Session {
    * that kind by; `line` is the request to finish with the pick (null: just look up the id).
    */
   lost?: { noun: string; line: string | null; words?: string; searching?: boolean }
+  /** The last question that offered things to pick from, so a peek at one can step back to all of them. */
+  ask?: Extract<Reply, { kind: "say" | "answer" }>
 }
 
 export const newSession = (): Session => ({ undo: [] })
@@ -199,6 +206,14 @@ export function step(prev: Session, text: string, port: Port): { session: Sessio
     return done()
   }
 
+  // A peek: look at one of the offered lists before picking it.
+  const peek = /^peek list (\S+)$/i.exec(t)
+  if (peek) return peekReplies(port, s, peek[1]!, t, replies)
+  if (/^back to (the )?choices$/i.test(t) && s.ask) {
+    replies.push(s.ask)
+    return done()
+  }
+
   // A search opened by "Other…": the next line is words to search by, not a request.
   const search = /^search(?:\s+(?:for\s+)?(?:the\s+)?(list|folder|item type|type)s?)?(?:\s*[:\-]\s*|\s+)?(.*)$/i.exec(t)
   if (s.lost?.searching && !search && !/^(cancel|never mind|nevermind|stop|no)\b/i.test(lower)) {
@@ -207,6 +222,13 @@ export function step(prev: Session, text: string, port: Port): { session: Sessio
   if (s.lost?.searching && /^(cancel|never mind|nevermind|stop|no)\b/i.test(lower)) {
     s.lost = undefined
     replies.push({ kind: "say", text: "Okay, never mind." })
+    return done()
+  }
+  // Cancel with nothing waiting: drop whatever question is open.
+  if (/^(cancel|never mind|nevermind)\b/i.test(lower) && !search) {
+    s.lost = undefined
+    s.ask = undefined
+    replies.push({ kind: "say", text: "Okay, cancelled. Nothing was changed." })
     return done()
   }
   if (search && (search[1] || s.lost)) {
@@ -231,17 +253,21 @@ export function step(prev: Session, text: string, port: Port): { session: Sessio
       replies.push({
         kind: "say",
         text: "I didn't catch a list or item job in that. I work from a short set of tools. Say \"help\" to see them, or try \"find duplicate items\".",
-        choices: [{ label: "Help", text: "help" }, { label: "Find duplicates", text: "help me find and merge duplicate items" }],
+        choices: [{ label: "Help", text: "help" }, { label: "Find duplicates", text: "help me find and merge duplicate items" }, CANCEL],
       })
       return done()
     case "error":
       trace(undefined, `Stopped: ${intent.text}${intent.suggest?.length ? ` (${intent.suggest.length} wordings offered)` : ""}`)
       s.lost = intent.other ? { noun: intent.other.noun, line: intent.other.line, words: intent.other.words } : undefined
-      replies.push({
-        kind: "say",
-        text: intent.text,
-        choices: intent.other ? [...(intent.suggest ?? []), { label: "Other…", text: `search ${intent.other.noun}s` }] : intent.suggest,
-      })
+      {
+        const reply: Extract<Reply, { kind: "say" }> = {
+          kind: "say",
+          text: intent.text,
+          choices: [...(intent.suggest ?? []), ...(intent.other ? [{ label: "Other…", text: `search ${intent.other.noun}s` }] : []), CANCEL],
+        }
+        s.ask = intent.suggest?.some((c) => c.peek) ? reply : undefined
+        replies.push(reply)
+      }
       return done()
     case "focus":
       trace(undefined, intent.listId ? `Working list is now "${intent.name}".` : "Working list cleared.")
@@ -257,7 +283,11 @@ export function step(prev: Session, text: string, port: Port): { session: Sessio
       const res = runTool(port.world(), intent.call, { now: port.now(), isDismissed: port.isDismissed })
       trace(res, res.kind === "error" ? `Tool refused: ${res.text}` : res.kind === "answer" ? "Answered. Nothing to approve." : res.kind === "plan" ? `Plan ready: ${res.plan.total} item(s) touched. Waiting for your yes.` : `${res.groups.length} group(s) found.`)
       if (res.kind === "error") replies.push({ kind: "say", text: res.text })
-      else if (res.kind === "answer") replies.push({ kind: "answer", text: res.text, rows: res.rows, candidates: res.candidates })
+      else if (res.kind === "answer") {
+        const reply: Extract<Reply, { kind: "answer" }> = { kind: "answer", text: res.text, rows: res.rows, candidates: res.candidates, ...(res.candidates?.length ? { choices: [CANCEL] } : {}) }
+        s.ask = res.candidates?.some((c) => c.peek) ? reply : undefined
+        replies.push(reply)
+      }
       else if (res.kind === "plan") {
         s.pending = { call: intent.call, plan: res.plan }
         replies.push(planReply(res.plan))
@@ -273,6 +303,39 @@ export function step(prev: Session, text: string, port: Port): { session: Sessio
       return done()
     }
   }
+}
+
+/** A list laid open before it is picked: where it is filed, what is on it, and keys to take it, go back, or cancel. */
+function peekReplies(port: Port, s: Session, listId: string, line: string, replies: Reply[]): { session: Session; replies: Reply[] } {
+  const w = port.world()
+  const list = w.lists.find((l) => l.id === listId)
+  if (!list) {
+    replies.push({ kind: "say", text: "That list is gone.", choices: [CANCEL] })
+    return { session: s, replies }
+  }
+  const items = w.tasks.filter((t) => (t.lists ?? []).includes(list.id) && !t.stepOf)
+  const byType = new Map<string, number>()
+  for (const t of items) {
+    const name = w.types.find((x) => String(x.id) === String(t.type ?? "item"))?.name ?? String(t.type ?? "item")
+    byType.set(name, (byType.get(name) ?? 0) + 1)
+  }
+  const folder = w.folders?.find((f) => f.listIds.includes(list.id))?.name
+  const done = items.filter((t) => t.completed).length
+  const rows = [
+    `${folder ? `In folder "${folder}"` : "Not in a folder"} · made ${new Date(list.createdAt).toISOString().slice(0, 10)} · id ${list.id}`,
+    `Item types: ${[...byType].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n, c]) => `${n} ${c}`).join(", ") || "none"}${done ? ` · ${done} finished` : ""}`,
+    ...items.slice(0, 8).map(titleOf),
+    ...(items.length > 8 ? [`… and ${items.length - 8} more`] : []),
+  ]
+  // The line the person would have sent by clicking this one.
+  const use = [...(s.ask?.kind === "say" ? s.ask.choices ?? [] : []), ...(s.ask?.kind === "answer" ? s.ask.candidates ?? [] : [])].find((c) => c.peek === line)
+  const choices: Choice[] = [
+    ...(use?.text ? [{ label: "Pick this one", text: use.text, tone: "go" as const }] : []),
+    ...(s.ask ? [{ label: "Back to the choices", text: "back to the choices" }] : []),
+    CANCEL,
+  ]
+  replies.push({ kind: "answer", text: `"${list.name}" has ${items.length} ${items.length === 1 ? "item" : "items"}:`, rows, choices })
+  return { session: s, replies }
 }
 
 /** The names of one kind of thing, for the "Other…" search. */
@@ -302,17 +365,20 @@ function searchReplies(port: Port, s: Session, words: string, replies: Reply[]):
       kind: "answer",
       text: `${hits.length} ${hits.length === 1 ? "match" : "matches"} for "${words}". Click the one you mean:`,
       candidates: [
-        ...hits.map((r) => ({ id: r.id, label: r.name, detail: r.detail, text: `what is the ${lost.noun} id for ${r.id}` })),
+        ...hits.map((r) => ({ id: r.id, label: r.name, detail: r.detail, text: `what is the ${lost.noun} id for ${r.id}`, ...(lost.noun === "list" ? { peek: `peek list ${r.id}` } : {}) })),
         { id: "other", label: "Other…", detail: "search again", text: `search ${lost.noun}s`, other: true },
       ],
+      choices: [CANCEL],
     })
     return { session: s, replies }
   }
   const choices = hits.flatMap((r) => {
-    const text = swapName(lost.line!, lost.words ?? "", r.name)
-    return text ? [{ label: r.detail ? `${r.name} · ${r.detail}` : r.name, text }] : []
+    const text = swapName(lost.line!, lost.words ?? "", pool.filter((x) => x.name === r.name).length > 1 ? r.id : r.name)
+    return text ? [{ label: r.detail ? `${r.name} · ${r.detail}` : r.name, text, ...(lost.noun === "list" ? { peek: `peek list ${r.id}` } : {}) }] : []
   })
-  replies.push({ kind: "say", text: `${hits.length} ${hits.length === 1 ? "match" : "matches"} for "${words}". Which one?`, choices: [...choices, { label: "Other…", text: `search ${lost.noun}s` }] })
+  const reply: Extract<Reply, { kind: "say" }> = { kind: "say", text: `${hits.length} ${hits.length === 1 ? "match" : "matches"} for "${words}". Which one?`, choices: [...choices, { label: "Other…", text: `search ${lost.noun}s` }, CANCEL] }
+  s.ask = choices.some((c) => c.peek) ? reply : undefined
+  replies.push(reply)
   return { session: s, replies }
 }
 
