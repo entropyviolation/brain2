@@ -114,3 +114,18 @@ describe("merge tombstones via setTasks / setLists", () => {
     expect(united.state.lists.map((l) => l.id)).toEqual(["keep"])
   })
 })
+
+describe("rehydrate merge vs replayed tombstones", () => {
+  it("keeps a restored disk copy's lists when the live store holds an old wipe's tombstones", () => {
+    const lists = Array.from({ length: 40 }, (_, i) => list({ id: `l${i}`, name: `L${i}` }))
+    const merge = useTaskStore.persist.getOptions().merge!
+    const live = {
+      ...useTaskStore.getState(),
+      lists: lists.slice(30),
+      removedListIds: lists.slice(0, 30).map((l) => l.id),
+    }
+    const out = merge({ tasks: [], lists, removedTaskIds: [], removedListIds: [] }, live) as { lists: List[]; removedListIds: string[] }
+    expect(out.lists).toHaveLength(40)
+    expect(out.removedListIds).toEqual([])
+  })
+})

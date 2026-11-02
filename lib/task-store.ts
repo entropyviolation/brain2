@@ -30,6 +30,7 @@
  */
 "use client"
 
+import { tombstonesReplayMass } from "@/lib/vault-guard.js"
 import { create } from "zustand"
 import { stampListAddedAt, stampListAddedAtAll } from "@/lib/list-added-at"
 import { applyMembershipRulesToTask, applyMembershipRulesToTasks, rulesChanged } from "@/lib/list-membership-rules"
@@ -842,13 +843,16 @@ export const useTaskStore = create<TaskState>()(
         }
         const live = current.tasks ?? []
         const diskTasks = Array.isArray(disk.tasks) ? disk.tasks : []
-        const removed = new Set([...(disk.removedTaskIds ?? []), ...(current.removedTaskIds ?? [])])
+        // A running copy that still holds an old wipe's tombstones must not
+        // kill the rows of a restored disk copy on rehydrate.
+        const liveTombs = tombstonesReplayMass(current, disk) ? { removedTaskIds: [], removedListIds: [] } : current
+        const removed = new Set([...(disk.removedTaskIds ?? []), ...(liveTombs.removedTaskIds ?? [])])
         const byId = new Map(diskTasks.filter((task) => task?.id && !removed.has(task.id)).map((task) => [task.id, task]))
         for (const task of live) {
           if (!task?.id || byId.has(task.id) || SEED_TASK_IDS.has(task.id) || removed.has(task.id)) continue
           byId.set(task.id, task)
         }
-        const removedLists = new Set([...(disk.removedListIds ?? []), ...(current.removedListIds ?? [])])
+        const removedLists = new Set([...(disk.removedListIds ?? []), ...(liveTombs.removedListIds ?? [])])
         const diskLists = Array.isArray(disk.lists) ? disk.lists : current.lists
         const lists = (Array.isArray(diskLists) ? diskLists : []).filter(
           (list) => list?.id && !removedLists.has(list.id),

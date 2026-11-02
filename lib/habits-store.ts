@@ -129,6 +129,7 @@
  */
 "use client"
 
+import { rowsMissingMass } from "@/lib/vault-guard.js"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
@@ -1935,7 +1936,10 @@ export const useHabitsStore = create<HabitsState>()(
         const keepLiveContent = liveContentRev > persistedContentRev
         const diskTasks = Array.isArray(p.tasks) ? (p.tasks as WeeklyTask[]) : null
         const healSeedTasks =
-          keepLiveContent && looksLikeSeedHabits(current.tasks) && diskTasks && !looksLikeSeedHabits(diskTasks)
+          keepLiveContent &&
+          diskTasks != null &&
+          ((looksLikeSeedHabits(current.tasks) && !looksLikeSeedHabits(diskTasks)) ||
+            rowsMissingMass(diskTasks, current.tasks))
         const sessionLed = readSessionPercentLedTint()
         const ledPin = readStoredPercentLedTint()
         const gradePin = readStoredTubeColor(GRADE_TUBE_COLOR_STORAGE_KEY)

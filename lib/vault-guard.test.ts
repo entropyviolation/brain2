@@ -602,6 +602,27 @@ describe("vault-guard", () => {
     expect(merged.state.removedListIds).toContain("gone")
   })
 
+  it("ignores an old wipe's tombstones replayed onto live lists and items", () => {
+    const lists = Array.from({ length: 40 }, (_, i) => ({ id: `l${i}`, name: `L${i}` }))
+    const tasks = Array.from({ length: 300 }, (_, i) => ({ id: `t${i}`, stage: "inbox" }))
+    const hub = JSON.stringify({ state: { tasks, lists, removedTaskIds: [], removedListIds: [] } })
+    const stale = JSON.stringify({
+      state: {
+        tasks: [...tasks, { id: "new", stage: "inbox" }],
+        lists,
+        removedTaskIds: tasks.map((t) => t.id),
+        removedListIds: lists.slice(0, 30).map((l) => l.id),
+      },
+    })
+    const merged = JSON.parse(unionPersistSnapshots(stale, hub, "cogs-task-storage") ?? "{}") as {
+      state: { tasks: { id: string }[]; lists: { id: string }[]; removedTaskIds: string[]; removedListIds: string[] }
+    }
+    expect(merged.state.lists).toHaveLength(40)
+    expect(merged.state.tasks).toHaveLength(301)
+    expect(merged.state.removedListIds).toEqual([])
+    expect(merged.state.removedTaskIds).toEqual([])
+  })
+
   it("keeps a Telegram plan entry a thinner dayPlan left out", () => {
     const hub = JSON.stringify({
       v: 1,
@@ -1477,5 +1498,16 @@ describe("applyVaultPatch", () => {
     expect(again.ok).toBe(true)
     if (!again.ok) return
     expect(JSON.parse(again.value).state.entries.map((entry: { id: string }) => entry.id)).toEqual(["old-day", "d2", "d3"])
+  })
+})
+
+describe("habits replayed wipe", () => {
+  it("does not let a newer stamp on a copy missing most habits beat the full one", () => {
+    const habits = Array.from({ length: 40 }, (_, i) => ({ id: `h${i}`, name: `H${i}` }))
+    const full = JSON.stringify({ state: { tasks: habits, categories: [], contentRev: 100 }, version: 26 })
+    const wiped = JSON.stringify({ state: { tasks: habits.slice(0, 10), categories: [], contentRev: 200 }, version: 26 })
+    expect(shouldRejectContentDowngrade("cogs-habits-store", full, wiped)).toBe(false)
+    const fewer = JSON.stringify({ state: { tasks: habits.slice(0, 38), categories: [], contentRev: 200 }, version: 26 })
+    expect(shouldRejectContentDowngrade("cogs-habits-store", full, fewer)).toBe(true)
   })
 })
