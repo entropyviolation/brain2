@@ -30,6 +30,8 @@ Names in these lines come from the vault. Someone BIM does not know falls throug
 | `bim-key.tsx` | Pin-bar key in **Capture** (`components/AppHeader.tsx`), and with `phoneBar` the `>_` key on the phone bar beside Menu. Loads the console on first press |
 | `bim-screens.test.tsx` | Phone send/reply, console digit answer, Enter, planned tab. Ask-back and check-ins are tested in `lib/ingest/bim-switchboard.test.ts` |
 
+_Last mapped: 2026-11-01_ Fonts: the quick keycaps (INFO … CLEAR) are `w95fa` (`--w95-font`). The tabs are Silkscreen at its one weight, like the BIM plate. MODE keys and answer chips are unchanged.
+
 **Planned:** console tabs GRAPH (knowledge graph), ACTIONS (approvable actions), RULES (standing rules), and
 more fields on the dossier card once those are wired.
 
@@ -43,7 +45,7 @@ _Last mapped: 2026-11-01_ A **MODE** switch sits on top of the console chat: ROU
 
 _Last mapped: 2026-11-01_ BIM asks as well as answers (`lib/ingest/bim-chat.ts`, `AskBack`). In memory only, like the tell question.
 
-- **Check-ins.** "What are you doing right now?" and "How are you feeling right now?", alternating. BIM asks on open when the last check-in is two hours old and nothing else is open, and on the **ask me** key. The answer is filed as `doing:` or `mood:`; mood has tap answers. `skip` drops it.
+- **Check-ins.** "What are you doing right now?" and "How are you feeling right now?", alternating. BIM asks only on the **ask me** key. _2026-11-01:_ it no longer asks on open; the chat stays quiet until you say something. `checkInDue` is kept for the **Planned** timed check-ins. The answer is filed as `doing:` or `mood:`; mood has tap answers. `skip` drops it.
 - **Don't know → ask.** An Ask answer with confidence none or low starts "I don't know." and asks you for it. Your answer is filed as `log: <answer> (answer to "<question>")`, so the next ask finds it.
 - A new question (ends in `?`) or a real command drops the open question and runs.
 
@@ -51,4 +53,4 @@ _Last mapped: 2026-11-01_ BIM asks as well as answers (`lib/ingest/bim-chat.ts`,
 
 ## iOS desk sheet and the keycap deck
 
-_Last mapped: 2026-10-30._ On the iOS desk, the BIM key opens the console as a phone sheet. The keycap deck (`components/Mobile/keyboard`) is fixed over the bottom of the screen, so `bim-console.css` shrinks the sheet by `--m-keyboard-h` while `html.m-keyboard-open` is set. Before that, the compose well sat under the deck and typing was invisible. On a coarse pointer the textarea no longer takes `autoFocus`; the person taps it. `useBimChatStore.send` also catches a throw so `busy` never sticks. _2026-11-01:_ typing in the sheet closed BIM Chat and the Menu. The cause was the Menu sheet, not BIM: its key lived in the sheet, and the sheet closed itself on clicks that React passed up from the console. BIM is now a phone-bar key beside Menu (`components/Mobile/README.md`).
+_Last mapped: 2026-10-30._ On the iOS desk, the BIM key opens the console as a phone sheet. The keycap deck (`components/Mobile/keyboard`) is fixed over the bottom of the screen, so `bim-console.css` shrinks the sheet by `--m-keyboard-h` while `html.m-keyboard-open` is set. Before that, the compose well sat under the deck and typing was invisible. On a coarse pointer the textarea no longer takes `autoFocus`; the person taps it. `useBimChatStore.send` also catches a throw so `busy` never sticks. _2026-11-01:_ typing in the sheet closed BIM Chat and the Menu. The cause was the Menu sheet, not BIM: its key lived in the sheet, and the sheet closed itself on clicks that React passed up from the console. BIM is now a phone-bar key beside Menu (`components/Mobile/README.md`). _2026-11-01:_ with the deck up, the sheet slid down and the compose row sat under the deck. `touch.css` centers dialogs with `margin: auto`, so a shorter sheet moved down by half. The sheet is now pinned at `--phone-sheet-top` with a stronger selector. With the deck up it ends above the deck, the chat glass shrinks, and the quick keys hide. The round send key drops the lamp square, so the arrow is centered.

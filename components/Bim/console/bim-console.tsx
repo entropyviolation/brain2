@@ -11,12 +11,12 @@
  */
 "use client"
 
-import { Fragment, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { Fragment, memo, useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { ArrowUp, Paperclip } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
 import { BIM_FULL, BIM_HANDLE, BIM_INTRO, BIM_SHORT } from "@/lib/ingest/bim"
-import { BIM_CHAT_ID, useBimChatStore } from "@/lib/ingest/bim-chat"
+import { BIM_CHAT_ID, useBimChatStore, type BimLine } from "@/lib/ingest/bim-chat"
 import { ALL_COMMANDS } from "@/lib/ingest/command-glossary"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
@@ -47,6 +47,53 @@ function clock(iso: string): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
+/** The chat history. Memoized: a keystroke in the well does not repaint every line under the glass. */
+const ChatLog = memo(function ChatLog({ lines, busy, onTry }: { lines: BimLine[]; busy: boolean; onTry: (text: string) => void }) {
+  return (
+    <>
+      {lines.length === 0 ? (
+        <div className="bim-empty">
+          <p className="bim-legend">BIM · listening</p>
+          <p>Type what you would text me. Tap one to start from it:</p>
+          <div className="bim-chips" aria-label="Examples">
+            {TRY.map((word) => (
+              <button data-no95 key={word} type="button" onClick={() => onTry(word)}>
+                {word}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        lines.map((line) => (
+          <div key={line.id} className={`bim-msg is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
+            <span className="bim-msg-who">
+              {line.who === "you" ? "YOU" : "BIM"} {clock(line.at)}
+            </span>
+            <p className="bim-msg-text">{line.text}</p>
+            {line.route ? <span className="bim-msg-route">{line.route}</span> : null}
+            {line.evidence?.length ? (
+              <details className="bim-msg-ev">
+                <summary>evidence ({line.evidence.length})</summary>
+                {line.evidence.map((row, i) => <p key={i}>{row}</p>)}
+              </details>
+            ) : null}
+          </div>
+        ))
+      )}
+      {busy ? (
+        <div className="bim-msg is-bim">
+          <span className="bim-msg-who">BIM</span>
+          <span className="bim-wait" role="status" aria-label="BIM is working">
+            <i />
+            <i />
+            <i />
+          </span>
+        </div>
+      ) : null}
+    </>
+  )
+})
+
 function ChatPane() {
   const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
   const choices = openChoices(lines)
@@ -66,54 +113,19 @@ function ChatPane() {
     onKeyDown(event)
   }
 
-  const startWith = (text: string) => {
-    setDraft(text)
-    box.current?.focus()
-  }
+  const startWith = useCallback(
+    (text: string) => {
+      setDraft(text)
+      box.current?.focus()
+    },
+    [setDraft],
+  )
 
   return (
     <div className="bim-crt-pane">
       <ModeSwitch llm={llm} setLlm={setLlm} />
       <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
-        {lines.length === 0 ? (
-          <div className="bim-empty">
-            <p className="bim-legend">BIM · listening</p>
-            <p>Type what you would text me. Tap one to start from it:</p>
-            <div className="bim-chips" aria-label="Examples">
-              {TRY.map((word) => (
-                <button data-no95 key={word} type="button" onClick={() => startWith(word)}>
-                  {word}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          lines.map((line) => (
-            <div key={line.id} className={`bim-msg is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
-              <span className="bim-msg-who">
-                {line.who === "you" ? "YOU" : "BIM"} {clock(line.at)}
-              </span>
-              <p className="bim-msg-text">{line.text}</p>
-              {line.route ? <span className="bim-msg-route">{line.route}</span> : null}
-              {line.evidence?.length ? (
-                <details className="bim-msg-ev">
-                  <summary>evidence ({line.evidence.length})</summary>
-                  {line.evidence.map((row, i) => <p key={i}>{row}</p>)}
-                </details>
-              ) : null}
-            </div>
-          ))
-        )}
-        {busy ? (
-          <div className="bim-msg is-bim">
-            <span className="bim-msg-who">BIM</span>
-            <span className="bim-wait" role="status" aria-label="BIM is working">
-              <i />
-              <i />
-              <i />
-            </span>
-          </div>
-        ) : null}
+        <ChatLog lines={lines} busy={busy} onTry={startWith} />
       </div>
       <div className="bim-compose">
         <div className="bim-glass bim-well">

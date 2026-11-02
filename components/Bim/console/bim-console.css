@@ -255,6 +255,14 @@
   padding: 4px 14px 7px;
 }
 
+/* Tabs read like the BIM plate: Silkscreen at its one real weight, no synthetic bold. */
+.ui-dialog-content.bim-crt .bim-crt-tabs button {
+  font-size: 12px;
+  font-weight: normal;
+  font-synthesis: none;
+  letter-spacing: 0.2em;
+}
+
 .bim-crt-tabs .bim-crt-soon {
   margin-left: auto;
   align-self: center;
@@ -535,6 +543,15 @@
 
 .bim-quick button {
   padding: 3px 9px 6px;
+}
+
+/* Quick keycaps in the app's Windows pixel face (`w95fa`, one weight). Tabs and MODE keep Silkscreen. */
+.ui-dialog-content.bim-crt .bim-quick button {
+  font-family: var(--w95-font) !important;
+  font-size: 13px;
+  font-weight: normal;
+  font-synthesis: none;
+  letter-spacing: 0.02em;
 }
 
 .bim-quick .bim-quick-gap {
@@ -858,10 +875,28 @@
     font-size: 15px;
   }
 
-  /* The keycap deck (`Mobile/keyboard`) is fixed over the bottom of the screen
-     and the sheet is top-anchored. Shrink the sheet to what the deck leaves. */
-  html.m-keyboard-open .ui-dialog-content.bim-crt {
-    height: calc(100dvh - env(safe-area-inset-top) - var(--phone-sheet-top, 0px) - var(--m-keyboard-h, 280px) - 8px) !important;
+  /* Pinned to the top. `touch.css` centers dialogs with `margin: auto`, so a sheet shrunk for
+     the keyboard slid down by half and its compose row sat under the deck. The extra
+     selectors outrank `touch.css` and the phone-shell sheet rule in `Mobile/mobile.css`. */
+  html body [role="dialog"].ui-dialog-content.bim-crt.bim-ink {
+    --bim-sheet-top: max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px));
+    inset: var(--bim-sheet-top) 0 auto 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: calc(100dvh - var(--bim-sheet-top) - env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* The keycap deck (`Mobile/keyboard`) is fixed over the bottom of the screen. The top stays
+     put; the sheet ends above the deck, the chat glass gives up the height, quick keys hide. */
+  html.m-keyboard-open body [role="dialog"].ui-dialog-content.bim-crt.bim-ink {
+    height: calc(100dvh - var(--bim-sheet-top) - var(--m-keyboard-h, 280px) - 6px) !important;
+  }
+
+  html.m-keyboard-open .bim-crt .bim-quick {
+    display: none;
   }
 
   .bim-crt-name,
@@ -923,9 +958,20 @@
     display: none;
   }
 
+  /* Icon only, dead center: no lamp square, and the 4px foot is left out of the face. */
+  .bim-crt .bim-send button::before {
+    content: none;
+  }
+
+  .bim-crt .bim-send button {
+    gap: 0;
+    padding-bottom: 4px;
+  }
+
   .bim-crt .bim-send .bim-key-icon {
     display: block;
-    margin: auto;
+    margin: 0;
+    flex: none;
   }
 
   .bim-well textarea {

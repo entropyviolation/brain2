@@ -8,7 +8,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
-import { checkInDue, useBimChatStore } from "@/lib/ingest/bim-chat"
+import { useBimChatStore } from "@/lib/ingest/bim-chat"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { chatPhotoFromFile } from "@/lib/ingest/chat-photo"
 import type { IncomingAttachment } from "@/lib/ingest/types"
@@ -26,12 +26,7 @@ export function useBimChat() {
   const [photoError, setPhotoError] = useState("")
   const logRef = useRef<HTMLDivElement>(null)
 
-  // BIM asks first: on open, when the last check-in is old and nothing else is waiting on you.
-  useEffect(() => {
-    const chat = useBimChatStore.getState()
-    if (checkInDue() && !chat.busy && !openChoices(chat.lines).length) chat.checkIn()
-  }, [])
-
+  // BIM speaks only after you do. Check-ins come from the ask me key, not on open.
   useEffect(() => {
     const log = logRef.current
     if (log) log.scrollTop = log.scrollHeight
