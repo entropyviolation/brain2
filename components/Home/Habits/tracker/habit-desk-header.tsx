@@ -4,15 +4,16 @@
  * Season, week, month, and day each keep their own range and lens update.
  * The daily nameplate still adds six days with `setDate`. With Day View on,
  * the daily nameplate names one day and its keys step one day. Double-click
- * any nameplate to pick a date.
+ * any nameplate to pick a date. Today shows only away from the period that
+ * holds today (`isOnCurrentPeriod`); Day View asks the day lens.
  */
 "use client"
 
 import { format } from "date-fns"
 import { Settings } from "lucide-react"
 import { WeekNavigation } from "@/components/Home/Habits/period/week-navigation"
-import { habitsCalendarKey, habitsViewedMonth } from "@/components/Home/Habits/period/habits-period-cursor"
-import { addCalendarDays, formatDateRange, getWeekStartDate, isSameLocalWeek } from "@/lib/date-utils"
+import { isOnCurrentPeriod } from "@/components/Home/Habits/period/habits-period-cursor"
+import { addCalendarDays, formatDateRange, getWeekStartDate } from "@/lib/date-utils"
 import { quarterKey, quarterLabel, quarterStartDate, shiftQuarter } from "@/lib/seasons"
 import type { useHabitsDayLens } from "@/components/Home/Habits/period/habits-day-lens"
 import type { HabitFreqTab } from "@/lib/app-navigation"
@@ -55,10 +56,10 @@ export function HabitDeskHeader({
   weekEndDate.setDate(weekEndDate.getDate() + 6)
   const viewingCurrentPeriod =
     habitTab === "quarterly"
-      ? quarterKey(currentQuarter) === quarterKey(currentDate)
+      ? isOnCurrentPeriod(currentQuarter, "season", currentDate)
       : habitTab === "monthly"
-        ? habitsCalendarKey(currentMonth) === habitsCalendarKey(habitsViewedMonth(currentDate))
-        : isSameLocalWeek(currentWeekStart, currentDate)
+        ? isOnCurrentPeriod(currentMonth, "month", currentDate)
+        : isOnCurrentPeriod(currentWeekStart, "week", currentDate)
   const weekWindowRange =
     weekPeriods.length === 0
       ? formatDateRange(weekWindowAsOf, addCalendarDays(weekWindowAsOf, 6))

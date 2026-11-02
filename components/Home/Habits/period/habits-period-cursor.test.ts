@@ -7,6 +7,7 @@ import {
   habitsViewedMonth,
   habitsViewedQuarter,
   habitsViewedWeekStart,
+  isOnCurrentPeriod,
   retainHabitsCursorDate,
   retainHabitsWeekDates,
 } from "./habits-period-cursor"
@@ -99,5 +100,36 @@ describe("habitsLensFromStored", () => {
     const lens = habitsLensFromStored(asOf, priorWeek, "week")
     expect(lens).not.toBeNull()
     expect(formatLocalDateKey(lens!)).toBe("2026-09-14")
+  })
+})
+
+describe("isOnCurrentPeriod", () => {
+  const today = new Date(2026, 10, 1, 15, 30) // Sun Nov 1, 2026 — week of Mon Oct 26, Q4
+
+  it("day: same calendar day only, whatever the clock", () => {
+    expect(isOnCurrentPeriod(new Date(2026, 10, 1), "day", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 10, 1, 23, 59), "day", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 9, 31), "day", today)).toBe(false)
+  })
+
+  it("week: any day of the Monday week that holds today", () => {
+    expect(isOnCurrentPeriod(new Date(2026, 9, 26), "week", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 9, 29), "week", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 10, 2), "week", today)).toBe(false)
+    expect(isOnCurrentPeriod(new Date(2026, 9, 25), "week", today)).toBe(false)
+  })
+
+  it("month: the same month, not the same month of another year", () => {
+    expect(isOnCurrentPeriod(new Date(2026, 10, 1), "month", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 10, 30), "month", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 9, 31), "month", today)).toBe(false)
+    expect(isOnCurrentPeriod(new Date(2025, 10, 1), "month", today)).toBe(false)
+  })
+
+  it("season: the calendar quarter that holds today", () => {
+    expect(isOnCurrentPeriod(new Date(2026, 9, 1), "season", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 11, 31), "season", today)).toBe(true)
+    expect(isOnCurrentPeriod(new Date(2026, 8, 30), "season", today)).toBe(false)
+    expect(isOnCurrentPeriod(new Date(2027, 0, 1), "season", today)).toBe(false)
   })
 })

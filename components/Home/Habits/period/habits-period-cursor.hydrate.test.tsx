@@ -54,7 +54,7 @@ describe("Habits week cursor hydration", () => {
     const html = renderToString(<HabitsWeekCursorProbe asOf={asOf} />)
     expect(html).toContain("Sep 21 - Sep 27, 2026")
     expect(html).not.toContain("Sep 14 - Sep 20, 2026")
-    expect(html).toContain('aria-pressed="true"')
+    expect(html).toContain("is-parked")
   })
 
   it("hydrates without mismatch, then restores the persisted prior week lens", async () => {
@@ -69,9 +69,9 @@ describe("Habits week cursor hydration", () => {
       root = hydrateRoot(container, <HabitsWeekCursorProbe asOf={asOf} />)
     })
 
-    // After layout restore: prior week lens, Today not pressed
+    // After layout restore: prior week lens, Today shows
     expect(screen.getByText("Sep 14 - Sep 20, 2026")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Today/ })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: /Today/ }).className).not.toContain("is-parked")
 
     await act(async () => {
       root!.unmount()
@@ -82,7 +82,7 @@ describe("Habits week cursor hydration", () => {
   it("keeps Home-day week when nothing is stored", () => {
     render(<HabitsWeekCursorProbe asOf={asOf} />)
     expect(screen.getByText(formatDateRange(habitsViewedWeekStart(asOf), new Date(2026, 8, 27)))).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Today/ })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByText("Today").closest("button")!.className).toContain("is-parked")
   })
 
   it("does not keep a stored lens when it is the same week as Home day", () => {

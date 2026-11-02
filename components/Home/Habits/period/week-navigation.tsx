@@ -2,8 +2,10 @@
  * components/Home/Habits/period/week-navigation.tsx — Habit week picker
  *
  * Previous / next period, Today / This month, and the date-range nameplate.
- * Raised metal keys + engraved range inside the milled Habits fascia.
- * Double-clicking the nameplate opens a date picker when `onPick` is set.
+ * On the desktop header the keys are silver keycaps (`habit-chrome.css`); the
+ * plate stays the engraved nameplate. Today parks (hidden, its slot kept) when
+ * the view already holds today, so the plate never moves. Double-clicking the plate opens a date picker when
+ * `onPick` is set.
  *
  * Spec: §9.3 (display & interaction).
  */
@@ -23,7 +25,7 @@ interface WeekNavigationProps {
   currentButtonLabel?: string
   previousAriaLabel?: string
   nextAriaLabel?: string
-  /** Current period is a state (sunken), not a larger control. */
+  /** The view already holds today. Today parks: hidden, its slot kept. */
   isCurrentPeriod?: boolean
   /** Double-click the nameplate to jump. The caller snaps the day to its period. */
   onPick?: (date: Date) => void
@@ -55,8 +57,9 @@ export function WeekNavigation({
 
       <button
         type="button"
-        className={`habit-chrome-btn${isCurrentPeriod ? " is-on" : ""}`}
-        aria-pressed={isCurrentPeriod}
+        className={`habit-chrome-btn habit-week-nav-today${isCurrentPeriod ? " is-parked" : ""}`}
+        aria-hidden={isCurrentPeriod || undefined}
+        tabIndex={isCurrentPeriod ? -1 : undefined}
         onClick={onCurrentWeek}
       >
         <Calendar className="h-3 w-3" />
