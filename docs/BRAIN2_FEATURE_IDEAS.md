@@ -3350,6 +3350,22 @@ loop must not flatten.
      page. The words on it are the plain ones. It links to rooms that exist
      and to nothing that pretends to.
 
+## Batch J · Habits, asked for (465–466)
+
+_Added 2026-11-01._ Both wait on the Paused state (habits brief A).
+
+465. **Travel mode: pause a group.** Pause every habit with one tag (for
+     example "home") in one step, until a return date. On that date they all
+     unpause, and BIM says so. **From the text:** asked for on 2026-11-01,
+     not needed yet. **In Brain2:** a bulk call on the Paused state in
+     `lib/habits-store.ts`, started from the habits control panel.
+
+466. **Weekday schedules.** "Gym: Mon / Wed / Fri." Off days are exempt the
+     same way paused days are. It may fit better as a Weekly habit with a
+     target of 3 than as a daily habit with off days. **From the text:**
+     asked for on 2026-11-01, not needed yet. **In Brain2:** the exemption
+     books in `lib/habit-exemption.ts`, or a weekly habit target.
+
 ---
 
 ## Quick index by Brain2 area (where these would land)
@@ -3443,7 +3459,7 @@ Mined from [`brain2taoism.md`](brain2taoism.md). Screen words stay plain.
 
 ---
 
-*Total suggestions: **464** — the original 160 (mined from `Brain2Ideas (1).pdf`),
+*Total suggestions: **466** (465–466 added by request, Nov 2026) — the original 160 (mined from `Brain2Ideas (1).pdf`),
 **120 added in Expansion II** (ideas 161–280), **114 added in Expansion III**
 (ideas 281–394), and **70 added in Expansion IV** (ideas 395–464). Expansion II
 was mined from the Brain2 prototype docs, the Brain2-titled docs, and the
