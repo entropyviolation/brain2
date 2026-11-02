@@ -32,6 +32,7 @@ import {
 import { getPlanEntries } from "@/lib/plan-text"
 import { TASK_STORE_PERSIST_VERSION, useTaskStore } from "@/lib/task-store"
 import { usePointsStore } from "@/lib/points-store"
+import { applyVaultPatch } from "@/lib/vault-guard.js"
 
 const PHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
 
@@ -353,6 +354,48 @@ describe("phone window", () => {
     ])
     expect(localStorage.getItem("brain2-habits-store")).toBeNull()
     setItem.mockRestore()
+  })
+
+  it("a phone edit of pauses, shorthand, and cell history reaches the Mac copy intact", async () => {
+    const previous = JSON.stringify({
+      state: {
+        tasks: [{ id: "h1", name: "water plants", frequency: "daily", gem: "g", shorthandName: "water" }],
+        weeklyData: { "2026-11-02": { h1: { completed: false } } },
+        contentRev: 10,
+      },
+      version: 27,
+    })
+    const posts: Array<{ patch: unknown }> = []
+    asPhone()
+    localStorage.clear()
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        posts.push(JSON.parse(String(init.body)))
+        return { ok: true, status: 200, json: async () => ({ ok: true }) }
+      }
+      if (String(input).includes("/api/persist")) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, items: { "brain2-habits-store": previous } }) }
+      }
+      return { ok: false, status: 404, json: async () => ({}) }
+    }))
+
+    expect(await loadPhoneWindow()).toBe("live")
+    const held = JSON.parse(readPhoneWindowItem("brain2-habits-store") ?? "{}")
+    held.state.tasks[0].pauses = [{ from: "2026-11-02", to: "2027-01-31" }]
+    delete held.state.tasks[0].shorthandName
+    const change = { at: "2026-11-02T10:00:00.000Z", source: "manual-ios", from: false, to: true }
+    held.state.weeklyData["2026-11-02"].h1 = { completed: true, changes: [change] }
+    cogsStateStorage().setItem("brain2-habits-store", JSON.stringify(held))
+    await phoneOutboxSettled()
+    expect(posts).toHaveLength(1)
+
+    const result = applyVaultPatch("brain2-habits-store", previous, posts[0].patch as never)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const mac = JSON.parse(result.value).state
+    expect(mac.tasks[0]).toMatchObject({ id: "h1", gem: "g", pauses: [{ from: "2026-11-02", to: "2027-01-31" }] })
+    expect(mac.tasks[0].shorthandName ?? null).toBeNull()
+    expect(mac.weeklyData["2026-11-02"].h1).toEqual({ completed: true, changes: [change] })
   })
 
   it("a seed save during the launch-cache write neither patches nor paints over the Mac copy", async () => {

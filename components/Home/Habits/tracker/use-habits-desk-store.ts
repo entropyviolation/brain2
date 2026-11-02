@@ -9,10 +9,13 @@
 import { useHabitsStore } from "@/lib/habits-store"
 import { useReviewsStore, localDayKey } from "@/lib/reviews-store"
 import { useExemptionContext } from "@/lib/sleep-store"
+import { useVisibleHabits } from "@/lib/use-visible-habits"
 import { EMPTY_HABIT_PRIORITY_IDS } from "@/components/Home/Habits/tracker/sheet-idle"
 
 export function useHabitsDeskStore(currentDate: Date) {
-  const tasks = useHabitsStore((s) => s.tasks)
+  /** Every habit, for export. `tasks` hides habits paused today unless Show paused habits is on. */
+  const allTasks = useHabitsStore((s) => s.tasks)
+  const tasks = useVisibleHabits(allTasks)
   const morningHabitDayKey = localDayKey(currentDate)
   const morningHabitPriorities = useReviewsStore(
     (s) => s.getMorningReview(morningHabitDayKey)?.priorityHabitIds ?? EMPTY_HABIT_PRIORITY_IDS,
@@ -92,6 +95,7 @@ export function useHabitsDeskStore(currentDate: Date) {
 
   return {
     tasks,
+    allTasks,
     morningHabitPriorities,
     weeklyData,
     weeklyHabitData,

@@ -52,6 +52,7 @@ import {
 import { HabitsPhoneScreen } from "@/components/Home/Habits/phone/habits-phone-screen"
 import { SettingsDialog } from "@/components/Home/Habits/settings-dialog"
 import { useHabitsStore } from "@/lib/habits-store"
+import { useVisibleHabits } from "@/lib/use-visible-habits"
 import { useReviewsStore, localDayKey } from "@/lib/reviews-store"
 import { useHabitTrackingSync, syncTrackedHabitsForTask } from "@/lib/habit-tracking-sync"
 import { goodDaySummary, goodPeriodSummary, rawDayCompletionPercent, type GoodDaySummary } from "@/lib/habit-accomplishment"
@@ -144,7 +145,8 @@ const IDLE_GOOD_DAYS: GoodDaySummary = {
 export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Date }) {
   useHabitTrackingSync()
   const hydrated = usePersistHydrated(useHabitsStore.persist)
-  const tasks = useHabitsStore((s) => s.tasks)
+  const allTasks = useHabitsStore((s) => s.tasks)
+  const tasks = useVisibleHabits(allTasks)
   const morningHabitDayKey = localDayKey(currentDate)
   const morningHabitPriorities = useReviewsStore(
     (s) => s.getMorningReview(morningHabitDayKey)?.priorityHabitIds ?? EMPTY_HABIT_PRIORITY_IDS,
@@ -1055,7 +1057,7 @@ export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Da
       <SettingsDialog
         open={showSettings}
         onOpenChange={setShowSettings}
-        tasks={tasks}
+        tasks={allTasks}
         weeklyData={weeklyData}
         onImportData={importData}
         onResetData={resetData}

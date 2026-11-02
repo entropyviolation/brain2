@@ -383,7 +383,9 @@ describe("TaskForm", () => {
       />,
     )
     const line = screen.getByText(/^neglected for past \d+ days$/)
-    expect(document.querySelector(".habit95-fields")?.firstElementChild).toBe(line)
+    // The pause key is the only block above the neglect line.
+    expect(document.querySelector(".habit95-fields")?.firstElementChild).toHaveClass("habit95-sec-pause")
+    expect(document.querySelector(".habit95-fields > .habit95-sec-pause")?.nextElementSibling).toBe(line)
     await user.click(screen.getByLabelText("Ignore neglect"))
     expect(screen.queryByText(/^neglected for past \d+ days$/)).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Update Habit" }))

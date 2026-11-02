@@ -16,7 +16,7 @@
 import { formatLocalDateKey, formatLocalMonthKey, getWeekString } from "@/lib/date-utils"
 import { useHabitsStore } from "@/lib/habits-store"
 import { quarterKey } from "@/lib/seasons"
-import type { TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
+import type { HabitCellChangeSource, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
 
 type HabitsState = ReturnType<typeof useHabitsStore.getState>
 
@@ -36,13 +36,19 @@ export function periodKeyFor(task: WeeklyTask, rangeStart: Date): string {
   return formatLocalDateKey(rangeStart)
 }
 
-export function writePeriod(task: WeeklyTask, anchor: Date, next: TaskCompletion): void {
+/** Sync writes. The cell history source defaults to `auto-link`. */
+export function writePeriod(
+  task: WeeklyTask,
+  anchor: Date,
+  next: TaskCompletion,
+  source: HabitCellChangeSource = "auto-link",
+): void {
   const habits = useHabitsStore.getState()
   const freq = task.frequency || "daily"
-  if (freq === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next)
-  else if (freq === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next)
-  else if (freq === "weekly") habits.updateWeeklyHabitCompletion(task.id, anchor, next)
-  else habits.updateCompletion(task.id, anchor, next)
+  if (freq === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next, source)
+  else if (freq === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next, source)
+  else if (freq === "weekly") habits.updateWeeklyHabitCompletion(task.id, anchor, next, source)
+  else habits.updateCompletion(task.id, anchor, next, source)
 }
 
 export function bucketForWeekBook(task: WeeklyTask, state: HabitsState): WeeklyData {
@@ -51,9 +57,14 @@ export function bucketForWeekBook(task: WeeklyTask, state: HabitsState): WeeklyD
   return state.weeklyHabitData
 }
 
-export function writeWeekBook(task: WeeklyTask, anchor: Date, next: TaskCompletion): void {
+export function writeWeekBook(
+  task: WeeklyTask,
+  anchor: Date,
+  next: TaskCompletion,
+  source: HabitCellChangeSource = "auto-link",
+): void {
   const habits = useHabitsStore.getState()
-  if (task.frequency === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next)
-  else if (task.frequency === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next)
-  else habits.updateWeeklyHabitCompletion(task.id, anchor, next)
+  if (task.frequency === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next, source)
+  else if (task.frequency === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next, source)
+  else habits.updateWeeklyHabitCompletion(task.id, anchor, next, source)
 }

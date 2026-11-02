@@ -25,6 +25,10 @@
  * Tracking tab lands on the day, week, or month via `applyTrackedValue`, keeping
  * the manual and tracked halves of the value apart (`lib/habit-tracking.ts`).
  *
+ * Persist version 27 adds `showPausedHabits` (default false). Paused spans live
+ * on `WeeklyTask.pauses` (`lib/habit-pause.ts`); every cell write appends to
+ * `TaskCompletion.changes` (`lib/habit-cell-history.ts`). The write functions
+ * take an optional `source`; a person is `manual-desktop` or `manual-ios`.
  * Persist version 22 adds `quarterlyHabitData` (season habits, keyed `YYYY-Qn`).
  * Persist version 26 adds `weeklyAverageBeatBonus` / `monthlyAverageBeatBonus`
  * (default 5). Each pays once on a local day when that day's raw completion
@@ -160,7 +164,16 @@ import {
   type WillpowerPhysicsParams,
 } from "@/lib/willpower-physics"
 import { rememberWorld } from "@/lib/action-history"
-import { type WeeklyTask, TaskType, type TaskCompletion, type WeeklyData, type Category, type HabitFrequency } from "@/lib/types"
+import {
+  type WeeklyTask,
+  TaskType,
+  type TaskCompletion,
+  type WeeklyData,
+  type Category,
+  type HabitCellChangeSource,
+  type HabitFrequency,
+} from "@/lib/types"
+import { resolveCellSource, withCellHistory, withExemptionChange } from "@/lib/habit-cell-history"
 import { addCalendarDays, formatLocalDateKey, formatLocalMonthKey, getWeekString, getWeekStartDate, getWeekDates, parseLocalDate } from "@/lib/date-utils"
 import { quarterKey, quarterStartDate } from "@/lib/seasons"
 import { usePointsStore } from "@/lib/points-store"
@@ -279,7 +292,7 @@ function migratePersistedHabits(state: HabitsState): HabitsState {
 }
 
 /** Persist bump. Zustand requires `migrate` when `version` changes or it drops the blob. */
-export const HABITS_STORE_PERSIST_VERSION = 26
+export const HABITS_STORE_PERSIST_VERSION = 27
 
 /**
  * Text edits that do not cross empty ↔ filled skip grade and coverage work.
@@ -460,6 +473,7 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     habitSmallLeds: state.habitSmallLeds !== false,
     hideCompletedToday: !!state.hideCompletedToday,
     hideCompletedAndMissed: !!state.hideCompletedAndMissed,
+    showPausedHabits: !!state.showPausedHabits,
     habitMonthWindow: parseHabitMonthWindowMode(state.habitMonthWindow),
     habitBirthday: sanitizeHabitBirthday(has("habitBirthday") ? state.habitBirthday : DEFAULT_HABIT_BIRTHDAY),
     habitWeekWindow: parseHabitWeekWindowMode(state.habitWeekWindow),
@@ -863,6 +877,9 @@ interface HabitsState {
    */
   hideCompletedAndMissed: boolean
   setHideCompletedAndMissed: (value: boolean) => void
+  /** Lists keep habits that are paused today, with their paused span exempt. Default false. */
+  showPausedHabits: boolean
+  setShowPausedHabits: (v: boolean) => void
   /**
    * Which months the monthly sheet and its span grade share.
    * Default `yearToDate`. Missing values fill that default. No version bump.
@@ -911,13 +928,24 @@ interface HabitsState {
   setMissedOpWand: (value: boolean) => void
   /** Explicit waive / require overrides. Automatic pre-creation waivers are not stored. */
   habitExemptions: ExemptionBooks
-  setHabitExemption: (frequency: HabitFrequency, periodKey: string, taskId: string, exempt: boolean) => void
+  setHabitExemption: (
+    frequency: HabitFrequency,
+    periodKey: string,
+    taskId: string,
+    exempt: boolean,
+    source?: HabitCellChangeSource,
+  ) => void
   addTask: (task: WeeklyTask) => void
   updateTask: (task: WeeklyTask) => void
   deleteTask: (taskId: string) => void
   setTasks: (tasks: WeeklyTask[]) => void
   setCategories: (categories: Category[]) => void
-  updateCompletion: (taskId: string, date: Date, completion: TaskCompletion) => void
+  /**
+   * The cell writers below append a `HabitCellChange` with `source`. Without
+   * one: a missed-op patch is `wand`, otherwise `manual-ios` in the phone
+   * shell and `manual-desktop` elsewhere.
+   */
+  updateCompletion: (taskId: string, date: Date, completion: TaskCompletion, source?: HabitCellChangeSource) => void
   /**
    * Write the tracking-link contribution (`lib/habit-tracking-sync.ts`).
    * Daily habits land on `date`; weekly/monthly habits land on the week/month
@@ -925,9 +953,24 @@ interface HabitsState {
    * No-ops when nothing changes, so repainting does not re-fire points / Done-log.
    */
   applyTrackedValue: (taskId: string, date: Date, tracked: number) => void
-  updateWeeklyHabitCompletion: (taskId: string, weekStart: Date, completion: TaskCompletion) => void
-  updateMonthlyHabitCompletion: (taskId: string, monthDate: Date, completion: TaskCompletion) => void
-  updateQuarterlyHabitCompletion: (taskId: string, quarterStart: Date, completion: TaskCompletion) => void
+  updateWeeklyHabitCompletion: (
+    taskId: string,
+    weekStart: Date,
+    completion: TaskCompletion,
+    source?: HabitCellChangeSource,
+  ) => void
+  updateMonthlyHabitCompletion: (
+    taskId: string,
+    monthDate: Date,
+    completion: TaskCompletion,
+    source?: HabitCellChangeSource,
+  ) => void
+  updateQuarterlyHabitCompletion: (
+    taskId: string,
+    quarterStart: Date,
+    completion: TaskCompletion,
+    source?: HabitCellChangeSource,
+  ) => void
   setWeeklyData: (data: WeeklyData) => void
   importData: (data: {
     tasks: WeeklyTask[]
@@ -953,6 +996,15 @@ function awardPointsIfNewlyMet(
   if (nowMet && !wasMet) {
     usePointsStore.getState().addPoints(task.id, task.rewardValue || 0, habitCompletionReason(task.name), date)
   }
+}
+
+function periodBookField(
+  frequency: HabitFrequency,
+): "weeklyData" | "weeklyHabitData" | "monthlyHabitData" | "quarterlyHabitData" {
+  if (frequency === "weekly") return "weeklyHabitData"
+  if (frequency === "monthly") return "monthlyHabitData"
+  if (frequency === "quarterly") return "quarterlyHabitData"
+  return "weeklyData"
 }
 
 function stampCompletion<T extends TaskCompletion>(cell: T): T {
@@ -1455,6 +1507,8 @@ export const useHabitsStore = create<HabitsState>()(
       setHideCompletedToday: (value) => set({ hideCompletedToday: !!value }),
       hideCompletedAndMissed: false,
       setHideCompletedAndMissed: (value) => set({ hideCompletedAndMissed: !!value }),
+      showPausedHabits: false,
+      setShowPausedHabits: (v) => set({ showPausedHabits: !!v }),
       habitMonthWindow: DEFAULT_HABIT_MONTH_WINDOW,
       setHabitMonthWindow: (mode) => set({ habitMonthWindow: parseHabitMonthWindowMode(mode) }),
       habitBirthday: { ...DEFAULT_HABIT_BIRTHDAY },
@@ -1474,19 +1528,33 @@ export const useHabitsStore = create<HabitsState>()(
       setMissedOpWand: (value) =>
         set(value ? { missedOpWand: true, exemptionWand: false } : { missedOpWand: false }),
       habitExemptions: emptyExemptionBooks(),
-      setHabitExemption: (frequency, periodKey, taskId, exempt) => {
+      setHabitExemption: (frequency, periodKey, taskId, exempt, source = "wand") => {
         const task = get().tasks.find((row) => row.id === taskId)
         if (!task) return
-        set((state) => ({
-          habitExemptions: withExemptionOverride(
-            state.habitExemptions ?? emptyExemptionBooks(),
-            frequency,
-            periodKey,
-            task,
-            exempt,
-          ),
-          contentRev: nextContentRev(state.contentRev),
-        }))
+        set((state) => {
+          const books = state.habitExemptions ?? emptyExemptionBooks()
+          const habitExemptions = withExemptionOverride(books, frequency, periodKey, task, exempt)
+          const field = periodBookField(frequency)
+          const cell = state[field][periodKey]?.[taskId]
+          const logged = withExemptionChange(
+            cell,
+            isHabitPeriodExempt(task, periodKey, frequency, books),
+            isHabitPeriodExempt(task, periodKey, frequency, habitExemptions),
+            source,
+          )
+          return {
+            habitExemptions,
+            ...(logged
+              ? {
+                  [field]: {
+                    ...state[field],
+                    [periodKey]: { ...(state[field][periodKey] || {}), [taskId]: stampCompletion(logged) },
+                  },
+                }
+              : {}),
+            contentRev: nextContentRev(state.contentRev),
+          }
+        })
         if (frequency === "daily") {
           const date = periodKey.match(/^\d{4}-\d{2}-\d{2}$/)
             ? new Date(Number(periodKey.slice(0, 4)), Number(periodKey.slice(5, 7)) - 1, Number(periodKey.slice(8, 10)))
@@ -1564,7 +1632,12 @@ export const useHabitsStore = create<HabitsState>()(
             }
             const day = { ...(weeklyData[update.dateKey] || {}) }
             day[update.taskId] = stampCompletion(
-              completionWithGoalFlag(task, next, { date, weeklyData: state.weeklyData }),
+              withCellHistory(
+                task,
+                previous,
+                completionWithGoalFlag(task, next, { date, weeklyData: state.weeklyData }),
+                "auto-link",
+              ),
             )
             weeklyData[update.dateKey] = day
             touched.push(date)
@@ -1607,7 +1680,8 @@ export const useHabitsStore = create<HabitsState>()(
           categories,
         })),
 
-      updateCompletion: (taskId, date, completion) => {
+      updateCompletion: (taskId, date, completion, source) => {
+        const cellSource = resolveCellSource(completion, source)
         const liveTask = get().tasks.find((t) => t.id === taskId)
         const dateKey = formatLocalDateKey(date)
         const quiet = liveTask ? quietTextPatch(liveTask, get().weeklyData[dateKey]?.[taskId], completion) : false
@@ -1626,7 +1700,7 @@ export const useHabitsStore = create<HabitsState>()(
           const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, { date, weeklyData: state.weeklyData })
-          day[taskId] = stampCompletion(finalCompletion)
+          day[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, cellSource))
           weeklyData[dateKey] = day
           sync = { task, previous, final: day[taskId], priorData: state.weeklyData }
           return { weeklyData, contentRev: nextContentRev(state.contentRev) }
@@ -1670,7 +1744,7 @@ export const useHabitsStore = create<HabitsState>()(
               date: weekStart,
               weeklyData: state.weeklyHabitData,
             })
-            bucket[taskId] = stampCompletion(finalCompletion)
+            bucket[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, "auto-tracking"))
             weeklyHabitData[weekKey] = bucket
             sync = {
               task,
@@ -1696,7 +1770,7 @@ export const useHabitsStore = create<HabitsState>()(
               date: monthDate,
               weeklyData: state.monthlyHabitData,
             })
-            bucket[taskId] = stampCompletion(finalCompletion)
+            bucket[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, "auto-tracking"))
             monthlyHabitData[monthKey] = bucket
             sync = {
               task,
@@ -1722,7 +1796,7 @@ export const useHabitsStore = create<HabitsState>()(
               date: seasonStart,
               weeklyData: state.quarterlyHabitData,
             })
-            bucket[taskId] = stampCompletion(finalCompletion)
+            bucket[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, "auto-tracking"))
             quarterlyHabitData[seasonKey] = bucket
             sync = {
               task,
@@ -1745,7 +1819,7 @@ export const useHabitsStore = create<HabitsState>()(
           const weeklyData = { ...state.weeklyData }
           const day = { ...(weeklyData[dateKey] || {}) }
           const finalCompletion = completionWithGoalFlag(task, next, { date, weeklyData: state.weeklyData })
-          day[taskId] = stampCompletion(finalCompletion)
+          day[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, "auto-tracking"))
           weeklyData[dateKey] = day
           sync = { task, previous, final: day[taskId], priorData: state.weeklyData, frequency: "daily", anchor: date }
           return { weeklyData, contentRev: nextContentRev(state.contentRev) }
@@ -1762,7 +1836,8 @@ export const useHabitsStore = create<HabitsState>()(
         }
       },
 
-      updateWeeklyHabitCompletion: (taskId, weekStart, completion) => {
+      updateWeeklyHabitCompletion: (taskId, weekStart, completion, source) => {
+        const cellSource = resolveCellSource(completion, source)
         const weekKey = getWeekString(weekStart)
         const liveTask = get().tasks.find((t) => t.id === taskId)
         const quiet = liveTask ? quietTextPatch(liveTask, get().weeklyHabitData[weekKey]?.[taskId], completion) : false
@@ -1780,7 +1855,7 @@ export const useHabitsStore = create<HabitsState>()(
           const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, { date: weekStart, weeklyData: state.weeklyHabitData })
-          bucket[taskId] = stampCompletion(finalCompletion)
+          bucket[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, cellSource))
           weeklyHabitData[weekKey] = bucket
           sync = { task, previous, final: bucket[taskId], priorData: state.weeklyHabitData }
           return { weeklyHabitData, contentRev: nextContentRev(state.contentRev) }
@@ -1793,7 +1868,8 @@ export const useHabitsStore = create<HabitsState>()(
         }
       },
 
-      updateMonthlyHabitCompletion: (taskId, monthDate, completion) => {
+      updateMonthlyHabitCompletion: (taskId, monthDate, completion, source) => {
+        const cellSource = resolveCellSource(completion, source)
         const monthKey = formatLocalMonthKey(monthDate)
         const liveTask = get().tasks.find((t) => t.id === taskId)
         const quiet = liveTask ? quietTextPatch(liveTask, get().monthlyHabitData[monthKey]?.[taskId], completion) : false
@@ -1811,7 +1887,7 @@ export const useHabitsStore = create<HabitsState>()(
           const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, { date: monthDate, weeklyData: state.monthlyHabitData })
-          bucket[taskId] = stampCompletion(finalCompletion)
+          bucket[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, cellSource))
           monthlyHabitData[monthKey] = bucket
           sync = { task, previous, final: bucket[taskId], priorData: state.monthlyHabitData }
           return { monthlyHabitData, contentRev: nextContentRev(state.contentRev) }
@@ -1823,7 +1899,8 @@ export const useHabitsStore = create<HabitsState>()(
         }
       },
 
-      updateQuarterlyHabitCompletion: (taskId, quarterStart, completion) => {
+      updateQuarterlyHabitCompletion: (taskId, quarterStart, completion, source) => {
+        const cellSource = resolveCellSource(completion, source)
         const seasonKey = quarterKey(quarterStartDate(quarterStart))
         const liveTask = get().tasks.find((t) => t.id === taskId)
         const quiet = liveTask
@@ -1846,7 +1923,7 @@ export const useHabitsStore = create<HabitsState>()(
             date: quarterStartDate(quarterStart),
             weeklyData: state.quarterlyHabitData,
           })
-          bucket[taskId] = stampCompletion(finalCompletion)
+          bucket[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, cellSource))
           quarterlyHabitData[seasonKey] = bucket
           sync = { task, previous, final: bucket[taskId], priorData: state.quarterlyHabitData }
           return { quarterlyHabitData, contentRev: nextContentRev(state.contentRev) }
@@ -1916,6 +1993,7 @@ export const useHabitsStore = create<HabitsState>()(
           habitSmallLeds: state.habitSmallLeds,
           hideCompletedToday: state.hideCompletedToday,
           hideCompletedAndMissed: state.hideCompletedAndMissed,
+          showPausedHabits: state.showPausedHabits,
           exemptionWand: state.exemptionWand,
           missedOpWand: state.missedOpWand,
           habitExemptions: emptyExemptionBooks(),

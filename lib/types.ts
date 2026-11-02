@@ -1297,6 +1297,10 @@ export interface HabitPriorityEvent {
 export interface WeeklyTask {
   id: string
   name: string
+  /** Short label for the iOS period grid. "read 5 pages" → "read". */
+  shorthandName?: string
+  /** Paused spans. The last span with no `to` is the active pause. Days are YYYY-MM-DD, `to` inclusive. */
+  pauses?: { from: string; to?: string }[]
   type: TaskType
   goal?: number
   unit?: string
@@ -1695,6 +1699,23 @@ export interface TaskCompletion {
    * day loses to this, so a check cannot be unmarked by an older snapshot.
    */
   updatedAt?: number
+  /** Append-only change log for this cell. Newest last. */
+  changes?: HabitCellChange[]
+}
+
+export type HabitCellChangeSource =
+  | "manual-desktop"   // a person in Electron / desktop web
+  | "manual-ios"       // a person in the phone shell
+  | "llm-suggestion"   // an approved proposal from a helper (E)
+  | "auto-tracking"    // Tracking minutes / coverage
+  | "auto-link"        // sleep, list, tag, keyword, daily-floor links
+  | "wand"             // exemption / missed-op wand
+export interface HabitCellChange {
+  at: string                 // ISO time
+  source: HabitCellChangeSource
+  from?: number | boolean | string | null
+  to: number | boolean | string | null
+  note?: string              // e.g. a verbatim missReason
 }
 
 // Updated to use date strings as keys instead of day names
