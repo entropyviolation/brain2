@@ -101,6 +101,8 @@ Read both sides. Do not invent a third polarity name for these.
 5. Period-ledger “prospective” means open scheduled To do — not every intention in the house.
 6. Do not add a Task `polarity` column. Overlay only (`data-temporal`, docs, help).
 
+**Planned (2026-11-02).** Named events pair a planned Plan event with a lived Tracking tick by name. The pair is a bridge, under laws 1 and 2: [`STREAM_LOG_PLAN.md`](STREAM_LOG_PLAN.md) section 7.
+
 ---
 
 ## Related rooms

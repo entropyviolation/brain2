@@ -74,6 +74,8 @@ user exists. The open-source repo publishes those values.
 5. Lens export: a signed, dated, read-only slice for a `companion`.
 6. Optional sync relay that stores ciphertext only. Self-hostable.
 
+**Planned (2026-11-02).** The writer stamp in step 1 is the same word as the block authorship marks (you, a model, a person, copied) in [`STREAM_LOG_PLAN.md`](STREAM_LOG_PLAN.md) section 4. Person aliases and merge are section 8.
+
 ## Refused
 
 - Accounts required to use the app.

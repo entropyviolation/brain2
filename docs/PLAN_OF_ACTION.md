@@ -80,6 +80,7 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 | 13 | Map essay (GS) | **do not start** |
 | 14 | Meaning essay (JG) | **do not start** |
 | 15 | Loop essay (CY) | **do not start** |
+| 16 | Stream-log plans | **open** |
 
 ### Wave 0 — Screenshots — **open**
 
@@ -193,6 +194,26 @@ The ten gaps from the realistic slice of [`BRAIN2_FEATURE_IDEAS.md`](BRAIN2_FEAT
 Not started. The Wave 11 gate is satisfied. This wave does not wait on another wave.
 
 Wiki `[[links]]` that resolve to Items, PDF page provenance, and version history on doc bodies. The work is the second-brain loop (sweep, paint, confirm, one write that becomes many records). More tabs, more cards, and a Lucide set are not this wave.
+
+---
+
+### Wave 16 — Stream-log plans — **open**
+
+Not started. Eleven ideas from the October stream-of-consciousness logs, each planned in [`STREAM_LOG_PLAN.md`](STREAM_LOG_PLAN.md). This wave does not wait on another wave.
+
+1. Text misreads: `now`, `with`, `alone`, clock guesses, one shorthand.
+2. Several dates in one capture.
+3. Three pages: a doc per day, tied to the habit ([`WRITING_PLAN.md`](WRITING_PLAN.md)).
+4. Who wrote it, and the opt-in 100% human document ([`WRITING_PLAN.md`](WRITING_PLAN.md)).
+5. Objectives: auto-tag and a timeline of each sitting.
+6. Bare minimums you can clear in more than one way.
+7. Named events as moving due dates. **First priority.** ([`NAMED_EVENTS_PLAN.md`](NAMED_EVENTS_PLAN.md))
+8. Rename or merge a person, and every record follows.
+9. Period summary: view in Data, edit in Rituals ([`PERIOD_SUMMARY_PLAN.md`](PERIOD_SUMMARY_PLAN.md)).
+10. Email watch and an email cleaner.
+11. Printable booklets and reMarkable sync ([`PAPER_LOOP_PLAN.md`](PAPER_LOOP_PLAN.md)).
+
+Order: 1 and 7, then 2, 5, 8, 6, 3 with 4, 9, 10, 11. Sections 1 and 2 share the parsers; do them one after the other.
 
 ---
 
