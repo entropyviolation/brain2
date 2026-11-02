@@ -2,9 +2,9 @@
  * components/Home/Habits/period/week-navigation.tsx — Habit week picker
  *
  * Previous / next period, Today / This month, and the date-range nameplate.
- * On the desktop header every one of them is a silver keycap (`habit-chrome.css`).
- * Today hangs just outside the bay, left of ‹, and parks (hidden) when the
- * view already holds today, so the bay never moves. Double-clicking the plate opens a date picker when
+ * On the desktop header the keys are silver keycaps (`habit-chrome.css`); the
+ * plate stays the engraved nameplate. Today parks (hidden, its slot kept) when
+ * the view already holds today, so the plate never moves. Double-clicking the plate opens a date picker when
  * `onPick` is set.
  *
  * Spec: §9.3 (display & interaction).
@@ -25,7 +25,7 @@ interface WeekNavigationProps {
   currentButtonLabel?: string
   previousAriaLabel?: string
   nextAriaLabel?: string
-  /** The view already holds today. Today parks: hidden, the bay stays put. */
+  /** The view already holds today. Today parks: hidden, its slot kept. */
   isCurrentPeriod?: boolean
   /** Double-click the nameplate to jump. The caller snaps the day to its period. */
   onPick?: (date: Date) => void
@@ -50,6 +50,11 @@ export function WeekNavigation({
   const picker = usePeriodPicker(pickValue ?? currentWeekStart, onPick)
   return (
     <div className="habit-week-nav">
+      <button type="button" className="habit-chrome-btn" onClick={onPreviousWeek}>
+        <ChevronLeft className="h-3 w-3" />
+        <span className="sr-only">{previousAriaLabel}</span>
+      </button>
+
       <button
         type="button"
         className={`habit-chrome-btn habit-week-nav-today${isCurrentPeriod ? " is-parked" : ""}`}
@@ -59,11 +64,6 @@ export function WeekNavigation({
       >
         <Calendar className="h-3 w-3" />
         {currentButtonLabel}
-      </button>
-
-      <button type="button" className="habit-chrome-btn" onClick={onPreviousWeek}>
-        <ChevronLeft className="h-3 w-3" />
-        <span className="sr-only">{previousAriaLabel}</span>
       </button>
 
       <span
