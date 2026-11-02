@@ -571,7 +571,7 @@ Shipped example: `PointsDial` in `components/Home/ToDo/task-card/TaskCardSide.ts
 
 ### Keycaps
 
-_Last mapped: 2026-10-27_
+_Last mapped: 2026-11-02_
 
 Allie likes this button and wants more of it. A word key is this cap. Reach for the pale silver one. Seafoam and cornflower are the only other plastics, for a word key that needs a color. Do not invent a new word-button shape.
 
@@ -586,8 +586,8 @@ Word keys use the ortholinear keycap, from a round-screen terminal allie picked.
 - **Default cap (use this):** pale silver. Top `#f1f3f5` → `#dfe2e6`, skirt `#b3b8be`, edge `#6e7378`, legend `#1f2226`. Class `.todo-cap`.
 - **Modifier cap** (Session, Sessions, Show, sort, Needs…, View, Delete): darker grey. Top `#c9ccd0` → `#b9bdc1`, skirt `#969a9f`, edge `#55595d`. Class `.todo-cap.is-mod` (`.is-quiet` is the same grey).
 - **Primary cap** (+ Add task, Done): the silver cap with a navy legend, a small navy lamp before the word, and a 2px navy ring. Class `.todo-cap.is-primary`. Navy `#22306c`.
-- **Seafoam cap:** the same cap in seafoam. Top `#d4f3e8` → `#b7e6d4`, skirt `#7ebfa8`, edge `#3f7564`, legend `#102820`. Class `.todo-cap.is-seafoam`.
-- **Cornflower cap:** the same cap in cornflower. Top `#dce6fb` → `#c0d0f6`, skirt `#8aa6e0`, edge `#4a6298`, legend `#17243f`. Class `.todo-cap.is-cornflower`.
+- **Seafoam cap** (use this green): the same cap in a muted sage. Top `#c8dcd6` → `#b4ccc5` (highlight), skirt `#86a99f`, edge `#4a6b62`, legend `#102820`. Set on the Lists toolbar (`.fm-cap-seafoam`, New List). The older minty seafoam (top `#d4f3e8` → `#b7e6d4`, skirt `#7ebfa8`, edge `#3f7564`) is retired: do not use it for new keys. Class `.todo-cap.is-seafoam` still carries the old paint until it is moved over.
+- **Cornflower cap** (use this blue): the same cap in a dusty blue. Top `#aebcda` → `#9eafd1` (highlight), skirt `#7b93c1` (shadow), edge `#4a6298`, legend `#17243f`. Set on the Lists toolbar (`.fm-cap-cornflower`, New Folder and BIMBY). The older pale cornflower (top `#dce6fb` → `#c0d0f6`, skirt `#8aa6e0`) is retired: do not use it for new keys. Class `.todo-cap.is-cornflower` still carries the old paint until it is moved over.
 - **Latching keys** (the span keys, and every main room switcher): a lamp at the left. Span keys drop and light green when current. Main switchers (Home’s five rooms, Tracking’s four views, Habits period, Operations HOME / TO DO / PHASES / PARTS / LOG, Item detail, Plan’s season row, Scheduler’s period row, Inbox partitions) use the same pale cap at rest. The selected key does not sink into grey: it stays the CRT, black glass `#070c0a`, green legend `#7dffc4`, phosphor `--hab-crt-glow`. The on-light stays the small round green lamp (about 7–8px, `#f4fff8` → `#7dffc4` → `#0b4a32`). Operations and Item detail also keep a dim lamp on the keys that are off. A press is the keycap drop above. The selected CRT stays. The click does not turn it into a grey sink. There is no keyframe flash. Class `.b2-keycap-tab` in `app/win95.css`, on the bay. Header Go keys are already this cap; their CRT glyph stands in for the lamp. To Do span keys stay `.todo-span-key` and are the reference, not a second paint.
 - A word key that stays on (`.todo-cap.is-on`, or `aria-pressed="true"` on `.todo-cap`) keeps that dropped cap. A latched room switcher does not: selected stays the CRT, and only the click drops.
 - Never cream, yellow, or orange caps.

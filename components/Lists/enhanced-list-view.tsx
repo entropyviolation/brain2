@@ -468,7 +468,6 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               onDragOver={drag.handleDragOver}
               onDrop={drag.handleFolderTreeDrop}
               onCreateFolder={() => create.setShowNewFolderDialog(true)}
-              onEditFolder={setEditingFolder}
               itemTypes={itemTypes}
               onOpenItemType={openItemType}
               collapsed={phoneLists && !phoneFoldersOpen}

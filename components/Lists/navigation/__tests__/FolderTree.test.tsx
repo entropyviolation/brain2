@@ -108,8 +108,7 @@ describe("FolderTree", () => {
     expect(onNavTo).toHaveBeenCalledWith("f2")
   })
 
-  it("calls onEditFolder from the settings button", () => {
-    const onEditFolder = vi.fn()
+  it("has no per-folder settings button", () => {
     render(
       <FolderTree
         folders={mockFolders}
@@ -121,11 +120,9 @@ describe("FolderTree", () => {
         onDragOver={vi.fn()}
         onDrop={vi.fn()}
         onCreateFolder={vi.fn()}
-        onEditFolder={onEditFolder}
       />,
     )
-    fireEvent.click(screen.getByLabelText("Edit Work"))
-    expect(onEditFolder).toHaveBeenCalledWith(expect.objectContaining({ id: "f1" }))
+    expect(screen.queryByLabelText("Edit Work")).toBeNull()
   })
 
   it("renders Quick Access and Folders section headings", () => {

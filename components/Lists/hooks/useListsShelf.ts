@@ -136,7 +136,7 @@ export function useListsShelf({
             name: itemTypeListLabel(type),
             color: type.color,
             icon: type.icon,
-            count: tasksOfItemType(String(type.id), allTasks, itemTypes).length,
+            count: tasksOfItemType(String(type.id), allTasks, itemTypes, categories).length,
           }))
         : buildGridEntries({
         isHome,
@@ -166,6 +166,7 @@ export function useListsShelf({
       showSmartLists,
       showPeriodLedgerListsInAll,
       allTasks,
+      categories,
       globalAllTasks,
       getSmartTasks,
       getTasksForCategory,

@@ -1,5 +1,6 @@
 "use client"
 
+import { ListsHelperKey } from "./ListsHelperKey"
 import type { FolderView } from "@/lib/lists-ui-store"
 import type { ListDisplayMode } from "@/lib/types"
 import type { OpenTarget } from "@/components/Lists/types"
@@ -78,22 +79,23 @@ export function ListsToolbar({
           ↑ Up
         </button>
         <div className="fm-toolbar-sep" role="separator" aria-label="New" />
-        <button className="fm-btn fm-btn-sm" onClick={onNewList}>
+        <button className="fm-btn fm-btn-sm fm-cap-seafoam" onClick={onNewList}>
           New List
         </button>
-        <button className="fm-btn fm-btn-sm" onClick={onNewFolder}>
+        <button className="fm-btn fm-btn-sm fm-cap-cornflower" onClick={onNewFolder}>
           New Folder
         </button>
-        <button className="fm-btn fm-btn-sm fm-import-sheet" onClick={onImportCsv} title="Import CSV, TSV, or Excel spreadsheet">
+        <button className="fm-btn fm-btn-sm fm-cap-mod fm-import-sheet" onClick={onImportCsv} title="Import CSV, TSV, or Excel spreadsheet">
           Import spreadsheet
         </button>
         <div className="fm-toolbar-sep" role="separator" />
-        <button className="fm-btn fm-btn-sm" onClick={onSettings}>
+        <button className="fm-btn fm-btn-sm fm-cap-mod" onClick={onSettings}>
           Settings
         </button>
         <button className={`fm-btn fm-btn-sm${selectMode ? " active" : ""}`} onClick={onToggleSelect}>
           {selectMode ? "Cancel Select" : "Select"}
         </button>
+        <ListsHelperKey listId={openTarget?.type === "category" ? openTarget.id : undefined} />
         <div className="fm-toolbar-spacer" />
         <ToolbarSearch resetKey={searchResetKey} onChange={onSearchChange} />
         {searchActive && (

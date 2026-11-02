@@ -35,6 +35,12 @@ describe("item type lists", () => {
     expect(tasksOfItemType("book", items, types).map((row) => row.id)).toEqual(["book"])
   })
 
+  it("includes an item that reads as the type through a list that pins it", () => {
+    const items = [task({ id: "b", type: "task", lists: ["reading"] }), task({ id: "t", type: "task", lists: [] })]
+    const lists = [{ id: "reading", name: "Reading List", color: "#111", createdAt: new Date(), itemTypeId: "book" }] as never
+    expect(tasksOfItemType("book", items, types, lists).map((row) => row.id)).toEqual(["b"])
+  })
+
   it("stamps a new computer project as an operation with the project preset", () => {
     const base = task({ id: "new", description: "Brain2", type: "item" })
     const next = applyItemTypeToNewTask(base, COMPUTER_PROJECT_TYPE_ID, types)

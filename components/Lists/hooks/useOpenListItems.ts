@@ -218,7 +218,7 @@ export function useOpenListItems({
       return items
     }
     if (openTarget.type === "smart") return getSmartTasks(openTarget.id)
-    if (openTarget.type === "item-type") return tasksOfItemType(openTarget.id, allTasks, itemTypes)
+    if (openTarget.type === "item-type") return tasksOfItemType(openTarget.id, allTasks, itemTypes, categories)
     return []
   }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHideUncategorized, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, globalAllHideUncategorized, globalAllTasks, getSmartTasks, getTasksForCategory, itemTypes])
 

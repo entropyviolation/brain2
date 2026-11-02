@@ -17,7 +17,7 @@ export function ListsAddressBar({
   onToggleFolders?: () => void
 }) {
   return (
-    <div className="fm-status-bar">
+    <div className="fm-status-bar fm-address-bar">
       <div className="fm-status-field shrink">
         {onToggleFolders ? (
           <button

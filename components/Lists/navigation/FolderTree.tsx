@@ -9,7 +9,6 @@ import {
   buildFolderTree,
   defaultExpandedFolderIds,
   flattenFolderTree,
-  isEditableFolder,
 } from "@/lib/folder-tree"
 import { buildListTree, flattenListTree } from "@/lib/list-tree"
 import { folderFor } from "@/components/Icons"
@@ -25,7 +24,6 @@ export interface FolderTreeProps {
   onDragOver: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent, folder: Folder | null) => void
   onCreateFolder: () => void
-  onEditFolder?: (folder: Folder) => void
   /**
    * Optional nested-category (sublist) tree (Feature 8). When provided, a
    * "Lists" section renders the categories indented by their `parentListId`
@@ -61,7 +59,6 @@ export function FolderTree({
   onDragOver,
   onDrop,
   onCreateFolder,
-  onEditFolder,
   categories,
   activeCategoryId,
   onNavToCategory,
@@ -166,6 +163,7 @@ export function FolderTree({
             <button
               type="button"
               className="fm-tree-toggle"
+              data-no95
               aria-label={itemTypesOpen ? "Collapse Item Types" : "Expand Item Types"}
               aria-expanded={itemTypesOpen}
               onClick={(e) => {
@@ -243,6 +241,7 @@ export function FolderTree({
                 <button
                   type="button"
                   className="fm-tree-toggle"
+                  data-no95
                   aria-label={expanded ? "Collapse folder" : "Expand folder"}
                   aria-expanded={expanded}
                   onClick={(e) => toggleExpanded(folder.id, e)}
@@ -261,20 +260,6 @@ export function FolderTree({
                 decoding="async"
               />
               <span className="fm-tree-label">{folder.name}</span>
-              {onEditFolder && isEditableFolder(folder.id) && (
-                <button
-                  type="button"
-                  className="fm-tree-edit"
-                  title="Folder settings"
-                  aria-label={`Edit ${folder.name}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEditFolder(folder)
-                  }}
-                >
-                  ⚙
-                </button>
-              )}
             </div>
           )
         })}

@@ -1319,6 +1319,76 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   margin-right: 0;
 }
 
+/* ===== Status bar (Address: brushed strip, dark plate, black CRT path) ===== */
+.fm98 .fm-status-bar.fm-address-bar {
+  margin: 6px 0 0 0;
+  padding: 3px 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-radius: var(--r-2, 2px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0 1px, rgba(0, 0, 0, 0.05) 1px 2px),
+    linear-gradient(180deg, #d9dce0 0%, #b9bdc2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.45);
+}
+
+.fm98 .fm-address-bar .fm-status-field {
+  flex-grow: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 6px;
+  color: var(--fm-crt);
+  text-shadow: var(--fm-crt-glow);
+  background: var(--fm-crt-glass);
+  box-shadow:
+    0 0 0 1px #2b2e31,
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 6px 10px rgba(0, 0, 0, 0.55);
+}
+
+.fm98 .fm-address-bar .fm-status-field:not(.shrink)::after {
+  content: "\203A";
+  flex-shrink: 0;
+}
+
+.fm98 .fm-address-bar .fm-status-field.shrink {
+  flex-grow: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.fm98 .fm-address-bar .fm-status-label {
+  flex-shrink: 0;
+  padding: 3px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e4e6e8;
+  text-shadow: none;
+  background: linear-gradient(180deg, #34373b, #232528);
+  box-shadow:
+    0 0 0 1px #111214,
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  margin-right: 0;
+}
+
 /* ===== Sunken content panel (the "desktop") ===== */
 .fm98 .fm-sunken {
   box-shadow: var(--fm-border-field);
@@ -1778,8 +1848,13 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   color: inherit;
 }
 
-.fm98 .fm-tree-toggle:hover {
-  background: rgba(0, 0, 0, 0.08);
+.fm98 .fm-tree-toggle,
+.fm98 .fm-tree-toggle:hover,
+.fm98 .fm-tree-toggle:active {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: 0;
 }
 
 .fm98 .fm-tree-toggle-spacer {
@@ -2973,30 +3048,24 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   display: inline;
 }
 
-.fm98.fm-phone button.fm-status-label {
+.fm98.fm-phone .fm-address-bar button.fm-status-label {
   cursor: pointer;
-  min-height: 32px;
-  padding: 4px 8px 7px;
-  border: 1px solid #6e7378 !important;
+  min-height: 26px;
+  border: 0 !important;
   border-radius: 4px !important;
-  background: #dfe2e6 !important;
-  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  background: linear-gradient(180deg, #34373b, #232528) !important;
   box-shadow:
-    inset 2px 0 0 #b3b8be,
-    inset -2px 0 0 #b3b8be,
-    inset 0 -3px 0 #b3b8be,
-    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
-  color: #1f2226 !important;
-  letter-spacing: 0.08em;
+    0 0 0 1px #111214,
+    0 2px 0 #111214,
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  color: #e4e6e8 !important;
 }
 
-.fm98.fm-phone button.fm-status-label[aria-expanded="true"] {
+.fm98.fm-phone .fm-address-bar button.fm-status-label[aria-expanded="true"] {
   transform: translateY(1px);
   box-shadow:
-    inset 2px 0 0 #b3b8be,
-    inset -2px 0 0 #b3b8be,
-    inset 0 -1px 0 #b3b8be,
-    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+    0 0 0 1px #111214,
+    inset 0 2px 3px rgba(0, 0, 0, 0.6) !important;
 }
 
 .fm98.fm-phone .fm-split > .fm-sidebar.fm-folders-collapsed {
@@ -3080,4 +3149,103 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   overflow-wrap: anywhere;
   text-overflow: unset;
   height: auto;
+}
+
+/*
+ * Toolbar keycaps (desktop). _Last mapped: 2026-11-02_
+ * Both toolbar rows wear the house keycap (docs/DESIGN_STYLE.md → Keycaps):
+ * pale silver by default, `.fm-cap-mod` grey, `.fm-cap-seafoam` and
+ * `.fm-cap-cornflower` for the keys that create or call a helper. A latched key
+ * (`.active`: Select, view and display keys, Gravity) stays CRT glass with a green
+ * legend. The phone keeps its own cap above. The `:not()` chain matches the global
+ * Win95 button skin in app/win95.css so the cap wins.
+ */
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  --cap-leg: #1f2226;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  color: var(--cap-leg);
+  text-shadow: none;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  outline: 0;
+}
+
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn.fm-cap-mod:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  --cap-top: #c9ccd0;
+  --cap-top2: #b9bdc1;
+  --cap-skirt: #969a9f;
+  --cap-edge: #55595d;
+  --cap-leg: #25282b;
+}
+
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn.fm-cap-seafoam:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  --cap-top: #c8dcd6;
+  --cap-top2: #b4ccc5;
+  --cap-skirt: #86a99f;
+  --cap-edge: #4a6b62;
+  --cap-leg: #102820;
+}
+
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn.fm-cap-cornflower:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  --cap-top: #aebcda;
+  --cap-top2: #9eafd1;
+  --cap-skirt: #7b93c1;
+  --cap-edge: #4a6298;
+  --cap-leg: #17243f;
+}
+
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn:not(:disabled):not(.active):hover {
+  filter: brightness(1.04);
+}
+
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn:disabled {
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+  color: #7d8185;
+  cursor: default;
+}
+
+/* Latched: the selected key stays CRT glass with a green legend. */
+body.win95-app .fm98:not(.fm-phone) :is(.fm-toolbar, .fm-sidebar) button.fm-btn.active:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  color: var(--fm-crt);
+  text-shadow: var(--fm-crt-glow);
+  border-color: #000;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    inset 2px 0 0 #1b2420,
+    inset -2px 0 0 #1b2420,
+    inset 0 -4px 0 #1b2420,
+    0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.fm98:not(.fm-phone) .fm-toolbar .fm-view-keys {
+  gap: 5px;
 }

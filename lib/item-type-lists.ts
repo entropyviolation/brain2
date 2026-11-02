@@ -2,7 +2,7 @@
  * lib/item-type-lists.ts — Item Types quick-access lists
  *
  * Lists → Quick Access → **Item Types** is a virtual folder. Each item type is
- * one virtual list. Membership is `Task.type` (and subtypes), read at display
+ * one virtual list. Membership is the primary type or a list that pins the type (and subtypes), read at display
  * time, so a new item or a recategorized item shows up without a stored
  * membership row and a second pass cannot duplicate it.
  *
@@ -11,7 +11,7 @@
  * computer project, the Project preset panels) so the Operations board can
  * open it.
  */
-import type { ItemTypeDefinition, Task } from "@/lib/types"
+import type { ItemTypeDefinition, List, Task } from "@/lib/types"
 import { itemsOfType, collectTypeDefaults } from "@/lib/item-types"
 import {
   DEFAULT_OPERATION_STAGE,
@@ -34,13 +34,18 @@ export function itemTypeListLabel(type: Pick<ItemTypeDefinition, "name" | "plura
   return type.name.endsWith("s") ? type.name : `${type.name}s`
 }
 
-/** Items whose primary type is `typeId` or a subtype of it. Not list-allowlist membership. */
+/**
+ * Every item that reads as `typeId` or a subtype: its primary type, or a list that pins the type. This is the same
+ * rule the item detail chip and the Item Types count use, so the list, the count and the chip never disagree.
+ * Pass `lists`; without them only the primary type counts.
+ */
 export function tasksOfItemType<T extends { id: string; type?: Task["type"]; lists?: string[] }>(
   typeId: string,
   tasks: T[],
   types: ItemTypeDefinition[],
+  lists: List[] = [],
 ): T[] {
-  return itemsOfType(typeId, tasks, [], types)
+  return itemsOfType(typeId, tasks, lists, types)
 }
 
 export function compareItemTypeLists(a: ItemTypeDefinition, b: ItemTypeDefinition): number {
