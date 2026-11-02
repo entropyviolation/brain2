@@ -637,17 +637,12 @@ body.win95-app button.id-settings-key img {
 
 .id-dock-icon {
   max-width: none;
-  padding: 3px;
-  border-radius: 999px;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
 }
 
 .id-dock-orb,
 .id-dock-title,
 .id-dock-x,
-.id-dock-shape {
+.id-dock-open {
   border: 0;
   background: transparent;
   padding: 0;
@@ -656,13 +651,12 @@ body.win95-app button.id-settings-key img {
   color: #1a1c1e;
 }
 
+/* The orb sits straight on the key face: no ring, no crop. */
 .id-dock-orb img {
   display: block;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  object-fit: contain;
 }
 
 .id-dock-icon .id-dock-orb img {
@@ -682,11 +676,58 @@ body.win95-app button.id-settings-key img {
 }
 
 .id-dock-x,
-.id-dock-shape {
+.id-dock-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 16px;
   height: 16px;
   font-size: 12px;
   line-height: 16px;
+}
+
+/* Bar orb and name are latching keycaps: silver skirt, 2px press drop. */
+.id-dock-bar {
+  padding: 3px 5px 3px 3px;
+}
+
+.id-dock-bar .id-dock-orb,
+.id-dock-bar .id-dock-title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid #6e7378;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.id-dock-bar .id-dock-orb {
+  justify-content: center;
+  padding: 2px 4px 5px;
+}
+
+.id-dock-bar .id-dock-title {
+  display: block;
+  padding: 5px 12px 8px;
+  line-height: 14px;
+  letter-spacing: 0.04em;
+}
+
+.id-dock-bar .id-dock-orb:active,
+.id-dock-bar .id-dock-title:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .id-settings-label {
