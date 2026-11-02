@@ -157,7 +157,7 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
           <p className="an-canvas-title">Texts</p>
           <p className="an-canvas-kicker">
             Messages on this Mac, read locally. {state.kind === "ready" ? textsUpdatedLabel(state.status) : null}
-            {state.kind === "ready" ? " · Updates daily." : null}
+            {state.kind === "ready" && !state.status?.error ? " · Updates daily." : null}
           </p>
         </div>
         {state.kind === "ready" ? (
