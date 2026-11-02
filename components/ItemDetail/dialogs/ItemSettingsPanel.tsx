@@ -141,6 +141,14 @@ export function ItemSettingsPanel({
         <CopyId id={task.id} label="Copy item id" />
       </section>
       <section className="id-settings-plate">
+        <h2>Secret</h2>
+        <p className="id-settings-note">A secret item is left out of search and BIM answers unless you unlock secrets and switch them on there.</p>
+        <label>
+          <input type="checkbox" checked={task.secret === true} onChange={(e) => onPatch({ secret: e.target.checked ? true : undefined })} />
+          {" "}Secret
+        </label>
+      </section>
+      <section className="id-settings-plate">
         <h2>Attributes</h2>
         <p className="id-settings-note">A checked attribute shows on Details. The name opens its own settings. The field is the name on this item.</p>
         {defs.length === 0 ? (

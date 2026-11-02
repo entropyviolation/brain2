@@ -10,6 +10,7 @@
  */
 "use client"
 
+import { SecretMark } from "@/components/Secrets/SecretMark"
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { summaryProse, useDayNote } from "@/lib/day-notes-persist"
@@ -51,6 +52,7 @@ export function SummaryEditor({
   const stored = useDayNote(storageKey)
   const prose = summaryProse(stored)
   const setDayNotes = useTimeTrackingStore((s) => s.setDayNotes)
+  const isSecret = useTimeTrackingStore((s) => s.secretDayNotes?.[storageKey] === true)
 
   useEffect(() => {
     if (stored && stored !== prose) setDayNotes(storageKey, prose)
@@ -67,6 +69,7 @@ export function SummaryEditor({
         value={prose}
         onChange={(event) => setDayNotes(storageKey, event.target.value)}
       />
+      <SecretMark checked={isSecret} onChange={(on) => useTimeTrackingStore.getState().setDayNoteSecret(storageKey, on)} />
     </label>
   )
 }

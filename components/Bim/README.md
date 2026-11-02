@@ -41,6 +41,10 @@ _Last mapped: 2026-11-01_ A **MODE** switch sits on top of the console chat: ROU
 
 **Why "when did Elijah leave for tour?" failed (fixed 2026-11-01).** Three causes. 1) `qwen3:30b-a3b` thinks by default and spent the token cap on it, so `content` was empty and `JSON.parse` threw "Unexpected end of JSON input"; `lib/bim-flow/ollama.ts` now sends `think: false` and names an empty or cut-off reply. 2) Plan events (`useEventStore`, "elijah leaves for tour", all day) were never in the snapshot; `buildHistory` now carries them and `retrieve.ts` reads them as `plan event` rows. "leave" also matches "left" now (a short irregular-past table), and a bare mark (four content words or fewer) gets half a point over a chat line with the same hits. 3) The answer prompt dropped any row about someone else, and refused a day without an hour. Both rules are rewritten in `run-flow.ts`.
 
+## Secrets in answers
+
+_Last mapped: 2026-11-02_ Items marked Secret never reach the model. `snapshotFromStores` (`lib/bim-flow/store-snapshot.ts`) and BIM's search read (`lib/ingest/apply-read.ts`) drop them unless the **Include secrets in answers** switch in the console's MODE row is on, which needs the passphrase (`lib/secrets-store.ts`). Telegram and the hub snapshot never include them. The chat transcript (`bimchat-transcript`) is kept on the device, so an answer that used a secret stays in it after you lock. **Planned:** drop those lines on lock.
+
 ## BIM asks you
 
 _Last mapped: 2026-11-01_ BIM asks as well as answers (`lib/ingest/bim-chat.ts`, `AskBack`). In memory only, like the tell question.

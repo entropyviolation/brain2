@@ -68,3 +68,5 @@ Interiors: `DocumentEditor` and `LinkDialog`.
 - **Place**: refresh or switching tabs restores the open document (or folder homepage) and scrolls back to the last reading position. Hiding the Docs tab does not store a zeroed `scrollTop`.
 
 Trip Itinerary module **Plan** views reuse `DocumentEditor` via the module `doc` view kind (`workspace/itinerary/DocPlanView.tsx`).
+
+_Last mapped: 2026-11-02_ The toolbar has a **Secret** checkbox. A secret document is left out of search and BIM answers unless secrets are unlocked (`lib/secrets-store.ts`). It still shows in the Docs list.

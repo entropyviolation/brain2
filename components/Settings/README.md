@@ -342,3 +342,6 @@ the theme store rewrites the pin.
 `<BackupRestore />` is also surfaced inside the Lists settings dialog's **Data**
 tab (`components/Lists/lists-settings/settings-dialog.tsx`); drop it anywhere a global "manage
 my data" affordance is wanted.
+
+- `you/SecretsField.tsx` — _Last mapped: 2026-11-02_ Set, change, or remove the passphrase that unlocks Secret items (`lib/secrets-store.ts`). Section `settings-secrets` in the You group. The per-item flag is a plate in `components/ItemDetail/dialogs/ItemSettingsPanel.tsx`.
+- `../Secrets/SecretMark.tsx` — _Last mapped: 2026-11-02_ The "Secret" checkbox on a day note (`tracking-summaries.tsx`), an Activity block (`entry-notes.tsx`, saved blocks only, writes at once), and a document (Docs toolbar). A person is marked in item settings; their texts are then dropped too.

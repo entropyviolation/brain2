@@ -23,6 +23,7 @@
  */
 import type { Item, Task, AttributeValue } from "@/lib/types"
 import { itemTitle } from "@/lib/item-utils"
+import { withoutSecrets } from "@/lib/secrets"
 
 /** The field category a query term matched on, ordered by descending weight. */
 export type SearchField = "title" | "tag" | "attribute"
@@ -45,6 +46,11 @@ export interface SearchOptions {
    * other free-text attributes are ignored). Default: false (search all text).
    */
   titleOnly?: boolean
+  /**
+   * Keep items flagged `secret`. Default false: secret items are never
+   * returned unless the caller asks (`secretsShown("search")`).
+   */
+  includeSecrets?: boolean
 }
 
 /** Relative importance of each searchable field category. */
@@ -174,7 +180,7 @@ export function searchItems<T extends Item>(
 
   const results: SearchResult<T>[] = []
 
-  for (const item of items) {
+  for (const item of withoutSecrets(items, opts.includeSecrets)) {
     const fields = collectFields(item, opts.titleOnly)
     if (fields.length === 0) continue
 

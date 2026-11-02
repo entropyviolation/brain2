@@ -208,7 +208,8 @@ export function BimFlowLab() {
     void listOllamaModels().then(setModels)
     void loadHubVault().then((h) => {
       setHub(h)
-      void loadTexts({ people: h?.snap.people ?? snapshotFromStores().people }).then((rows) => {
+      const vault = h?.snap ?? snapshotFromStores()
+      void loadTexts({ people: vault.people, hideHandles: vault.secretHandles }).then((rows) => {
         setTextRows(rows ?? [])
         setTextsState(rows && rows.length ? "ok" : "none")
       })

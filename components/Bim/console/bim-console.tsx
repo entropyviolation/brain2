@@ -20,6 +20,7 @@ import { BIM_CHAT_ID, useBimChatStore, type BimLine } from "@/lib/ingest/bim-cha
 import { ALL_COMMANDS } from "@/lib/ingest/command-glossary"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
+import { SecretsToggle } from "@/components/Secrets/SecretsToggle"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
 import { LlmSuggestions } from "./llm-suggestions"
 import "@/components/Bim/bim-ink.css"
@@ -212,6 +213,7 @@ function ModeSwitch({ llm, setLlm }: { llm: boolean; setLlm: (on: boolean) => vo
           ? "Local models answer questions from your data, and ask you when they don't know."
           : "Plain routing, like the Telegram bot: commands run, lines are filed. No models."}
       </span>
+      <SecretsToggle surface="chat" label="Include secrets in answers" />
     </div>
   )
 }

@@ -124,7 +124,7 @@ export function LlmSuggestions() {
     const hub = stores.items.length === 0 || feed.length === 0 ? await loadHubVault() : null
     const base = stores.items.length === 0 && hub ? hub.snap : stores
     const rows = feed.length > 0 ? feed : hub?.feed ?? []
-    const [texts, files] = await Promise.all([loadTexts({ days: 8, people: base.people }), loadFileEvents(8)])
+    const [texts, files] = await Promise.all([loadTexts({ days: 8, people: base.people, hideHandles: base.secretHandles }), loadFileEvents(8)])
     const snap = { ...base, texts: texts ?? [], files: files ?? [] }
     const weekly = useHabitsStore.getState().weeklyData
     const habitDone = (habitId: string, date: string) => {

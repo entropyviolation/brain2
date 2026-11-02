@@ -695,7 +695,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             />
           ) : null}
 
-          <EntryNotes notes={notes} onNotes={setNotes} />
+          <EntryNotes notes={notes} onNotes={setNotes} entryId={entry.id} />
 
           <EntryTools
             entry={entry}

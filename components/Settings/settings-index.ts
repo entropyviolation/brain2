@@ -57,6 +57,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     keywords: "assumed finish time bedtime sleep day anchor evening",
   },
   {
+    id: "settings-secrets",
+    groupId: "you",
+    title: "Secrets",
+    keywords: "secret private passphrase password lock hide medical crush conceal",
+  },
+  {
     id: "settings-window-gray",
     groupId: "appearance",
     title: "Window gray",

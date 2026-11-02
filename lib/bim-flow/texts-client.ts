@@ -22,14 +22,16 @@ export function nameResolver(people: VaultSnapshot["people"]): (handle: string) 
   return (handle) => byHandle.get(normalizeHandle(handle)) ?? formatHandle(handle)
 }
 
-export async function loadTexts(opts: { days?: number; day?: string; people?: VaultSnapshot["people"] }): Promise<TextRow[] | null> {
+export async function loadTexts(opts: { days?: number; day?: string; people?: VaultSnapshot["people"]; hideHandles?: string[] }): Promise<TextRow[] | null> {
   try {
     const q = new URLSearchParams({ days: String(opts.days ?? TEXT_LEARN_DAYS) })
     if (opts.day) q.set("day", opts.day)
     const res = await fetch(`/api/phone-texts?${q}`)
     if (!res.ok) return null
     const body = (await res.json()) as { rows?: RawText[] }
-    return toRows(body.rows ?? [], nameResolver(opts.people))
+    const hidden = new Set((opts.hideHandles ?? []).map((h) => normalizeHandle(h)))
+    const rows = hidden.size ? (body.rows ?? []).filter((r) => !hidden.has(normalizeHandle(r.h))) : (body.rows ?? [])
+    return toRows(rows, nameResolver(opts.people))
   } catch {
     return null
   }

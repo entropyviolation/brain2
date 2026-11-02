@@ -13,6 +13,8 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { useHealthImportStore } from "@/lib/phone-sync/health-store"
 import { useReviewsStore } from "@/lib/reviews-store"
 import { buildDatasets } from "./datasets"
+import { withoutSecrets } from "@/lib/secrets"
+import { secretsShown } from "@/lib/secrets-store"
 import type { TelegramFeedRow } from "@/lib/ingest/telegram-feed"
 import { itemTitle } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
@@ -36,6 +38,7 @@ interface RawEntry {
   clockCertainty?: string
   generatedBy?: unknown
 }
+  secret?: boolean
 
 interface RawEvent {
   title: string
@@ -96,6 +99,22 @@ export function buildHistory(input: {
 }
 
 /** Items of type person with every name they go by. */
+/** Day notes minus the ones marked secret, unless `includeSecrets`. */
+export function visibleDayNotes(notes: Record<string, string>, secretDates: Record<string, true> | undefined, includeSecrets: boolean): Record<string, string> {
+  if (includeSecrets || !secretDates) return notes
+  return Object.fromEntries(Object.entries(notes).filter(([date]) => !secretDates[date]))
+}
+
+/** Phone numbers and emails of secret people, so their texts stay out too. */
+export function secretHandles(tasks: Task[]): string[] {
+  return tasks
+    .filter((t) => t.type === "person" && t.secret === true)
+    .flatMap((t) => {
+      const prof = (t as unknown as { personProfile?: { phones?: string[]; emails?: string[] } }).personProfile
+      return [...(prof?.phones ?? []), ...(prof?.emails ?? [])]
+    })
+}
+
 export function buildPeople(tasks: Task[]): NonNullable<VaultSnapshot["people"]> {
   return tasks
     .filter((t) => t.type === "person")
@@ -105,20 +124,25 @@ export function buildPeople(tasks: Task[]): NonNullable<VaultSnapshot["people"]>
     })
 }
 
-export function snapshotFromStores(): VaultSnapshot {
-  const { tasks, lists } = useTaskStore.getState()
+/**
+ * Secret items are left out unless `includeSecrets` is true. Default: whether
+ * the person unlocked secrets and switched them on for chat.
+ */
+export function snapshotFromStores(includeSecrets: boolean = secretsShown("chat")): VaultSnapshot {
+  const { tasks: allTasks, lists } = useTaskStore.getState()
+  const tasks = withoutSecrets(allTasks, includeSecrets)
   const habits = useHabitsStore.getState().tasks
-  const tt = useTimeTrackingStore.getState() as unknown as { scopes: RawScope[]; entries: RawEntry[]; dayNotes?: Record<string, string> }
+  const tt = useTimeTrackingStore.getState() as unknown as { scopes: RawScope[]; entries: RawEntry[]; dayNotes?: Record<string, string>; secretDayNotes?: Record<string, true> }
   const scopes = tt.scopes
   const habitState = useHabitsStore.getState()
   const reviewState = useReviewsStore.getState()
   const plainLists = lists.map((l) => ({ id: l.id, name: l.name }))
   const history = buildHistory({
-    entries: tt.entries ?? [],
+    entries: withoutSecrets(tt.entries ?? [], includeSecrets),
     scopes: tt.scopes,
     feed: useTelegramFeedStore.getState().rows,
     tasks: tasks as unknown as { type?: string; title?: string; createdAt?: unknown }[],
-    dayNotes: tt.dayNotes ?? {},
+    dayNotes: visibleDayNotes(tt.dayNotes ?? {}, tt.secretDayNotes, includeSecrets),
     health: useHealthImportStore.getState().days,
     events: useEventStore.getState().events,
   })
@@ -132,6 +156,7 @@ export function snapshotFromStores(): VaultSnapshot {
     skipListIds: skipListIdsFor(plainLists),
     people: buildPeople(tasks),
     history,
+    secretHandles: includeSecrets ? [] : secretHandles(allTasks),
     datasets: buildDatasets({
       tasks,
       habits: habitState.tasks,
@@ -164,8 +189,9 @@ function hubState(items: Record<string, string>, key: string): Record<string, un
  * The vault from a persist dump (`/api/persist`, or `data/shared-persist.json` on disk), read only.
  * No store is touched, so tests can run the flows on the person's real vault.
  */
-export function snapshotFromPersistItems(items: Record<string, string>, now = new Date()): { snap: VaultSnapshot; feed: TelegramFeedRow[] } {
-  const task = hubState(items, "task-storage") as { tasks?: Task[]; lists?: { id: string; name: string }[] } | null
+export function snapshotFromPersistItems(items: Record<string, string>, now = new Date(), includeSecrets = false): { snap: VaultSnapshot; feed: TelegramFeedRow[] } {
+  const rawTask = hubState(items, "task-storage") as { tasks?: Task[]; lists?: { id: string; name: string }[] } | null
+  const task = rawTask && { ...rawTask, tasks: withoutSecrets(rawTask.tasks ?? [], includeSecrets) }
   const habits = (hubState(items, "habits-store")?.tasks ?? []) as { id: string; name: string }[]
   const tg = hubState(items, "timegrid-store")
   const scopes = (tg?.scopes ?? []) as { id: string; name: string; pens: { id: string; name: string }[] }[]
@@ -174,11 +200,11 @@ export function snapshotFromPersistItems(items: Record<string, string>, now = ne
   const habitStore = hubState(items, "habits-store")
   const reviewStore = hubState(items, "reviews-store")
   const history = buildHistory({
-    entries: (tg?.entries ?? []) as RawEntry[],
+    entries: withoutSecrets((tg?.entries ?? []) as RawEntry[], includeSecrets),
     scopes,
     feed,
     tasks: (task?.tasks ?? []) as unknown as { type?: string; title?: string; createdAt?: unknown }[],
-    dayNotes: (tg?.dayNotes ?? {}) as Record<string, string>,
+    dayNotes: visibleDayNotes((tg?.dayNotes ?? {}) as Record<string, string>, tg?.secretDayNotes as Record<string, true> | undefined, includeSecrets),
     events: (hubState(items, "event-storage")?.events ?? []) as RawEvent[],
   })
   return {
@@ -193,6 +219,7 @@ export function snapshotFromPersistItems(items: Record<string, string>, now = ne
       skipListIds: skipListIdsFor(lists),
       people: buildPeople(task?.tasks ?? []),
       history,
+      secretHandles: includeSecrets ? [] : secretHandles(rawTask?.tasks ?? []),
       datasets: buildDatasets({
         tasks: (task?.tasks ?? []) as Task[],
         habits: habits as unknown as WeeklyTask[],
