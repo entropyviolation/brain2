@@ -8,6 +8,8 @@ After a code change, update that folder's README once: current behavior, and why
 
 When you map a module in depth, write the findings back. Label unbuilt intent **Planned**. Date a section you change with `_Last mapped: YYYY-MM-DD_`. Short plain sentences. Paths in backticks.
 
+**BIMBY** (BIM + baby; plural **BIMBIES**) is the name for every small, single-job sub-agent LLM system, such as the Tracking Helper and the Lists helper (the "Lists BIMBY"). A BIM is the big routed flow; a BIMBY does one specific thing. Use the word in docs, UI copy and code names for new ones. Existing file and route names stay.
+
 AMAP means do as much as possible, in parallel. Extend what already works: the smallest true shape, one named idea, a seam the next person can grow.
 
 Design language is `docs/DESIGN_STYLE.md`. Redesign plans are `docs/*_REDESIGN.md`. A slant in `docs/mockups/slants/` applies only when asked by name.

@@ -5,6 +5,8 @@ Brain2 is already a cybernetic machine. It senses, stores, compares and corrects
 Wiener named the field after the Greek word for steersman. It covers control and communication in both the animal and the machine (p. 11). His central claim is that purposeful action is circular. The nervous system acts on the world, senses how far it missed, and uses that miss as the next input (pp. 6–8). Brain2 does the same for a person's life. Capture and tracking are its sense organs. The vault is its memory. Plan, Scheduler and To Do act on the day. Plan-vs-reality, Calibration and Reviews feed the result back.
 How this sits with the other two books: [`MAP_LOOP_MEANING.md`](MAP_LOOP_MEANING.md). This file is the loop instrument. Do not re-sequence the work from that brief.
 
+_Last mapped: 2026-11-02._ **Read this first.** Parts 1 to 3 were written when Brain2 had no runtime agents. They treat the app as a planner with sensors and a human steersman. Since then the BIM flow, the Tracking Helper and the Lists BIMBY have shipped, and each is a controller that proposes and sometimes writes. The Wiener work order (CY-1 to CY-11) is still the right list and is still not started. Part 4 adds what the agents change: where an agent is an effector, where it needs its own gap, and which loop already exists in `lib/skills/`. Read Part 4 before claiming a CY slice.
+
 How to read this doc. Part 1 lists 32 parallels in four groups: structure, function, process and future. Each parallel gives Wiener's idea with a page number, then where Brain2 already carries it in code or docs. Part 2 proposes five new features and five changes that bring in more of the book. Part 3 is the work order: eleven slices, the files they land in, and what done means. Execute Part 3. Do not re-sequence the work from Parts 1 or 2. A closing table maps each chapter to the Brain2 rooms it touches. It sits next to docs/ScienceandSanityBrain2.md, the Korzybski doc, and avoids repeating its proposals. [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) Wave 15 points here.
 Source notes. Page numbers are the book's printed ones: roman numerals for the 1961 Preface and arabic numerals for the chapters. The book is paraphrased closely and cited by page, not quoted at length.
 Terms used below.
@@ -84,7 +86,7 @@ C. Process: the loops
     ◦ In Brain2: Just Start (components/Focus/JustStartMode.tsx) is this move. It offers the smallest next step and a 2-minute timer, which is a small probe of how a stalled task will respond before any real commitment. lib/molecular.ts breaks work into probes that size.
 22. Learning changes the rules of operation.
     ◦ Wiener: an automaton can change its rules as it runs, based on the data it has received (p. 43). A learning machine works by non-linear feedback (p. 173).
-    ◦ In Brain2: learning is deliberately kept visible and in the user's hands. "usually ~N" "never rewrites estimatedDuration". A confirmed estimate is "sticky": later derivations cannot overwrite it (lib/estimated-values.ts). The habit auto-weight is the one place where the rules already adapt by themselves.
+    ◦ In Brain2: learning is deliberately kept visible and in the user's hands. "usually ~N" "never rewrites estimatedDuration". A confirmed estimate is "sticky": later derivations cannot overwrite it (lib/estimated-values.ts). The habit auto-weight adapts by itself. _2026-11-02:_ the skill bank (`lib/skills/`) is the second adaptive place, and it is the house pattern for visible learning: reactions become experiences, weak categories become proposed lessons, a person makes a lesson active, and it changes a prompt only.
 23. The machine that takes time off to replay its games.
     ◦ Wiener: every few games, a checker machine stops playing and reviews every recorded game. It finds the weights that most often led to a win, then plays on as a new, better machine that can no longer be beaten by the same trick twice (p. 172). The playing is first-order programming, and the review is second-order (p. 173).
     ◦ In Brain2: daily to yearly Reviews, the Morning Review, gm over text and per-task post-mortems are the time off. Today the human does the re-weighting (Part 2a, feature 3).
@@ -106,7 +108,7 @@ D. Future: the roadmap
     ◦ In Brain2: a module definition (blueprint) can be saved, re-created and exported (lib/module-definitions.ts). Templates scaffold working lists, schemas, seed data, views and workflows, not screenshots. A copied module runs on the same Item graph as its parent.
 29. Literal-minded magic.
     ◦ Wiener: the sorcerer's apprentice, the genie and the monkey's paw teach one lesson. Magic grants exactly what you ask, so you must ask for what you really want, not what you think you want. Learning machines are just as literal. Turning one off also requires knowing when the danger point has come (pp. 175–177).
-    ◦ In Brain2: the module laws answer this. They are "deterministic after install", the LLM runs only once at install, and the output is a reviewable manifest. Workflows ("Zapier for your data") are the sorcerer's broom, and they fire on real item changes. Brain2's undo stack and append-only history are its words of power.
+    ◦ In Brain2: the module laws answer this. They are "deterministic after install", the LLM runs only once at install, and the output is a reviewable manifest. _2026-11-02:_ that holds for modules, not for agents. A BIMBY runs a model on every line the person types. A language model is the most literal machine in the house. The answer there is the accept door, the write caps and `verification()` in `lib/lists-helper/guard.ts`, and "doubt becomes keys" in `lib/agents/README.md`. Workflows ("Zapier for your data") are the sorcerer's broom, and they fire on real item changes. Brain2's undo stack and append-only history are its words of power.
 30. Rhythms that pull each other into step.
     ◦ Wiener: the body's natural cycle of roughly 23½ hours is pulled into the 24-hour day by outside cues. Oscillators near the same frequency attract into clumps and leave gaps elsewhere, as fireflies may do when they flash together (pp. 199–200). A sharp rhythm serves as a clock that gates when messages can combine (pp. 197–198).
     ◦ In Brain2: sun times are computed per date (lib/sun-times.ts). The day anchor, median bedtime and CircadianView treat the day as a rhythm. The friend's daily mission and the morning gm act as outside cues that set the phase.
@@ -275,7 +277,10 @@ The one idea. Brain2 already senses, stores, compares, and acts. The miss is com
 - Compensation, order made, and a likely tail are **derived**. They wear the existing est. treatment. They never overwrite `estimatedDuration`.
 - A split reading does not change the winner. Stated bedtime still wins. The chip only shows the minority.
 - Sample floors stay. A thin window is not a finding. Spectrum's floor (14) and Overcommit's floor (7) are not lowered.
-- No model in the fit, the dry run, the collator, the spectrum, or the tone. Deterministic after the person has written an intent or accepted a weight.
+- No model in the fit, the dry run, the collator, the spectrum, or the tone. Deterministic after the person has written an intent or accepted a weight. _2026-11-02:_ this is about the loop math only. A model may be a sensor or an effector (a BIM readback, a Helper reply) when its output is **inferred** and passes the accept door.
+- An agent is an effector, so the one-speaker rule counts it. BIM, the Tracking Helper and the Lists BIMBY may not each speak about the same gap key on the same day.
+- Agents get no private difference type. An agent's miss is a gap like any other (CY-12).
+- New learning for agents reuses `lib/skills/` (propose, review, activate). Do not build a second few-shot store.
 - Existing workflows that lack an intent pause. They do not keep firing until someone writes the sentence. Manual runs still work.
 
 Labels on screen:
@@ -314,7 +319,7 @@ A gap is `{ key, intention, reading, signed, at, order, gain }`. `reading` and `
 
 `order` is observed, recorded, derived, or inferred. If `FieldEstimate` already carries `order`, use that union. If not, define it here.
 
-Three constructors, pure, fixture-tested:
+Three constructors, pure, fixture-tested (a fourth, `proposalGap`, is CY-12):
 
 - `blockGap` — a planned action (`lib/planned-actions.ts`) against tracked minutes and a completion. Null reading when the block has ended with neither.
 - `ratioGap` — actual minus estimate, from a calibration point. Order derived. Gain 0. A ratio is a measurement. It is not yet a correction.
@@ -491,3 +496,131 @@ A person can set a band and hear nothing while inside it. A planned block ends a
 A day inside every band, with every block reported, sends no message.
 
 The chrome still does not mention the book.
+## Part 4 — Agents as controllers
+
+_Last mapped: 2026-11-02._ Status: **Suggested**, not Planned. Nothing here is started. A later decision can promote a slice into Wave 15. Check against code on 2026-11-02; the agent READMEs and a few files were read, not every agent.
+
+### Why Part 4 exists
+
+Parts 1 to 3 ask one question: does the person's day steer? Agents add a second: do the agents steer, and who steers them? Wiener's chapter IV (feedback, hunting, the telltale) and chapter IX (second-order learning, literal-minded machines) apply to a BIMBY more directly than to a planner. A model is a high-gain, literal effector. It needs the same four things as any effector in the book: a report back, damping, a band, and a checker that reviews its record.
+
+### What the agents already carry
+
+Do not rebuild these.
+
+- **Governor.** Agents propose. `lib/bim-flow/accept.ts` and the BIMBY write paths are the only writers. `Blueprint.memory.writes` is empty on purpose. Every write carries `generatedBy`.
+- **Telltale.** `lib/lists-helper/guard.ts` has `refusal()` before a write, `verification()` after it, and a journal to put values back. This is the signal tower of parallel 10, already built for one agent.
+- **Error-driven ladder.** `escalate()` in `lib/bim-flow/crew.ts` climbs a model ladder when an answer is unsure, off its options, or fails its schema. It keeps no memory between calls.
+- **Narrowing before the model.** BIM gates, `route`, `guard` and `clarify` shrink the question before a model runs. The Blueprint `NODE_TAG` gives every node a role.
+- **Second-order learning, in one agent.** `lib/skills/` is Wiener's checker machine (p. 172). `learn.ts` records reactions, `evolve.ts` finds weak categories, `distill.ts` writes proposed lessons, and a person makes one active. The Tracking Helper runs it end to end (`lib/tracking-helper/run.ts` picks skills, `store.ts` records reactions). The Lists BIMBY has seeds only. BIM flows have `skills: []`.
+- **Accept-rate smoothing.** `lib/graph/feedback.ts` smooths accept and dismiss per source with Beta(1,1). Only the links graph reads it.
+- **Verdicts, stored.** `lib/bim-flow/suggestion-verdicts.ts` keeps the person's reason for each accept or reject of a BIM suggestion. Nothing reads them back. Its header says feeding them back is Planned.
+
+### What is not there
+
+- No common gap. The three agents do not share a difference type.
+- No Trace. `PH-2` in `docs/AGENT_LAB_PLAN.md` (nested runs, closed stop reasons, `RT-3`) is unbuilt, and `lib/agents/trace.ts` does not exist. Today an agent's run is not a record the other loops can read.
+- BIM suggestion verdicts do not teach BIM. The skill loop exists but is not wired to them.
+- No memory of rejection. A BIMBY rejected twice may propose the same thing a third time.
+- No variety count. Nothing records how often a model disagreed with the code-first answer at a gate.
+- No health band for the agent layer.
+- No audit apart from the agent's own `check` node.
+
+### CY-12 — Proposal gap
+
+Depends on CY-1. Lane: one constructor in `lib/error-signal.ts`, then one emit at each agent's accept or verify seam.
+
+`proposalGap` is `intention` (what the agent proposed) against `reading` (what the person did, or what `verification()` found). Order is **inferred** for the proposal and **observed** for the reaction. A proposal the person never answered has a null reading, the same rule as a silent block. Gain is the caller's. Until `PH-2` lands, build it from `Experience` rows (`lib/skills/experience.ts`) and BIM verdicts. When the Trace exists, it carries the gap and does not replace it.
+
+Done when the Tracking Helper, the Lists BIMBY and BIM suggestions each produce a `proposalGap` from fixtures, a null reading is not zero, and no agent imports a second difference type.
+
+Do not persist gaps. Do not rank agents. Do not name the type on a screen.
+
+### CY-13 — Verdicts teach
+
+**Planned** (promoted into Wave 15, 2026-11-02). The rest of Part 4 stays Suggested.
+
+Depends on nothing in Wave 15. Closes the gap in `suggestion-verdicts.ts`. Lane: BIM's `remember` seam and `lib/skills/`.
+
+Give BIM flows the `skills` node the skills README already lists as Planned. A rejected verdict with a reason becomes an `Experience` of failure with severity and the better move. `evolve` then proposes lessons per category. A person makes one active. Nothing changes a prompt unaccepted. Reuse `lib/skills/`. Do not build a few-shot store beside it.
+
+Done when a rejected BIM suggestion with a reason appears as an experience, a weak category yields a `proposed` skill, and an unaccepted skill reaches no prompt.
+
+**Two rules added 2026-11-02, from a second reading of the book (pp. 159–160, 163–164, 172, 177).**
+
+- **Accept is not right.** Today `lib/skills/learn.ts` credits a skill when the person accepts. An accept can reward a persuasive proposal. Credit a skill's `wins` only after the change has survived N days without an undo. A quick undo records a late failure. Keep some days with no suggestions, so verdicts are not all produced by a person the agent already influenced.
+- **Learn from the person's own move.** Record an `Experience` when the person does by hand what a BIMBY could have done. That is the opponent's success in the checker machine of p. 172. Its better move is what the person did.
+
+Done also when a change undone inside the window is not credited, and a hand-made edit with no proposal produces an experience.
+
+Do not apply a lesson silently. Do not retrain anything. Do not feed verdicts to a node that has no skills. Do not credit on accept alone.
+
+### CY-14 — Ease for agents
+
+Depends on CY-12 for the swing mark. Lane: `escalate()` and each BIMBY's re-propose path.
+
+Hunting in an agent is a re-proposal. After two rejections of the same plan (same tool, same targets) the agent does not propose it a third time. It shrinks the plan, or it shows keys and asks. `escalate()` gets a small per-node memory of which rung last succeeded, so a flaky node stops climbing from the bottom on every call. This sits beside the confidence rules in `docs/BIMBY_IDEAS.md` section 2. It does not replace them.
+
+Done when a test shows a plan rejected twice is not offered again as is, a node that failed on rung one three times starts on rung two, and the memory resets on a person's accept.
+
+Do not raise the cap automatically. Do not hide the rejection from the person.
+
+### CY-15 — Variety count
+
+Lane: `lib/bim-flow/run-history.ts` and one lab view. No UI in the app proper.
+
+For each gate or route, record whether the code-first answer and the model answer agreed. Show the agreement rate and n. High agreement means the model call may be spent elsewhere. Low agreement means the code rule is missing a case. This is a measurement, not a switch: nothing turns a model off by itself.
+
+Done when a replayed run set gives an agreement rate per gate with n, and a thin gate (under the floor) ranks nobody.
+
+Do not skip a model call because of the count. Do not use a count under 7.
+
+### CY-16 — Agent bands
+
+Depends on CY-2. Lane: new variables on the Bands list, no new tab.
+
+The agent layer gets its own bands: rejection rate per BIMBY, unresolved Inbox items the agents added, model calls per day. Inside the band, nothing shows. Outside it, one line, spoken by one effector. This is CY-2 applied to the agents, with the same quiet-success test.
+
+Done when a day inside every agent band sends nothing, and a rejection rate above its edge produces one line.
+
+Do not add a health page. Do not let an agent speak about its own band.
+
+### More from the book (Suggested)
+
+_Last mapped: 2026-11-02._ From printed pp. 60–65, 110–126, 155–180 and 194–199. Chapters II, VII and X were not read for this pass. Each is an analogy to agents, not Wiener's claim. Page numbers are the book's.
+
+For BIMBIES and BIM flows:
+
+- **Independent sources add information (pp. 63–64).** Information from independent sources is additive. Through noise it grows only about as the log of signal to noise. Ten copies of one model are one vote. In `BIMBY_IDEAS.md` section 1, settle "should voters differ?" by measuring the correlation of voters' errors on replayed lines, not only accuracy.
+- **Lossy steps go last (p. 65).** No operation on a message gains information on average. A reword, a summary or a compressed chat memory can only lose some. Decide on raw evidence, then summarise. Audit the mid-model reword and any context compression.
+- **One judgment, two alternatives (pp. 116–118).** Telling n things apart on one scale costs exponentially more than a chain of binary choices. This is the cost argument for BIM's yes/no gates. A `limits` field for bits per call would cap what a small model is asked to tell apart in one call.
+- **Human only at the start and end (p. 118).** The human is the slowest part of the chain. Change notation only at the ends. BIMBY stages should pass typed plans, not prose, and doubt keys belong in a pre-flight, not mid-run. Audit for any stage that hands free text to the next.
+- **Repeaters (p. 122).** A delay line deforms a message each hop unless a stage regenerates it in prescribed form. In a flow that is schema re-validation at each hop. A chain's reliability is the product of its nodes' (pp. 150–152), which parallel 25 applies to tasks only. Compute it per flow from CY-15's per-node agreement.
+- **Self-reference never settles (pp. 125–126).** A machine asked about itself answers yes, no, yes, no. Russell's cure is a type level and a time stamp on each statement. The `answer` node's `check` mode should be checked by a different level (code or another rung), with an iteration cap and a closed stop reason.
+
+For the Agent Lab:
+
+- **Autonomy (p. 158).** Autonomy is decisions made inside a group against decisions entering from outside. Per BIMBY: lines resolved with no keys and no escalation and not undone, over all lines. It is a better health number than raw accept rate, and a good CY-16 variable.
+- **The known record, not the perfect opponent (pp. 171, 173).** Evals and priors should come from this person's logged lines. A fixed benchmark opponent (Watanabe's "Colonel Bogey") is the golden-lines replay set of plan slice 5.
+- **Rigid personality, darts and dance (pp. 172, 174).** A deterministic machine repeats the same wrong move, so a line that fools it fools it every time. A stateless proposer is the snake. Give CY-14 a per-session memory of earlier proposals and reactions.
+- **Black-box identification (pp. 178–180).** Feed the same random input to the unknown box and the model, then tune the model from the outputs. Run paraphrase fuzz on a strong model and a small one, and fit the small one to the strong one.
+- **An off switch needs information at machine speed (pp. 175–176).** For each BIMBY write path, ask whether the person can see the danger before it is done. The Lists BIMBY's caps and journal answer this. Audit the other writers.
+
+### Suggested, not sliced
+
+- **Audit channel.** The registry samples an agent's recent writes against the person's later corrections, apart from the agent's own `check` node. Beer's S3*. Wait for CY-12 and the Trace.
+- **The one best question.** A BIMBY asks the single question that removes the most doubt. "Keys everywhere" in `lib/agents/README.md` is the shipped form. Anything more waits for `BIMBY_IDEAS.md`.
+- **Shared state estimate** across the Helper, the Lists BIMBY and BIM. Needs the Trace first.
+- **Forward model** per route (expected cost and outcome). Needs CY-15 data and `RT-7`.
+
+### Lanes
+
+| Slice | Speed | Owns | Does not touch |
+| --- | --- | --- | --- |
+| CY-12 | Day | `proposalGap` in `lib/error-signal.ts`, one emit per agent | A second difference type, persist |
+| CY-13 | Slow | BIM `skills` node, verdict to `Experience` | The skill math, a few-shot store |
+| CY-14 | Day | `escalate()` memory, re-propose rule | Caps, the accept door |
+| CY-15 | Fast | `run-history.ts`, a lab view | Turning calls off |
+| CY-16 | Slow | Agent variables on Bands | A new tab, an agent speaking for itself |
+
+CY-13 can start now. CY-12 and CY-14 wait for CY-1. CY-16 waits for CY-2. CY-15 has no wave dependency.

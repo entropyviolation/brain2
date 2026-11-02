@@ -24,6 +24,8 @@ The ids in this file are `LAB-n` (rooms), `SPEC-n` (the agent description),
 `TOOL-n` (the tool shelf), `EV-n` (evaluation), `MOD-n` (module agents), and
 `PH-n` (build phases).
 
+> Later experiments for BIMBIES (a ten-model swarm vote with a reworded question, and confidence from logprobs as a first-class part of the architecture): [`BIMBY_IDEAS.md`](BIMBY_IDEAS.md).
+
 ## 1. What exists today (read from code, 2026-11-01)
 
 Three agent shapes already ship, each with its own private plumbing:

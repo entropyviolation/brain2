@@ -202,7 +202,7 @@ Wiki `[[links]]` that resolve to Items, PDF page provenance, and version history
 
 - **Wave 13 — do not start.** [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md) Part 3. Slices GS-1 through GS-10.
 - **Wave 14 — do not start.** [`JungBrain2.md`](JungBrain2.md). Slices JG-1 through JG-10. Calendar quarters in `lib/seasons.ts` (Spring / Summer / Fall / Winter) are a shipped period. They are not JG-9.
-- **Wave 15 — do not start.** [`cyberneticsbrain2.md`](cyberneticsbrain2.md) Part 3. Slices CY-1 through CY-11.
+- **Wave 15 — do not start.** [`cyberneticsbrain2.md`](cyberneticsbrain2.md) Part 3. Slices CY-1 through CY-11, and CY-13 (verdicts teach, Part 4). The other Part 4 slices (CY-12, CY-14 to CY-16) are Suggested, not Planned.
 
 ---
 
