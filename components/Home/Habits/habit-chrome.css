@@ -518,21 +518,16 @@ body.win95-app main:has(.hab95) [role="tabpanel"]:has(.hab95) {
   white-space: nowrap;
 }
 
-.hab-head .habit-chrome-btn {
-  min-height: 30px;
-  padding: 5px 12px 6px;
-}
-
-/* Period bay: metal prev/next/today + engraved date nameplate. */
+/* Period bay: the plate that holds the header keys. */
 .hab95 .habit-week-nav,
 body.win95-app .hab95 .habit-week-nav {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
   height: auto;
   min-height: 40px;
-  padding: 6px 8px;
+  padding: 5px 8px 6px;
   border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
@@ -543,37 +538,117 @@ body.win95-app .hab95 .habit-week-nav {
     inset 0 2px 3px rgba(0, 0, 0, 0.08);
 }
 
-.hab95 .habit-week-nav .habit-chrome-btn,
-body.win95-app .hab95 .habit-week-nav .habit-chrome-btn {
-  min-height: 30px;
+/* Header keys (‹, Today, date plate, ›, Settings) wear the house keycap:
+ * the `.todo-cap` face in `components/Home/ToDo/todo-chrome.css`, with the
+ * `--cap-*` tokens from `app/win95.css`. Same size, legend, 2px press drop
+ * and focus ring. Desktop only: the phone never mounts `.hab-head`.
+ * _Last mapped: 2026-11-01_ */
+.hab95 .hab-head .habit-chrome-btn,
+.hab95 .hab-head .habit-week-nav-range,
+body.win95-app .hab95 .hab-head button.habit-chrome-btn,
+body.win95-app .hab95 .hab-head .habit-week-nav-range {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   height: auto;
-  padding: 5px 10px 6px;
+  min-height: 28px;
+  margin: 0;
+  padding: 3px 10px 6px;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  white-space: nowrap;
+  color: #1f2226;
+  text-shadow: none;
+  filter: none;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) padding-box;
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  outline: 0;
+  transition: transform 60ms ease, box-shadow 60ms ease;
 }
 
-.hab95 .habit-week-nav-range,
-body.win95-app .hab95 .habit-week-nav-range {
-  margin: 0;
-  min-height: 30px;
-  padding: 6px 14px 7px;
-  display: inline-flex;
-  align-items: center;
-  flex: 1 1 auto;
-  justify-content: center;
-  border-radius: var(--r-2, 2px);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #2a2c2e;
-  text-shadow: none;
-  white-space: nowrap;
-  background-image:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, var(--chrome-mist) 0%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 48%, var(--chrome-foot) 100%);
+.hab95 .hab-head .habit-chrome-btn:hover:not(:disabled),
+body.win95-app .hab95 .hab-head button.habit-chrome-btn:hover:not(:disabled) {
+  filter: none;
+  --cap-top: #f7f8f9;
+}
+
+.hab95 .hab-head .habit-chrome-btn:active:not(:disabled),
+body.win95-app .hab95 .hab-head button.habit-chrome-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) padding-box;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px var(--chrome-lip);
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.hab95 .hab-head .habit-chrome-btn:focus-visible,
+body.win95-app .hab95 .hab-head button.habit-chrome-btn:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+/* Chevrons are near-square keys. */
+.hab95 .hab-head .habit-week-nav > .habit-chrome-btn:not(.habit-week-nav-today),
+body.win95-app .hab95 .hab-head .habit-week-nav > button.habit-chrome-btn:not(.habit-week-nav-today) {
+  min-width: 30px;
+  padding-inline: 6px;
+}
+
+/* The date plate is a wide keycap that holds the range. It does nothing on a
+ * single click, so it never drops. Double-click still opens the picker. */
+.hab95 .hab-head .habit-week-nav-range,
+body.win95-app .hab95 .hab-head .habit-week-nav-range {
+  flex: 1 1 auto;
+  min-width: 13.5em;
+  padding-inline: 14px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  user-select: none;
+}
+
+/* Today hangs just outside the bay, left of ‹, so the bay is only ‹ plate ›
+ * and stays centered. On the current period Today parks (hidden), and
+ * nothing else moves. */
+.hab95 .hab-head .habit-week-nav,
+body.win95-app .hab95 .hab-head .habit-week-nav {
+  position: relative;
+}
+
+.hab95 .hab-head .habit-week-nav-today,
+body.win95-app .hab95 .hab-head button.habit-week-nav-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(100% + 8px);
+  height: max-content;
+  margin-block: auto;
+}
+
+.hab95 .hab-head .habit-week-nav-today.is-parked,
+body.win95-app .hab95 .hab-head button.habit-week-nav-today.is-parked {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .hab95 .habit-grades {
@@ -1034,6 +1109,51 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
     transparent 1px 2px
   );
   box-shadow: var(--hab-raised);
+}
+
+/* The bar above the grid sits quietly under the silver chrome: a soft
+ * keycap-silver face, light rules, no stripes or Win95 bevel per cell.
+ * Desktop only (`.hab-frame`); the phone keeps its own rules.
+ * Column widths, sticky rows, and handlers are untouched.
+ * _Last mapped: 2026-11-01_ */
+.hab95 .hab-frame .habit-grid thead th {
+  padding: 4px 3px 3px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #33373b;
+  background-color: var(--cap-top2, #dfe2e6);
+  background-image: linear-gradient(180deg, var(--cap-top, #f1f3f5), var(--cap-top2, #dfe2e6));
+  border-bottom: 1px solid rgba(70, 76, 86, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset -1px 0 0 rgba(70, 76, 86, 0.08);
+}
+
+.hab95 .hab-frame .habit-grid thead th .habit-day-sub {
+  color: #6b7076;
+}
+
+.hab95 .hab-frame .habit-grid thead th.habit-day-today {
+  background: #d3ded8;
+  color: var(--hab-ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 1px 0 0 #9fb0a6,
+    inset -1px 0 0 #9fb0a6;
+}
+
+.hab95 .hab-frame .habit-grid thead th.habit-day-today .habit-day-sub {
+  color: #3c4a42;
+}
+
+/* Group band (LAMPS, GOALS …): a pale label strip, not a dark stripe. */
+.hab95 .hab-frame .habit-grid tbody tr.habit-kind-band td {
+  padding: 5px 8px 3px;
+  color: #5d6268;
+  background: linear-gradient(180deg, #eceef1, #e2e5e8);
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(70, 76, 86, 0.14);
+  box-shadow: none;
 }
 
 .hab95 .habit-grid .col-name {

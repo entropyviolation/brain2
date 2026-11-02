@@ -23,7 +23,7 @@ describe("WeekNavigation", () => {
     expect(screen.getByRole("button", { name: "Next Week" })).toBeInTheDocument()
   })
 
-  it("marks Today as pressed on the current period without changing control size", () => {
+  it("parks Today on the current period: hidden, out of the tab order, space kept", () => {
     render(
       <WeekNavigation
         currentWeekStart={currentWeekStart}
@@ -34,9 +34,11 @@ describe("WeekNavigation", () => {
         onCurrentWeek={vi.fn()}
       />,
     )
-    const today = screen.getByRole("button", { name: /Today/ })
-    expect(today).toHaveAttribute("aria-pressed", "true")
-    expect(today.className).toContain("is-on")
+    expect(screen.queryByRole("button", { name: /Today/ })).toBeNull()
+    const today = screen.getByText("Today").closest("button")!
+    expect(today.className).toContain("is-parked")
+    expect(today).toHaveAttribute("tabindex", "-1")
+    expect(today).toBeInTheDocument()
   })
 
   it("calls onPreviousWeek when previous button is clicked", async () => {
