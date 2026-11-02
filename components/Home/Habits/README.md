@@ -115,6 +115,7 @@ _Last mapped: 2026-10-27_
 | `period/` | Week navigation and the period lens. |
 | `habit-form/` | Form sections. |
 | `tracker/` | Desktop console. |
+| `helper/` | The Habit Helper chat: the **Chat** key in the desktop header, its dialog, proposal table and Reasons view. _Added 2026-11-02._ See `helper/README.md` and `docs/HABIT_HELPER.md`. |
 
 `habit-tracker.tsx` stays the public door at this folder's root.
 

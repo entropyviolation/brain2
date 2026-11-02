@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { helperBlueprint, HELPER_STAGES } from "@/lib/agents/adapters/tracking-helper"
-import { builtinBlueprints } from "@/lib/agents/registry"
+import { builtinBlueprints, labOf } from "@/lib/agents/registry"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { listOllamaModels, ollamaCall } from "@/lib/bim-flow/ollama"
 import { buildContext } from "@/lib/tracking-helper/accept"
@@ -129,7 +129,7 @@ export function TrackingHelperLab() {
         <span className="bf-k">saved on this device · live in Tracking</span>
       </header>
 
-      <AgentRail agents={AGENTS} activeId="tracking-helper" onPick={(a) => (a.id === "tracking-helper" ? undefined : (window.location.href = "/lab/bim-flow"))} />
+      <AgentRail agents={AGENTS} activeId="tracking-helper" onPick={(a) => (a.id === "tracking-helper" ? undefined : (window.location.href = labOf(a.id)))} />
 
       <div className="bf-main th-main">
         <section className="th-stages" aria-label="Stages">

@@ -3,7 +3,7 @@
  *
  * Every agent has the same envelope: who it is, what it senses, what memory it reads and writes, which
  * tools it uses, which models, its limits, and what it may propose. Only `mind` differs: a graph (the BIM
- * flow), a pipeline (the Tracking Helper), or a policy of rules (planned). The Agent Lab edits Blueprints;
+ * flow), a pipeline (the Tracking and Habit Helpers), or a policy of rules (planned). The Agent Lab edits Blueprints;
  * a runtime executes them. Plan: `docs/AGENT_LAB_PLAN.md` §2.
  *
  * Slice 1 is read-only. A Blueprint is built from a saved flow by an adapter (`adapters/`), and the flow
@@ -11,6 +11,7 @@
  */
 
 import type { Flow, FlowNodeKind } from "@/lib/bim-flow/types"
+import type { HabitHelperFlow } from "@/lib/habit-helper/flow"
 import type { HelperFlow } from "@/lib/tracking-helper/flow"
 
 /** The four kinds of memory a cognitive architecture names. */
@@ -53,7 +54,7 @@ export interface PolicyRule {
 
 export type Mind =
   | { kind: "graph"; flow: Flow }
-  | { kind: "pipeline"; stages: PipelineStage[]; flow: HelperFlow }
+  | { kind: "pipeline"; stages: PipelineStage[]; flow: HelperFlow | HabitHelperFlow }
   | { kind: "policy"; rules: PolicyRule[] }
 
 export interface ToolUse {

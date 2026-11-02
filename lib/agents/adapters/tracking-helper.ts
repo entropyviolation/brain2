@@ -42,5 +42,5 @@ export function helperBlueprint(flow: HelperFlow = starterFlow()): Blueprint {
 
 /** The flow inside a pipeline Blueprint, for the old runtime. Null for any other mind. */
 export function helperOfBlueprint(b: Blueprint): HelperFlow | null {
-  return b.mind.kind === "pipeline" ? b.mind.flow : null
+  return b.mind.kind === "pipeline" && "wire" in b.mind.flow ? b.mind.flow : null
 }

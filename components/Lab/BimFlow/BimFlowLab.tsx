@@ -38,7 +38,7 @@ import { FlowRuns } from "./flow-runs"
 import { archive } from "@/lib/bim-flow/archive"
 import { loadHistory, saveHistory, slimRun, type SavedRun } from "@/lib/bim-flow/run-history"
 import { AgentRail } from "../Agents/AgentRail"
-import { builtinBlueprints } from "@/lib/agents/registry"
+import { builtinBlueprints, labOf } from "@/lib/agents/registry"
 import "./bim-flow.css"
 
 /** Every shipped agent, for the rail. Built once; the flows inside are not read. */
@@ -512,7 +512,7 @@ export function BimFlowLab() {
       <AgentRail
         agents={AGENTS}
         activeId={`bim-flow:${flowId}`}
-        onPick={(a) => (a.id.startsWith("bim-flow:") ? pickFlow(a.id.slice("bim-flow:".length)) : (window.location.href = "/lab/tracking-helper"))}
+        onPick={(a) => (a.id.startsWith("bim-flow:") ? pickFlow(a.id.slice("bim-flow:".length)) : (window.location.href = labOf(a.id)))}
       />
 
       <div className="bf-main">
