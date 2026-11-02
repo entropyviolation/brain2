@@ -24,7 +24,7 @@ import { readingsFromCell, sanitizeCompletionSources, trustedOutcome } from "./h
 import { applyHabitAutoFlag } from "./habit-auto-flag"
 import { isHabitGoalMet, isGoalType } from "./habit-utils"
 import { calculateTaskPercentage } from "./calculations"
-import { getWeekDates, getWeekStartDate, parseLocalDate } from "./date-utils"
+import { formatLocalDateKey, getWeekDates, getWeekStartDate, parseLocalDate } from "./date-utils"
 
 export const DEFAULT_COVERAGE_THRESHOLD = 75
 
@@ -125,7 +125,8 @@ export function coverageMeetsThreshold(coveragePercent: number, threshold: numbe
  * Every daily habit's period completion is above `floorPercent` (default 0),
  * except up to `allowAtZero` habits that are at 0. Missing allowance is 0:
  * any daily habit at 0 fails the floor. Exempt days are left to the caller
- * via `isExempt`. A vacant percent counts as 0.
+ * via `isExempt`. A habit exempt on every day of the week (paused, say) is
+ * not judged at all. A vacant percent counts as 0.
  */
 export function dailyHabitsClearFloor(
   dailyTasks: WeeklyTask[],
@@ -139,7 +140,10 @@ export function dailyHabitsClearFloor(
   const floor = Math.min(100, Math.max(0, floorPercent))
   const allowance = Number.isFinite(allowAtZero) ? Math.max(0, Math.floor(allowAtZero)) : 0
   let atZero = 0
+  let judged = 0
   for (const task of dailyTasks) {
+    if (isExempt && weekDates.every((date) => isExempt(task, formatLocalDateKey(date)))) continue
+    judged += 1
     const pct = calculateTaskPercentage(task.id, dailyTasks, weeklyData, weekDates, isExempt)
     const value = pct === null ? 0 : pct
     if (!(value > 0)) {
@@ -149,7 +153,7 @@ export function dailyHabitsClearFloor(
     }
     if (!(value > floor)) return false
   }
-  return true
+  return judged > 0
 }
 
 /** Merge coverage / floor auto flags. Thin wrapper over `applyHabitAutoFlag`. */

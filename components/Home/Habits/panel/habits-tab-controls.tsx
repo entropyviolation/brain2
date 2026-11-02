@@ -5,7 +5,8 @@
  * one shared through line, good-period plate). Sheet changes the sheet (window,
  * Tools wands). Heatmap View, Day View, Week View, Month View, Season View,
  * Hide Done, Mask done and missed, Highlight priorities, and Streaks and multipliers live in the Views band. Lamps are
- * Loading Bar and Small LEDs.
+ * Loading Bar and Small LEDs. Show paused habits sits under the wands and
+ * reads the store itself, so the phone Tools sheet gets it too.
  * New habit sits in the foot, above the gem oval. Grade numbers and store
  * writes stay in `tracker/` (the desktop page and its panes).
  */
@@ -19,6 +20,13 @@ import { ExemptionWandButton } from "@/components/Home/Habits/wands/exemption-wa
 import { MissedOpWandButton } from "@/components/Home/Habits/wands/missed-op-wand-button"
 import { NobleGasTube } from "@/components/Home/Habits/noble-gas-tube"
 import { GOOD_DAYS_LOOKBACK } from "@/lib/habit-accomplishment"
+import { useHabitsStore } from "@/lib/habits-store"
+
+function ShowPausedSwitch() {
+  const on = useHabitsStore((s) => s.showPausedHabits)
+  const setOn = useHabitsStore((s) => s.setShowPausedHabits)
+  return <CockpitSwitch id="habits-show-paused" checked={on} onCheckedChange={setOn} label="Show paused habits" />
+}
 
 function GradeFace({
   label,
@@ -256,6 +264,9 @@ export function HabitsTabControls({
             <ControlPlate legend="Sheet lamps">
               <ExemptionWandButton on={exemptionWand} onToggle={onExemptionWand} />
               <MissedOpWandButton on={missedOpWand} onToggle={onMissedOpWand} />
+            </ControlPlate>
+            <ControlPlate legend="Paused">
+              <ShowPausedSwitch />
             </ControlPlate>
           </div>
         </div>

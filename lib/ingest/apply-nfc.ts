@@ -117,7 +117,7 @@ function creditHabit(habitId: string, credit: NfcTag["habitCredit"], now: Date, 
       value,
       goal,
       completed: goal > 0 ? value >= goal : true,
-    })
+    }, "auto-link")
     const unit = habit.unit ? ` ${habit.unit}` : ""
     return `${habit.name}: +${quantity} (total ${value}${unit})`
   }

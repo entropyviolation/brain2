@@ -123,16 +123,18 @@ function showPhoneHabitSection(root: HTMLElement, id: string) {
   for (const node of root.querySelectorAll<HTMLElement>(":scope > [id^='habit95-sec-']")) {
     node.hidden = node.id !== id
   }
-  const neglect = root.querySelector<HTMLElement>(":scope > .habit95-sec-neglect")
-  if (neglect) neglect.hidden = id !== "habit95-sec-priority"
+  for (const node of root.querySelectorAll<HTMLElement>(":scope > .habit95-sec-neglect, :scope > .habit95-sec-pause")) {
+    node.hidden = id !== "habit95-sec-priority"
+  }
 }
 
 function clearPhoneHabitSections(root: HTMLElement) {
   for (const node of root.querySelectorAll<HTMLElement>(":scope > [id^='habit95-sec-']")) {
     node.hidden = false
   }
-  const neglect = root.querySelector<HTMLElement>(":scope > .habit95-sec-neglect")
-  if (neglect) neglect.hidden = false
+  for (const node of root.querySelectorAll<HTMLElement>(":scope > .habit95-sec-neglect, :scope > .habit95-sec-pause")) {
+    node.hidden = false
+  }
 }
 
 /** Slide the key inside the strip. scrollIntoView would move the dialog. */
@@ -419,6 +421,8 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
         estimate && ((estimate.minutesPerUnit ?? 0) > 0 || (estimate.minutes ?? 0) > 0) ? estimate : undefined
       finalTask.timeEstimateNA = undefined
     }
+    // An empty shorthand clears it; the display falls back to the name.
+    finalTask.shorthandName = (task.shorthandName ?? "").trim() || undefined
     const donePhrase = (task.doneTaskPhrase ?? "").trim()
     finalTask.doneTaskPhrase = donePhrase || undefined
     finalTask.doneTaskUseText = task.type === TaskType.TEXT && task.doneTaskUseText ? true : undefined

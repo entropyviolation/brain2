@@ -663,7 +663,7 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
         todayPrioRaw={todayPrioRaw}
         showSettings={form.showSettings}
         setShowSettings={form.setShowSettings}
-        tasks={store.tasks}
+        tasks={store.allTasks}
         importData={store.importData}
         resetData={store.resetData}
       />

@@ -1,7 +1,8 @@
 /**
  * components/Home/Habits/habit-form/identity.tsx — Opening blocks of the habit form.
  *
- * Neglect line, Priority, Name, Gem, Frequency, and Type. Returned as a
+ * Pause key (saved habits only), neglect line, Priority, Name with its
+ * Shorthand name, Gem, Frequency, and Type. Returned as a
  * fragment so each block stays a direct child of `.habit95-fields`.
  * `rewardTouched` and `setType` stay in `TaskForm`.
  */
@@ -18,6 +19,7 @@ import { normalizeTaskType } from "@/lib/habit-utils"
 import type { ThemeColors } from "@/lib/theme-store"
 import { TaskType, type WeeklyTask } from "@/lib/types"
 import { FREQUENCIES, HABIT_TYPES, reasoningUnderLogLine } from "./model"
+import { HabitFormPause } from "./pause"
 
 export function HabitFormIdentity({
   neglectSentence,
@@ -52,6 +54,7 @@ export function HabitFormIdentity({
 }) {
   return (
     <>
+      {initialTask ? <HabitFormPause task={task} setTask={setTask} /> : null}
       {neglectSentence ? (
         <p className="habit95-neglect-line habit95-sec-neglect">{neglectSentence}</p>
       ) : null}
@@ -135,6 +138,15 @@ export function HabitFormIdentity({
           required
           autoFocus
         />
+        <label htmlFor="task-shorthand">Shorthand name</label>
+        <input
+          id="task-shorthand"
+          className="habit95-input"
+          value={task.shorthandName ?? ""}
+          onChange={(e) => setTask({ ...task, shorthandName: e.target.value })}
+          placeholder="read 5 pages → read"
+        />
+        <p className="habit95-hint">Short label for the phone period grid. Desktop keeps the full name.</p>
         {initialTask ? (
           <button
             type="button"

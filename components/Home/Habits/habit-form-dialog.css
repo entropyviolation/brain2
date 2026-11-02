@@ -112,6 +112,7 @@
 }
 
 /* Visual reading order of the habit settings page. */
+.habit95-fields > .habit95-sec-pause { order: -1; }
 .habit95-fields > .habit95-sec-neglect { order: 0; }
 .habit95-fields > .habit95-sec-name { order: 10; }
 .habit95-fields > .habit95-sec-freq { order: 12; }

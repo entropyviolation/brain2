@@ -90,6 +90,7 @@ export function incrementHabitProgress(habitId: string, amount: number, date = n
     habitId,
     date,
     completionWithGoalFlag(habit, { ...previous, value: nextValue }),
+    "auto-link",
   )
 }
 

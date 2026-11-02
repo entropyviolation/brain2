@@ -68,7 +68,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
 
   if (habit.type === TaskType.BOOLEAN) {
     const off = lower === "no" || lower === "undo" || lower === "off"
-    store.updateCompletion(habit.id, date, { completed: !off })
+    store.updateCompletion(habit.id, date, { completed: !off }, "auto-link")
     return {
       status: "ok",
       kind: "habit",
@@ -79,7 +79,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
 
   if (habit.type === TaskType.TEXT) {
     const text = payload || "logged"
-    store.updateCompletion(habit.id, date, { text, completed: true })
+    store.updateCompletion(habit.id, date, { text, completed: true }, "auto-link")
     return {
       status: "ok",
       kind: "habit",
@@ -91,7 +91,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
   const numeric = payload.match(/(-?\d+(?:\.\d+)?)/)
   if (habit.type === TaskType.INCREMENTAL) {
     if (numeric) {
-      store.updateCompletion(habit.id, date, { value: Number(numeric[1]) })
+      store.updateCompletion(habit.id, date, { value: Number(numeric[1]) }, "auto-link")
       return {
         status: "ok",
         kind: "habit",
@@ -112,7 +112,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
   const goal = habit.goal ?? 0
   if (numeric) {
     const value = Number(numeric[1])
-    store.updateCompletion(habit.id, date, { value, goal })
+    store.updateCompletion(habit.id, date, { value, goal }, "auto-link")
     return {
       status: "ok",
       kind: "habit",
@@ -122,7 +122,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
   }
 
   const value = goal || 1
-  store.updateCompletion(habit.id, date, { value, goal, completed: true })
+  store.updateCompletion(habit.id, date, { value, goal, completed: true }, "auto-link")
   return {
     status: "ok",
     kind: "habit",
