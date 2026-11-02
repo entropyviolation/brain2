@@ -3,7 +3,7 @@
  */
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { useState } from "react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { MobileKeyboard } from "./mobile-keyboard"
 
 function Note() {
@@ -74,10 +74,21 @@ describe("MobileKeyboard", () => {
     expect(note).toHaveValue("n")
   })
 
-  it("closes after the grace moment when nothing is typed", async () => {
+  it("keeps deck taps away from document listeners, so a popup does not read them as outside taps", () => {
+    render(<Note />)
+    act(() => screen.getByLabelText("Note").focus())
+    const heard = vi.fn()
+    document.addEventListener("pointerdown", heard)
+    fireEvent.pointerDown(screen.getByRole("button", { name: "q" }))
+    document.removeEventListener("pointerdown", heard)
+    expect(heard).not.toHaveBeenCalled()
+  })
+
+  it("closes after the grace moment when the user taps away from the field", async () => {
     render(<Note />)
     const note = screen.getByLabelText("Note")
     act(() => note.focus())
+    fireEvent.pointerDown(document.body)
     act(() => note.blur())
     await waitFor(() => {
       expect(screen.queryByRole("group", { name: "Keyboard" })).toBeNull()

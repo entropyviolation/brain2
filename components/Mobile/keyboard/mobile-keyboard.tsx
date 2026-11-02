@@ -61,8 +61,12 @@ const SYMBOL_MARKS = ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"]
 const SHIFT_GAP_MS = 450
 /** How long a finger still counts as down after it lifts; iOS fires focus changes just after. */
 const LIFT_MS = 80
-/** How long the deck stays up after a blur nobody asked for. */
+/** How long the deck stays up after the user taps away from the field. */
 const GRACE_MS = 350
+/** A blur this soon after a tap outside the deck is the user leaving the field. Any other blur is the page's. */
+const OUTSIDE_MS = 900
+/** `closing` is a request for the very next blur; it never outlives this. */
+const CLOSING_MS = 500
 const REPEAT_WAIT_MS = 380
 const REPEAT_MS = 45
 
@@ -80,6 +84,8 @@ export function MobileKeyboard() {
   const touches = useRef(new Map<number, Touch>())
   const grace = useRef(0)
   const closing = useRef(false)
+  const closingTimer = useRef(0)
+  const lastOutside = useRef(0)
   const refocusing = useRef(false)
   const lastShift = useRef(0)
   const deckRef = useRef<HTMLDivElement>(null)
@@ -132,6 +138,16 @@ export function MobileKeyboard() {
     const onPointer = (event: Event) => {
       const el = typingField(event.target)
       if (el) arm(el)
+      const deck = deckRef.current
+      if (!el && !(deck && event.target instanceof Node && deck.contains(event.target))) lastOutside.current = Date.now()
+    }
+    // The page's own blur (a re-render, a dialog moving focus) leaves the deck
+    // up. A tap on the page after that, with no field focused, puts it away.
+    const onClick = (event: MouseEvent) => {
+      if (!fieldRef.current || holding()) return
+      if (event.target instanceof Node && deckRef.current?.contains(event.target)) return
+      if (typingField(event.target) || typingField(document.activeElement)) return
+      setField(null)
     }
     const onFocusIn = (event: FocusEvent) => {
       const el = typingField(event.target)
@@ -156,7 +172,8 @@ export function MobileKeyboard() {
     const onFocusOut = (event: FocusEvent) => {
       if (refocusing.current) return
       const previous = event.target instanceof HTMLElement ? event.target : null
-      if (!closing.current && holding() && fieldRef.current) {
+      const to = event.relatedTarget instanceof HTMLElement ? typingField(event.relatedTarget) : null
+      if (!closing.current && holding() && fieldRef.current && !to) {
         const keep = fieldRef.current
         refocusing.current = true
         arm(keep)
@@ -166,6 +183,7 @@ export function MobileKeyboard() {
       }
       const asked = closing.current
       closing.current = false
+      window.clearTimeout(closingTimer.current)
       window.setTimeout(() => {
         // The iPhone app keeps fields armed; a browser gets its own keyboard back.
         if (previous && document.activeElement !== previous && !iosWebKit()) disarm(previous)
@@ -175,6 +193,8 @@ export function MobileKeyboard() {
           setField(null)
           return
         }
+        // Not the user's doing: keep the deck. The next key brings the field back.
+        if (Date.now() - lastOutside.current > OUTSIDE_MS) return
         clearGrace()
         grace.current = window.setTimeout(() => {
           grace.current = 0
@@ -197,12 +217,15 @@ export function MobileKeyboard() {
     }
     document.addEventListener("pointerdown", onPointer, true)
     document.addEventListener("touchstart", onPointer, true)
+    document.addEventListener("click", onClick, true)
     document.addEventListener("focusin", onFocusIn)
     document.addEventListener("focusout", onFocusOut)
     return () => {
       watcher?.disconnect()
       document.removeEventListener("pointerdown", onPointer, true)
       document.removeEventListener("touchstart", onPointer, true)
+      document.removeEventListener("click", onClick, true)
+      window.clearTimeout(closingTimer.current)
       document.removeEventListener("focusin", onFocusIn)
       document.removeEventListener("focusout", onFocusOut)
     }
@@ -267,9 +290,8 @@ export function MobileKeyboard() {
     lastShift.current = now
     setShift((mode) => cycleShift(mode, quick))
   }
-  /** A key tap in the grace moment brings the field back before it types. */
+  /** A key tap brings a blurred field back before it types. */
   const revive = () => {
-    if (!grace.current) return
     clearGrace()
     const keep = fieldRef.current
     if (!keep?.isConnected || document.activeElement === keep) return
@@ -280,6 +302,11 @@ export function MobileKeyboard() {
   }
   const onDeckDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault()
+    // A popup (Radix) hears pointerdown on `document`. For touch it waits for a
+    // click, which this deck swallows, then judges the tapped node. If the deck
+    // has re-rendered or closed by then the node is gone, and the popup reads
+    // the tap as outside and closes. Deck taps never reach `document`.
+    event.stopPropagation()
     const deckEl = deckRef.current
     if (!deckEl) return
     // A primary pointer means no other finger is down; drop any lift that never came.
@@ -311,13 +338,19 @@ export function MobileKeyboard() {
   }
   const finish = () => {
     closing.current = true
+    window.clearTimeout(closingTimer.current)
+    closingTimer.current = window.setTimeout(() => {
+      closing.current = false
+    }, CLOSING_MS)
     releaseAll()
   }
   const onReturn = () => {
     const el = fieldRef.current
     if (!el) return
     const action = returnKey(el).action
-    if (action !== "newline") finish()
+    // Only a return that blurs the field is a request to close. A submit keeps
+    // the field (a chat box), so it must not leave the next blur marked "asked".
+    if (action === "blur") finish()
     runReturn(el, action)
   }
   const onMic = async () => {

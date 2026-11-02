@@ -34,6 +34,13 @@ Second pass, same day:
 - **Mic cap.** A mic glyph at rest. While listening the cap stays pushed in, with a red square LED (`.is-live`, `.m-kb-led`), not the green CRT.
 - **Dictation keeps earlier words.** After a pause iOS starts a fresh transcript. `SpeechPlugin.swift` now keeps the words before the pause (`committed`), so "hello", a pause, then "world" reads "hello world". A new transcript is a partial that comes 0.7 s or more after the last one and starts on a different word. Start skips the permission prompts once both are granted, and sets the audio session up only once.
 
+Third pass, 2026-11-02 (closes still happened, only inside pop-ups):
+
+- **Deck taps stop at the deck.** `onDeckDown` stops `pointerdown` from reaching `document`. A Radix dialog hears it there, waits for a click for touch, and the deck swallows that click. Once the deck re-rendered or closed, the dialog judged a tap on a node that was gone as outside and closed the whole pop-up.
+- **The page's own blur no longer closes the deck.** Only a blur within 900 ms of a tap outside the deck starts the 350 ms close. Any other blur (a re-render, a dialog moving focus) leaves it up, and the next key refocuses the field (`revive` now always runs). A tap on the page with no field focused puts it away.
+- **Return no longer arms a close.** `closing` was set by any return except a newline and cleared only on blur, so after a submit (a chat box) the next stray blur closed the deck with no safety net. Only a return that blurs sets it, and it expires after 500 ms.
+- **Mic cap.** Icon and LED are centered on the face. Listening is the same pressed modifier cap as any held key, with a brick-red LED (`#7A3C31` to `#78292E`).
+
 A pop-up of the pressed letter, a haptic tap, and a slide-down on close are **Planned**.
 
 ## Folders

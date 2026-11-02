@@ -102,41 +102,45 @@
   flex: 1.8 1 0;
 }
 
-/* Dictation. A mic glyph at rest. While it listens the cap stays pushed in
-   (its foot gone, the face shaded from above) and shows a red square LED. */
+/* Dictation. A mic glyph at rest, centered on the face (above the skirt). While
+   it listens the cap is the pressed modifier cap, held down, with a brick-red
+   square LED in the middle of the face. */
 .m-keyboard button.m-kb-key.is-mic {
   flex: 1.15 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .m-keyboard button.m-kb-key.is-mic svg {
+  display: block;
+  flex: none;
   width: 20px;
   height: 20px;
   stroke-width: 2.25;
 }
 
 .m-keyboard button.m-kb-key.is-mic.is-live {
-  transform: translateY(3px);
-  border-color: #3f4347 !important;
-  background-color: #a3a7ac !important;
-  background-image: linear-gradient(180deg, #8f9398, #a7abb0 45%, #b1b5b9) !important;
+  padding-bottom: 2px;
+  transform: translateY(2px);
   box-shadow:
-    inset 2px 0 0 #8a8e93,
-    inset -2px 0 0 #8a8e93,
-    inset 0 -1px 0 #8a8e93,
-    inset 0 3px 5px rgba(0, 0, 0, 0.38),
-    0 0 0 rgba(0, 0, 0, 0) !important;
+    inset 2px 0 0 #969a9f,
+    inset -2px 0 0 #969a9f,
+    inset 0 -2px 0 #969a9f,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
 }
 
 .m-kb-led {
-  display: inline-block;
+  display: block;
+  flex: none;
   width: 13px;
   height: 13px;
   border-radius: 2px;
-  border: 1px solid #5a0905;
-  background: radial-gradient(circle at 35% 30%, #ffb3ab 0 12%, #ff3b30 40%, #c4160c 100%);
+  border: 1px solid #4a1b17;
+  background: radial-gradient(circle at 35% 30%, #c98a7d 0 12%, #9a4a3d 40%, #78292e 100%);
   box-shadow:
-    0 0 6px rgba(255, 59, 48, 0.85),
-    0 0 14px rgba(255, 59, 48, 0.45),
+    0 0 5px rgba(122, 60, 49, 0.8),
+    0 0 11px rgba(120, 41, 46, 0.4),
     inset 0 -1px 1px rgba(0, 0, 0, 0.35);
   animation: m-kb-led 1.6s ease-in-out infinite;
 }
@@ -144,8 +148,8 @@
 @keyframes m-kb-led {
   50% {
     box-shadow:
-      0 0 3px rgba(255, 59, 48, 0.6),
-      0 0 7px rgba(255, 59, 48, 0.25),
+      0 0 3px rgba(122, 60, 49, 0.6),
+      0 0 6px rgba(120, 41, 46, 0.25),
       inset 0 -1px 1px rgba(0, 0, 0, 0.35);
   }
 }
@@ -188,7 +192,7 @@
 }
 
 .m-keyboard button.m-kb-key.is-mic.is-live:is(:active, .is-down) {
-  transform: translateY(4px);
+  transform: translateY(2px);
 }
 
 .m-keyboard button.m-kb-key.is-latched:is(:active, .is-down) {
