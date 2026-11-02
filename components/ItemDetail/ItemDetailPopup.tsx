@@ -6,6 +6,11 @@
  * and the dialog shell stay here. Panels live in `popup/` and are private
  * to this file: not for the page, the To do drawer, or the task card.
  *
+ * Each popup host holds a row of windows, one per item, like tabs. Opening an
+ * item (from the host or from a link inside a window) minimizes whichever
+ * window is open and opens that item's own window. Minimized windows stay
+ * mounted on the dock with their drafts until their own close.
+ *
  * Spec: §5.5 (Item detail view) — docs/SPEC_MAPPING.md §5.
  */
 "use client"
@@ -69,30 +74,117 @@ interface TaskDetailPopupProps {
   onStepComplete?: () => void
   /** Open straight onto the dock. A reload uses this so the editor does not flash open. */
   startMinimized?: boolean
+  /**
+   * Keep the host's item while its window sits on the dock. Pass it when the
+   * host unmounts this popup once its item clears (search, the reload dock,
+   * step layers). Other hosts get their item handed back on minimize, so
+   * picking that item again reopens its docked window.
+   */
+  holdOnMinimize?: boolean
+}
+
+type DetailWindow = { id: string; minimized: boolean }
+
+/** Open `id` (adding its window if new) and minimize every other window. */
+function focusWindow(windows: DetailWindow[], id: string): DetailWindow[] {
+  const next = windows.map((w) => {
+    const minimized = w.id !== id
+    return w.minimized === minimized ? w : { ...w, minimized }
+  })
+  return next.some((w) => w.id === id) ? next : [...next, { id, minimized: false }]
 }
 
 export function TaskDetailPopup({
   taskId,
   open,
   onClose,
+  startMinimized = false,
+  holdOnMinimize = false,
+  ...shared
+}: TaskDetailPopupProps) {
+  const initial = open && taskId ? taskId : null
+  const [windows, setWindows] = useState<DetailWindow[]>(() =>
+    initial ? [{ id: initial, minimized: startMinimized }] : [],
+  )
+  // The item the host last asked for. Its window's close hands back to the host.
+  const hostId = useRef<string | null>(initial)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  useEffect(() => {
+    const next = open && taskId ? taskId : null
+    if (hostId.current === next) return
+    hostId.current = next
+    if (next) setWindows((ws) => focusWindow(ws, next))
+  }, [open, taskId])
+
+  // Once the host's own window is docked, hand the item back to the host.
+  // The window stays mounted; the next pick of that item reopens it.
+  useEffect(() => {
+    const id = hostId.current
+    if (!id || holdOnMinimize) return
+    if (!windows.some((w) => w.id === id && w.minimized)) return
+    hostId.current = null
+    onCloseRef.current()
+  }, [windows, holdOnMinimize])
+
+  const show = useCallback((id: string) => setWindows((ws) => focusWindow(ws, id)), [])
+  const minimize = useCallback(
+    (id: string) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, minimized: true } : w))),
+    [],
+  )
+  const close = useCallback((id: string) => {
+    setWindows((ws) => ws.filter((w) => w.id !== id))
+    if (id === hostId.current) {
+      hostId.current = null
+      onCloseRef.current()
+    }
+  }, [])
+
+  return (
+    <>
+      {windows.map((w) => (
+        <ItemDetailWindow
+          key={w.id}
+          itemId={w.id}
+          minimized={w.minimized}
+          onMinimize={() => minimize(w.id)}
+          onRestore={() => show(w.id)}
+          onOpenItem={show}
+          onClose={() => close(w.id)}
+          {...shared}
+        />
+      ))}
+    </>
+  )
+}
+
+type ItemDetailWindowProps = Omit<TaskDetailPopupProps, "taskId" | "open" | "startMinimized"> & {
+  itemId: string
+  minimized: boolean
+  onMinimize: () => void
+  onRestore: () => void
+  /** Open another item in its own window. This one minimizes and keeps its draft. */
+  onOpenItem: (id: string) => void
+}
+
+function ItemDetailWindow({
+  itemId,
+  minimized,
+  onMinimize,
+  onRestore,
+  onOpenItem,
+  onClose,
   stackAbove = false,
   container = null,
   layerHeader,
   onStepComplete,
-  startMinimized = false,
-}: TaskDetailPopupProps) {
+}: ItemDetailWindowProps) {
   const detailRef = useRef<HTMLDivElement>(null)
   const settingsHost = useRef<HTMLDivElement>(null)
   const settingsLock = useRef(false)
   const attributeLock = useRef(false)
-  const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
-  const effectiveId = overrideId ?? taskId
-
-  // Reset the in-popup navigation override whenever the host opens a new item.
-  useEffect(() => {
-    setOverrideId(null)
-  }, [taskId])
 
   const {
     task,
@@ -119,7 +211,7 @@ export function TaskDetailPopup({
     removeTag,
     addLink,
     removeLink,
-  } = useItemDetailDraft(effectiveId)
+  } = useItemDetailDraft(itemId)
 
   const updateList = useTaskStore((state) => state.updateList)
   const itemTypes = useItemTypeStore((state) => state.types)
@@ -179,24 +271,23 @@ export function TaskDetailPopup({
   }, [visiblePanels, hiddenShell])
   const [itemSettingsOpen, setItemSettingsOpen] = useState(false)
   const [attributeSettingsId, setAttributeSettingsId] = useState<string | null>(null)
-  const [minimized, setMinimized] = useState(startMinimized)
   const [dockShape, setDockShape] = useState<"bar" | "icon">("bar")
   const minimizeLock = useRef(false)
   const [detailTab, setDetailTab] = useState(() => {
-    const stored = effectiveId ? readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId] : null
+    const stored = itemId ? readStoredRecord(APP_NAV_KEYS.itemDetailTab)[itemId] : null
     return stored || "details"
   })
 
   useEffect(() => {
-    if (!effectiveId) return
-    const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
+    if (!itemId) return
+    const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[itemId]
     setDetailTab(stored || "details")
-  }, [effectiveId])
+  }, [itemId])
 
   useEffect(() => {
-    if (!effectiveId) return
-    writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
-  }, [effectiveId, detailTab])
+    if (!itemId) return
+    writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, itemId, detailTab)
+  }, [itemId, detailTab])
 
   const activeDetailTab = popupTabs.some((tab) => tab === detailTab) ? detailTab : "details"
 
@@ -216,8 +307,8 @@ export function TaskDetailPopup({
     if (draft) commitDraft(draft)
   }, [getDraft, commitDraft])
 
-  useItemDetailSaveHotkey(detailRef, handleSave, open && Boolean(task))
-  useItemDetailUndoHotkey(detailRef, undo, redo, open && Boolean(task))
+  useItemDetailSaveHotkey(detailRef, handleSave, Boolean(task))
+  useItemDetailUndoHotkey(detailRef, undo, redo, Boolean(task))
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -346,7 +437,7 @@ export function TaskDetailPopup({
   )
 
   const guard = useUnsavedGuard({
-    open,
+    open: true,
     onOpenChange: (next) => {
       if (!next) onClose()
     },
@@ -356,8 +447,7 @@ export function TaskDetailPopup({
       if (originalTask) setTask(originalTask)
     },
   })
-  const { guardAction } = guard
-  useItemDetailSession(open && Boolean(task), effectiveId, handleSave)
+  useItemDetailSession(Boolean(task), itemId, handleSave)
   const outsideHold = useRef(false)
   outsideHold.current =
     itemSettingsOpen ||
@@ -368,23 +458,29 @@ export function TaskDetailPopup({
     reviewOpen ||
     guard.prompt.open
 
-  // Every way out of the popup asks about unsaved edits first.
-  const openItem = useCallback(
-    (id: string) => guardAction(() => setOverrideId(id)),
-    [guardAction],
-  )
+  // A related item opens in its own window; this one minimizes with its draft.
+  const openItem = onOpenItem
   const itemEdges = useItemEdges(task)
 
-  const minimize = useCallback(() => {
+  // However this window gets minimized (its key, a click away, or another
+  // item opening), the live draft moves into the kept task first.
+  const stashDraft = useRef(() => {})
+  stashDraft.current = () => {
     const draft = getDraft()
     if (draft && task && !snapshotsEqual(task, draft)) setTask({ ...draft })
-    minimizeLock.current = true
     settingsLock.current = false
     attributeLock.current = false
     setItemSettingsOpen(false)
     setAttributeSettingsId(null)
-    setMinimized(true)
-  }, [getDraft, setTask, task])
+  }
+  useEffect(() => {
+    if (minimized) stashDraft.current()
+  }, [minimized])
+  const minimize = useCallback(() => {
+    stashDraft.current()
+    minimizeLock.current = true
+    onMinimize()
+  }, [onMinimize])
   const saveAndMinimize = useCallback(() => {
     handleSave()
     minimize()
@@ -465,7 +561,7 @@ export function TaskDetailPopup({
   return (
     <>
       <Dialog
-        open={open && !minimized}
+        open={!minimized}
         onOpenChange={(next) => {
           if (!next && (minimizeLock.current || settingsLock.current)) {
             minimizeLock.current = false
@@ -629,7 +725,7 @@ export function TaskDetailPopup({
           iconSrc={iconFor(task.id, task.icon)}
           shape={dockShape}
           onShape={setDockShape}
-          onRestore={() => setMinimized(false)}
+          onRestore={onRestore}
           onClose={() => guard.requestClose()}
         />
       ) : null}

@@ -505,6 +505,7 @@ export default function Home() {
         <TaskDetailPopup
           taskId={searchSelectedId}
           open
+          holdOnMinimize
           onClose={() => setSearchSelectedId(null)}
         />
       </Suspense>
@@ -515,6 +516,7 @@ export default function Home() {
           taskId={dockItemId}
           open
           startMinimized
+          holdOnMinimize
           onClose={() => setDockItemId(null)}
         />
       </Suspense>

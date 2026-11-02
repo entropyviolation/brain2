@@ -211,7 +211,7 @@ describe("TaskDetailPopup", () => {
     const user = userEvent.setup()
     render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
     await user.dblClick(screen.getByTitle("Double-click to open this list"))
-    expect(onClose).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(1)
     expect(screen.getByRole("button", { name: "Plan sprint demo" })).toBeInTheDocument()
     await waitFor(() => {
       expect(localStorage.getItem("brain2-lists-navigation")).toContain("na-list")
@@ -231,7 +231,7 @@ describe("TaskDetailPopup", () => {
       typeIntoDescription()
       await user.dblClick(screen.getByTitle("Double-click to open this list"))
       expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
-      expect(onClose).not.toHaveBeenCalled()
+      expect(onClose).toHaveBeenCalledTimes(1)
       expect(screen.getByRole("button", { name: "Plan team demo" })).toBeInTheDocument()
       await waitFor(() => expect(listNav()).toContain("na-list"))
       await user.click(screen.getByRole("button", { name: "Plan team demo" }))
@@ -263,7 +263,7 @@ describe("TaskDetailPopup", () => {
       typeIntoDescription()
       fireEvent.pointerDown(await overlay())
       expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
-      expect(onClose).not.toHaveBeenCalled()
+      expect(onClose).toHaveBeenCalledTimes(1)
       expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
       expect(screen.getByRole("button", { name: "Plan team demo" })).toBeInTheDocument()
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
@@ -324,8 +324,7 @@ describe("TaskDetailPopup", () => {
       expect(onClose).toHaveBeenCalled()
     })
 
-    it("asks before opening a related item, and opens it after Exit without saving", async () => {
-      const user = userEvent.setup()
+    function addOtherTask() {
       act(() => {
         useTaskStore.getState().addTask({
           ...useTaskStore.getState().tasks[0],
@@ -333,6 +332,13 @@ describe("TaskDetailPopup", () => {
           title: "Book the room",
           description: "Book the room",
         })
+      })
+    }
+
+    it("opens a related item in its own window and docks this one with its draft", async () => {
+      const user = userEvent.setup()
+      addOtherTask()
+      act(() => {
         useTaskStore.getState().updateTask({
           ...useTaskStore.getState().tasks.find((t) => t.id === "popup-task")!,
           links: [{ id: "l1", relation: "related", targetId: "other-task" }],
@@ -342,11 +348,40 @@ describe("TaskDetailPopup", () => {
       typeIntoDescription()
       await user.click(screen.getByRole("tab", { name: /Links/i }))
       await user.click(screen.getByRole("button", { name: "Open Book the room" }))
-      expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
-      expect(screen.getByDisplayValue("Plan team demo")).toBeInTheDocument()
-      await user.click(screen.getByRole("button", { name: "Exit without saving" }))
+      expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
       expect(await screen.findByDisplayValue("Book the room")).toBeInTheDocument()
-      expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.description).toBe("Plan sprint demo")
+      expect(screen.getByRole("button", { name: "Plan team demo", hidden: true })).toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "Minimize" }))
+      await user.click(screen.getByRole("button", { name: "Plan team demo" }))
+      expect(await screen.findByDisplayValue("Plan team demo")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Book the room", hidden: true })).toBeInTheDocument()
+    })
+
+    it("opens a newly picked item and leaves the docked one alone", async () => {
+      const user = userEvent.setup()
+      addOtherTask()
+      const { rerender } = render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      await user.click(screen.getByRole("button", { name: "Minimize" }))
+      rerender(<TaskDetailPopup taskId="other-task" open onClose={onClose} />)
+      expect(await screen.findByDisplayValue("Book the room")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Plan team demo", hidden: true })).toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "Minimize" }))
+      expect(screen.getByRole("button", { name: "Book the room" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Plan team demo" })).toBeInTheDocument()
+    })
+
+    it("reopens a docked item when the host picks it again", async () => {
+      const user = userEvent.setup()
+      const { rerender } = render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      await user.click(screen.getByRole("button", { name: "Minimize" }))
+      expect(onClose).toHaveBeenCalledTimes(1)
+      rerender(<TaskDetailPopup taskId={null} open={false} onClose={onClose} />)
+      expect(screen.getByRole("button", { name: "Plan team demo" })).toBeInTheDocument()
+      rerender(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      expect(await screen.findByDisplayValue("Plan team demo")).toBeInTheDocument()
+      expect(screen.getByRole("dialog")).toBeInTheDocument()
     })
 
     it("a clean list double-click leaves with no prompt", async () => {
@@ -354,7 +389,7 @@ describe("TaskDetailPopup", () => {
       render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
       await user.dblClick(screen.getByTitle("Double-click to open this list"))
       expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
-      expect(onClose).not.toHaveBeenCalled()
+      expect(onClose).toHaveBeenCalledTimes(1)
       expect(screen.getByRole("button", { name: "Plan sprint demo" })).toBeInTheDocument()
     })
   })
