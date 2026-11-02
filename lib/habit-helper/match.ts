@@ -9,10 +9,10 @@
 
 import { escalate } from "@/lib/bim-flow/crew"
 import type { ModelCall } from "@/lib/bim-flow/ollama"
-import type { HabitHelperFlow } from "./flow"
+import type { HabitsBimbyFlow } from "./flow"
 import { scoreClause, tiedAtTop } from "./lexicon"
 import type { Tagged } from "./tags"
-import type { Clause, HabitBrief, HelperContext, MatchItem, Matching, Tag } from "./types"
+import type { Clause, HabitBrief, BimbyContext, MatchItem, Matching, Tag } from "./types"
 import { displayName } from "./words"
 
 export function matchSchema(t: Tagged, habits: HabitBrief[]): Record<string, unknown> {
@@ -43,7 +43,7 @@ export function matchSchema(t: Tagged, habits: HabitBrief[]): Record<string, unk
   }
 }
 
-export function systemText(flow: HabitHelperFlow): string {
+export function systemText(flow: HabitsBimbyFlow): string {
   const ex = flow.match.examples.map((e, i) => `EXAMPLE ${i + 1}\nHABITS: ${e.habits}\nTEXT: ${e.text}\nANSWER: ${e.json}`).join("\n\n")
   return [flow.match.system, flow.match.extra, ex].filter((s) => s.trim()).join("\n\n")
 }
@@ -59,7 +59,7 @@ export function habitLines(habits: HabitBrief[]): string {
     .join("\n")
 }
 
-export function userText(t: Tagged, ctx: HelperContext): string {
+export function userText(t: Tagged, ctx: BimbyContext): string {
   const tags = t.tags.map((x) => `${x.id}=${x.raw}`).join(", ")
   return [`TODAY: ${ctx.now.toDateString()}`, `HABITS:\n${habitLines(ctx.habits)}`, `TAGS: ${tags || "none"}`, `TEXT: ${t.marked}`].join("\n")
 }
@@ -80,7 +80,7 @@ export interface MatchResult {
   fallback?: string
 }
 
-export async function match(call: ModelCall | null, ladder: string[], flow: HabitHelperFlow, t: Tagged, ctx: HelperContext): Promise<MatchResult> {
+export async function match(call: ModelCall | null, ladder: string[], flow: HabitsBimbyFlow, t: Tagged, ctx: BimbyContext): Promise<MatchResult> {
   const system = systemText(flow)
   const user = userText(t, ctx)
   const prompt = `${system}\n\n---\n\n${user}`
@@ -105,7 +105,7 @@ export function headOf(c: Clause, tags: Tag[]): string {
  * Plain-rule matching. Per clause: the habit its words score highest; a tie at the top is a `maybe` (ask);
  * a negation before any "because" makes it a miss; the clause's first amount, day and reason are used.
  */
-export function matchByRules(t: Tagged, ctx: HelperContext): Matching {
+export function matchByRules(t: Tagged, ctx: BimbyContext): Matching {
   const items: MatchItem[] = []
   const byId = new Map(t.tags.map((x) => [x.id, x]))
   for (const c of t.clauses) {

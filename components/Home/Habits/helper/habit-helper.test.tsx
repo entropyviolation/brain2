@@ -3,30 +3,30 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { buildContext } from "@/lib/habit-helper/accept"
 import { starterFlow } from "@/lib/habit-helper/flow"
-import { runHabitHelper } from "@/lib/habit-helper/run"
-import { useHabitHelper } from "@/lib/habit-helper/store"
+import { runHabitsBimby } from "@/lib/habit-helper/run"
+import { useHabitsBimby } from "@/lib/habit-helper/store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { TaskType, type WeeklyTask } from "@/lib/types"
 import { resetAllStores } from "@/tests/test-utils"
-import { HabitHelperDialog } from "./habit-helper-dialog"
+import { HabitsBimbyDialog } from "./habit-helper-dialog"
 
 const habit = (o: Partial<WeeklyTask> & Pick<WeeklyTask, "id" | "name">): WeeklyTask => ({ type: TaskType.BOOLEAN, frequency: "daily", ...o })
 
 async function seed(text: string) {
-  const run = await runHabitHelper({ text, flow: starterFlow(), ctx: buildContext(), call: null, ladder: [] })
-  useHabitHelper.setState({
+  const run = await runHabitsBimby({ text, flow: starterFlow(), ctx: buildContext(), call: null, ladder: [] })
+  useHabitsBimby.setState({
     busy: false,
     pending: null,
     greetedOn: formatLocalDateKey(new Date()),
     lines: [
       { id: "u", who: "you", text, at: new Date().toISOString() },
-      { id: "h", who: "helper", text: run.reply, at: new Date().toISOString(), route: run.route, proposals: run.proposals, decided: {}, asks: run.asks, chosen: {} },
+      { id: "h", who: "bimby", text: run.reply, at: new Date().toISOString(), route: run.route, proposals: run.proposals, decided: {}, asks: run.asks, chosen: {} },
     ],
   })
   return run
 }
 
-describe("Habit Helper dialog", () => {
+describe("Habits BIMBY dialog", () => {
   beforeEach(() => {
     resetAllStores()
     useHabitsStore.setState({
@@ -41,7 +41,7 @@ describe("Habit Helper dialog", () => {
 
   it("writes nothing until a row is accepted, then writes that row only", async () => {
     await seed("drank water, read 10 pages")
-    render(<HabitHelperDialog open onOpenChange={() => {}} />)
+    render(<HabitsBimbyDialog open onOpenChange={() => {}} />)
     expect(document.querySelectorAll(".hh-row")).toHaveLength(2)
     const today = formatLocalDateKey(new Date())
     expect(useHabitsStore.getState().weeklyData[today]).toBeUndefined()
@@ -52,7 +52,7 @@ describe("Habit Helper dialog", () => {
 
   it("Accept all writes every open row, and a miss keeps its reason word for word", async () => {
     await seed("drank water. I didn't go outside today because I woke up too late and it was dark")
-    render(<HabitHelperDialog open onOpenChange={() => {}} />)
+    render(<HabitsBimbyDialog open onOpenChange={() => {}} />)
     fireEvent.click(screen.getByText("Accept all 2"))
     const cell = useHabitsStore.getState().weeklyData[formatLocalDateKey(new Date())]
     expect(cell?.water?.completed).toBe(true)
@@ -62,7 +62,7 @@ describe("Habit Helper dialog", () => {
 
   it("writes a shorthand name after approval", async () => {
     await seed("give my habits shorthand names")
-    render(<HabitHelperDialog open onOpenChange={() => {}} />)
+    render(<HabitsBimbyDialog open onOpenChange={() => {}} />)
     fireEvent.click(screen.getByText("Accept all 3"))
     expect(useHabitsStore.getState().tasks.map((t) => t.shorthandName)).toEqual(["water", "read", "outside"])
   })

@@ -9,8 +9,8 @@
  */
 
 import { dateKey } from "@/lib/tracking-helper/clock"
-import type { HabitHelperFlow } from "./flow"
-import type { HabitBrief, HelperContext } from "./types"
+import type { HabitsBimbyFlow } from "./flow"
+import type { HabitBrief, BimbyContext } from "./types"
 import { clock, contentWords, displayName } from "./words"
 
 const dayBefore = (key: string, n: number) => {
@@ -55,7 +55,7 @@ export interface WhyQuestion {
 }
 
 /** Habits worth asking about, most pressing first, skipping any already asked. */
-export function whyQueue(ctx: HelperContext, flow: HabitHelperFlow, asked: { habitId: string }[]): WhyQuestion[] {
+export function whyQueue(ctx: BimbyContext, flow: HabitsBimbyFlow, asked: { habitId: string }[]): WhyQuestion[] {
   const today = dateKey(ctx.now)
   const done = new Set(asked.map((a) => a.habitId))
   const out: WhyQuestion[] = []
@@ -90,7 +90,7 @@ export interface Nudge {
 }
 
 /** Today's unmet habits, each with one line drawn from its own record, the most specific first. */
-export function nudges(ctx: HelperContext): Nudge[] {
+export function nudges(ctx: BimbyContext): Nudge[] {
   const today = dateKey(ctx.now)
   const nowMin = ctx.now.getHours() * 60 + ctx.now.getMinutes()
   const out: Nudge[] = []

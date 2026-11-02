@@ -1,5 +1,5 @@
 /**
- * tracker/habit-desk-header.tsx — Fascia title, period nameplate, Settings, Chat (Habit Helper).
+ * tracker/habit-desk-header.tsx — Fascia title, period nameplate, Settings, Chat (Habits BIMBY).
  *
  * Season, week, month, and day each keep their own range and lens update.
  * The daily nameplate still adds six days with `setDate`. With Day View on,
@@ -11,7 +11,7 @@
 import { format } from "date-fns"
 import { Settings } from "lucide-react"
 import { WeekNavigation } from "@/components/Home/Habits/period/week-navigation"
-import { HabitHelperKey } from "@/components/Home/Habits/helper/habit-helper-key"
+import { HabitsBimbyKey } from "@/components/Home/Habits/helper/habit-helper-key"
 import { habitsCalendarKey, habitsViewedMonth } from "@/components/Home/Habits/period/habits-period-cursor"
 import { addCalendarDays, formatDateRange, getWeekStartDate, isSameLocalWeek } from "@/lib/date-utils"
 import { quarterKey, quarterLabel, quarterStartDate, shiftQuarter } from "@/lib/seasons"
@@ -155,7 +155,7 @@ export function HabitDeskHeader({
           <Settings className="h-3.5 w-3.5" />
           Settings
         </button>
-        <HabitHelperKey />
+        <HabitsBimbyKey />
       </div>
     </div>
   )

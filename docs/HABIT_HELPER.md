@@ -1,4 +1,4 @@
-# Daily Habit Helper
+# Habits BIMBY
 
 _Last mapped: 2026-11-02_
 
@@ -6,6 +6,8 @@ A BIMBY for one job: daily habits. Desktop only today: Home → Habits → **Cha
 [Tracking Helper](TRACKING_HELPER.md) was: **the model points, code computes**, self-hosted models only, and a
 rules reader that still works with Ollama off. Every change is a proposal; nothing is written until the person
 accepts a row or presses **Accept all**.
+
+Named a BIMBY (BIM + baby: a small, single-job sub-agent; see `CLAUDE.md`). Code names say BIMBY (`useHabitsBimby`, `HabitsBimbyFlow`, `habitsBimbyBlueprint`). The paths the brief fixed keep `habit-helper`: `lib/habit-helper/`, `/lab/habit-helper`, the Blueprint id and surface, and the `habithelper-*` storage keys.
 
 ## What it does
 
@@ -23,7 +25,7 @@ accepts a row or presses **Accept all**.
 These are the shipped tests in `lib/habit-helper/tests.ts`, replayed with no model, and read by rules, on every
 test run.
 
-**Asking why.** On open, and after each answer, the helper may ask why a habit was missed: first a cell marked
+**Asking why.** On open, and after each answer, the BIMBY may ask why a habit was missed: first a cell marked
 missed with no reason, then a habit missed 3 of the last 7 days. One habit at a time, at most 3 a day. The
 answer is saved word for word as the cell's `missReason` (after approval). "skip" passes.
 
@@ -67,6 +69,6 @@ change (`docs/briefs/habits-2026-11/00-shared-contract.md`); until then the writ
 
 - Daily habits only. Exemptions are not read when counting misses.
 - While a why-question is open, a message is its answer unless it reads as a log.
-- **Planned:** BIM hands a habit message to the helper.
+- **Planned:** BIM hands a habit message to the BIMBY.
 - **Planned:** push or notification reminders for open habits.
 - **Planned:** the phone shell; weekly, monthly and season habits.

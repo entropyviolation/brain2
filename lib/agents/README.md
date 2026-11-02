@@ -18,7 +18,7 @@ Blueprint is the same object the old runtime reads.
 | Mind | Body | Built from |
 |------|------|------------|
 | `graph` | A BIM `Flow` (nodes, edges, ports) | `adapters/bim-flow.ts` |
-| `pipeline` | Ordered stages plus a `HelperFlow` or a `HabitHelperFlow` | `adapters/tracking-helper.ts`, `adapters/habit-helper.ts` |
+| `pipeline` | Ordered stages plus a `HelperFlow` or a `HabitsBimbyFlow` | `adapters/tracking-helper.ts`, `adapters/habit-helper.ts` |
 | `policy` | Weighted rules | **Planned.** Typed, no adapter yet (friend, Budget). |
 
 `NODE_TAG` says what each BIM node kind is in the loop (sense, attend, remember,
@@ -47,7 +47,7 @@ tools, non-positive limits, dangling edges, a graph with no message node.
 
 _Last mapped: 2026-11-02_
 
-`registry.ts`. `builtinBlueprints()` is the Tracking Helper, the Habit Helper, and every shipped BIM flow.
+`registry.ts`. `builtinBlueprints()` is the Tracking Helper, the Habits BIMBY, and every shipped BIM flow.
 `labOf(id)` names the lab page a rail click opens.
 `registerBlueprint` adds a module's agent (plan `MOD-1`) and throws on an
 unsound Blueprint or a reused id. `listBlueprints` and `getBlueprint` read both.
@@ -59,7 +59,7 @@ Nothing here reads storage; to show a person's saved copy, pass it to
 - `blueprint.ts`: types, `NODE_TAG`, `validateBlueprint`.
 - `adapters/bim-flow.ts`, `adapters/tracking-helper.ts`, `adapters/habit-helper.ts`. The two
   helper adapters tell their flows apart by shape (`wire` or `match`), so `helperOfBlueprint` and
-  `habitHelperOfBlueprint` each return null for the other.
+  `habitsBimbyOfBlueprint` each return null for the other.
 - `registry.ts`.
 - `blueprint.test.ts`: every shipped flow validates and survives a JSON round
   trip; both agents share one envelope; the registry refuses bad and duplicate

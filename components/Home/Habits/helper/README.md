@@ -1,8 +1,8 @@
-# `components/Home/Habits/helper/` — Habit Helper chat
+# `components/Home/Habits/helper/` — Habits BIMBY chat
 
 _Last mapped: 2026-11-02_
 
-The **Chat** key in the desktop Habits header (right of Settings) opens a dialog titled **Habit Helper**.
+The **Chat** key in the desktop Habits header (right of Settings) opens a dialog titled **Habits BIMBY**.
 Logic and reasoning: [`lib/habit-helper/README.md`](../../../../lib/habit-helper/README.md),
 [`docs/HABIT_HELPER.md`](../../../../docs/HABIT_HELPER.md). Nothing is saved until **Accept**.
 
@@ -10,7 +10,7 @@ Logic and reasoning: [`lib/habit-helper/README.md`](../../../../lib/habit-helper
 |------|------|
 | `habit-helper-key.tsx` | The Chat key (`.habit-chrome-btn.hh-key`). Loads the dialog on first press. Mounted in `tracker/habit-desk-header.tsx` |
 | `habit-helper-dialog.tsx` | Transcript, compose well (Enter sends, Shift+Enter a new line), starter chips, **Flow lab** door (`/lab/habit-helper`), Clear, Skip on an open why-question |
-| `proposal-table.tsx` | Per helper line: ask keys (pick the habit), then rows of habit · day · old → new · the words; edit the value, reason or name; **Accept**, ×, **Accept all N** |
+| `proposal-table.tsx` | Per BIMBY line: ask keys (pick the habit), then rows of habit · day · old → new · the words; edit the value, reason or name; **Accept**, ×, **Accept all N** |
 | `reasons-view.tsx` | One habit's recorded reasons with days, themes and common words (last year) |
 | `habit-helper.css` | Cool paper with a graph rule, silver keycaps, teal for go and violet for a miss (never yellow) |
 | `habit-helper.test.tsx` | Writes nothing before Accept; Accept writes one row; Accept all; a miss keeps its reason; shorthand names |

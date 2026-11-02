@@ -1,15 +1,15 @@
 /**
- * lib/habit-helper/flow.ts — The Daily Habit Helper's flow: five stages, the editable parts of each
+ * lib/habit-helper/flow.ts — The Habits BIMBY's flow: five stages, the editable parts of each
  *
  *   ROUTE (code) → TAG (code) → MATCH (one model call) → COMPUTE (code) → PROPOSE (code)
  *
  * The lab (`/lab/habit-helper`) edits this object and keeps the copy per device (`habithelper-flow-v1`).
  * Only ROUTE's patterns, MATCH's prompt, examples and model ladder, and the ASK limits are meant to be
- * tuned. `HABIT_HELPER_REV` is bumped when the shipped flow changes; a browser holding an older saved
+ * tuned. `HABITS_BIMBY_REV` is bumped when the shipped flow changes; a browser holding an older saved
  * copy gets the new one, and its own copy is kept under a `:backup:<rev>` key.
  */
 
-export const HABIT_HELPER_REV = "2026-11-01-first"
+export const HABITS_BIMBY_REV = "2026-11-01-first"
 
 export interface MatchExample {
   /** The habit lines, as the model sees them. */
@@ -19,7 +19,7 @@ export interface MatchExample {
   json: string
 }
 
-export interface HabitHelperFlow {
+export interface HabitsBimbyFlow {
   rev: string
   route: {
     /** A request for shorthand names. */
@@ -28,7 +28,7 @@ export interface HabitHelperFlow {
     reasons: string
     /** "What's left today?" */
     nudge: string
-    /** A question about the Helper itself. */
+    /** A question about the BIMBY itself. */
     question: string
     /** While a why-question is open: a reply that passes on it. */
     skip: string
@@ -85,9 +85,9 @@ export const MATCH_EXAMPLES: MatchExample[] = [
   },
 ]
 
-export function starterFlow(): HabitHelperFlow {
+export function starterFlow(): HabitsBimbyFlow {
   return {
-    rev: HABIT_HELPER_REV,
+    rev: HABITS_BIMBY_REV,
     route: {
       shorthand: "\\bshort\\s*-?\\s*hand|\\bnick\\s*names?\\b|\\bshort(er)? (names?|labels?)\\b",
       reasons: "^\\s*(show|list|what are)?\\s*(my )?reasons\\b|\\bwhy do i (keep )?(miss|skip)",
@@ -103,19 +103,19 @@ export function starterFlow(): HabitHelperFlow {
 const KEY = "habithelper-flow-v1"
 
 /** The saved flow, or the starter. A copy from an older shipped flow is replaced and kept as a backup. */
-export function loadFlow(): HabitHelperFlow {
+export function loadFlow(): HabitsBimbyFlow {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return starterFlow()
-    const saved = JSON.parse(raw) as HabitHelperFlow
-    if (saved.rev === HABIT_HELPER_REV) return saved
+    const saved = JSON.parse(raw) as HabitsBimbyFlow
+    if (saved.rev === HABITS_BIMBY_REV) return saved
     localStorage.setItem(`${KEY}:backup:${saved.rev}`, raw)
     localStorage.removeItem(KEY)
   } catch {}
   return starterFlow()
 }
 
-export function saveFlow(flow: HabitHelperFlow): void {
+export function saveFlow(flow: HabitsBimbyFlow): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(flow))
   } catch {}

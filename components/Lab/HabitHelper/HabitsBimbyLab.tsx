@@ -1,26 +1,26 @@
 /**
- * components/Lab/HabitHelper/HabitHelperLab.tsx — See and tune the Daily Habit Helper's flow
+ * components/Lab/HabitHelper/HabitsBimbyLab.tsx — See and tune the Habits BIMBY's flow
  *
  * Left: its five stages (route, tag, match, compute, propose) and its Blueprint facts. Middle: the editable
  * parts of the selected stage. Right: type a message, run it on your own habits or on the test habits, and read
- * each stage's time, prompt and output. The flow is the `HabitHelperFlow` the chat in Habits reads
+ * each stage's time, prompt and output. The flow is the `HabitsBimbyFlow` the chat in Habits reads
  * (`habithelper-flow-v1`), so a change here is live there. Runs write nothing to Habits.
  */
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { HABIT_HELPER_STAGES, habitHelperBlueprint } from "@/lib/agents/adapters/habit-helper"
+import { HABITS_BIMBY_STAGES, habitsBimbyBlueprint } from "@/lib/agents/adapters/habit-helper"
 import { builtinBlueprints, labOf } from "@/lib/agents/registry"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { listOllamaModels, ollamaCall } from "@/lib/bim-flow/ollama"
 import { buildContext } from "@/lib/habit-helper/accept"
-import { loadFlow, MATCH_SYSTEM, saveFlow, starterFlow, type HabitHelperFlow, type MatchExample } from "@/lib/habit-helper/flow"
+import { loadFlow, MATCH_SYSTEM, saveFlow, starterFlow, type HabitsBimbyFlow, type MatchExample } from "@/lib/habit-helper/flow"
 import { nudges, whyQueue } from "@/lib/habit-helper/history"
 import { habitLines, systemText } from "@/lib/habit-helper/match"
-import { routeOf, runHabitHelper, type HabitRun } from "@/lib/habit-helper/run"
+import { routeOf, runHabitsBimby, type HabitsBimbyRun } from "@/lib/habit-helper/run"
 import { tagText } from "@/lib/habit-helper/tags"
 import { fixtureCtx } from "@/lib/habit-helper/tests"
-import type { HelperContext, TraceStage } from "@/lib/habit-helper/types"
+import type { BimbyContext, TraceStage } from "@/lib/habit-helper/types"
 import { AgentRail } from "../Agents/AgentRail"
 import "../BimFlow/bim-flow.css"
 import "../TrackingHelper/tracking-helper-lab.css"
@@ -36,7 +36,7 @@ const TRY = [
   "Give relevant shorthand names to all of my daily habits that don't already have them",
 ]
 
-type StageId = (typeof HABIT_HELPER_STAGES)[number]["id"]
+type StageId = (typeof HABITS_BIMBY_STAGES)[number]["id"]
 
 const regexProblem = (pattern: string): string | null => {
   try {
@@ -56,22 +56,22 @@ const jsonProblem = (raw: string): string | null => {
   }
 }
 
-const ROUTE_FIELDS: { key: keyof HabitHelperFlow["route"]; label: string }[] = [
+const ROUTE_FIELDS: { key: keyof HabitsBimbyFlow["route"]; label: string }[] = [
   { key: "shorthand", label: "Asks for shorthand names (code suggests them)" },
   { key: "reasons", label: "Asks for the reasons on a habit" },
   { key: "nudge", label: "Asks what is left today" },
-  { key: "question", label: "A question about the Helper" },
+  { key: "question", label: "A question about the BIMBY" },
   { key: "skip", label: "While a why-question is open: passes on it" },
 ]
 
-export function HabitHelperLab() {
-  const [flow, setFlow] = useState<HabitHelperFlow>(starterFlow)
+export function HabitsBimbyLab() {
+  const [flow, setFlow] = useState<HabitsBimbyFlow>(starterFlow)
   const [loaded, setLoaded] = useState(false)
   const [stage, setStage] = useState<StageId>("match")
   const [text, setText] = useState(TRY[0]!)
   const [onFixture, setOnFixture] = useState(true)
   const [running, setRunning] = useState<"model" | "rules" | null>(null)
-  const [run, setRun] = useState<HabitRun | null>(null)
+  const [run, setRun] = useState<HabitsBimbyRun | null>(null)
   const [ranMs, setRanMs] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [models, setModels] = useState<string[] | null>(null)
@@ -86,9 +86,9 @@ export function HabitHelperLab() {
     if (loaded) saveFlow(flow)
   }, [flow, loaded])
 
-  const ctx: HelperContext = useMemo(() => (onFixture ? fixtureCtx(new Date().toISOString()) : buildContext()), [onFixture])
-  const blueprint = useMemo(() => habitHelperBlueprint(flow), [flow])
-  const patch = <K extends keyof HabitHelperFlow>(key: K, value: Partial<HabitHelperFlow[K]>) => setFlow((f) => ({ ...f, [key]: { ...(f[key] as object), ...value } }))
+  const ctx: BimbyContext = useMemo(() => (onFixture ? fixtureCtx(new Date().toISOString()) : buildContext()), [onFixture])
+  const blueprint = useMemo(() => habitsBimbyBlueprint(flow), [flow])
+  const patch = <K extends keyof HabitsBimbyFlow>(key: K, value: Partial<HabitsBimbyFlow[K]>) => setFlow((f) => ({ ...f, [key]: { ...(f[key] as object), ...value } }))
   const traceOf = (id: StageId) => run?.trace.find((t) => t.stage === id)
   const slowest = Math.max(1, ...(run?.trace.map((t) => t.ms) ?? [1]))
 
@@ -100,7 +100,7 @@ export function HabitHelperLab() {
     try {
       const crew = mode === "model" ? await chatCrew().catch(() => null) : null
       const ladder = flow.match.ladder.length ? flow.match.ladder : crew?.extract ?? []
-      setRun(await runHabitHelper({ text, flow, ctx, call: crew ? ollamaCall(crew.main, undefined, { fresh: true }) : null, ladder, pending: null }))
+      setRun(await runHabitsBimby({ text, flow, ctx, call: crew ? ollamaCall(crew.main, undefined, { fresh: true }) : null, ladder, pending: null }))
       setRanMs(Date.now() - t0)
       setOpen(null)
     } catch (e) {
@@ -123,9 +123,9 @@ export function HabitHelperLab() {
         <button type="button" data-no95 className="bf-cap" onClick={() => (window.location.href = "/")}>
           ← Brain2
         </button>
-        <b className="bf-title">HABITS · HELPER</b>
+        <b className="bf-title">HABITS · BIMBY</b>
         <span className="bf-k">rev {flow.rev}</span>
-        <span className={`bf-lamp ${models ? "is-on" : "is-off"}`} title={models ? "Ollama answering" : "Ollama not answering; the Helper falls back to rules"} />
+        <span className={`bf-lamp ${models ? "is-on" : "is-off"}`} title={models ? "Ollama answering" : "Ollama not answering; the BIMBY falls back to rules"} />
         <span className="bf-k">{models ? `${models.length} models` : "rules only"}</span>
         <span className="bf-sep" />
         <button type="button" data-no95 className="bf-cap" onClick={() => { if (confirm("Replace this flow with the starter flow? Your edits here are lost.")) setFlow(starterFlow()) }}>
@@ -139,7 +139,7 @@ export function HabitHelperLab() {
       <div className="bf-main th-main">
         <section className="th-stages" aria-label="Stages">
           <ol className="th-list">
-            {HABIT_HELPER_STAGES.map((s, i) => {
+            {HABITS_BIMBY_STAGES.map((s, i) => {
               const t = traceOf(s.id)
               return (
                 <li key={s.id}>

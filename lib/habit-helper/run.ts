@@ -1,5 +1,5 @@
 /**
- * lib/habit-helper/run.ts — One message through the Daily Habit Helper's flow
+ * lib/habit-helper/run.ts — One message through the Habits BIMBY's flow
  *
  * ROUTE (code) → TAG (code) → MATCH (one model call) → COMPUTE + PROPOSE (code). Routes other than `log`
  * need no model: `answer` records the reply to an open why-question word for word, `shorthand` suggests
@@ -10,13 +10,13 @@
 import type { ModelCall } from "@/lib/bim-flow/ollama"
 import { dateKey } from "@/lib/tracking-helper/clock"
 import { computeAll } from "./compute"
-import type { HabitHelperFlow } from "./flow"
+import type { HabitsBimbyFlow } from "./flow"
 import { dayWords, nudges, reasonsOf } from "./history"
 import { headOf, match } from "./match"
 import { scoreClause } from "./lexicon"
 import { suggestShorthands } from "./shorthand"
 import { tagText } from "./tags"
-import type { Ask, HabitRoute, HelperContext, Proposal, Tag, TraceStage } from "./types"
+import type { Ask, HabitRoute, BimbyContext, Proposal, Tag, TraceStage } from "./types"
 import { displayName } from "./words"
 
 export interface PendingWhy {
@@ -24,7 +24,7 @@ export interface PendingWhy {
   day: string
 }
 
-export interface HabitRun {
+export interface HabitsBimbyRun {
   route: HabitRoute
   reply: string
   proposals: Proposal[]
@@ -56,7 +56,7 @@ function safeRe(pattern: string): RegExp | null {
  * unless it reads as a log: two clauses that name habits, or one with an amount and no negation. Then the
  * question stays open for the next message.
  */
-export function routeOf(text: string, flow: HabitHelperFlow, pending: PendingWhy | null, ctx?: HelperContext): HabitRoute {
+export function routeOf(text: string, flow: HabitsBimbyFlow, pending: PendingWhy | null, ctx?: BimbyContext): HabitRoute {
   const is = (p: string) => !!safeRe(p)?.test(text)
   if (is(flow.route.shorthand)) return "shorthand"
   if (is(flow.route.reasons)) return "reasons"
@@ -66,7 +66,7 @@ export function routeOf(text: string, flow: HabitHelperFlow, pending: PendingWhy
   return "log"
 }
 
-export function looksLikeLog(text: string, ctx: HelperContext): boolean {
+export function looksLikeLog(text: string, ctx: BimbyContext): boolean {
   const t = tagText(text, ctx.now)
   const named = t.clauses.filter((c) => scoreClause(headOf(c, t.tags), ctx.habits).length)
   return named.length >= 2 || named.some((c) => !c.negated && c.tags.some((id) => id.startsWith("N")))
@@ -74,14 +74,14 @@ export function looksLikeLog(text: string, ctx: HelperContext): boolean {
 
 export interface RunInput {
   text: string
-  flow: HabitHelperFlow
-  ctx: HelperContext
+  flow: HabitsBimbyFlow
+  ctx: BimbyContext
   call: ModelCall | null
   ladder: string[]
   pending?: PendingWhy | null
 }
 
-export async function runHabitHelper(input: RunInput): Promise<HabitRun> {
+export async function runHabitsBimby(input: RunInput): Promise<HabitsBimbyRun> {
   const { flow, ctx, text } = input
   const trace: TraceStage[] = []
   const today = dateKey(ctx.now)

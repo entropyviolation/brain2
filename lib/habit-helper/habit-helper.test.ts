@@ -3,7 +3,7 @@ import { editProposal } from "./compute"
 import { starterFlow } from "./flow"
 import { missDays, nudges, reasonsOf, whyQueue } from "./history"
 import { cleanMatching, matchSchema } from "./match"
-import { routeOf, runHabitHelper } from "./run"
+import { routeOf, runHabitsBimby } from "./run"
 import { candidates, suggestShorthands } from "./shorthand"
 import { tagText } from "./tags"
 import { FIXTURE, OUTSIDE_TEXT, SHIPPED_TESTS, TEST_NOW, byRules, fixtureCtx, replay } from "./tests"
@@ -49,17 +49,17 @@ describe("tagText", () => {
 describe("compute", () => {
   it("adds with 'another', converts hours, and sets the goal when no amount is said", async () => {
     const habits = FIXTURE.map((x) => (x.id === "read" ? { ...x, days: { "2026-11-01": { met: true, value: 5 } } } : x))
-    const run = await runHabitHelper({ text: "read another 4 pages, cleaned for an hour", flow, ctx: fixtureCtx(TEST_NOW, habits), call: null, ladder: [] })
+    const run = await runHabitsBimby({ text: "read another 4 pages, cleaned for an hour", flow, ctx: fixtureCtx(TEST_NOW, habits), call: null, ladder: [] })
     expect(run.proposals.map((p) => [p.habitId, p.from, p.to])).toEqual([
       ["read", "5 pages", "9 pages"],
       ["clean", "0 min", "60 min"],
     ])
-    const exercise = await runHabitHelper({ text: "exercised", flow, ctx: fixtureCtx(TEST_NOW), call: null, ladder: [] })
+    const exercise = await runHabitsBimby({ text: "exercised", flow, ctx: fixtureCtx(TEST_NOW), call: null, ladder: [] })
     expect(exercise.proposals[0]!.to).toBe("30 min")
   })
   it("will not mark a done cell missed, nor a day still ahead", async () => {
     const habits = FIXTURE.map((x) => (x.id === "outside" ? { ...x, days: { "2026-11-01": { met: true, completed: true } } } : x))
-    const run = await runHabitHelper({ text: OUTSIDE_TEXT, flow, ctx: fixtureCtx(TEST_NOW, habits), call: null, ladder: [] })
+    const run = await runHabitsBimby({ text: OUTSIDE_TEXT, flow, ctx: fixtureCtx(TEST_NOW, habits), call: null, ladder: [] })
     expect(run.proposals).toEqual([])
     expect(run.notes[0]).toMatch(/already done/)
   })
@@ -91,7 +91,7 @@ describe("route", () => {
     expect(routeOf("I didn't go outside, it was too cold", flow, pending, fixtureCtx(TEST_NOW))).toBe("answer")
   })
   it("records an answer word for word", async () => {
-    const run = await runHabitHelper({ text: "it was pouring, honestly", flow, ctx: fixtureCtx(TEST_NOW), call: null, ladder: [], pending: { habitId: "outside", day: "2026-10-31" } })
+    const run = await runHabitsBimby({ text: "it was pouring, honestly", flow, ctx: fixtureCtx(TEST_NOW), call: null, ladder: [], pending: { habitId: "outside", day: "2026-10-31" } })
     expect(run.proposals[0]!.write).toEqual({ missedOpportunity: true, missReason: "it was pouring, honestly" })
   })
 })

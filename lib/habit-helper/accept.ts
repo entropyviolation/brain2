@@ -15,10 +15,10 @@ import { isHabitGoalMet, isGoalType, normalizeTaskType } from "@/lib/habit-utils
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TaskType, type TaskCompletion, type WeeklyData, type WeeklyTask } from "@/lib/types"
-import type { CellBrief, HabitBrief, HelperContext, Proposal } from "./types"
+import type { CellBrief, HabitBrief, BimbyContext, Proposal } from "./types"
 import { unitOf } from "./words"
 
-export const HABIT_HELPER_SURFACE = "habit-helper"
+export const HABITS_BIMBY_SURFACE = "habit-helper"
 
 /** A habit's unit as `[unit, per]`: its own unit field first, else the unit after a number in its name. */
 export function unitOfHabit(task: Pick<WeeklyTask, "unit" | "name">): { unit?: string; per?: number } {
@@ -43,7 +43,7 @@ export function cellBrief(task: WeeklyTask, c: TaskCompletion): CellBrief {
   }
 }
 
-/** One daily habit as the helper sees it. `tagName` turns a Tracking tag id into its name. */
+/** One daily habit as the BIMBY sees it. `tagName` turns a Tracking tag id into its name. */
 export function briefOf(task: WeeklyTask, data: WeeklyData, tagName: (id: string) => string | undefined, since?: string): HabitBrief {
   const type = normalizeTaskType(task.type)
   const days: Record<string, CellBrief> = {}
@@ -68,7 +68,7 @@ export function briefOf(task: WeeklyTask, data: WeeklyData, tagName: (id: string
   }
 }
 
-export function buildContext(now = new Date(), lookback = 60): HelperContext {
+export function buildContext(now = new Date(), lookback = 60): BimbyContext {
   const { tasks, weeklyData } = useHabitsStore.getState()
   const tags = useTimeTrackingStore.getState().tags ?? []
   const tagName = (id: string) => tags.find((t) => t.id === id)?.name

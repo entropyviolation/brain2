@@ -1,5 +1,5 @@
 /**
- * components/Lab/HabitHelper/habit-helper-tests.tsx — Test the Habit Helper's flow
+ * components/Lab/HabitHelper/habit-helper-tests.tsx — Test the Habits BIMBY's flow
  *
  * Mounted under the bench on `/lab/habit-helper`. A case is a message, the moment it was said, the proposals it
  * must become, and the model's recorded MATCH answer (`lib/habit-helper/tests.ts`), all against the fixed
@@ -12,32 +12,32 @@ import { useState } from "react"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
 import { loadFlow } from "@/lib/habit-helper/flow"
-import { runHabitHelper, type HabitRun } from "@/lib/habit-helper/run"
-import { byRules, compare, fixtureCtx, loadTests, replay, rowOf, rowText, rowsFrom, saveMine, type ExpectRow, type HabitHelperTest, type TestResult } from "@/lib/habit-helper/tests"
+import { runHabitsBimby, type HabitsBimbyRun } from "@/lib/habit-helper/run"
+import { byRules, compare, fixtureCtx, loadTests, replay, rowOf, rowText, rowsFrom, saveMine, type ExpectRow, type HabitsBimbyTest, type TestResult } from "@/lib/habit-helper/tests"
 import type { Matching } from "@/lib/habit-helper/types"
 import "../TrackingHelper/helper-tests.css"
 
 type Mode = "replay" | "rules" | "live"
 type Done = TestResult & { mode: Mode; ms: number }
 
-async function live(text: string, now: string): Promise<HabitRun> {
+async function live(text: string, now: string): Promise<HabitsBimbyRun> {
   const flow = loadFlow()
   const crew = await chatCrew().catch(() => null)
   const ladder = flow.match.ladder.length ? flow.match.ladder : crew?.extract ?? []
-  return runHabitHelper({ text, flow, ctx: fixtureCtx(now), call: crew ? ollamaCall(crew.main, undefined, { fresh: true }) : null, ladder })
+  return runHabitsBimby({ text, flow, ctx: fixtureCtx(now), call: crew ? ollamaCall(crew.main, undefined, { fresh: true }) : null, ladder })
 }
 
-const rowsOfRun = (r: HabitRun): ExpectRow[] => [...r.proposals.map(rowOf), ...r.asks.map((a) => ({ kind: "ask" as const, habit: "", to: a.options.map((o) => o.id).join("|") }))]
+const rowsOfRun = (r: HabitsBimbyRun): ExpectRow[] => [...r.proposals.map(rowOf), ...r.asks.map((a) => ({ kind: "ask" as const, habit: "", to: a.options.map((o) => o.id).join("|") }))]
 
-export function HabitHelperTests() {
-  const [tests, setTests] = useState<HabitHelperTest[]>(() => loadTests())
+export function HabitsBimbyTests() {
+  const [tests, setTests] = useState<HabitsBimbyTest[]>(() => loadTests())
   const [done, setDone] = useState<Record<string, Done>>({})
   const [busy, setBusy] = useState("")
   const [text, setText] = useState("")
   const [name, setName] = useState("")
-  const [draft, setDraft] = useState<{ run: HabitRun; now: string } | null>(null)
+  const [draft, setDraft] = useState<{ run: HabitsBimbyRun; now: string } | null>(null)
 
-  async function runOne(t: HabitHelperTest, mode: Mode) {
+  async function runOne(t: HabitsBimbyTest, mode: Mode) {
     const t0 = Date.now()
     const r = mode === "replay" ? replay(t) : mode === "rules" ? byRules(t) : t.shorthand ? compare(rowsFrom(t, "rules"), t.expect) : compare(rowsOfRun(await live(t.text, t.now)), t.expect)
     setDone((p) => ({ ...p, [t.id]: { ...r, mode, ms: Date.now() - t0 } }))
@@ -72,9 +72,9 @@ export function HabitHelperTests() {
   }
 
   return (
-    <section className="tht" aria-label="Habit Helper tests">
+    <section className="tht" aria-label="Habits BIMBY tests">
       <h2>Tests</h2>
-      <p>Cases run on fixed test habits (water, read 5 pages, stretch, exercise, go outside, clean, read the news). Replay uses the recorded model answer; Rules is the Helper with Ollama off; Live asks the model again.</p>
+      <p>Cases run on fixed test habits (water, read 5 pages, stretch, exercise, go outside, clean, read the news). Replay uses the recorded model answer; Rules is the BIMBY with Ollama off; Live asks the model again.</p>
       <div className="tht-row">
         <button type="button" data-no95="" disabled={!!busy} onClick={() => void all("replay")}>Replay all</button>
         <button type="button" data-no95="" disabled={!!busy} onClick={() => void all("rules")}>Rules all</button>

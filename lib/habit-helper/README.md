@@ -1,6 +1,8 @@
-# `lib/habit-helper/` — the Daily Habit Helper's flow
+# `lib/habit-helper/` — the Habits BIMBY's flow
 
 _Last mapped: 2026-11-02_
+
+Named a BIMBY (BIM + baby: a small, single-job sub-agent; see `CLAUDE.md`). Code names say BIMBY (`useHabitsBimby`, `HabitsBimbyFlow`, `habitsBimbyBlueprint`). The paths the brief fixed keep `habit-helper`: `lib/habit-helper/`, `/lab/habit-helper`, the Blueprint id and surface, and the `habithelper-*` storage keys.
 
 A BIMBY for daily habits, built the way the Tracking Helper was. It reads what was done or missed from
 plain words, asks why habits get missed, nudges about open ones, and suggests shorthand names. Every change
@@ -47,10 +49,10 @@ per open habit: usual time, amount so far, streak, rate, last done; most specifi
 | `compute.ts` | `computeAll`, `computeItem`, `convert`, `editProposal` |
 | `history.ts` | `missDays`, `whyQueue`, `nudges`, `usualMinute`, `reasonsOf`, `pausedOn` |
 | `shorthand.ts` | `candidates`, `suggestShorthands` |
-| `flow.ts` | `HabitHelperFlow`, `starterFlow`, `loadFlow`/`saveFlow` (`habithelper-flow-v1`), `HABIT_HELPER_REV` |
-| `run.ts` | `runHabitHelper`, `routeOf`, `looksLikeLog` |
+| `flow.ts` | `HabitsBimbyFlow`, `starterFlow`, `loadFlow`/`saveFlow` (`habithelper-flow-v1`), `HABITS_BIMBY_REV` |
+| `run.ts` | `runHabitsBimby`, `routeOf`, `looksLikeLog` |
 | `accept.ts` | `briefOf`, `buildContext` (daily habits, 60 days, Tracking tag names), `applyProposals` (the only writer) |
-| `store.ts` | `useHabitHelper`: chat lines, proposals, decisions, asks, the open why-question (`habithelper-chat-v1`) |
+| `store.ts` | `useHabitsBimby`: chat lines, proposals, decisions, asks, the open why-question (`habithelper-chat-v1`) |
 | `tests.ts` | `FIXTURE` habits, `SHIPPED_TESTS`, `replay`, `byRules`; user cases in `habithelper-tests-v1` |
 | `habit-helper.test.ts` | Every shipped case by replay and by rules, plus tags, compute, routes, history, shorthand |
 
@@ -64,12 +66,12 @@ change note once session A's store takes a source (contract `HabitCellChange`). 
 
 ## Changing the shipped flow
 
-Edit `starterFlow` / `MATCH_SYSTEM` / `MATCH_EXAMPLES` in `flow.ts` and bump `HABIT_HELPER_REV`. A browser
+Edit `starterFlow` / `MATCH_SYSTEM` / `MATCH_EXAMPLES` in `flow.ts` and bump `HABITS_BIMBY_REV`. A browser
 with an older saved copy gets the new one; its own is kept under `habithelper-flow-v1:backup:<old rev>`.
 
 ## Planned
 
-- **Planned:** BIM hands a habit message to the helper.
+- **Planned:** BIM hands a habit message to the BIMBY.
 - **Planned:** push or notification reminders for open habits.
 - **Planned:** weekly, monthly and season habits; exemptions read when counting misses.
 - **Planned:** swap `pausedOn` for session A's `isPausedOn`.

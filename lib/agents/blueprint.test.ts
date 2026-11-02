@@ -7,7 +7,7 @@ import { HELPER_STAGES, helperBlueprint, helperOfBlueprint } from "./adapters/tr
 import { ENVELOPE_KEYS, NODE_TAG, validateBlueprint, type Blueprint } from "./blueprint"
 import { builtinBlueprints, getBlueprint, labOf, listBlueprints, registerBlueprint, unregisterBlueprint } from "./registry"
 import { starterFlow as habitStarter } from "@/lib/habit-helper/flow"
-import { HABIT_HELPER_STAGES, habitHelperBlueprint, habitHelperOfBlueprint } from "./adapters/habit-helper"
+import { HABITS_BIMBY_STAGES, habitsBimbyBlueprint, habitsBimbyOfBlueprint } from "./adapters/habit-helper"
 
 const roundTrip = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T
 
@@ -134,16 +134,16 @@ describe("registry", () => {
   })
 })
 
-describe("Habit helper as a Blueprint", () => {
+describe("Habits BIMBY as a Blueprint", () => {
   it("is sound, a pipeline of five stages with one model call, and its flow round-trips", () => {
     const flow = habitStarter()
     flow.match.extra = "one more fix"
-    const b = habitHelperBlueprint(flow)
+    const b = habitsBimbyBlueprint(flow)
     expect(validateBlueprint(b)).toEqual([])
-    expect(HABIT_HELPER_STAGES.filter((s) => s.cost !== "code").map((s) => s.id)).toEqual(["match"])
-    expect(habitHelperOfBlueprint(roundTrip(b))).toEqual(flow)
+    expect(HABITS_BIMBY_STAGES.filter((s) => s.cost !== "code").map((s) => s.id)).toEqual(["match"])
+    expect(habitsBimbyOfBlueprint(roundTrip(b))).toEqual(flow)
     expect(helperOfBlueprint(b)).toBeNull()
-    expect(habitHelperOfBlueprint(helperBlueprint())).toBeNull()
+    expect(habitsBimbyOfBlueprint(helperBlueprint())).toBeNull()
     expect(labOf("habit-helper")).toBe("/lab/habit-helper")
   })
 })

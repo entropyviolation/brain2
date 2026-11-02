@@ -1,5 +1,5 @@
 /**
- * lib/habit-helper/tests.ts — Recorded cases for the Habit Helper, run by the lab and by vitest
+ * lib/habit-helper/tests.ts — Recorded cases for the Habits BIMBY, run by the lab and by vitest
  *
  * A case is a message, the moment it was said, and the proposals (or asks) it must become, against a
  * fixed set of habits (`FIXTURE`). `matching` is a recorded MATCH answer: **replay** runs every code stage
@@ -12,7 +12,7 @@ import { computeAll } from "./compute"
 import { suggestShorthands } from "./shorthand"
 import { tagText } from "./tags"
 import { matchByRules } from "./match"
-import type { HabitBrief, HelperContext, Matching, Proposal } from "./types"
+import type { HabitBrief, BimbyContext, Matching, Proposal } from "./types"
 
 /** One proposal or ask as a comparable line. */
 export interface ExpectRow {
@@ -24,7 +24,7 @@ export interface ExpectRow {
   reason?: string
 }
 
-export interface HabitHelperTest {
+export interface HabitsBimbyTest {
   id: string
   name: string
   text: string
@@ -51,7 +51,7 @@ export const FIXTURE: HabitBrief[] = [
   h({ id: "news", name: "Read the news" }),
 ]
 
-export const fixtureCtx = (now: string, habits = FIXTURE): HelperContext => ({ now: new Date(now), habits })
+export const fixtureCtx = (now: string, habits = FIXTURE): BimbyContext => ({ now: new Date(now), habits })
 
 export const rowOf = (p: Proposal): ExpectRow => ({ kind: p.kind, habit: p.habitId, ...(p.day ? { day: p.day } : {}), to: p.kind === "missed" ? "missed" : p.kind === "reason" ? "reason" : p.to, ...(p.write?.missReason !== undefined ? { reason: p.write.missReason } : {}) })
 
@@ -71,7 +71,7 @@ export function compare(got: ExpectRow[], want: ExpectRow[]): TestResult {
 }
 
 /** Rows from a matching (recorded, live, or rules) run through the code stages. */
-export function rowsFrom(t: HabitHelperTest, matching: Matching | "rules", habits = FIXTURE): ExpectRow[] {
+export function rowsFrom(t: HabitsBimbyTest, matching: Matching | "rules", habits = FIXTURE): ExpectRow[] {
   const ctx = fixtureCtx(t.now, habits)
   if (t.shorthand) return suggestShorthands(ctx.habits).map(rowOf)
   const tagged = tagText(t.text, ctx.now)
@@ -79,14 +79,14 @@ export function rowsFrom(t: HabitHelperTest, matching: Matching | "rules", habit
   return [...out.proposals.map(rowOf), ...out.asks.map((a) => ({ kind: "ask" as const, habit: "", to: a.options.map((o) => o.id).join("|") }))]
 }
 
-export const replay = (t: HabitHelperTest) => compare(rowsFrom(t, t.matching ?? { items: [] }), t.expect)
-export const byRules = (t: HabitHelperTest) => compare(rowsFrom(t, "rules"), t.expect)
+export const replay = (t: HabitsBimbyTest) => compare(rowsFrom(t, t.matching ?? { items: [] }), t.expect)
+export const byRules = (t: HabitsBimbyTest) => compare(rowsFrom(t, "rules"), t.expect)
 
 const item = (clause: string, habit: string, o: Partial<Matching["items"][number]> = {}): Matching["items"][number] => ({ clause, habit, maybe: "", kind: "done", amount: "", day: "", reason: "", ...o })
 
 export const OUTSIDE_TEXT = "I didn't go outside today because I woke up too late and it was dark"
 
-export const SHIPPED_TESTS: HabitHelperTest[] = [
+export const SHIPPED_TESTS: HabitsBimbyTest[] = [
   {
     id: "daily-list",
     name: "A list of done habits; read takes the number",
@@ -159,16 +159,16 @@ export const SHIPPED_TESTS: HabitHelperTest[] = [
 
 const KEY = "habithelper-tests-v1"
 
-export function loadTests(): HabitHelperTest[] {
+export function loadTests(): HabitsBimbyTest[] {
   try {
-    const mine = JSON.parse(localStorage.getItem(KEY) ?? "[]") as HabitHelperTest[]
+    const mine = JSON.parse(localStorage.getItem(KEY) ?? "[]") as HabitsBimbyTest[]
     return [...SHIPPED_TESTS, ...mine]
   } catch {
     return SHIPPED_TESTS
   }
 }
 
-export function saveMine(tests: HabitHelperTest[]): void {
+export function saveMine(tests: HabitsBimbyTest[]): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(tests.filter((t) => !SHIPPED_TESTS.some((s) => s.id === t.id))))
   } catch {}

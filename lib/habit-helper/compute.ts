@@ -12,7 +12,7 @@ import { dateKey } from "@/lib/tracking-helper/clock"
 import { headOf } from "./match"
 import { scoreClause, tiedAtTop } from "./lexicon"
 import type { Tagged } from "./tags"
-import type { Ask, HabitBrief, HelperContext, MatchItem, Matching, Proposal, Tag } from "./types"
+import type { Ask, HabitBrief, BimbyContext, MatchItem, Matching, Proposal, Tag } from "./types"
 import { displayName } from "./words"
 
 export interface Computed {
@@ -26,7 +26,7 @@ const PLURAL: Record<string, string> = { min: "min", hour: "hours", page: "pages
 const shown = (h: HabitBrief) => ((h.per ?? 1) === 60 ? "hour" : h.unit)
 export const unitText = (n: number, unit?: string) => (unit ? `${n} ${n === 1 && unit !== "min" ? unit : PLURAL[unit] ?? `${unit}s`}` : String(n))
 
-export function computeAll(m: Matching, t: Tagged, ctx: HelperContext): Computed {
+export function computeAll(m: Matching, t: Tagged, ctx: BimbyContext): Computed {
   const out: Computed = { proposals: [], asks: [], notes: [] }
   const seen = new Set<string>()
   for (const item of m.items) {
@@ -60,7 +60,7 @@ function askOptions(item: MatchItem, head: string, habits: HabitBrief[]): string
 }
 
 /** One item as a proposal, or a note saying why it was skipped. */
-export function computeItem(item: MatchItem, t: Tagged, ctx: HelperContext): Proposal | string {
+export function computeItem(item: MatchItem, t: Tagged, ctx: BimbyContext): Proposal | string {
   const c = t.clauses.find((x) => x.id === item.clause)
   const h = ctx.habits.find((x) => x.id === item.habit)
   if (!c || !h) return ""

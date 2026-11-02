@@ -1,15 +1,15 @@
-# Habit Helper flow lab
+# Habits BIMBY flow lab
 
 _Last mapped: 2026-11-02_
 
-Route: `/lab/habit-helper/` (`app/lab/habit-helper/page.tsx`). The Habit Helper dialog has a **Flow lab** key.
+Route: `/lab/habit-helper/` (`app/lab/habit-helper/page.tsx`). The Habits BIMBY dialog has a **Flow lab** key.
 Built like [`../TrackingHelper`](../TrackingHelper/README.md) and reuses its stylesheets
 (`tracking-helper-lab.css`, `helper-tests.css`) over `../BimFlow/bim-flow.css`. Runs write nothing to Habits. The
 flow it edits is the one the chat reads (`habithelper-flow-v1`), so a change saved here is live in Habits.
 
 | File | Role |
 |------|------|
-| `HabitHelperLab.tsx` | The bench, on the Blueprint (`lib/agents/adapters/habit-helper.ts`) and the agent rail: five stages, the selected stage's settings, a run panel with each stage's time, prompt and output |
+| `HabitsBimbyLab.tsx` | The bench, on the Blueprint (`lib/agents/adapters/habit-helper.ts`) and the agent rail: five stages, the selected stage's settings, a run panel with each stage's time, prompt and output |
 | `habit-helper-tests.tsx` | The test panel under the bench |
 
 ## Stages and what is tuned
@@ -25,7 +25,7 @@ flow it edits is the one the chat reads (`habithelper-flow-v1`), so a change sav
 | PROPOSE | today's open habits with their nudges |
 
 **Run on the test habits** (on by default) uses `FIXTURE`; off, it runs on your own daily habits, still writing
-nothing. **Run rules only** shows the Helper with Ollama off.
+nothing. **Run rules only** shows the BIMBY with Ollama off.
 
 ## Tests
 

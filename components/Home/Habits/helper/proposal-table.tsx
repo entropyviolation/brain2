@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/helper/proposal-table.tsx — One helper line's proposals, as rows to approve
+ * components/Home/Habits/helper/proposal-table.tsx — One BIMBY line's proposals, as rows to approve
  *
  * Each row: the habit, the day, old → new, and the words it came from. The new value, a miss reason and a
  * shorthand name are editable before Accept. A clause two habits fit shows one key per habit; picking one
@@ -8,7 +8,7 @@
 "use client"
 
 import { useState } from "react"
-import { openAsks, openProposals, useHabitHelper, type HelperLine } from "@/lib/habit-helper/store"
+import { openAsks, openProposals, useHabitsBimby, type BimbyLine } from "@/lib/habit-helper/store"
 import type { Proposal } from "@/lib/habit-helper/types"
 
 const dayLabel = (day: string) => new Date(`${day}T12:00:00`).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })
@@ -37,11 +37,11 @@ function editValue(p: Proposal): { value: string; label: string } {
   return { value: p.write?.value !== undefined ? String(p.write.value) : p.to, label: "value" }
 }
 
-export function ProposalTable({ line, onReasons }: { line: HelperLine; onReasons: (habitId: string) => void }) {
-  const accept = useHabitHelper((s) => s.accept)
-  const dismiss = useHabitHelper((s) => s.dismiss)
-  const edit = useHabitHelper((s) => s.edit)
-  const choose = useHabitHelper((s) => s.choose)
+export function ProposalTable({ line, onReasons }: { line: BimbyLine; onReasons: (habitId: string) => void }) {
+  const accept = useHabitsBimby((s) => s.accept)
+  const dismiss = useHabitsBimby((s) => s.dismiss)
+  const edit = useHabitsBimby((s) => s.edit)
+  const choose = useHabitsBimby((s) => s.choose)
   const [said, setSaid] = useState("")
   const proposals = line.proposals ?? []
   const asks = openAsks(line)

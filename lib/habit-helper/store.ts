@@ -1,7 +1,7 @@
 /**
- * lib/habit-helper/store.ts — The Habit Helper's chat: lines, the changes each proposes, what was decided
+ * lib/habit-helper/store.ts — The Habits BIMBY's chat: lines, the changes each proposes, what was decided
  *
- * Per device, in `localStorage` (`habithelper-chat-v1`), outside the vault. A helper line carries its
+ * Per device, in `localStorage` (`habithelper-chat-v1`), outside the vault. A BIMBY line carries its
  * proposals (each `accepted` or `dismissed`, or still open) and its asks (a clause two habits fit; the
  * person picks one, then code computes the proposal). Opening the chat once a day lists today's unmet
  * habits with a nudge each and asks the first why-question; each answer asks the next, at most
@@ -18,15 +18,15 @@ import { applyProposals, buildContext } from "./accept"
 import { computeItem, editProposal } from "./compute"
 import { loadFlow } from "./flow"
 import { nudges, whyQueue } from "./history"
-import { runHabitHelper, type PendingWhy } from "./run"
+import { runHabitsBimby, type PendingWhy } from "./run"
 import type { Tagged } from "./tags"
 import type { Ask, HabitRoute, Proposal, TraceStage } from "./types"
 
 export type Decision = "accepted" | "dismissed"
 
-export interface HelperLine {
+export interface BimbyLine {
   id: string
-  who: "you" | "helper"
+  who: "you" | "bimby"
   text: string
   at: string
   route?: HabitRoute
@@ -46,8 +46,8 @@ export interface HelperLine {
   trace?: TraceStage[]
 }
 
-interface HelperState {
-  lines: HelperLine[]
+interface BimbyState {
+  lines: BimbyLine[]
   busy: boolean
   pending: PendingWhy | null
   /** Why-questions asked, with the day they were asked on. */
@@ -70,11 +70,11 @@ const MAX_LINES = 60
 const OPEN_SHOWN = 6
 const nowIso = () => new Date().toISOString()
 
-export const openProposals = (l: HelperLine) => (l.proposals ?? []).filter((p) => !l.decided?.[p.id])
-export const openAsks = (l: HelperLine) => (l.asks ?? []).filter((a) => !l.chosen?.[a.id])
+export const openProposals = (l: BimbyLine) => (l.proposals ?? []).filter((p) => !l.decided?.[p.id])
+export const openAsks = (l: BimbyLine) => (l.asks ?? []).filter((a) => !l.chosen?.[a.id])
 
-/** The next why-question as a helper line, or null when today's are used up or none is due. */
-function nextWhy(state: Pick<HelperState, "asked">): { line: HelperLine; pending: PendingWhy; asked: HelperState["asked"] } | null {
+/** The next why-question as a BIMBY line, or null when today's are used up or none is due. */
+function nextWhy(state: Pick<BimbyState, "asked">): { line: BimbyLine; pending: PendingWhy; asked: BimbyState["asked"] } | null {
   const flow = loadFlow()
   const today = dateKey(new Date())
   const todays = state.asked.filter((a) => a.on === today)
@@ -82,10 +82,10 @@ function nextWhy(state: Pick<HelperState, "asked">): { line: HelperLine; pending
   const q = whyQueue(buildContext(), flow, todays)[0]
   if (!q) return null
   const pending = { habitId: q.habitId, day: q.day }
-  return { line: { id: newId(), who: "helper", text: `${q.text} (Your words are saved as written. “skip” passes.)`, at: nowIso(), why: pending }, pending, asked: [...state.asked.filter((a) => a.on === today), { ...pending, on: today }] }
+  return { line: { id: newId(), who: "bimby", text: `${q.text} (Your words are saved as written. “skip” passes.)`, at: nowIso(), why: pending }, pending, asked: [...state.asked.filter((a) => a.on === today), { ...pending, on: today }] }
 }
 
-export const useHabitHelper = create<HelperState>()(
+export const useHabitsBimby = create<BimbyState>()(
   persist(
     (set, get) => ({
       lines: [],
@@ -103,7 +103,7 @@ export const useHabitHelper = create<HelperState>()(
         const text = list.length
           ? `Still open today (${list.length}):\n${shown.map((n) => `• ${n.habit}: ${n.text}`).join("\n")}${rest ? `\n…and ${rest} more. Ask “what's left today?” for all of them.` : ""}`
           : "Every daily habit is done or marked for today."
-        const greet: HelperLine = { id: newId(), who: "helper", text, at: nowIso(), route: "nudge" }
+        const greet: BimbyLine = { id: newId(), who: "bimby", text, at: nowIso(), route: "nudge" }
         const why = get().pending ? null : nextWhy(get())
         set((s) => ({ greetedOn: today, lines: [...s.lines, greet, ...(why ? [why.line] : [])].slice(-MAX_LINES), ...(why ? { pending: why.pending, asked: why.asked } : {}) }))
       },
@@ -118,10 +118,10 @@ export const useHabitHelper = create<HelperState>()(
           const crew = await chatCrew().catch(() => null)
           const ladder = flow.match.ladder.length ? flow.match.ladder : crew?.extract ?? []
           const ctx = buildContext()
-          const run = await runHabitHelper({ text, flow, ctx, call: crew ? ollamaCall(crew.main) : null, ladder, pending: get().pending })
-          const line: HelperLine = {
+          const run = await runHabitsBimby({ text, flow, ctx, call: crew ? ollamaCall(crew.main) : null, ladder, pending: get().pending })
+          const line: BimbyLine = {
             id: newId(),
-            who: "helper",
+            who: "bimby",
             text: run.reply,
             at: nowIso(),
             route: run.route,
@@ -145,7 +145,7 @@ export const useHabitHelper = create<HelperState>()(
             ...(why ? { asked: why.asked } : {}),
           }))
         } catch (err) {
-          set((s) => ({ busy: false, lines: [...s.lines, { id: newId(), who: "helper" as const, text: `That failed: ${err instanceof Error ? err.message : "error"}.`, at: nowIso() }].slice(-MAX_LINES) }))
+          set((s) => ({ busy: false, lines: [...s.lines, { id: newId(), who: "bimby" as const, text: `That failed: ${err instanceof Error ? err.message : "error"}.`, at: nowIso() }].slice(-MAX_LINES) }))
         }
       },
 

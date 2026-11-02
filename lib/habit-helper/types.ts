@@ -1,5 +1,5 @@
 /**
- * lib/habit-helper/types.ts — Shapes shared by the Daily Habit Helper's stages
+ * lib/habit-helper/types.ts — Shapes shared by the Habits BIMBY's stages
  *
  * A message is cut into `Clause`s and its numbers, days, negations and "because" parts become `Tag`s (code).
  * One small model call returns a `Matching`: per clause, which habit and which tags. Code turns that into
@@ -78,7 +78,7 @@ export interface CellBrief {
   at?: number
 }
 
-export interface HelperContext {
+export interface BimbyContext {
   now: Date
   habits: HabitBrief[]
 }

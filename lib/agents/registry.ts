@@ -7,7 +7,7 @@
  */
 
 import { bimBlueprints } from "./adapters/bim-flow"
-import { habitHelperBlueprint } from "./adapters/habit-helper"
+import { habitsBimbyBlueprint } from "./adapters/habit-helper"
 import { helperBlueprint } from "./adapters/tracking-helper"
 import { validateBlueprint, type Blueprint } from "./blueprint"
 
@@ -15,7 +15,7 @@ const added = new Map<string, Blueprint>()
 
 /** The agents that ship with Brain2. */
 export function builtinBlueprints(): Blueprint[] {
-  return [helperBlueprint(), habitHelperBlueprint(), ...bimBlueprints()]
+  return [helperBlueprint(), habitsBimbyBlueprint(), ...bimBlueprints()]
 }
 
 /** The lab page that edits an agent. A module agent has none yet, so it opens the BIM flow lab. */
