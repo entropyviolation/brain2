@@ -28,7 +28,7 @@ A **BIMBY** (BIM + baby) is a small sub-agent that does one specific job: the Tr
 | Mind | Body | Built from |
 |------|------|------------|
 | `graph` | A BIM `Flow` (nodes, edges, ports) | `adapters/bim-flow.ts` |
-| `pipeline` | Ordered stages, plus a `HelperFlow` when the agent has one | `adapters/tracking-helper.ts`, `adapters/lists-helper.ts` (no flow, no model) |
+| `pipeline` | Ordered stages, plus a `HelperFlow` or a `HabitsBimbyFlow` when the agent has one | `adapters/tracking-helper.ts`, `adapters/habit-helper.ts`, `adapters/lists-helper.ts` (no flow, no model) |
 | `policy` | Weighted rules | **Planned.** Typed, no adapter yet (friend, Budget). |
 
 `NODE_TAG` says what each BIM node kind is in the loop (sense, attend, remember,
@@ -47,7 +47,8 @@ tools, non-positive limits, dangling edges, a graph with no message node.
 - **Memory reads.** From search, link, retrieve, and context nodes. `writes` is
   empty: agents propose; the accept door writes.
 - **Door.** The flow's `propose` actions, plus `time-block` when it has a
-  `blocks` node. The surface is `bim-flow` or `tracking-helper`.
+  `blocks` node. The surface is `bim-flow`, `tracking-helper` or `habit-helper`
+  (which proposes `habit-cell`, `miss-reason`, `shorthand-name`).
 - **Models.** Models pinned on nodes, or the Helper's ladder. `localOnly` is true.
 - **Limits.** Empty for BIM (it declares none). The Helper has one call and its
   token cap.
@@ -61,7 +62,10 @@ Blueprint. Design: [`docs/SKILLRL_RESEARCH.md`](../../docs/SKILLRL_RESEARCH.md);
 
 ## Registry
 
-`registry.ts`. `builtinBlueprints()` is the Helper plus every shipped BIM flow.
+_Last mapped: 2026-11-02_
+
+`registry.ts`. `builtinBlueprints()` is the Tracking Helper, the Habits BIMBY, and every shipped BIM flow.
+`agentLabHref` (`components/Lab/Agents/agent-href.ts`) names the lab page a rail click opens.
 `registerBlueprint` adds a module's agent (plan `MOD-1`) and throws on an
 unsound Blueprint or a reused id. `listBlueprints` and `getBlueprint` read both.
 Nothing here reads storage; to show a person's saved copy, pass it to
@@ -71,6 +75,9 @@ Nothing here reads storage; to show a person's saved copy, pass it to
 
 - `blueprint.ts`: types, `NODE_TAG`, `validateBlueprint`.
 - `adapters/bim-flow.ts`, `adapters/tracking-helper.ts`, `adapters/lists-helper.ts` (_2026-11-02_: five code stages and the tool list from `lib/lists-helper/tools.ts`; its lab is `/lab/lists-helper`). `Mind.pipeline.flow` is optional now.
+- `adapters/bim-flow.ts`, `adapters/tracking-helper.ts`, `adapters/habit-helper.ts`. The two
+  helper adapters tell their flows apart by shape (`wire` or `match`), so `helperOfBlueprint` and
+  `habitsBimbyOfBlueprint` each return null for the other.
 - `registry.ts`.
 - `blueprint.test.ts`: every shipped flow validates and survives a JSON round
   trip; both agents share one envelope; the registry refuses bad and duplicate
@@ -81,4 +88,4 @@ Nothing here reads storage; to show a person's saved copy, pass it to
 The common Trace (slice 2), the Theater and Blueprint form (3), the tool
 contracts (4), evals and compare (5). A `policy` adapter for the friend and
 Budget. The rail (`components/Lab/Agents/AgentRail.tsx`) and the
-`/lab/tracking-helper` route have landed; both read Blueprints from here.
+`/lab/tracking-helper` and `/lab/habit-helper` routes have landed; they read Blueprints from here.

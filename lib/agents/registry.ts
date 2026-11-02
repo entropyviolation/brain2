@@ -8,6 +8,7 @@
 
 import { bimBlueprints } from "./adapters/bim-flow"
 import { listsHelperBlueprint } from "./adapters/lists-helper"
+import { habitsBimbyBlueprint } from "./adapters/habit-helper"
 import { helperBlueprint } from "./adapters/tracking-helper"
 import { validateBlueprint, type Blueprint } from "./blueprint"
 
@@ -15,7 +16,7 @@ const added = new Map<string, Blueprint>()
 
 /** The agents that ship with Brain2. */
 export function builtinBlueprints(): Blueprint[] {
-  return [helperBlueprint(), listsHelperBlueprint(), ...bimBlueprints()]
+  return [helperBlueprint(), listsHelperBlueprint(), habitsBimbyBlueprint(), ...bimBlueprints()]
 }
 
 /** Add an agent. Throws on a Blueprint that does not validate or reuses an id. */
