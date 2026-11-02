@@ -3,8 +3,9 @@
  *
  * The App Router root layout that wraps every page: loads Karla (`--font-karla`
  * on `<html>`, Karla on `<body>`; the pixel face is `public/fonts/w95fa.woff`
- * via `win95.css`). Later faces load with the screen that paints them
- * (`lib/fonts/`). Applies global metadata, and imports global + module chrome
+ * via `win95.css`) and DotGothic16 (`--font-dotgothic` on `<html>`, a house
+ * face; `--face-dotgothic` in `win95.css` is its stack). Other faces load with
+ * the screen that paints them (`lib/fonts/`). Applies global metadata, and imports global + module chrome
  * stylesheets (so Fast Refresh cannot drop lazy-tab CSS). `win95.css` owns `--chrome-*`; `chrome-patina.css`
  * remaps module aliases onto that family; `pcb-backdrop.css` paints the
  * desktop field (Snowflake PCB plate by default; teal and other plates optional); `baby-animal-nest.css` skins the header CRT companion;
@@ -21,6 +22,7 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Karla } from "next/font/google"
+import { dotGothicFace } from "@/lib/fonts/dash-segment-faces"
 import "./globals.css"
 import "./win95.css"
 // Module chrome must live on the root layout, not only on lazy tab chunks.
@@ -103,7 +105,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={karla.variable}
+      className={`${karla.variable} ${dotGothicFace}`}
       data-pcb-mode={DEFAULT_PCB_MODE}
       data-pcb-ink={pcbInkFor(DEFAULT_PCB_MODE)}
       suppressHydrationWarning

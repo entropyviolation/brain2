@@ -43,6 +43,11 @@
    * Corner tokens are the Bouba/Kiki snapshot (`lib/corner-mix.ts`). Mix 50
    * is these literals. Circles and pills are not tokens.
    */
+  /*
+   * DotGothic16, a house face (docs/DESIGN_STYLE.md, "Type faces"). Loaded on
+   * `<html>` by `app/layout.tsx`. Habit names on the phone use it first.
+   */
+  --face-dotgothic: var(--font-dotgothic), "DotGothic16", "w95fa", ui-monospace, monospace;
   --chrome-set: 50;
   --chrome-live: 50;
   --chrome-mix: 0;

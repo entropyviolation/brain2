@@ -55,7 +55,7 @@ _Last mapped: 2026-10-28_
 | File | Face | Where it paints |
 |------|------|-----------------|
 | `fonts/home-pixel-faces.ts` | Silkscreen and DotGothic16 (re-export) | Home dashboard, lab bench |
-| `fonts/dash-segment-faces.ts` | Silkscreen, DotGothic16 | Home (via the file above), session popup, task card |
+| `fonts/dash-segment-faces.ts` | Silkscreen, DotGothic16 | Home (via the file above), session popup, task card. `dotGothicFace` puts DotGothic16 on the root `<html>` (`app/layout.tsx`), a house face. |
 | `fonts/fraunces.ts` | Fraunces (SOFT, WONK, opsz) | Task card |
 | `fonts/dm-mono.ts` | DM Mono | Task card, item detail |
 | `fonts/analytics-type.ts` | Bricolage Grotesque, Instrument Sans | Data |

@@ -82,6 +82,12 @@ shrunk desktop is the wrong shape.
     own bloom. The web app states the same ban under DSi pixel and lights in
     `docs/DESIGN_STYLE.md`. The rest of that file still does not apply here.
 
+    **DotGothic16 is a favorite face here too.** _Last mapped: 2026-11-02._
+    Habit names and detail lines on the phone Habits page use it, and Allie
+    really likes it. Use it first when a phone screen wants a face with
+    character: `var(--face-dotgothic)`, weight 400, `font-synthesis: none`.
+    The system font stays for controls and body copy.
+
 12. **The typing keyboard is keycaps.** _Last mapped: 2026-10-29._
     On the phone shell, typing uses the in-app deck (`components/Mobile/keyboard/`),
     not the system keyboard. Letter keys are the pale silver keycap. Shift,

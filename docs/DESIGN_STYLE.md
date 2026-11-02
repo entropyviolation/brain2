@@ -409,6 +409,27 @@ complete. `prefers-reduced-motion` cuts to the end state. A looping sticker
 on a white card is not this family. A rare dissolve, melt, or flock on a real
 verb is.
 
+### Type faces
+
+_Last mapped: 2026-11-02_
+
+**DotGothic16 is a favorite house face.** Allie really likes it. Reach for it
+first when a screen wants a pixel face with character, in the web app, the
+Electron app, and the phone. It is the face of the habit names and detail
+lines on the phone Habits page, and of the BIM console chat history
+(`--bim-mono`). It reads well at 13–16px.
+
+- Load: `app/layout.tsx` puts `--font-dotgothic` on `<html>` (from
+  `lib/fonts/dash-segment-faces.ts`), so every screen has it.
+- Use: `font-family: var(--face-dotgothic)`. The stack is in `app/win95.css`
+  and falls back to `w95fa`.
+- One weight, 400. Set `font-synthesis: none`. No bold, no light outline (see
+  [DSi pixel and lights](#dsi-pixel-and-lights)).
+
+The other faces stay. Karla is the body and tile copy. `w95fa` is the chrome
+pixel face. Silkscreen is legends and − +. DotGothic16 joins them; it does not
+replace any of them.
+
 ### DSi pixel and lights
 
 _Last mapped: 2026-10-29_
