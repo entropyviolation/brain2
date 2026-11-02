@@ -63,6 +63,7 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "metrics", label: "Metrics" },
       { id: "correlation", label: "Correlation" },
       { id: "spectrum", label: "Spectrum" },
+      { id: "summary", label: "Summary" },
       { id: "research-report", label: "Produce research report" },
     ],
   },
@@ -190,6 +191,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Pairwise Pearson matrix. Click a cell for the scatter and sentence. Not a chart builder.",
   spectrum:
     "Lag-1 / lag-7 autocorrelation of daily habit % and of sleep duration, a naive DFT periodogram of habit %, and coefficient of variation of sleep. Classical only — not a forecast.",
+  summary:
+    "The period summary. Pick This week, This month, or This season (or step back with Prev) to see that period's written summary, its days or weeks, the playlist with your notes, photos, events, places, activity, company, palette, and symbols. A custom range shows the plates with no written summary. Past summaries lists every period with something written; click one to open it. Add the playlist, palette, and symbols in the end-of-period ritual's summary step.",
   "research-report":
     "A rundown of this window, chosen from the live vault. A section is included only when a shape clears its floor: a habit day at least 25 points from the window median (n ≥ 5), a current streak of 3 or more fully met habit days, tracking coverage at least 25 points from the median of painted days (n ≥ 5), a sleep night at least 90 minutes from the median (n ≥ 5), one wellbeing series that rose or fell once n clears 7, a week grade at least 8 points from its raw grade, planned minutes and tracked minutes both present, a text-pipeline stamp beside the other rows, the longest gratitude list, or a why / blocked-reason note (a repeat, or a plain count). A thin sample keeps the studio floor sentence and is not captioned as a trend. Counts only — no sentiment score.",
   "texts-report":

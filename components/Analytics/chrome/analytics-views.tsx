@@ -37,6 +37,7 @@ export const ANALYTICS_VIEWS: Record<AnalyticsTab, LazyExoticComponent<Component
   metrics: view(() => import("../meta/MetricsTrends").then((m) => ({ default: m.MetricsTrends }))),
   correlation: view(() => import("../meta/CorrelationExplorer").then((m) => ({ default: m.CorrelationExplorer }))),
   spectrum: view(() => import("../meta/SpectrumView").then((m) => ({ default: m.SpectrumView }))),
+  summary: view(() => import("../meta/PeriodSummaryView").then((m) => ({ default: m.PeriodSummaryView }))),
   "research-report": view(() => import("../meta/ResearchReportView").then((m) => ({ default: m.ResearchReportView }))),
   "context-switch": view(() => import("../time/ContextSwitchHeatmap").then((m) => ({ default: m.ContextSwitchHeatmap }))),
   "text-events": view(() => import("../time/TextPipelineView").then((m) => ({ default: m.TextEventsView }))),

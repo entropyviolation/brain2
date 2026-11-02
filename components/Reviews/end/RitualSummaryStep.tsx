@@ -10,8 +10,13 @@
  */
 "use client"
 
+import { useMemo } from "react"
 import { format } from "date-fns"
 import { summaryProse, useDayNote } from "@/lib/day-notes-persist"
+import { periodWindowForRitual, windowDateKeys, type SummaryPeriodWindow } from "@/lib/period-summary"
+import { usePeriodSummary } from "@/lib/period-summary-store"
+import { PeriodSummaryPlates } from "@/components/PeriodSummary/period-summary-plates"
+import { PeriodSummaryFields } from "@/components/PeriodSummary/period-summary-fields"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
   MonthSummaryNest,
@@ -22,6 +27,21 @@ import {
 } from "@/components/Home/Tracking/day-summary/tracking-summaries"
 import type { ReviewPeriod } from "@/lib/types"
 import "@/components/Home/Tracking/tracking-chrome.css"
+
+/** Week and longer: the read plates, then the playlist, palette, symbols, and cover fields. */
+function RitualPeriodExtras({ window }: { window: SummaryPeriodWindow }) {
+  const record = usePeriodSummary(window.key)
+  const dateKeys = useMemo(() => windowDateKeys(window), [window])
+  return (
+    <div className="rv-period-extras">
+      <p className="mr-lede">
+        {window.label}: what else the period held. The same plates show on Data → Summary.
+      </p>
+      <PeriodSummaryPlates dateKeys={dateKeys} record={record} window={window} />
+      <PeriodSummaryFields window={window} dateKeys={dateKeys} />
+    </div>
+  )
+}
 
 const LEDE: Record<ReviewPeriod, string> = {
   day: "What actually happened today. This is the same Day summary as on Tracking.",
@@ -50,6 +70,7 @@ export function RitualSummaryStep({
   const shared = summaryProse(useDayNote(summaryKey))
   const setDayNotes = useTimeTrackingStore((s) => s.setDayNotes)
   const showLegacy = !!legacy.trim() && !shared.trim()
+  const window = useMemo(() => periodWindowForRitual(period, anchor), [period, anchor])
 
   return (
     <section className="space-y-2">
@@ -89,6 +110,7 @@ export function RitualSummaryStep({
           <YearSummaryNest year={anchor.getFullYear()} />
         )}
       </div>
+      {window && period !== "day" ? <RitualPeriodExtras window={window} /> : null}
     </section>
   )
 }
