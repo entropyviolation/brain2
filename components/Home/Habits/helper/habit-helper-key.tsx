@@ -27,7 +27,7 @@ export function HabitsBimbyKey() {
 
   return (
     <>
-      <button type="button" className="habit-chrome-btn hh-key" data-ui-name="Habits BIMBY" aria-label="Open the Habits BIMBY chat" title="Habits BIMBY: tell it what you did or didn't do" onClick={() => setOpen(true)}>
+      <button type="button" className="habit-chrome-btn hh-key" data-no95="" data-ui-name="Habits BIMBY" aria-label="Open the Habits BIMBY chat" title="Habits BIMBY: tell it what you did or didn't do" onClick={() => setOpen(true)}>
         Chat
       </button>
       {Dialog ? <Dialog open={open} onOpenChange={setOpen} /> : null}

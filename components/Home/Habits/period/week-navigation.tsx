@@ -1,11 +1,12 @@
 /**
  * components/Home/Habits/period/week-navigation.tsx — Habit week picker
  *
- * Previous / next period, Today / This month, and the date-range nameplate.
- * On the desktop header the keys are silver keycaps (`habit-chrome.css`); the
- * plate stays the engraved nameplate. Today parks (hidden, its slot kept) when
- * the view already holds today, so the plate never moves. Double-clicking the plate opens a date picker when
- * `onPick` is set.
+ * ‹, the date-range nameplate, ›, then Today / This month — the house order
+ * (`TrackingPeriodNav`, `PlanPeriodNav`). The keys are silver keycaps
+ * (`habit-chrome.css`) and carry `data-no95`, so the global Win95 button skin
+ * in `app/win95.css` cannot repaint them. Today parks (hidden, its slot kept)
+ * when the view already holds today, so the plate never moves. Double-clicking
+ * the plate opens a date picker when `onPick` is set.
  *
  * Spec: §9.3 (display & interaction).
  */
@@ -50,20 +51,9 @@ export function WeekNavigation({
   const picker = usePeriodPicker(pickValue ?? currentWeekStart, onPick)
   return (
     <div className="habit-week-nav">
-      <button type="button" className="habit-chrome-btn" onClick={onPreviousWeek}>
+      <button type="button" className="habit-chrome-btn" data-no95="" onClick={onPreviousWeek}>
         <ChevronLeft className="h-3 w-3" />
         <span className="sr-only">{previousAriaLabel}</span>
-      </button>
-
-      <button
-        type="button"
-        className={`habit-chrome-btn habit-week-nav-today${isCurrentPeriod ? " is-parked" : ""}`}
-        aria-hidden={isCurrentPeriod || undefined}
-        tabIndex={isCurrentPeriod ? -1 : undefined}
-        onClick={onCurrentWeek}
-      >
-        <Calendar className="h-3 w-3" />
-        {currentButtonLabel}
       </button>
 
       <span
@@ -75,9 +65,21 @@ export function WeekNavigation({
         {picker.input}
       </span>
 
-      <button type="button" className="habit-chrome-btn" onClick={onNextWeek}>
+      <button type="button" className="habit-chrome-btn" data-no95="" onClick={onNextWeek}>
         <ChevronRight className="h-3 w-3" />
         <span className="sr-only">{nextAriaLabel}</span>
+      </button>
+
+      <button
+        type="button"
+        data-no95=""
+        className={`habit-chrome-btn habit-week-nav-today${isCurrentPeriod ? " is-parked" : ""}`}
+        aria-hidden={isCurrentPeriod || undefined}
+        tabIndex={isCurrentPeriod ? -1 : undefined}
+        onClick={onCurrentWeek}
+      >
+        <Calendar className="h-3 w-3" />
+        {currentButtonLabel}
       </button>
     </div>
   )
