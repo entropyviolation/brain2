@@ -5,6 +5,8 @@
 
 .hab-phone {
   --hab-phone-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  /* The BIM console chat history face (`--bim-mono` in components/Bim/bim-ink.css). */
+  --hab-phone-chat: var(--font-dotgothic), "DotGothic16", "w95fa", ui-monospace, monospace;
   min-height: 100%;
   background: #f2f2f7;
   color: #1c1c1e;
@@ -293,11 +295,15 @@
   min-width: 8.5rem;
 }
 
+/* Names and details use the BIM chat history face. Pixel type stays at its
+   one weight, with no synthesis (MOBILE_STYLE rule 11). */
 .hab-phone .habit-name-title {
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  font-family: var(--hab-phone-chat);
+  font-size: 16px;
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.35;
+  letter-spacing: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -511,7 +517,14 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
 
 .hab-phone-detail {
   margin-top: 4px;
+  font-family: var(--hab-phone-chat);
   font-size: 13px;
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.hab-phone-detail :is(.habit-detail-amount, .habit-detail-source) {
+  font: inherit;
 }
 
 .hab-phone-pct,
@@ -573,16 +586,22 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* The tube sits on the dark CRT a latched key uses, so the bar stands out. */
 .hab-phone-day-tube {
   display: flex;
   align-items: center;
-  width: 100%;
+  width: calc(100% - 24px);
   box-sizing: border-box;
   min-height: 64px;
-  margin: 0;
-  padding: 12px 16px 8px;
+  margin: 10px 12px 0;
+  padding: 8px 12px;
   border: 0;
-  background: transparent;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.12), transparent 60%), #070c0a;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 8px 12px rgba(0, 0, 0, 0.45);
   color: inherit;
   font: inherit;
 }
@@ -684,7 +703,7 @@ body.win95-app .hab-phone .hab-lamp[data-fill="true"]:active {
   max-width: 3.6em;
   font-size: 17px;
   font-weight: 650;
-  color: #1c1c1e;
+  color: #7dffc4;
   opacity: 1;
 }
 
@@ -1061,4 +1080,297 @@ body.win95-app .hab-phone [role="tab"].hab-phone-key::before {
   border-radius: 10px;
   font-size: 16px;
   line-height: 1.35;
+}
+
+/* ---- Week sheet: the phone week grid ----
+   Full screen width: the Home frame centers the page, so the grid bleeds
+   past it to 8px gutters (the day list keeps the frame). Squares are at least
+   28px and the hit area is 44px tall. A square is the dark CRT; progress
+   lights it by `--wk-lit` (0 to 1). Rest (exempt, paused) is the exempt hatch. */
+/* Home's habit body and its tab panel clip x (`home-chrome.css`); unclip them only while this
+   grid is mounted. The desktop page never holds `.hab-phone-wk`. */
+.hab-body:has(.hab-phone-wk),
+.hab-body > :has(.hab-phone-wk),
+body.win95-app .home-body:has(.hab-phone-wk),
+body.win95-app .home-pane:has(.hab-phone-wk),
+.hab-phone:has(.hab-phone-wk) {
+  overflow-x: visible;
+}
+
+/* The page scrolls the grid; a nested scroller would clip the bleed. */
+.hab-phone-columns:has(.hab-phone-wk) {
+  overflow: visible;
+}
+
+.hab-phone-wk {
+  margin: 0 calc(50% - 50vw + 8px);
+  padding-bottom: 8px;
+}
+
+/* The bleed sits over the Home plate, so the title gets the page's backing. */
+.hab-phone-wk .hab-phone-kind {
+  display: inline-block;
+  margin: 14px 0 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(242, 242, 247, 0.94);
+}
+
+.hab-phone-wk-grid {
+  display: grid;
+  grid-template-columns: minmax(64px, 1fr) repeat(var(--wk-cols), minmax(28px, 34px));
+  column-gap: 2px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.hab-phone-wk-head,
+.hab-phone-wk-row {
+  display: contents;
+}
+
+.hab-phone-wk-grid.is-stacked {
+  grid-template-columns: repeat(var(--wk-cols), minmax(28px, 1fr));
+}
+
+.hab-phone-wk-grid.is-stacked .hab-phone-wk-corner {
+  display: none;
+}
+
+.hab-phone-wk-grid.is-stacked .hab-phone-wk-name {
+  grid-column: 1 / -1;
+  padding-top: 6px;
+}
+
+.hab-phone-wk-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 2px 0 4px;
+  font-family: var(--hab-phone-chat);
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.15;
+  color: #6d6d72;
+}
+
+.hab-phone-wk-kicker {
+  font-size: 10px;
+}
+
+.hab-phone-wk-num {
+  font-size: 12px;
+  color: #1c1c1e;
+}
+
+.hab-phone-wk-col.is-current .hab-phone-wk-num {
+  color: #0a7a4a;
+}
+
+.hab-phone-wk-name {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-right: 4px;
+  overflow: hidden;
+  font-family: var(--hab-phone-chat);
+  font-size: 14px;
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hab-phone-wk-gridcell {
+  display: flex;
+  min-width: 0;
+}
+
+.hab-phone .hab-phone-wk-cell,
+body.win95-app .hab-phone button.hab-phone-wk-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hab-phone-wk-square {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 32px;
+  aspect-ratio: 1;
+  min-width: 28px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0b1210;
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.hab-phone-wk-square::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 35%, #c8ffe6, #7dffc4 45%, #2fbf86);
+  opacity: var(--wk-lit, 0);
+}
+
+.hab-phone-wk-cell.is-current .hab-phone-wk-square {
+  box-shadow: 0 0 0 2px #0a7a4a, inset 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.hab-phone-wk-cell.is-rest .hab-phone-wk-square {
+  background: repeating-linear-gradient(-45deg, #c8c8c8, #c8c8c8 2px, #aeaeae 2px, #aeaeae 4px);
+  background-color: #bdbdbd;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+  opacity: 0.8;
+}
+
+.hab-phone-wk-cell.is-rest .hab-phone-wk-square::after {
+  opacity: 0;
+}
+
+/* Missed opportunity: dark, with the rose rule the missed-op wand uses. */
+.hab-phone-wk-cell.is-missed .hab-phone-wk-square::after {
+  opacity: 1;
+  background: linear-gradient(
+    135deg,
+    transparent calc(50% - 1.5px),
+    #e0607e calc(50% - 1.5px),
+    #e0607e calc(50% + 1.5px),
+    transparent calc(50% + 1.5px)
+  );
+}
+
+.hab-phone-wk-cell:active .hab-phone-wk-square {
+  transform: scale(0.92);
+}
+
+/* Cell sheet: the value and the cell's history. */
+.hab-phone-cell-sheet {
+  max-height: min(70dvh, 100%);
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+}
+
+.hab-phone-cell-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hab-phone-cell-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-family: var(--hab-phone-chat);
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.hab-phone-cell-title strong {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.hab-phone-cell-title span {
+  font-size: 13px;
+  color: #6d6d72;
+}
+
+.hab-phone-cell-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+  font-family: var(--hab-phone-chat);
+  font-size: 16px;
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.hab-phone-cell-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hab-phone-cell-num {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.hab-phone-cell-num input {
+  width: 5em;
+  min-height: 44px;
+  text-align: right;
+}
+
+.hab-phone-cell-value .habit-cell-text-preview {
+  flex: 1 1 auto;
+  min-height: 44px;
+  text-align: left;
+}
+
+.hab-phone-cell-none {
+  margin: 0 4px;
+  font-size: 14px;
+  color: #6d6d72;
+}
+
+.hab-phone-cell-history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.hab-phone-cell-history li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 12px;
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.16);
+  font-family: var(--hab-phone-chat);
+  font-size: 13px;
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.hab-phone-cell-history li:last-child {
+  border-bottom: 0;
+}
+
+.hab-phone-cell-when,
+.hab-phone-cell-source {
+  color: #6d6d72;
+}
+
+.hab-phone-cell-source {
+  text-align: right;
+}
+
+.hab-phone-cell-note {
+  grid-column: 1 / -1;
+  color: #3a3a3c;
 }

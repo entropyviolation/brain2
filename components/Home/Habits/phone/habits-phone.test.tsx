@@ -77,7 +77,7 @@ describe("Habits phone", () => {
     expect(settings.querySelector("img")).toHaveAttribute("src", "/ui/settings-gear.png")
     expect(screen.getByRole("button", { name: "New habit" })).toHaveClass("hab-phone-key")
     expect(screen.getByRole("tab", { name: /Daily \(1\)/ })).toHaveClass("hab-phone-key")
-    expect(screen.getByRole("button", { name: "Previous Week" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Previous day" })).toBeInTheDocument()
     expect(screen.getByText("Daily habit")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Daily habit span" })).not.toBeInTheDocument()
     expect(screen.getByTestId("habits-phone-day-tube")).toBeInTheDocument()
@@ -107,7 +107,9 @@ describe("Habits phone", () => {
 
     await user.click(screen.getByRole("button", { name: "Close tools" }))
     await user.click(screen.getByRole("button", { name: "Week" }))
-    expect(document.querySelector(".habit-grid")).toBeTruthy()
+    expect(screen.getByTestId("habits-phone-week")).toBeInTheDocument()
+    expect(document.querySelector(".habit-grid")).toBeNull()
+    expect(screen.getByRole("button", { name: "Previous Week" })).toBeInTheDocument()
     expect(screen.queryByTestId("habits-phone-list")).not.toBeInTheDocument()
     expect(screen.queryByTestId("habits-phone-day-tube")).not.toBeInTheDocument()
 

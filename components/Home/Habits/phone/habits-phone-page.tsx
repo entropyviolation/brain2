@@ -1086,6 +1086,7 @@ export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Da
         viewingCurrentPeriod={viewingCurrentPeriod}
         weekWindowRange={weekWindowRange}
         monthWindowAsOf={monthWindowAsOf}
+        weekWindowAsOf={weekWindowAsOf}
         weekDates={weekDates}
         weekPeriods={weekPeriods}
         monthPeriods={monthPeriods}
