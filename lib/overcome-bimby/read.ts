@@ -25,7 +25,7 @@ export const READ_SCHEMA: Record<string, unknown> = {
 
 export const READ_SYSTEM = `You read one message from a person who is avoiding a task.
 task: the thing to do, short, starts with a verb. resistance: how the avoidance feels, in their words.
-barrier: dread (it feels bad or scary), boring, overwhelm (too big), vague (unclear first step), perfectionism, or unknown.
+barrier: dread (it feels bad or scary), boring, overwhelm (too big), vague (unclear first step), perfectionism, choices (too many options to decide between), cost (worried about money or price), or unknown.
 overdueDays: days late if said ("a week ago" = 7), else 0.
 motivation: reasons they gave for wanting it done, quoted. consequences: what happens if it stays undone, quoted or plainly stated.
 Quote only what they said. Empty lists when nothing was said. Never invent a reason.`
@@ -60,7 +60,9 @@ export function cleanReading(out: unknown): Reading | null {
 const BARRIER_WORDS: [Barrier, RegExp][] = [
   ["perfectionism", /\b(perfect|not good enough|good enough)\b/i],
   ["overwhelm", /\b(overwhelm\w*|too (much|big)|so much)\b/i],
-  ["vague", /\b(don'?t know where|where to start|not sure how|unclear)\b/i],
+  ["vague", /\b(don'?t know where|where to start|not sure how|unclear|stuck)\b/i],
+  ["choices", /\b(too many (options|choices)|can'?t (decide|choose)|which one|so many options|decision)\b/i],
+  ["cost", /\b(expensive|budget|afford|too much money|price|cost)\b/i],
   ["boring", /\b(boring|tedious|dull)\b/i],
   ["dread", /\b(resist\w*|dread\w*|avoid\w*|hate|scared|anxious|can'?t make myself)\b/i],
 ]
@@ -75,7 +77,7 @@ export function overdueIn(text: string): number {
 /** No model: the task is what follows "finish/do/start", the barrier is the first matching word. */
 export function readByRules(text: string): Reading {
   const t = text.trim().replace(/\s+/g, " ")
-  const verb = /\b(?:finish|do|start|write|send|make|clean|call|submit|file)\b\s+(?:the\s+|those\s+|my\s+)?([^.,;]+?)(?=\s+(?:but|and|because|,)|[.,;]|$)/i.exec(t)
+  const verb = /\b(?:finish|do|start|write|send|make|clean|call|submit|file|book|pay|buy|schedule|fix|plan|email|apply|cancel|renew|pack|sort|organi[sz]e|reply)\b\s+(?:the\s+|those\s+|my\s+|a\s+)?([^.,;]+?)(?=\s+(?:but|and|because|,)|[.,;]|$)/i.exec(t)
   const resist = /[^.,;]*\bresist\w*[^.,;]*/i.exec(t)
   const hit = BARRIER_WORDS.find(([, re]) => re.test(t))
   return {

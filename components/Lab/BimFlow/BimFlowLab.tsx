@@ -219,6 +219,14 @@ export function BimFlowLab() {
     return () => void (had && document.body.classList.add("win95-app"))
   }, [])
 
+  // `/lab/bim-flow?flow=<id>` opens that flow's node view (the Overcome popup uses it).
+  useEffect(() => {
+    if (!loaded) return
+    const want = new URLSearchParams(window.location.search).get("flow")
+    if (want && FLOWS.some((f) => f.id === want)) pickFlow(want)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
+
   useEffect(() => {
     if (!loaded) return
     for (const [id, f] of Object.entries(flows)) save(graphKey(id), JSON.stringify(f))

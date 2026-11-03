@@ -2,7 +2,7 @@
  * lib/overcome-bimby/types.ts — Shapes for the Overcome executive dysfunction pipeline
  */
 
-export type Barrier = "dread" | "boring" | "overwhelm" | "vague" | "perfectionism" | "unknown"
+export type Barrier = "dread" | "boring" | "overwhelm" | "vague" | "perfectionism" | "choices" | "cost" | "unknown"
 
 /** What the READ stage heard in one message. Everything is the person's own words where it can be. */
 export interface Reading {
@@ -18,7 +18,7 @@ export interface Reading {
   consequences: string[]
 }
 
-export type TacticKind = "friction" | "dopamine" | "scaffold" | "block" | "reframe" | "consequence" | "reward"
+export type TacticKind = "friction" | "dopamine" | "scaffold" | "block" | "reframe" | "consequence" | "reward" | "decide" | "prep" | "message" | "restart"
 
 export interface Tactic {
   id: string
@@ -41,6 +41,10 @@ export interface ResistanceEntry {
   reading: Reading
   /** Tactics offered, best first. */
   offered: string[]
+  /** The tactic put in the push only to test it. */
+  experiment?: string
+  /** Where it was said. Default `lab`. */
+  source?: "lab" | "chat"
   /** The tactic the person says they tried, and how it went. */
   tried?: { tacticId: string; outcome: Outcome; at: string }
 }

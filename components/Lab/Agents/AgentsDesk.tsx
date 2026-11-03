@@ -10,11 +10,14 @@
 import { useMemo, useState } from "react"
 import { listBlueprints } from "@/lib/agents/registry"
 import { MindGlyph, MIND_LABEL } from "./AgentRail"
+import { OVERCOME_ID } from "@/lib/agents/adapters/overcome-bimby"
+import { OvercomeBimbyPopup } from "../OvercomeBimby/OvercomeBimbyPopup"
 import { agentLabHref } from "./agent-href"
 import "./agents-desk.css"
 
 export function AgentsDesk() {
   const agents = useMemo(() => listBlueprints(), [])
+  const [overcomeOpen, setOvercomeOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(agents[0]?.id ?? null)
   const active = agents.find((a) => a.id === activeId) ?? null
   const href = active ? (agentLabHref(active) ?? "/lab/bim-flow") : null
@@ -70,8 +73,13 @@ export function AgentsDesk() {
             </ul>
           ) : null}
           <div className="ad-actions">
+            {active.id === OVERCOME_ID ? (
+              <button type="button" data-no95 className="ad-key is-primary" onClick={() => setOvercomeOpen(true)} data-testid="agents-open-popup">
+                Open popup
+              </button>
+            ) : null}
             {href ? (
-              <a className="ad-key is-primary" href={href} data-testid="agents-open-lab">
+              <a className={`ad-key${active.id === OVERCOME_ID ? "" : " is-primary"}`} href={href} data-testid="agents-open-lab">
                 Open lab
               </a>
             ) : null}
@@ -81,6 +89,7 @@ export function AgentsDesk() {
           </div>
         </article>
       ) : null}
+      {overcomeOpen ? <OvercomeBimbyPopup onClose={() => setOvercomeOpen(false)} /> : null}
     </section>
   )
 }

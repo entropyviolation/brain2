@@ -14,6 +14,7 @@ import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { collectMissReasonCorpus, MISS_SOURCE_LABEL } from "@/lib/miss-reason-corpus"
 import type { OperationReview } from "@/lib/reviews-store"
 import type { PeriodReview, Task, WeeklyData, WeeklyTask } from "@/lib/types"
+import type { ResistanceEntry } from "@/lib/overcome-bimby/types"
 import type { Dataset, DatasetRow, VaultHistory } from "./vault-search"
 
 export interface DatasetInput {
@@ -26,6 +27,8 @@ export interface DatasetInput {
   reviews: PeriodReview[]
   operationReviews: OperationReview[]
   history?: VaultHistory
+  /** The Overcome BIMBY's resistance log, if the caller has it. */
+  overcomeLog?: ResistanceEntry[]
   now: Date
 }
 
@@ -116,6 +119,17 @@ export function buildDatasets(input: DatasetInput): Record<string, Dataset> {
     label: "Tasks that keep getting pushed",
     blurb: "Tasks placed on the schedule more than once, with the reasons given for each push.",
     rows: pushed,
+  }
+
+  out["overcome-log"] = {
+    id: "overcome-log",
+    label: "Overcome BIMBY resistance log",
+    blurb: "What the person said they could not start, the barrier heard, and which tactic they tried and how it went.",
+    rows: (input.overcomeLog ?? []).map((r) => ({
+      date: dateKeyOf(r.at) ?? "",
+      source: `${r.reading.barrier}${r.tried ? ` · ${r.tried.tacticId} ${r.tried.outcome}` : ""}`,
+      text: clip(`${r.reading.task} — ${r.said}`),
+    })),
   }
 
   out["thoughts"] = {

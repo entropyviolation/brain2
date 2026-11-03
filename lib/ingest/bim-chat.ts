@@ -27,7 +27,8 @@ import {
   rememberFact,
   type Fact,
 } from "./bim-facts"
-import { runSwitchboard, useBimLlmMode, type SwitchboardResult } from "./bim-switchboard"
+import { tryResistance, tryResistanceOutcome, tryResistanceWhy, type ResistanceReply } from "./bim-resistance"
+import { routable, runSwitchboard, useBimLlmMode, type SwitchboardResult } from "./bim-switchboard"
 import { parseTell } from "./bim-tell"
 import { ingestIncomingAsync } from "./executor"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
@@ -58,6 +59,8 @@ export type BimLine = {
   route?: string
   /** LLM mode: counted facts and the evidence rows the answer used. */
   evidence?: string[]
+  /** A tag the line carries, such as `resistance` when the Overcome lane took it. */
+  tag?: "resistance"
 }
 
 type InlineButton = { text: string; callback_data: string }
@@ -305,6 +308,10 @@ function answerLine(board: SwitchboardResult, question: string): BimLine {
   }
 }
 
+function resistanceLine(r: ResistanceReply, tag = false): BimLine {
+  return { id: lineId(), at: new Date().toISOString(), who: "bim", text: r.text, status: "ok", route: r.route, ...(r.choices.length ? { choices: r.choices } : {}), ...(tag ? { tag: "resistance" as const } : {}) }
+}
+
 /** The Ask lane ran and failed: say so plainly instead of handing the question to the ladder. */
 function failedLine(board: SwitchboardResult): BimLine {
   return askLine(`I tried to look that up in your data, but the model run failed (${board.failed}). Ask again in a minute.`, {
@@ -351,7 +358,13 @@ export async function sendToBim(
     if (fact) return fact
     const told = tryTell(text, now)
     if (told) return told
+    const outcome = tryResistanceOutcome(text) ?? (await tryResistanceWhy(text, !!opts.llm, now))
+    if (outcome) return resistanceLine(outcome)
     const heldBefore = !!useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID)
+    if (!heldBefore && routable(text, false, now)) {
+      const resisting = await tryResistance(text, !!opts.llm, now)
+      if (resisting) return resistanceLine(resisting, true)
+    }
     let board = opts.llm ? await runSwitchboard(text, now, BIM_CHAT_SOURCE, opts.lastBim) : null
     if (board?.answer && !board.passThrough) return answerLine(board, text)
     if (board?.failed && !board.passThrough) return failedLine(board)

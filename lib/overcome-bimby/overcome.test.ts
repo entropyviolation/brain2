@@ -17,6 +17,10 @@ describe("read", () => {
     expect(r.resistance).toMatch(/resistance/)
     expect(r.overdueDays).toBe(7)
   })
+  it("reads a short stuck line", () => {
+    const r = readByRules("need to book flights but im stuck")
+    expect(r.task).toBe("book flights")
+  })
   it("counts days", () => expect(overdueIn("3 days late")).toBe(3))
   it("cleanReading drops a reading with no task and fixes a bad barrier", () => {
     expect(cleanReading({ task: " " })).toBeNull()

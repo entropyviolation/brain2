@@ -15,6 +15,8 @@ _Last mapped: 2026-11-01_ **Agent rail.** A strip under the header lists every a
 
 _Last mapped: 2026-11-02_ **Bench chrome.** Node kinds live in one **+ Node** menu (`node-palette.tsx`, grouped Decide / Find / Read / Say / Write, hover for what each does) instead of eighteen header keys, so the graph gets the room. Keys: Delete cuts the selected wire or node (the start message stays), Esc lets go, ⌘/Ctrl+Enter runs. **Reset graph** replaces the old Starter graph label. The run wells took a smaller share of the height (`32vh`).
 
+_Last mapped: 2026-11-03_ **Deep link.** `/lab/bim-flow?flow=<flow id>` opens that flow on load. The Overcome popup uses it (`flow=overcome`).
+
 ## What it is for
 
 A message like "making garlic confit now" at 1:30 and "garlic done" at 2:00

@@ -22,6 +22,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { OperationReview } from "@/lib/reviews-store"
 import type { PeriodReview, Task, WeeklyData, WeeklyTask } from "@/lib/types"
+import { useOvercomeStore } from "@/lib/overcome-bimby/store"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { skipListIdsFor, type HistoryEntry, type VaultHistory, type VaultSnapshot } from "./vault-search"
 
@@ -168,6 +169,7 @@ export function snapshotFromStores(includeSecrets: boolean = secretsShown("chat"
       reviews: reviewState.reviews,
       operationReviews: reviewState.operationReviews,
       history,
+      overcomeLog: useOvercomeStore.getState().log,
       now: new Date(),
     }),
   }
@@ -231,6 +233,7 @@ export function snapshotFromPersistItems(items: Record<string, string>, now = ne
         reviews: (reviewStore?.reviews ?? []) as PeriodReview[],
         operationReviews: (reviewStore?.operationReviews ?? []) as OperationReview[],
         history,
+        overcomeLog: useOvercomeStore.getState().log,
         now,
       }),
     },

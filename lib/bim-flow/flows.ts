@@ -8,9 +8,10 @@
 
 import { defaultFlow } from "./default-flow"
 import { askCalcFlow, askFlow, grammarFirstFlow, dayFlow, textsDayFlow, morningRitualFlow, nightRitualFlow, phoneCaptureFlow, reasonFlow, routedLogFlow, timeGridNoteFlow, topicFlow } from "./task-flows"
+import { overcomeFlow } from "@/lib/overcome-bimby/flow"
 import type { Flow } from "./types"
 
-export type FlowId = "log" | "log-routed" | "log-grammar" | "log-phone" | "log-grid" | "ask" | "ask-calc" | "topic" | "day" | "texts-day" | "reason" | "ritual-night" | "ritual-morning"
+export type FlowId = "log" | "log-routed" | "log-grammar" | "log-phone" | "log-grid" | "ask" | "ask-calc" | "topic" | "day" | "texts-day" | "reason" | "ritual-night" | "ritual-morning" | "overcome"
 export type InputKind = "messages" | "question" | "day"
 
 export interface FlowDef {
@@ -33,6 +34,7 @@ export const FLOWS: FlowDef[] = [
   { id: "reason", name: "Ritual: why-blocked reason", blurb: "A reason typed beside a task, compared with earlier reasons and the push history for that task.", input: "question", build: reasonFlow },
   { id: "ritual-night", name: "Ritual: night answer", blurb: "What was written at night, routed by what it is (worry, plan, judgment) to the earlier answers that matter.", input: "question", build: nightRitualFlow },
   { id: "ritual-morning", name: "Ritual: morning plan", blurb: "Morning intentions compared with earlier plans.", input: "question", build: morningRitualFlow },
+  { id: "overcome", name: "Overcome executive dysfunction", blurb: "I have to do this and cannot start: read the barrier, find what worked before, push one tiny first step. The Overcome BIMBY, as nodes.", input: "question", build: overcomeFlow },
   { id: "texts-day", name: "Texts: what was I doing", blurb: "One day of phone texts, with counts of when I was sending, read for what I was probably doing. Texts older than two weeks are never read.", input: "day", build: textsDayFlow },
   { id: "day", name: "Recap a day", blurb: "The whole day as one input, turned into a recap.", input: "day", build: dayFlow },
 ]

@@ -9,6 +9,8 @@
 import { useState } from "react"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
+import { OVERCOME_FLOW_HREF } from "@/lib/overcome-bimby/flow"
+import { tacticScoreboard } from "@/lib/overcome-bimby/experiment"
 import { overcome, type OvercomeResult } from "@/lib/overcome-bimby/run"
 import { useOvercomeStore } from "@/lib/overcome-bimby/store"
 import { tacticById } from "@/lib/overcome-bimby/tactics"
@@ -22,6 +24,7 @@ export function OvercomeBimbyPanel() {
   const [result, setResult] = useState<OvercomeResult | null>(null)
   const log = useOvercomeStore((s) => s.log)
   const mark = useOvercomeStore((s) => s.mark)
+  const board = tacticScoreboard(log)
   const entry = result ? log.find((e) => e.id === result.entryId) : undefined
 
   async function send() {
@@ -29,7 +32,7 @@ export function OvercomeBimbyPanel() {
     setBusy(true)
     try {
       const crew = rulesOnly ? null : await chatCrew().catch(() => null)
-      setResult(await overcome({ text, call: crew ? ollamaCall(crew.main) : null, extract: crew?.extract ?? [], prose: crew?.prose ?? [] }))
+      setResult(await overcome({ explore: true, text, call: crew ? ollamaCall(crew.main) : null, extract: crew?.extract ?? [], prose: crew?.prose ?? [] }))
       setText("")
     } finally {
       setBusy(false)
@@ -38,9 +41,10 @@ export function OvercomeBimbyPanel() {
 
   return (
     <div className="space-y-4 p-4" data-ui-name="Overcome BIMBY" data-ui-docs="lib/overcome-bimby/README.md">
-      <header>
+      <header className="pr-14">
         <h1 className="text-lg font-semibold">OVERCOME EXECUTIVE DYSFUNCTION</h1>
         <p className="text-sm opacity-70">Say what you cannot start. It logs the resistance, then pushes.</p>
+        <a className="text-sm underline" href={OVERCOME_FLOW_HREF} data-testid="overcome-node-view">Open node view in the BIM flow lab: critique and keep</a>
       </header>
       <div className="flex flex-col gap-2">
         <textarea
@@ -72,6 +76,16 @@ export function OvercomeBimbyPanel() {
                   </span>
                 )}
               </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {board.length ? (
+        <section aria-label="Tactic tests">
+          <h2 className="text-sm font-semibold">Tactic tests</h2>
+          <ul className="mt-1 space-y-1 text-sm">
+            {board.map((r) => (
+              <li key={r.id} className="opacity-80">{r.name} · offered {r.offered} · started {r.started} · stuck {r.stuck}{r.rate === null ? " · untested" : ` · ${Math.round(r.rate * 100)}%`}</li>
             ))}
           </ul>
         </section>

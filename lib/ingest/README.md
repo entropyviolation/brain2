@@ -152,3 +152,5 @@ Tests: `*.test.ts` next to the modules they cover.
 ## Ladder guards
 
 _Last mapped: 2026-11-01_ Chosen from the Oct 14 – Nov 1 Telegram feed (516 messages: 43% plain log lines, 31% Instagram links, 13% `Name:` captures). The ladder is the exact-match layer in front of the LLM switchboard and Telegram's only brain, so it stays small. A short single line that starts with a question word and ends in `?` is not logged (`looksLikeQuestion`); it gets a reply that says why. A lone `x` with no grocery line open logs. `ingestIncomingAsync` waits up to 5 s for an undo/restore to settle (`isRestoring`) before writing; the stores drop a write made during a restore, which is why some long `tp:` lines replied "Could not save". `hi` stays a habits alias. **Planned:** log how often plain text falls through, to choose the next rung from data.
+
+_Last mapped: 2026-11-03_ **Overcome lane.** `bim-resistance.ts` runs inside `sendToBim` after the tell/fact steps and before the LLM router. It detects "I can't start" in code, runs the Overcome BIMBY, tags the line `resistance`, and tests one new tactic per push. Details: `lib/overcome-bimby/README.md`. Files: `bim-resistance.ts`.

@@ -16,7 +16,7 @@ const MAX_ENTRIES = 500
 
 interface OvercomeState {
   log: ResistanceEntry[]
-  add: (said: string, reading: Reading, offered: string[], now?: Date) => string
+  add: (said: string, reading: Reading, offered: string[], now?: Date, extra?: Pick<ResistanceEntry, "experiment" | "source">) => string
   mark: (id: string, tacticId: string, outcome: Outcome, now?: Date) => void
 }
 
@@ -24,9 +24,9 @@ export const useOvercomeStore = create<OvercomeState>()(
   persist(
     (set) => ({
       log: [],
-      add: (said, reading, offered, now = new Date()) => {
+      add: (said, reading, offered, now = new Date(), extra = {}) => {
         const id = `rs-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
-        set((s) => ({ log: [...s.log, { id, at: now.toISOString(), said, reading, offered }].slice(-MAX_ENTRIES) }))
+        set((s) => ({ log: [...s.log, { id, at: now.toISOString(), said, reading, offered, ...extra }].slice(-MAX_ENTRIES) }))
         return id
       },
       mark: (id, tacticId, outcome, now = new Date()) =>

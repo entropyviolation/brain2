@@ -39,12 +39,14 @@ export function pickTactics(reading: Reading, history: History, log: ResistanceE
   const worked = (id: string) => log.filter((e) => e.tried?.tacticId === id && e.tried.outcome === "started").length
   const failedHere = (id: string) => history.before.filter((e) => e.tried?.tacticId === id && e.tried.outcome === "stuck").length
   const overdue = reading.overdueDays > 0
-  const scored = TACTICS.map((t) => {
+  const scored = TACTICS.filter((t) => t.kind !== "restart").map((t) => {
     let s = 0
     if (!t.helps.length) s += 1
     else if (t.helps.includes(reading.barrier)) s += 3
     s += worked(t.id) * 2 - failedHere(t.id) * 3
     if (t.kind === "friction") s += 1
+    if (t.kind === "decide" || t.kind === "prep") s += 1
+    if (t.kind === "message") s += overdue ? 1 : -2
     if (t.kind === "consequence") s += history.consequences.length || overdue ? 2 : -2
     if (t.kind === "reframe" && history.motivation.length) s += 1
     if (t.kind === "reward") s -= 1
