@@ -82,7 +82,10 @@ export function TransitionsView() {
         </div>
         <label className="an-studio-field">
           <span>Scope</span>
-          <NativeSelect value={scope.id} aria-label="Tracking scope" onChange={(e) => setScopeId(e.target.value)}>
+          <NativeSelect value={scope.id} aria-label="Tracking scope" onChange={(e) => {
+              setScopeId(e.target.value)
+              setPicked(null)
+            }}>
             {scopes.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -148,7 +151,7 @@ export function TransitionsView() {
               className="an-matrix"
               style={{ gridTemplateColumns: `repeat(${pens.length + 1}, minmax(44px, 1fr))` }}
               role="table"
-              aria-label="Pen transition probabilities"
+              aria-label={show === "p" ? "Pen transition probabilities" : "Pen switch counts"}
             >
               <span className="an-matrix-cell is-label" title="From \ to">
                 from\to
@@ -314,11 +317,21 @@ function Row({
             role={cell ? "button" : undefined}
             tabIndex={cell ? 0 : undefined}
             onClick={cell ? () => onPick(from.id, to.id) : undefined}
-            onKeyDown={cell ? (e) => (e.key === "Enter" || e.key === " ") && onPick(from.id, to.id) : undefined}
+            onKeyDown={
+              cell
+                ? (e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return
+                    e.preventDefault()
+                    onPick(from.id, to.id)
+                  }
+                : undefined
+            }
             title={
               cell
                 ? `${from.name} → ${to.name}: ${cell.count} switches · P=${p.toFixed(2)}`
-                : `${from.name} → ${to.name}: none`
+                : found
+                  ? `${from.name} → ${to.name}: ${found.count} switches, hidden by Min ${minCount}×`
+                  : `${from.name} → ${to.name}: none`
             }
             style={{ background: fill }}
           >

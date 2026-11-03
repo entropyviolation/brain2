@@ -107,12 +107,17 @@ export function TextEventsView() {
   const discreteCount = events.length - switchCount
   const shown = events.filter((e) => matches(e, q, pens.get(e.penId)?.name))
   const groups = useMemo(() => {
-    const map = new Map<string, TimeEntry[]>()
+    // Key on pen id so two pens that share a name stay separate rows.
+    const map = new Map<string, { name: string; rows: TimeEntry[] }>()
     for (const e of shown) {
-      const key = isSwitchInstant(e) ? "switch" : pens.get(e.penId)?.name ?? entryTitle(e)
-      map.set(key, [...(map.get(key) ?? []), e])
+      const switching = isSwitchInstant(e)
+      const key = switching ? "switch" : e.penId ? `pen:${e.penId}` : `title:${entryTitle(e)}`
+      const name = switching ? "switch" : pens.get(e.penId)?.name ?? entryTitle(e)
+      const group = map.get(key) ?? { name, rows: [] }
+      group.rows.push(e)
+      map.set(key, group)
     }
-    return [...map.entries()].sort((a, b) => b[1].length - a[1].length)
+    return [...map.entries()].sort((a, b) => b[1].rows.length - a[1].rows.length)
   }, [shown, pens])
   const busiestDay = [...byDay].sort((a, b) => b.count - a.count)[0]
 
@@ -163,8 +168,8 @@ export function TextEventsView() {
             />
             <SearchBox value={query} onChange={setQuery} label="Filter text events" />
             <div className="tf-units">
-              {groups.map(([name, rows]) => (
-                <Fragment key={name}>
+              {groups.map(([key, { name, rows }]) => (
+                <Fragment key={key}>
                   <span className="tf-name" title={name}>
                     {name} <span className="an-n">{rows.length}</span>
                   </span>

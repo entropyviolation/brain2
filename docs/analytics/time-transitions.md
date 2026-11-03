@@ -1,6 +1,6 @@
 # Time → Transitions
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/time/TransitionsView.tsx`. Math: `signal-stats.ts` (`penTransitionMatrix`) and `time-flow-stats.ts` (`penFlows`, `penDaySequences`, `returnLoops`). Styles: `time-flow.css`. Tests: `time-flow-stats.test.ts`, `time-flow-views.test.tsx`.
 

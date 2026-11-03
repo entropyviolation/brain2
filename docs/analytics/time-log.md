@@ -1,6 +1,6 @@
 # Time → Log
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/time/LogEventsView.tsx`. Math: `log-event-stats.ts` (by day, by kind, clock scatter, phase strip) and `time-flow-stats.ts` (`kindRhythms`, `circularClock`). Classification: `components/Home/Tracking/tracking-log-model.ts` (`classifyLogInstant`). Styles: `time-flow.css`.
 
@@ -13,7 +13,7 @@ File: `components/Analytics/time/LogEventsView.tsx`. Math: `log-event-stats.ts` 
 ## Plates
 
 1. **Kind filter.** Typed filter now matches part of the kind (`food` finds `intake.food`). It used to need the exact string.
-2. **Kind chips.** The top 10 kinds with counts. Click to filter, click again to clear.
+2. **Kind chips.** The top 10 kinds with counts. Click to filter by that exact kind, click again to clear. Typed text still matches as a substring.
 3. **Readouts.** Events, exact, estimated, unknown clocks.
 4. **Bars by day.**
 5. **Every event, one square.** Unit grid by kind, oldest first. Solid = exact, hatched = estimated, hollow = unknown. This replaces the plain kind list.
@@ -23,7 +23,8 @@ File: `components/Analytics/time/LogEventsView.tsx`. Math: `log-event-stats.ts` 
 
 ## Math
 
-- Typical time = circular mean of known clock minutes. 23:50 and 0:10 average to midnight, not noon.
+- Typical time = circular mean of known clock minutes. 23:50 and 0:10 average to midnight, not noon. It shows "—" when r < 0.3, because spread-out times have no typical one.
+- "Every" = median gap in elapsed local time, so a DST night counts 23 or 25 hours.
 - Regularity = mean resultant length r (0–1). 1 = always the same time. Shown only with two or more known clocks.
 - Gap = median time between one event of a kind and the next, over known clocks only.
 

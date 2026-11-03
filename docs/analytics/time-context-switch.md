@@ -1,6 +1,6 @@
 # Time → Context switch
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/time/ContextSwitchHeatmap.tsx`. Math: `lib/metrics.ts` (`contextSwitchSeries`, `trend`), `hour-day.ts` (`switchCountsByHour`), `time-flow-stats.ts` (`hourlyRate`, `wakingRate`, `weekdayMeans`). Styles: `time-flow.css`.
 
@@ -26,8 +26,8 @@ File: `components/Analytics/time/ContextSwitchHeatmap.tsx`. Math: `lib/metrics.t
 
 ## Math
 
-- Rate(h) = switches in hour h ÷ days with any switch.
-- Per waking hour = Σ switches in waking hours ÷ active days ÷ waking hours. The window may wrap past midnight.
+- Rate(h) = switches in hour h ÷ days with a span-to-span switch (`spanSwitchDays`). Instants are left out of both, so the numerator and denominator match.
+- Per waking hour = Σ switches in waking hours ÷ active days ÷ waking hours. The window may wrap past midnight. Wake equal to sleep means all 24 hours.
 
 ## Research notes
 

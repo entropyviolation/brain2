@@ -166,6 +166,38 @@ function dayIndex(key: string): number {
   return Math.round(Date.UTC(y, m - 1, d) / 86400000)
 }
 
+/** Wall-clock minute as elapsed local minutes, so a DST night counts 23 or 25 hours. */
+function localMinuteStamp(key: string, startMin: number): number {
+  const [y, m, d] = key.split("-").map(Number)
+  return new Date(y, m - 1, d, 0, startMin).getTime() / 60000
+}
+
+function isDayKey(key: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return false
+  const [y, m, d] = key.split("-").map(Number)
+  const t = new Date(Date.UTC(y, m - 1, d))
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d
+}
+
+/**
+ * Days with at least one span-to-span pen switch, the same switches
+ * `switchCountsByHour` counts. Use it as the denominator for hourly rates.
+ */
+export function spanSwitchDays(entries: readonly TimeEntry[], dateKeys: readonly string[], scopeId: string): number {
+  const keySet = new Set(dateKeys)
+  const byDay = new Map<string, TimeEntry[]>()
+  for (const e of entries) {
+    if (e.scopeId !== scopeId || !keySet.has(e.date) || e.kind === "instant") continue
+    byDay.set(e.date, [...(byDay.get(e.date) ?? []), e])
+  }
+  let days = 0
+  for (const list of byDay.values()) {
+    const s = [...list].sort((a, b) => a.startMin - b.startMin)
+    if (s.some((e, i) => i > 0 && e.penId !== s[i - 1].penId)) days++
+  }
+  return days
+}
+
 export type KindRhythm = {
   kind: string
   count: number
@@ -183,7 +215,7 @@ export function kindRhythms(points: readonly ClockPoint[]): KindRhythm[] {
   return [...byKind.entries()]
     .map(([kind, rows]) => {
       const known = rows.filter((r) => r.clockCertainty !== "unknown")
-      const stamps = known.map((r) => dayIndex(r.date) * 1440 + r.startMin).sort((a, b) => a - b)
+      const stamps = known.map((r) => localMinuteStamp(r.date, r.startMin)).sort((a, b) => a - b)
       const gaps = stamps.slice(1).map((t, i) => (t - stamps[i]) / 60)
       return {
         kind,
@@ -238,7 +270,7 @@ export function operationNeglect(
   const today = dayIndex(todayKey)
   return ops
     .map((op) => {
-      const logs = (op.timeLogs ?? []).filter((l) => /^\d{4}-\d{2}-\d{2}/.test(l.date))
+      const logs = (op.timeLogs ?? []).filter((l) => isDayKey(l.date.slice(0, 10)) && l.date.slice(0, 10) <= todayKey)
       const last = logs.map((l) => l.date.slice(0, 10)).sort().pop() ?? null
       const windowMin = logs
         .filter((l) => keySet.has(l.date.slice(0, 10)))

@@ -19,7 +19,7 @@ import { useAnalyticsRange } from "../chrome/analytics-range-store"
 import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
 import { CanvasTitle, DensityCalendar, StudioBars, StudioReadout, StudioSelect } from "../studio/studio-kit"
 import { hourLabel, switchCountsByHour } from "../hour-day"
-import { hourlyRate, wakingRate, weekdayMeans } from "./time-flow-stats"
+import { hourlyRate, spanSwitchDays, wakingRate, weekdayMeans } from "./time-flow-stats"
 import "./time-flow.css"
 
 const LEGEND = [0, 1, 3, 5, 8]
@@ -88,6 +88,7 @@ export function ContextSwitchHeatmap() {
     () => (scope ? switchCountsByHour(entries, dateKeys, scope.id) : Array(24).fill(0)),
     [scope, entries, dateKeys],
   )
+  const hourDays = useMemo(() => (scope ? spanSwitchDays(entries, dateKeys, scope.id) : 0), [scope, entries, dateKeys])
   const hourRows = hourCounts.map((value, hour) => ({ name: hourLabel(hour), value }))
   const [wake, setWake] = useState(8)
   const [sleep, setSleep] = useState(24)
@@ -105,9 +106,9 @@ export function ContextSwitchHeatmap() {
     return { max, avg, activeDays: counts.length, direction: t.direction, busiest, quiet }
   }, [switchByDate, dateKeys])
 
-  const rates = hourlyRate(hourCounts, stats.activeDays)
+  const rates = hourlyRate(hourCounts, hourDays)
   const worstHour = rates.indexOf(Math.max(...rates))
-  const waking = wakingRate(hourCounts, stats.activeDays, wake, sleep % 24)
+  const waking = wakingRate(hourCounts, hourDays, wake, sleep % 24)
   const weekdays = useMemo(() => weekdayMeans(switchByDate, dateKeys), [switchByDate, dateKeys])
 
   const empty = stats.activeDays === 0
@@ -241,7 +242,7 @@ function RateClock({ rates, wake, sleep, worst }: { rates: number[]; wake: numbe
     const a = (hour / 24) * 2 * Math.PI - Math.PI / 2
     return [c + r * Math.cos(a), c + r * Math.sin(a)]
   }
-  const awake = (h: number) => (wake <= sleep ? h >= wake && h < sleep : h >= wake || h < sleep)
+  const awake = (h: number) => (wake < sleep ? h >= wake && h < sleep : wake === sleep || h >= wake || h < sleep)
   return (
     <svg className="tf-svg" viewBox="0 0 220 220" role="img" aria-label="Switches per hour, 24-hour clock">
       <circle className="tf-rule" cx={c} cy={c} r={r1} />

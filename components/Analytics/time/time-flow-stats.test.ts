@@ -6,6 +6,7 @@ import {
   operationNeglect,
   penFlows,
   returnLoops,
+  spanSwitchDays,
   switchDays,
   wakingRate,
   weekdayMeans,
@@ -27,8 +28,26 @@ describe("time-flow-stats", () => {
 
   it("switchDays lists days for one from → to pair", () => {
     const e = (id: string, date: string, penId: string, s: number) => ({ id, date, scopeId: "s", penId, startMin: s, endMin: s + 30 })
-    const entries = [e("1", "2026-10-01", "a", 0), e("2", "2026-10-01", "b", 30), e("3", "2026-10-01", "a", 60), e("4", "2026-10-01", "b", 90), e("5", "2026-10-02", "b", 0), e("6", "2026-10-02", "a", 30)]
-    expect(switchDays(entries, ["2026-10-01", "2026-10-02"], "s", "a", "b")).toEqual([{ date: "2026-10-01", count: 2 }])
+    const entries = [e("1", "2026-10-01", "a", 0), e("2", "2026-10-01", "b", 30), e("3", "2026-10-01", "a", 60), e("4", "2026-10-01", "b", 90), e("5", "2026-10-02", "b", 0), e("6", "2026-10-02", "a", 30), e("7", "2026-10-02", "b", 60)]
+    expect(switchDays(entries, ["2026-10-01", "2026-10-02"], "s", "a", "b")).toEqual([
+      { date: "2026-10-02", count: 1 },
+      { date: "2026-10-01", count: 2 },
+    ])
+  })
+
+  it("spanSwitchDays skips instants and same-pen days", () => {
+    const e = (id: string, date: string, penId: string, s: number, kind?: "instant") => ({ id, date, scopeId: "s", penId, startMin: s, endMin: s + 30, kind })
+    const entries = [e("1", "2026-10-01", "a", 0), e("2", "2026-10-01", "b", 30), e("3", "2026-10-02", "a", 0), e("4", "2026-10-02", "b", 30, "instant"), e("5", "2026-10-03", "a", 0), e("6", "2026-10-03", "a", 60)]
+    expect(spanSwitchDays(entries, ["2026-10-01", "2026-10-02", "2026-10-03"], "s")).toBe(1)
+  })
+
+  it("operationNeglect ignores future and impossible dates", () => {
+    const [row] = operationNeglect(
+      [{ id: "x", timeLogs: [{ date: "2026-10-20", durationMinutes: 5 }, { date: "2026-10-30", durationMinutes: 5 }, { date: "2026-02-31", durationMinutes: 5 }] }],
+      new Set(["2026-10-20"]),
+      "2026-10-25",
+    )
+    expect(row).toMatchObject({ lastDate: "2026-10-20", daysSince: 5, windowMin: 5 })
   })
 
   it("returnLoops counts A→B→A per day", () => {

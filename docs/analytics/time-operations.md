@@ -1,6 +1,6 @@
 # Time → Operations
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/time/OperationsAnalytics.tsx`. Math: `lib/operations.ts` (`buildHeatmap`, `neglectedDays`), `operation-debrief.ts`, `time-flow-stats.ts` (`operationNeglect`, `debriefPoints`). Styles: `time-flow.css`.
 
@@ -14,7 +14,7 @@ File: `components/Analytics/time/OperationsAnalytics.tsx`. Math: `lib/operations
 2. **Stage mosaic.**
 3. **Category mosaic.** Each category now has its own color. They were all one teal.
 4. **Work by day.** Heat cells, plus a line: days in the window with no logged work.
-5. **Longest untouched.** New. Each operation ranked by days since its last time log. Never logged sits on top. Bar color = stage. Right column = minutes logged in the window. Stage chips and a search box filter it. Scrolls inside 320px.
+5. **Longest untouched.** New. Each operation ranked by days since its last time log. Never logged sits on top. Bar color = stage. Right column = minutes logged in the window. Logs dated after today, or on a day that does not exist, are ignored. Stage chips and a search box filter it. Scrolls inside 320px.
 6. **After-action debrief.** Readouts as before, then:
    - **Morale × execution.** New quadrant. One bubble per report with both scores. Bubble area = stored hours. Corners: Smooth run, Grind, Fun mess, Rough. The cross sits at 5.5.
    - **Written debriefs.** Now a fold. Open by default when there are two or fewer.

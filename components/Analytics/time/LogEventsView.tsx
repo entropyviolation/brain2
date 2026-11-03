@@ -40,6 +40,9 @@ function gapLabel(hours: number | null): string {
   return `${(hours / 24).toFixed(1)}d`
 }
 
+/** Below this mean resultant length the clock times are too spread for one "typical" time. */
+const TYPICAL_MIN_R = 0.3
+
 function dayLabel(key: string): string {
   const d = parseLocalDate(key)
   if (!d) return key
@@ -87,6 +90,7 @@ export function LogEventsView() {
   const { dateKeys, keySet, label } = useAnalyticsRange()
   const { marksByDate } = useLogCycleMarks()
   const [kindFilter, setKindFilter] = useState("")
+  const [kindExact, setKindExact] = useState(false)
 
   const penName = useMemo(() => {
     const map = new Map<string, string>()
@@ -110,7 +114,7 @@ export function LogEventsView() {
   }, [entries, keySet, penName])
 
   const filter = kindFilter.trim().toLowerCase()
-  const shown = filter ? classified.filter((row) => row.kindKey.toLowerCase().includes(filter)) : classified
+  const shown = filter ? classified.filter((row) => (kindExact ? row.kindKey.toLowerCase() === filter : row.kindKey.toLowerCase().includes(filter))) : classified
   const allKinds = useMemo(() => countLogEventsByKind(classified), [classified])
   const colorOfKind = (kind: string) => {
     const i = allKinds.findIndex((k) => k.kind === kind)
@@ -132,8 +136,7 @@ export function LogEventsView() {
   const scatter = logClockScatter(points)
   const scatterRows = [...scatter.points]
     .sort((x, y) => x.date.localeCompare(y.date))
-    .map((pt) => ({ ...pt, day: dayLabel(pt.date) }))
-  const rhythms = kindRhythms(points)
+      const rhythms = kindRhythms(points)
   const ordered = [...shown].sort((a, b) => a.date.localeCompare(b.date) || a.startMin - b.startMin)
   const certainty = {
     exact: points.filter((p) => !p.clockCertainty || p.clockCertainty === "exact").length,
@@ -162,7 +165,10 @@ export function LogEventsView() {
           aria-label="Kind"
           value={kindFilter}
           placeholder="intake.food, left room"
-          onChange={(event) => setKindFilter(event.target.value)}
+          onChange={(event) => {
+            setKindFilter(event.target.value)
+            setKindExact(false)
+          }}
         />
       </label>
       {allKinds.length > 1 ? (
@@ -173,7 +179,11 @@ export function LogEventsView() {
               type="button"
               className="an-chip"
               aria-pressed={filter === k.kind.toLowerCase()}
-              onClick={() => setKindFilter(filter === k.kind.toLowerCase() ? "" : k.kind)}
+              onClick={() => {
+                const off = kindExact && filter === k.kind.toLowerCase()
+                setKindFilter(off ? "" : k.kind)
+                setKindExact(!off)
+              }}
             >
               {k.kind} · {k.count}
             </button>
@@ -255,7 +265,7 @@ export function LogEventsView() {
                     <tr key={r.kind}>
                       <td>{r.kind}</td>
                       <td>{r.count}</td>
-                      <td>{r.clock ? minutesToLabel(r.clock.meanMin) : "—"}</td>
+                      <td>{r.clock && r.clock.r >= TYPICAL_MIN_R ? minutesToLabel(r.clock.meanMin) : "—"}</td>
                       <td title={r.clock ? `r = ${r.clock.r.toFixed(2)}` : ""}>
                         {r.clock && r.count - r.unknown > 1 ? `${Math.round(r.clock.r * 100)}%` : "—"}
                       </td>
@@ -272,7 +282,7 @@ export function LogEventsView() {
               <ResponsiveContainer width="100%" height={180}>
                 <ScatterChart>
                   <CartesianGrid stroke={STUDIO_GRID} />
-                  <XAxis dataKey="day" type="category" allowDuplicatedCategory={false} fontSize={11} stroke={STUDIO_AXIS} minTickGap={12} />
+                  <XAxis dataKey="date" type="category" allowDuplicatedCategory={false} tickFormatter={(v: string) => dayLabel(v)} fontSize={11} stroke={STUDIO_AXIS} minTickGap={12} />
                   <YAxis
                     dataKey="minute"
                     type="number"
@@ -286,6 +296,7 @@ export function LogEventsView() {
                     contentStyle={STUDIO_TOOLTIP}
                     formatter={(value, name) => {
                       if (name === "minute" && typeof value === "number") return [minutesToLabel(value), "Time"]
+                      if (name === "date" && typeof value === "string") return [value, "Day"]
                       return [value, name]
                     }}
                   />

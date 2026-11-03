@@ -1,6 +1,6 @@
 # Time → Text events and Text spans
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/time/TextPipelineView.tsx` (`TextEventsView`, `TextSpansView`). Math: `time-flow-stats.ts` (`spanStats`). Styles: `time-flow.css`.
 
