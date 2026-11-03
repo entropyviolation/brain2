@@ -1,6 +1,6 @@
 # `components/BabyGame/` — the Baby animal game UI
 
-_Last mapped: 2026-11-02 (seventh pass: back views; north star added; generation log; homes and the bigger map)_
+_Last mapped: 2026-11-03 (the slime mold spreads over the map: `slimeart.ts`; one pixel size: `pixelsnap.ts`, 320×200 view, no Scale2x)_
 
 **North star.** The painters here (`art.ts`, `propart.ts`, `trees.ts`, `sprites.ts` via `lib/baby-game/`) are hand-made today. The goal is a game that draws anything: a weak model writes a small spec (parts, named palette ramps, one verb) and a spec painter draws it. Hand-made props become the examples that spec grammar is tested against. Plan: `docs/BABY_GAME_REDESIGN.md`, section _Where this is going_. We are emulating Sprite Fusion's toolset (tilemap editor with auto-tiling, props and sprite generators, animator, Pixel Snapper); the same section lists each tool against what is built here.
 
@@ -11,7 +11,8 @@ BabyGame.tsx    dialog + canvas loop + keys + the glue between the engine and th
 trees.ts        big trees (oak, pine, birch, blossom) painted once each; zone picks the mix
 art.ts          hand-painted scenery: the Gaudí cottage (outside), plants, campfire, crops, rain, everyday props
 propart.ts      the props drawn from what the player loves and dreads (orb, prism, microscope, wasps, ...)
-homeart.ts      friends' homes, one painter per kind (nest, burrow, den, hollow, lodge, hutch, stall, igloo); a window lit while they are home after dark
+homeart.ts      the 1× fallback painters for friends' homes (nest, burrow, den, hollow, lodge, hutch, stall, igloo)
+houseart note   see `homeart-hi.ts` and `housegen.ts` below: the homes drawn in the game
 Casa.tsx        walking about inside the cottage (Hall, Noble Floor, Loft and the three rooms off them): its own canvas and loop
 casa-paint.ts   paints the first three rooms and every frame (`drawCasa`), and draws the furniture sprites; named apart from `Casa.tsx` because macOS paths ignore case
 casa-kit.ts     the painter's kit shared by the room painters: pixels, plaster, wood, parquet, glass discs, arches, stairs, palettes
@@ -23,6 +24,8 @@ map.tsx         the M map (the built extent only, `EXTENT_W` × `EXTENT_H`): til
 render.ts       paints the 304×192 view: cached map, live water, farm plots, nodes, stations, friends, player and butterflies by their feet, light, rain, meteors, fog, moons
 panels.tsx      Talk, Bag, Workbench, Swap Stump, Notice Board (with the festival entry), Lamp, Plot (till / plant / water / harvest), the four mini game plates (`minigames.tsx`), Journal (story, friends, skills, Starlog, diary), Menu, StoryCard, TimingGame
 pixel-skin.css  the game's menu look (storybook pixel)
+village.tsx     a friend's home (shelf, mind, day, talks, memory) and Village life; `village.css` is its look
+village.css     the `bv-*` classes of `village.tsx` and the `.bg-plate.is-full` window, keys and fields; loaded after `pixel-skin.css`
 devpanel.tsx    Development mode: the ` plate (Teleport, Time, Story & quests, Items, Friends, Economy, Powers), the DEV readout, the always-on quick bar (`DevQuickBar`), the debug overlay
 designpanel.tsx Character design: every view of every friend, a status and a note for the redesign (Journal, Friends tab, **Design** key); links to the generation log
 pixel.tsx       PixelSprite (32×32 species) and ItemIcon (8×8 shapes) as small canvases
@@ -30,12 +33,18 @@ shake.ts        screen shake and hit-stop in whole pixels (`Shake`)
 dither.ts       one 4×4 Bayer grain: `ditherRect` for fades and fog, `Veil` for the night with pools of light cut out
 juice.ts        step dust and hands-on bursts (till, water, harvest, gather, hearts), time based, whole pixels
 ambient.ts      the living ground: swaying grass and flowers that lean away from walkers, water glints, cloud shadows, falling leaves
+housegen.ts     one generic house builder (`HouseSpec`: body, material, roof, door, window, palette ramps, extras); `specFor(kind, id)` customises it per friend; `buildHouse` is pure
+homeart-hi.ts   caches each friend's house from `housegen.ts` on the 96 grid, pooled by `pixelsnap.ts`, and stamps it
+sceneryart.ts   paints the WFC dressing (`drawScenery`), the living water (`paintWater`) and the Sine Hop cascade (`drawFalls`)
+slimeart.ts     paints the slime mold's body (`drawSlime`): cached 32×32 patches per (cell, mass level, joined sides) with a lavender film and pink veins, live pulses streaming out from the hearts, spores, a bright tangle at each heart; `slimeLights` lets thick patches glow through the night veil. Rules and memory are in `lib/baby-game/slime.ts`
+flora.ts        paints the ground's drawn plants (snapped ComfyUI sprites from `lib/baby-game/flora-sprites.ts`) in bands so the tops sway; `floraOn` picks the kind per tile
 lab pages      `/lab/baby-fx` (effects, `components/Lab/BabyFx/`) and `/lab/baby-world` (the whole map at 1:1 with every station, prop, node, friend spot and home labelled; a review aid, `app/lab/baby-world/page.tsx`) , `/lab/baby-casa` (the three cottage floors whole, `app/lab/baby-casa/page.tsx`) and `/lab/baby-play` (the game opened straight, to walk the cottage; `app/lab/baby-play/page.tsx`)
 Casa.tsx        the inside of the cottage as a game mode: its own canvas and loop, arrows/WASD, Shift, E, Esc out
 casa-paint.ts   paints the three floors of the cottage once each, plus columns, plants, bed, lamp, the furniture sprites from `lib/baby-game/casa-furniture.ts`, and the night light (`floorCanvas`, `drawCasa`, `furnitureCanvas`)
 casa-kit.ts     the shared painter's kit (moved out of `casa-paint.ts` so `casa-rooms.ts` can use it)
 casa-rooms.ts   `paintLounge`, `paintGlasshouse`, `paintBoudoir`: walls, windows, floors and built-ins of the three rooms off the first floors
-hires.ts        the 2× pass: the 304×192 frame is painted as before, then Scale2x (EPX) smooths it onto a 608×384 canvas
+hires.ts        the frame canvas: two real pixels per game pixel (`DETAIL` 2, `HI` 1), shown as is; its `scale2x` is the EPX step `pixelsnap.ts` uses
+pixelsnap.ts    `snapTo` (pool a finer picture onto the grid, commonest colour per block), `epx2`, `onGrid`, `pooledLayer` (live fine painters)
 gens/           the generation log: ComfyUI outputs with recipes, likes, kinds, tags and notes (`/lab/baby-gens`, its own README)
 fx/             effect drafts for the redesign, played only in the lab `/lab/baby-fx` (not in the game yet)
 BabyGame.css    hull, HUD, plates, hearts, timing bar, phone pad
@@ -54,7 +63,7 @@ BabyGame.css    hull, HUD, plates, hearts, timing bar, phone pad
 
 ## Behavior that is easy to miss
 
-- **Two canvases.** `drawFrame` paints a hidden 304×192 canvas (`HiRes.low`); `HiRes.present` runs Scale2x and puts it on the 608×384 `.bg-canvas`. Diagonals and curves are smoother, dither is untouched. This is a filter, not new art: real extra detail still means redrawing the sprites and scenery on a larger grid (**Planned**, see `lib/baby-game/README.md`).
+- **One fine pixel grid.** `drawFrame` paints a 320×200 view at two real pixels per game pixel (`DETAIL` 2, a 640×400 canvas) and the page scales it up whole (`image-rendering: pixelated`). Nothing is smoothed or blended. Everything that stands is on that one grid: trees (painted at 3×, pooled by `pixelsnap.ts` `snapTo` to 2×), the 96px homes (kept at 96), animals (the 32 frame smoothed to 64 with EPX, then pooled to the animal's size), flora (EPX once), and the ground map (painted in game pixels, run through EPX once, `hiMapOf` in `render.ts`). Props, nodes and crops use their thirds-of-a-pixel painters (`proparthi.ts`, `nodeart-hi.ts`) through `pooledLayer`: painted to a scratch canvas, pooled to the grid, stamped, refreshed 8 times a second. Sprites sit on half-pixel steps (`onGrid`). Stations, gates, rain, dither and juice still paint in whole game pixels (2×2 blocks), as effects. **Why:** the 2026-11-03 detail passes had mixed pixel sizes in one frame. **Planned:** stations, gates and the cottage (`paintHouse`) drawn at the fine grid.
 
 - The canvas lives in state (`setCanvas`), not a ref: the dialog portals its children after the first render, so a ref is null when the loop effect first runs.
 - A slow frame is walked in 50ms steps (up to half a second), and the clock runs on real time, so a low frame rate does not slow the day.
@@ -105,7 +114,7 @@ _Last mapped: 2026-11-03 (furnished, with three more rooms)_
 
 ## Sixth pass: props that do things
 
-- **Props.** Twenty-nine hand-painted props stand in the world. Where is `PROPS` in `lib/baby-game/world.ts`; what each does is `lib/baby-game/props.ts` (read its README section). `drawProp` in `art.ts` paints the everyday ones (mailbox, well, scarecrow, beehive, rowboat, hay, ...) and hands the rest to `drawTasteProp` in `propart.ts`: a white orb light, puddle, prism, little library, thrift rack, collage desk, fireworks crate, daylight-saving clock, pendulum, ducklings, lawn sprinkler, microscope, fossil bed, romanesco, slime mold, wasp nest and kitten. Many move: the orb bobs and glows after dark, the puddle ripples harder in rain, the pendulum swings on a sine, bees and wasps circle.
+- **Props.** Twenty-nine hand-painted props stand in the world. Where is `PROPS` in `lib/baby-game/world.ts`; what each does is `lib/baby-game/props.ts` (read its README section). `drawProp` in `art.ts` paints the everyday ones (mailbox, well, scarecrow, beehive, rowboat, hay, ...) and hands the rest to `drawTasteProp` in `propart.ts`: a white orb light, puddle, prism, little library, thrift rack, collage desk, fireworks crate, daylight-saving clock, pendulum, ducklings, lawn sprinkler, microscope, fossil bed, romanesco, slime mold (its log; the creature itself is `slimeart.ts`), wasp nest and kitten. Many move: the orb bobs and glows after dark, the puddle ripples harder in rain, the pendulum swings on a sine, bees and wasps circle.
 - **Using one.** `E` beside a prop shows its verb in the prompt ("Check the mail", "Hold the prism to the light"), and shows "(done for now)" once a once-a-day use is spent. The collage desk opens the Workbench; the rowboat starts the fishing timing game.
 - **Drawing.** `render.ts` puts props in the y-sorted body list, so tall ones hide you from behind. Flat ones (blanket, puddle, ducklings, sprinkler, fossil, kitten) paint under everything and are walkable. Sprite Fusion's generator needs an account, so these were painted by hand.
 - **Names.** The twenty-four residents are named for people and characters you admire: Ada (Lovelace), Pilgrim (Vonnegut), Dobby, Daria, Mathilda, Euler, Bohm, Hofstadter, Pynchon, Conway, Hamilton (Morris), Johnston (Daniel), Reid (Spencer), Ernst (Max), Tegmark, Kaufman (Andy), Abagnale, Irwin (Steve), Thompson (Hunter S.), Lynch (David), Mugler, Gaultier, Wallace (David Foster), and Vonnegut. Ids are unchanged, so saves still load.
@@ -188,3 +197,55 @@ _2026-11-03 (2× detail):_ the village frame is now painted at `DETAIL` (2) real
 _2026-11-03 (zoom, 3×):_ the village view is now 240×152 game pixels (`VIEW_W` / `VIEW_H`, about 15×9.5 tiles), zoomed in from 304×192; the casa keeps 304×192 as `CASA_W` / `CASA_H`. `DETAIL` is 3, so the frame is 720×456 before Scale2x and 1440×912 after. Homes (`homeart-hi.ts`) snap their 96-grid rectangles to the frame density. Trees (`trees.ts`) paint at `Q` = 3 canvas pixels per game pixel, with scalloped rims, leaf grain and a thicker dark outline. Animals drawn smaller than the grid are built as 64 grids: the walk or idle frame is made at 32, then `upscaleGrid` (`lib/baby-game/upscale.ts`) smooths it, and `drawSprite` shrinks it with smoothing. The player and the pixie stay 32. **Planned:** ComfyUI snaps straight to 64 (needs walk and idle that scale with the grid), then props, nodes and terrain tiles at higher detail like the trees.
 
 _2026-11-03 (props):_ `proparthi.ts` paints the eleven everyday props (well, mailbox, firewood, signpost, birdbath, blanket, scarecrow, wheelbarrow, hay bale, beehive, rowboat) in thirds of a game pixel, live each frame so the mailbox flag, the bird and the bees move. `drawProp` in `art.ts` tries it first and falls back to the game-pixel painters when the context is not scaled to 3× or the kind is not listed. **Planned:** the taste props in `propart.ts` (orb, prism, library, thrift, clock and the rest), the gather nodes, crops and terrain tiles.
+
+## Village plates: full width, whole text
+
+_Last mapped: 2026-11-03._ The `bv-*` classes in `village.tsx` had no CSS and `.bg-plate.is-full` had no rule, so a home or Village life was a 520px column with unstyled parts. `village.css` fixes that: a full plate fills the overlay (up to 1120px), a home is the room (sticky shelf, window by time of day, friend and status) beside its pages, and the mind editor, day table, talks and memory use the pixel kit. Entries that may run past a line (beliefs, motivations, likes, goals, a day block's "Doing") use `GrowText`: one line at rest, the whole text while focused, Enter closes. Fields in these plates override the shell's Win95 inset. **Planned:** spine titles that read better on short books, and a lab page that mounts `HomePanel` without walking to a door.
+
+The mind editor also has **Rewrite the description from the mind** (`describeWithModel` in `lib/baby-game/chatter.ts`, reverse of `mindWithModel`). It reads the draft, unsaved edits included, writes the description box only, and waits for Save. With no model it builds plain sentences from the lists.
+
+**Read it all in one go** (book page, beside *Read a little now*): `homeActions.readAll` in `BabyGame.tsx` loops `runReading` until the book is finished, so every sitting is chunked and applied (memory, beliefs, goals, plans) as if the player kept pressing the key. *Stop after this sitting* ends it early; closing the book page also stops it. One summary toast at the end.
+
+## Flora: plants drawn from the likes (2026-11-03)
+
+_Last mapped: 2026-11-03_
+
+The two-pixel flower dots are gone. Every `T.FLOWER` tile, and about 7% of plain grass tiles, now grows a small plant drawn in ComfyUI: daisy, poppy, tulip, pom-pom, bluebell, clover, buttercup, lavender, fern, prayer-plant leaf, toadstool, moss, foxglove, lily pad, cattail, iris, glow mushroom, snowdrop, moth orchid, air plant, cactus, echeveria, dune grass, sprout, berry bush and a monstera sapling. `ambient.ts` `drawGrass` asks `flora.ts` `floraOn` for the kind; `lib/baby-game/flora.ts` holds the kinds each zone grows (so the dunes get cacti, the marsh glow mushrooms, the wood ferns). A plant leans on the gust and away from walkers. With no sprite for a kind it falls back to the old dots.
+
+How it gets better, round by round:
+
+1. `node scripts/baby-flora-queue.mjs` queues every kind (cute, round, plump, saturated; the prompt's `TASTE` line carries what the likes taught). `ROUND=2 SEEDS=4,8 node scripts/baby-flora-queue.mjs daisy poppy` queues a new round of chosen kinds as `flora-r2-<id>`.
+2. Like or nope them in `/lab/baby-gens`; say what is off in a note.
+3. `npx tsx scripts/baby-flora-snap.mts sheet.png` picks, per kind, the newest liked picture (else newest not noped; `lib/baby-game/flora.json` can name a file) and writes `lib/baby-game/flora-sprites.ts`, with a contact sheet to look at.
+4. `PINNED=1` snaps only the plants `flora.json` names, for while a round is still being drawn. Edit `TASTE` or a kind's words from the notes, and go to 1.
+
+The first round started from the liked `plantref-*` photographs (pom-poms, cream and red calathea, silver tufts, violet orchid, ferns, monstera). **Planned:** plants you can pick or that grow back (nodes still draw their own art in `art.ts`), crops and nodes redrawn from the same pictures, seasonal tints, and bigger flora for the 3× detail pass.
+
+_2026-11-03 (match pass):_ the grass shade is read per 4×4 cell with a Bayer nudge, so patches meet in stepped edges, not on tile lines. Flora colours are lifted toward the game's ramp and outlined in the game's ink (`flora.ts` `lift`); grass flora density went from 7% to 4%. The village view is 320×200 (`VIEW_W`, `VIEW_H`); the casa stays 304×192.
+
+## Shells and picked nodes (2026-11-03)
+
+`shell.ts` paints the snapped shell pictures (`lib/baby-game/shell-sprites.ts`) as gather nodes, and `ItemIcon` in `pixel.tsx` uses them for the `shell-<kind>` items. `render.ts` skips a node that is not `nodeReady` instead of drawing it dim. The gift panel (`panels.tsx`) offers "Give 100 gems" at 100 gems, which calls `giftGemHoard`.
+
+_Status:_ round 1 came out mostly as repeating patterns (SDXL at 512 tiles the plant), so only daisy, poppy, tulip and pom-pom are pinned in `flora.json` and snapped; the other kinds fall back to dots. The prompt now says "icon of exactly one", the negative rejects patterns and pots, and the canvas is 640. Round 2 (`flora-r2-*`, seeds 5 and 11, all kinds) is queued; when it lands, like the good ones, drop the pins you no longer want and run the snap without `PINNED`.
+
+## Best friends in the UI (2026-11-03)
+
+`BabyGame.tsx` `goSleep` calls `postLetters` after `sleep`, then lets `penLetter` rewrite each new note in the background (`applyLetterPatch` onto the current state). `sendChat` passes the player's line to `chat` so best friends learn from it. The Journal's Letters tab (`panels.tsx`) lists notes; unread ones stay folded until you check the mailbox. `ItemIcon` draws an invented item from `ItemDef.rows`.
+
+## Cool palette, generated houses, WFC scenery (2026-11-03)
+
+_Last mapped: 2026-11-03_
+
+Brief: more Starbound in colour and texture, less farm; Stardew-level detail; houses cuter and more house-like for any number of future animals; designed nature, not scatter; Wave Function Collapse where it helps.
+
+- **Houses (pods).** After the first pass the look moved to the reference pictures (a Futuro-style pearl pod, a cast-concrete sphere with rimmed portholes and a sweeping stair, stacked rounded modules with roof gardens, a chrome egg on a dish). Every kind is now a `pod` (squashed sphere, panel seams, one big round window with ladder rails, two small ones, a round door; materials `shell` (iridescent in the friend's tint) or `concrete` (pitted, streaked); extras `ivy` overgrowth, `stair`, `pedestal`) or a `stack` (2 to 4 offset octagon modules with ribbon windows and planters). The old cottage, tower, dome and bulb bodies and the scale roofs are still in `housegen.ts` for a friend whose spec asks for them. Species identity: burrow is half-buried and ivied, den has the stair, lodge and stall sit on a silver dish (the lodge over water), igloo is pearl with crystals, nest is a tall concrete egg, hutch and hollow are stacks.
+- **Houses.** `housegen.ts` replaced the eight hand-painted kind painters in `homeart-hi.ts`. A house is a `HouseSpec`. Bodies are `cottage`, `tower`, `dome` and `bulb`. Walls are plaster (with a trencadís mosaic band) or stone, ice, log, wicker, turf or bark. Roofs are gable, cone, onion or cap, shingled with overlapping dragon scales. Doors and windows come in three shapes each. Extras are chimney, vine, lantern, flowers, crystals, star, fins, reeds, water and spots. Every part goes through one painter (`part`): a mask, a light from the top left banded with a Bayer grain, and a contour in the part's own deepest tone, then one ink contour round the whole. `specFor(kind, id)` takes what the species keeps from the kind and the colours, shapes and extras from a hash of the friend's id, so a new animal gets a home that belongs without anyone painting one. `render.ts` passes the friend's id. Lit windows glow mint-white, not yellow. Look at it with `npx tsx scripts/baby-house-sheet.mts out.png [lit] [ids...]`. **Planned:** a `HouseSpec` written by the character generator, a second storey and porch parts, snow and season dressing, and giving the Gaudí cottage (`art.ts`) the same builder.
+- **WFC.** `lib/baby-game/wfc.ts` is the simple tiled model (see `lib/baby-game/README.md`). `lib/baby-game/scenery.ts` uses it to dress the built map in 16×16 chunks: bloom drifts, ferns, pebble beds, reeds on shores, lily pads on water, glowcaps in the dark wood, crystal sprouts on hills. Each cell's allowed tiles come from the ground and from water next to it; the pair rules make drifts. It never lands on a held, solid or path tile. `sceneryart.ts` paints it; reeds, ferns and blooms sway, glowcaps pulse. **Planned:** learn the rules from hand-made sample patches (`adjacencyFromSample` is ready), WFC for whole new zones and path layouts, a river (needs new water tiles and a pass over reachability).
+- **Water.** `paintWater` replaced the flat tile. Depth is a breadth-first distance to land, blended smoothly across tile edges and grained with Bayer into four bands (mint shallows to cobalt deep), cached per tile. Foam breathes at the shore, ripple crescents drift. The old reflection of the shore is much fainter, since it copied pale sand into the water as boxes.
+- **Sine Hop.** The `falls` station is now a mossy slate ledge with a sheet of water, running streaks, spray, rings and mist. It still stands on its old tile, in front of the Still Lodge, so the pond's map did not change.
+- **Colour.** The grass shades, blades and swaying grass lean teal, and `drawFrame` lays a faint blue soft-light grade over the world before the day's veil. Trees, props and animals keep their own colours for now. **Planned:** regrade trees and flora to the same ramps, and a Starbound-style glow pass after dark.
+
+## Reading controls (2026-11-03)
+
+In a friend's home, Shelf tab, a book shows: a reading style (an hour at a time, or all the way through until Stop), `Read it all in one go` / `Stop reading` (run by `BabyGame.tsx` `runReadAll`, so closing the screen does not stop it), the digest and idea chips, and per sitting the explanation, ideas, question, and an Edit button (`village.tsx` `SittingEditor`) that shows the whole passage and saves the player's version, optionally as a gold example. Gold examples list with a JSON copy at the bottom of the shelf. Menu holds the reading-model name.

@@ -15,21 +15,27 @@ import type { Sim } from "@/lib/baby-game/sim"
 import { center } from "@/lib/baby-game/sim"
 import { CROPS } from "@/lib/baby-game/farm"
 import { ZONES, zoneAt } from "@/lib/baby-game/world"
+import { drawShellNode } from "./shell"
+import { shellKindOf } from "@/lib/baby-game/items"
 import { drawCampfire, drawCrop, drawNodeArt, drawProp, drawRain, HOUSE_TILES, paintHouse } from "./art"
+import { drawSlime, slimeLights } from "./slimeart"
 import { drawCloudShadows, drawGlints, drawGrass, drawLeaf } from "./ambient"
 import { ditherRect, Veil, type Light } from "./dither"
 import type { Juice } from "./juice"
 import { drawSprout, treeArt, treeAt } from "./trees"
 import { stageOf } from "@/lib/baby-game/trees"
 import { upscaleGrid } from "@/lib/baby-game/upscale"
+import { epx2, onGrid, snapTo } from "./pixelsnap"
 import { drawHome } from "./homeart"
+import { drawFalls, drawScenery, paintWater } from "./sceneryart"
+import { buildScenery, type Scenery } from "@/lib/baby-game/scenery"
 import { drawHomeHi } from "./homeart-hi"
 import { HOMES, HOME_SCALE, homeDoor } from "@/lib/baby-game/homes"
 import { EXTENT_H, EXTENT_W, GATES, MAP_H, MAP_W, NODES, FLAT_PROPS, PLOTS, PROPS, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
 
-/** What the village shows: 240×152 game pixels, about 15×9.5 tiles. Zoomed in from the old 304×192, so everything is bigger. */
-export const VIEW_W = 240
-export const VIEW_H = 152
+/** What the village shows: 320×200 game pixels, 20×12.5 tiles. One game pixel is one real pixel of the frame (`DETAIL` 1); the page scales it up whole. */
+export const VIEW_W = 320
+export const VIEW_H = 200
 /** The casa keeps its own 304×192 view. */
 export const CASA_W = 304
 export const CASA_H = 192
@@ -81,22 +87,34 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
     case T.GRASS:
     case T.FLOWER: {
       {
+        // the shade is read per 4×4 cell from noise over the whole map, with a Bayer nudge, so patches meet in soft stepped
+        // edges instead of ending on a tile line
+        const shade = (n: number) => (n < 0.4 ? "#4fa88a" : n < 0.62 ? "#5db698" : "#70c7a4")
+        const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+        for (let cy = 0; cy < 4; cy++) {
+          for (let cx = 0; cx < 4; cx++) {
+            const wx = tx + (cx + 0.5) / 4
+            const wy = ty + (cy + 0.5) / 4
+            const m = vnoise(wx * 0.3, wy * 0.3) * 0.7 + vnoise(wx * 0.9 + 9, wy * 0.9) * 0.3
+            const n = m + (BAYER[(cy & 3) * 4 + (cx & 3)]! / 16 - 0.5) * 0.07
+            px(ctx, shade(n), x + cx * 4, y + cy * 4, 4, 4)
+          }
+        }
         const n = vnoise(tx * 0.3, ty * 0.3) * 0.7 + vnoise(tx * 0.9 + 9, ty * 0.9) * 0.3
-        px(ctx, n < 0.4 ? "#6fb865" : n < 0.62 ? "#7cc46e" : "#8ed17a", x, y, 16, 16)
         // soft mottling inside the tile, so no two tiles read the same
-        if (r(30) < 0.5) px(ctx, n < 0.5 ? "#74be68" : "#88cd78", x + 2 + Math.floor(r(31) * 8), y + 2 + Math.floor(r(32) * 8), 4, 3)
-        if (r(33) < 0.4) px(ctx, n < 0.5 ? "#68b25e" : "#7cc46e", x + 2 + Math.floor(r(34) * 8), y + 8 + Math.floor(r(35) * 5), 3, 2)
+        if (r(30) < 0.5) px(ctx, n < 0.5 ? "#4aa083" : "#62bd9c", x + 2 + Math.floor(r(31) * 8), y + 2 + Math.floor(r(32) * 8), 4, 3)
+        if (r(33) < 0.4) px(ctx, n < 0.5 ? "#449a7e" : "#58b090", x + 2 + Math.floor(r(34) * 8), y + 8 + Math.floor(r(35) * 5), 3, 2)
       }
-      blade("#58a553", 4)
-      blade("#a6e08f", 2, 20)
+      blade("#36856f", 4)
+      blade("#9cf0cc", 2, 20)
       // a tuft: three blades leaning, lit on the left
       if (r(36) < 0.35) {
         const tx0 = x + 3 + Math.floor(r(37) * 9)
         const ty0 = y + 6 + Math.floor(r(38) * 8)
-        px(ctx, "#3f8a4a", tx0, ty0, 1, 4)
-        px(ctx, "#58a553", tx0 + 1, ty0 - 1, 1, 5)
-        px(ctx, "#a6e08f", tx0 - 1, ty0 + 1, 1, 3)
-        px(ctx, "#3f8a4a", tx0 + 2, ty0 + 1, 1, 3)
+        px(ctx, "#2c7a68", tx0, ty0, 1, 4)
+        px(ctx, "#3a9078", tx0 + 1, ty0 - 1, 1, 5)
+        px(ctx, "#8ee6c4", tx0 - 1, ty0 + 1, 1, 3)
+        px(ctx, "#2c7a68", tx0 + 2, ty0 + 1, 1, 3)
       }
       if (tile === T.FLOWER) {
         const colors = ["#e8506a", "#ff9db8", "#ffffff", "#c9a8ff"]
@@ -104,7 +122,7 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
           const c = colors[Math.floor(r(5 + n) * 4)]!
           const fx = x + 2 + Math.floor(r(6 + n * 3) * 11)
           const fy = y + 3 + Math.floor(r(7 + n * 3) * 10)
-          px(ctx, "#3f8a4a", fx, fy + 1, 1, 3)
+          px(ctx, "#2c7a68", fx, fy + 1, 1, 3)
           px(ctx, c, fx - 1, fy, 3, 1)
           px(ctx, c, fx, fy - 1, 1, 3)
           px(ctx, "#fbf1e6", fx, fy)
@@ -137,7 +155,7 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
           if (side === T.PATH || side === T.BRIDGE || side === T.DOOR || side === T.GATE || side === T.SAND || side === T.STAIRS) return
           for (let i = 0; i < 16; i++) {
             const depth = 1 + Math.floor(r(k + i) * 3)
-            const col = r(k + i + 40) < 0.5 ? "#58a553" : "#7cc46e"
+            const col = r(k + i + 40) < 0.5 ? "#3a9078" : "#7cc46e"
             if (horizontal) px(ctx, col, x + i, far ? y + 16 - depth : y, 1, depth)
             else px(ctx, col, far ? x + 16 - depth : x, y + i, depth, 1)
           }
@@ -168,7 +186,7 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
       if (m > 0.52) {
         px(ctx, m > 0.64 ? "#6aa05a" : "#7fb06a", x, y, 16, 16)
         blade("#4f8f4a", 3, 80)
-        blade("#a6e08f", 2, 90)
+        blade("#8ee6c4", 2, 90)
         speck("#5f9a52", 4, 95)
       } else if (m > 0.44) {
         for (let i = 0; i < 4; i++) px(ctx, "#7fb06a", x + Math.floor(r(100 + i) * 13), y + Math.floor(r(110 + i) * 13), 3, 2)
@@ -184,8 +202,8 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
       const m = vnoise(tx * 0.4, ty * 0.4 + 8)
       px(ctx, m > 0.55 ? "#7cc46e" : "#dcc3ae", x, y, 16, 16)
       if (m > 0.55) {
-        blade("#58a553", 4)
-        blade("#a6e08f", 2, 20)
+        blade("#3a9078", 4)
+        blade("#8ee6c4", 2, 20)
       } else {
         for (let i = 0; i < 4; i++) px(ctx, "#c8ac95", x + Math.floor(r(i) * 12), y + 2 + i * 4, 4, 1)
         for (let i = 0; i < 3; i++) px(ctx, "#ecd9c8", x + Math.floor(r(20 + i) * 12), y + 1 + i * 5, 3, 1)
@@ -332,6 +350,17 @@ export function buildMapCanvas(world: World): HTMLCanvasElement {
   return canvas
 }
 
+const hiMaps = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>()
+/** The map at the fine grid: the game-pixel ground run through EPX once, so patch edges and curves have half-pixel steps. */
+function hiMapOf(map: HTMLCanvasElement): HTMLCanvasElement {
+  let hi = hiMaps.get(map)
+  if (!hi) {
+    hi = epx2(map)
+    hiMaps.set(map, hi)
+  }
+  return hi
+}
+
 const spriteCache = new Map<string, HTMLCanvasElement>()
 export function spriteCanvas(id: string, view: "front" | "side" | "back" = "front", frame: WalkFrame | -1 = -1, pose: Exclude<IdlePose, "glance"> | null = null): HTMLCanvasElement {
   const key = `${id}:${view}:${frame}:${pose ?? ""}`
@@ -340,10 +369,14 @@ export function spriteCanvas(id: string, view: "front" | "side" | "back" = "fron
     c = document.createElement("canvas")
     const base = id === "player" ? playerGrid(view) : spriteGrid(id, view)
     const still = frame !== -1 ? cachedWalk(id, base, view, frame) : pose ? cachedIdle(id, base, view, pose) : base
-    // animals drawn smaller than the grid get a 64 grid, made from the 32 frame, so the shrink has smooth edges to work from
-    const grid = id !== "player" && spriteScale(id) !== 1 ? upscaleGrid(still) : still
-    c.width = c.height = grid.length
-    paintGrid(c.getContext("2d")!, grid, 0, 0, 1)
+    // every body is drawn on the fine grid: the 32 frame is smoothed to 64 (EPX), and an animal that stands smaller is pooled
+    // from that onto its own size (`snapTo`), so no body has bigger or blended pixels than the trees and ground around it
+    const sc = id === "player" ? 1 : spriteScale(id)
+    const big = upscaleGrid(still)
+    const src = document.createElement("canvas")
+    src.width = src.height = big.length
+    paintGrid(src.getContext("2d", { willReadFrequently: true })!, big, 0, 0, 1)
+    c = sc === 1 ? src : snapTo(src, Math.max(16, Math.round(big.length * sc)), Math.max(16, Math.round(big.length * sc)), { cover: 0.4 })
     spriteCache.set(key, c)
   }
   return c
@@ -351,30 +384,32 @@ export function spriteCanvas(id: string, view: "front" | "side" | "back" = "fron
 
 /** Stand a sprite on a ground line, facing right, or mirrored to face left. `scale` is how big it stands against the 32 grid;
  * the picture may be a 32 or a 64 grid. */
-export function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, ground: number, face: 1 | -1, scale = 1) {
-  const cells = img.width / SPRITE_SIZE
-  if (scale === 1 && cells === 1) {
-    const top = Math.round(ground - SPRITE_FOOT - 1)
-    if (face === 1) {
-      ctx.drawImage(img, Math.round(x - SPRITE_SIZE / 2), top)
-      return
-    }
-    ctx.save()
-    ctx.translate(Math.round(x), 0)
-    ctx.scale(-1, 1)
-    ctx.drawImage(img, -SPRITE_SIZE / 2, top)
-    ctx.restore()
+export function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, ground: number, face: 1 | -1, _scale = 1) {
+  // the picture is on the fine grid (two pixels per game pixel); a frame painted at one pixel per game pixel (the casa) gets a pooled half-size copy
+  const fine = ctx.getTransform().a >= 2
+  const pic = fine ? img : half(img)
+  const w = img.width / 2
+  const top = onGrid(ctx, ground - 1 - ((SPRITE_FOOT + 1) * w) / SPRITE_SIZE)
+  const left = onGrid(ctx, x - w / 2)
+  if (face === 1) {
+    ctx.drawImage(pic, left, top, w, w)
     return
   }
-  // a smaller animal: the feet stay on the ground line, and smoothing keeps its eyes and flecks when it shrinks
-  const k = scale / cells
   ctx.save()
-  ctx.translate(Math.round(x), Math.round(ground - 1))
-  ctx.scale(face * k, k)
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = "high"
-  ctx.drawImage(img, -img.width / 2, -(SPRITE_FOOT + 1) * cells)
+  ctx.translate(left + w, 0)
+  ctx.scale(-1, 1)
+  ctx.drawImage(pic, 0, top, w, w)
   ctx.restore()
+}
+
+const halves = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>()
+function half(img: HTMLCanvasElement): HTMLCanvasElement {
+  let h = halves.get(img)
+  if (!h) {
+    h = snapTo(img, img.width / 2, img.height / 2, { cover: 0.4 })
+    halves.set(img, h)
+  }
+  return h
 }
 
 function drawNode(ctx: CanvasRenderingContext2D, kind: string, x: number, y: number, ready: boolean, t: number) {
@@ -436,15 +471,9 @@ function drawStation(ctx: CanvasRenderingContext2D, id: string, x: number, y: nu
       if (Math.sin(t * 3) > -0.3) px(ctx, "#f4ffe8", x + 7, y + 4, 2, 2)
       break
     }
-    case "falls": {
-      px(ctx, "#6b5a68", x + 1, y + 9, 14, 6)
-      px(ctx, "#8fbf6a", x + 1, y + 8, 14, 3)
-      px(ctx, "#6b5a68", x + 4, y + 4, 8, 5)
-      px(ctx, "#8fbf6a", x + 4, y + 3, 8, 2)
-      px(ctx, "#b5d8f6", x + 7, y, 2, 4)
-      px(ctx, "#ffffff", x + 7, y + Math.floor((t * 8) % 4), 1, 2)
+    case "falls":
+      drawFalls(ctx, x, y, t)
       break
-    }
     case "echo": {
       px(ctx, "rgba(240,230,255,0.35)", x + 3, y, 10, 5)
       px(ctx, "rgba(240,230,255,0.25)", x + 2, y + 5, 12, 5)
@@ -525,7 +554,7 @@ function reflect(ctx: CanvasRenderingContext2D, map: HTMLCanvasElement, world: W
     const src = top * TILE - 1 - d
     if (src < 0) break
     const wobble = Math.round(Math.sin(t * 2.2 + d * 0.55 + tx) * (0.8 + d / 22))
-    ctx.globalAlpha = Math.max(0.12, 0.62 - d / 130)
+    ctx.globalAlpha = Math.max(0.05, 0.24 - d / 200)
     ctx.drawImage(map, tx * TILE + wobble, src, TILE, 1, tx * TILE, ty * TILE + row, TILE, 1)
   }
   ctx.globalAlpha = 1
@@ -540,6 +569,14 @@ function idleLook(id: string, t: number, asleep = false): { view: "front" | "sid
   if (asleep) return { view: "front", pose: Math.sin(t * 1.1 + id.length) > 0.2 ? "breathe" : null }
   const p = idlePose(id, t)
   return p === "glance" ? { view: "side", pose: null } : { view: "front", pose: p }
+}
+
+const sceneries = new WeakMap<World, Scenery>()
+/** The world's WFC dressing, grown once per world. */
+const sceneryOf = (world: World): Scenery => {
+  let sc = sceneries.get(world)
+  if (!sc) sceneries.set(world, (sc = buildScenery(world)))
+  return sc
 }
 
 let veil: Veil | null = null
@@ -599,7 +636,9 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   const D = ctx.canvas.width / VIEW_W
   ctx.setTransform(D, 0, 0, D, 0, 0)
   ctx.clearRect(0, 0, VIEW_W, VIEW_H)
-  ctx.drawImage(f.map, camX, camY, VIEW_W, VIEW_H, 0, 0, VIEW_W, VIEW_H)
+  const fine = D >= 2 ? hiMapOf(f.map) : f.map
+  const m = fine.width / f.map.width
+  ctx.drawImage(fine, camX * m, camY * m, VIEW_W * m, VIEW_H * m, 0, 0, VIEW_W, VIEW_H)
   ctx.translate(-camX, -camY)
 
   // water animates, so it is drawn live over the cached map
@@ -608,15 +647,17 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   for (let ty = ty0; ty <= ty0 + VIEW_H / TILE + 1; ty++) {
     for (let tx = tx0; tx <= tx0 + VIEW_W / TILE + 1; tx++) {
       if (tx < MAP_W && ty < MAP_H && f.world.tiles[tileIndex(tx, ty)] === T.WATER) {
-        paintTile(ctx, T.WATER, tx, ty, t)
+        paintWater(ctx, f.world, tx, ty, t)
         reflect(ctx, f.map, f.world, tx, ty, t)
       }
     }
   }
 
+  drawScenery(ctx, sceneryOf(f.world), t, camX, camY, VIEW_W, VIEW_H)
   const movers = [{ x: sim.px, y: sim.py }, sim.pet, ...Object.values(sim.npcs).filter((n) => !n.asleep && Math.abs(n.x - sim.px) < VIEW_W)]
   drawGrass(ctx, f.world, t, camX, camY, VIEW_W, VIEW_H, movers)
   drawGlints(ctx, f.world, t, camX, camY, VIEW_W, VIEW_H)
+  if (s.slime) drawSlime(ctx, s.slime, t, camX, camY, VIEW_W, VIEW_H)
   const tileAt = (x: number, y: number) => f.world.tiles[tileIndex(Math.max(0, Math.min(MAP_W - 1, Math.floor(x / TILE))), Math.max(0, Math.min(MAP_H - 1, Math.floor(y / TILE))))]!
 
   const a = actOf(s)
@@ -639,14 +680,17 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   for (const [id, st] of Object.entries(STATIONS)) drawStation(ctx, id, st.x * TILE, st.y * TILE, s, t)
   for (const n of NODES) {
     if (n.x * TILE < camX - 16 || n.x * TILE > camX + VIEW_W || n.y * TILE < camY - 16 || n.y * TILE > camY + VIEW_H) continue
-    drawNode(ctx, n.kind, n.x * TILE, n.y * TILE, nodeReady(s, n.id), t)
+    // picked things vanish until they regrow in the morning
+    if (!nodeReady(s, n.id)) continue
+    if (n.kind === "shell" && drawShellNode(ctx, shellKindOf(n.id), n.x * TILE, n.y * TILE)) continue
+    drawNode(ctx, n.kind, n.x * TILE, n.y * TILE, true, t)
   }
 
   for (const pl of PLOTS) drawPlot(ctx, pl.x * TILE, pl.y * TILE, s.farm[pl.id], t)
   // fairy-ring mushrooms glow once it is dark
   if (hour(s) >= 19 || hour(s) < 6) {
     for (const n of NODES) {
-      if (n.kind !== "mushroom" || n.x * TILE < camX - 16 || n.x * TILE > camX + VIEW_W) continue
+      if (n.kind !== "mushroom" || !nodeReady(s, n.id) || n.x * TILE < camX - 16 || n.x * TILE > camX + VIEW_W) continue
       const g = ctx.createRadialGradient(n.x * TILE + 8, n.y * TILE + 8, 1, n.x * TILE + 8, n.y * TILE + 8, 18)
       g.addColorStop(0, "rgba(255,160,220,0.45)")
       g.addColorStop(1, "rgba(255,160,220,0)")
@@ -749,7 +793,7 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
             // fade a tree you are standing behind, so you can always see yourself
             const behind = Math.abs(sim.px - cx) < art.reach * k && sim.py < baseY - 4 && sim.py > baseY - art.rise * k
             ctx.globalAlpha = behind ? 0.5 : 1
-            ctx.drawImage(art.img, Math.round(cx - (art.w * k) / 2), Math.round(baseY - art.h * k + 2), Math.round(art.w * k), Math.round(art.h * k))
+            ctx.drawImage(art.img, onGrid(ctx, cx - (art.w * k) / 2), onGrid(ctx, baseY - art.h * k + 2), onGrid(ctx, art.w * k), onGrid(ctx, art.h * k))
             ctx.globalAlpha = 1
             if (stage === "mature") drawLeaf(ctx, kind, tx, ty, t, cx, baseY - art.rise, baseY)
           },
@@ -769,13 +813,8 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
     // a window glows after dark while its friend is home and still up
     const lit = (night || hour(s) >= 19) && !!npc && !npc.asleep && Math.hypot(npc.x - center(dx), npc.y - center(dy)) < TILE * 2
     bodies.push({ y: (h.y + 1) * TILE - 1, draw: () => {
-        // at 2× detail the painted 96px home lands one canvas pixel per real pixel; at 1× the small painter is scaled up
-        if (D > 1) return drawHomeHi(ctx, h.kind, h.x * TILE + TILE / 2, (h.y + 1) * TILE, lit, D)
-        ctx.save()
-        ctx.translate(h.x * TILE + TILE / 2, (h.y + 1) * TILE)
-        ctx.scale(HOME_SCALE, HOME_SCALE)
-        drawHome(ctx, h.kind, -TILE / 2, -TILE, lit)
-        ctx.restore()
+        // the painted 96px home, pooled onto the game's own pixel grid
+        drawHomeHi(ctx, h.kind, h.x * TILE + TILE / 2, (h.y + 1) * TILE, lit, id)
       } })
   }
   for (const fly of FLIES) bodies.push({ y: flyY(fly, t) + 40, draw: () => drawFly(ctx, fly, t) })
@@ -842,8 +881,13 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
     ctx.strokeRect(Math.round(f.focus.x - 9 - pulse * 0.4) + 0.5, Math.round(f.focus.y - 16) + 0.5, 18 + pulse * 0.8, 22)
   }
 
-  // light and weather over everything
+  // light and weather over everything; a cool soft-light grade first, so greens lean teal and shade leans blue-violet
   ctx.setTransform(D, 0, 0, D, 0, 0)
+  ctx.globalCompositeOperation = "soft-light"
+  ctx.fillStyle = "rgba(70,90,200,0.22)"
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H)
+  ctx.globalCompositeOperation = "source-over"
+
   const hr = s.minutes / 60
   const dv = dayVeil(hr)
   let tint = ""
@@ -864,8 +908,9 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
         }
       }
       lights.push({ x: sim.px - camX, y: sim.py - 4 - camY, r: 26, power: 0.38 })
+      if (s.slime) for (const l of slimeLights(s.slime, camX, camY, VIEW_W, VIEW_H)) lights.push({ ...l, glow: 0.35, color: [255, 150, 215] })
       for (const n of NODES) {
-        if (n.kind !== "mushroom") continue
+        if (n.kind !== "mushroom" || !nodeReady(s, n.id)) continue
         const mx = n.x * TILE + 8 - camX
         const my = n.y * TILE + 8 - camY
         if (mx > -20 && mx < VIEW_W + 20 && my > -20 && my < VIEW_H + 20) lights.push({ x: mx, y: my, r: 16, power: 0.5, glow: 0.35, color: [255, 160, 220] })

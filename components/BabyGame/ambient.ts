@@ -5,6 +5,7 @@
  * walks through it. All functions take world coordinates (the caller has already translated by the camera).
  */
 
+import { drawFlora, floraOn } from "./flora"
 import { EXTENT_H, EXTENT_W, MAP_H, MAP_W, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
 
 const h = (a: number, b = 0) => {
@@ -28,6 +29,21 @@ export function drawGrass(ctx: CanvasRenderingContext2D, world: World, t: number
       const tile = world.tiles[tileIndex(tx, ty)]
       if (tile !== T.GRASS && tile !== T.FLOWER) continue
       const flower = tile === T.FLOWER
+      const plant = floraOn(tile, tx, ty, h(tx * 5 + 3, ty * 11 + 1))
+      if (plant) {
+        // a drawn plant stands on the tile in place of the dots; it leans with the gust and away from walkers
+        const fx = tx * TILE + 5 + Math.floor(h(tx, ty * 3) * (TILE - 10))
+        const fy = ty * TILE + 12 + Math.floor(h(tx * 3, ty) * 4)
+        const gust = Math.sin(t * 1.5 - (fx + fy * 0.5) * 0.045)
+        let lean = gust > 0.55 ? 1 : gust < -0.7 ? -1 : 0
+        for (const m of movers) {
+          const dx = fx - m.x
+          const dy = fy - (m.y + 4)
+          if (Math.abs(dx) < 12 && Math.abs(dy) < 7) lean = dx >= 0 ? 2 : -2
+        }
+        drawFlora(ctx, plant, fx, fy, lean)
+        continue
+      }
       const n = flower ? 2 : h(tx, ty) > 0.4 ? 1 : 0
       for (let i = 0; i < n; i++) {
         const bx = tx * TILE + 2 + Math.floor(h(tx, ty * 7 + i) * (TILE - 4))
@@ -40,7 +56,7 @@ export function drawGrass(ctx: CanvasRenderingContext2D, world: World, t: number
           if (Math.abs(dx) < 10 && Math.abs(dy) < 6) lean = dx >= 0 ? 2 : -2
         }
         if (flower) {
-          ctx.fillStyle = "#4f8f4a"
+          ctx.fillStyle = "#2f7f6a"
           ctx.fillRect(bx, by - 2, 1, 3)
           ctx.fillStyle = BLOOM[Math.floor(h(tx, ty + i * 11) * BLOOM.length)]!
           ctx.fillRect(bx + lean - 1, by - 4, 2, 2)
@@ -49,7 +65,7 @@ export function drawGrass(ctx: CanvasRenderingContext2D, world: World, t: number
             ctx.fillRect(bx + lean, by - 5, 1, 1)
           }
         } else {
-          ctx.fillStyle = i ? "#8fcf7a" : "#6fb05f"
+          ctx.fillStyle = i ? "#7fe0b8" : "#4fb08e"
           ctx.fillRect(bx, by - 1, 1, 2)
           ctx.fillRect(bx + lean, by - 3, 1, 2)
         }
