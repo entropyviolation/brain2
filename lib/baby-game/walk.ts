@@ -12,6 +12,7 @@
  * Frame `-1` is the idle still. Hand-drawn frames can replace any of these later without touching the callers.
  */
 
+import { poseSources } from "./people/registry"
 import { SPRITE_SIZE, type SpriteView } from "./sprites"
 
 export type WalkFrame = 0 | 1 | 2 | 3
@@ -97,7 +98,8 @@ export function cachedWalk(key: string, base: readonly string[], view: SpriteVie
   const k = `${key}:${view}:${frame}`
   let hit = grids.get(k)
   if (!hit) {
-    hit = walkGrid(base, view, frame)
+    // a body with hand-drawn frames (the person drawer) wins over the frames made from its still
+    hit = poseSources.get(key)?.(view, `walk${frame}`) ?? walkGrid(base, view, frame)
     grids.set(k, hit)
   }
   return hit

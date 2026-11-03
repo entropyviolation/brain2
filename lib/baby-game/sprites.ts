@@ -11,6 +11,8 @@
 
 import { PIXEL_PALETTE } from "@/components/friend-details/PixelIcon"
 import { HYRAX_GRIDS } from "./hyrax"
+import { paletteSink } from "./people/registry"
+import { playerGridOf } from "./people/player"
 
 export const SPRITE_PALETTE: Record<string, string> = {
   ...PIXEL_PALETTE,
@@ -27,6 +29,9 @@ export const SPRITE_PALETTE: Record<string, string> = {
   j: "#5f3f31", // dark brown
   y: "#2e2933", // near black
 }
+
+// people bring their own colors (every shirt is one); the drawer adds them to this palette
+paletteSink.target = SPRITE_PALETTE
 
 /** [light, dark] for a paint letter. Letters not listed stay flat. */
 const SHADE: Record<string, [string, string]> = {
@@ -1433,116 +1438,12 @@ export function spriteGrid(id: string, view: SpriteView = "front"): string[] {
 }
 
 /**
- * The Center of The World: a girl in the manner of a village-sim farmer, and the only inhabitant of her own universe. Big head,
- * auburn hair with a pink bow, cream shirt, blue overalls. A touch taller than a baby fox, and drawn small: front on, or from
- * the side when she walks across the screen.
+ * The Center of The World: a girl drawn by the person drawer (`people/draw.ts`) from one `PersonSpec`, in the manner of a
+ * village-sim farmer: big round head, auburn tails and a pink bow, a cream and pink shirt, blue overalls, brown boots. She
+ * is the only inhabitant of her own universe. Front on, from the side when she walks across, from behind when she walks away.
  */
 export function playerGrid(view: SpriteView = "front"): string[] {
-  const key = `__player:${view}`
-  const cached = grids.get(key)
-  if (cached) return cached
-  const raw = new Canvas()
-  if (view === "side") {
-    const c = new Front(raw, 0.8, 15.5, G)
-  // far arm and leg, behind everything
-  c.ell(14, 22, 1.8, 4, "E")
-  c.rect(14, 24, 16, 28, "n")
-  c.rect(14, 28, 17, G, "u")
-  c.next()
-  // back hair and the ponytail, swinging behind the head
-  c.ell(14, 11, 5, 6, "Q")
-  c.line([11, 10], [8, 15], "Q", 4)
-  c.line([8, 15], [8.4, 22], "Q", 3)
-  c.line([9.6, 11], [7.6, 17], "O", 1)
-  c.pts("O", [[8, 19], [8, 21]])
-  c.next()
-  // near leg and boot
-  c.rect(17, 24, 20, 28, "B")
-  c.rect(17, 27, 22, G, "u")
-  c.pts("T", [[18, 28], [19, 28], [20, 28]])
-  c.next()
-  // torso: shirt, then overalls over it
-  c.ell(16.5, 20, 5.4, 5.6, "e")
-  c.next()
-  c.rect(12, 21, 21, 25, "B")
-  c.rect(16, 16, 18, 21, "B")
-  c.pts("w", [[16, 21], [17, 21]])
-  c.pts("b", [[13, 22], [14, 22], [15, 22], [19, 23], [20, 23]])
-  c.pts("y", [[14, 23], [14, 24]])
-  c.pts("p", [[19, 22], [20, 22]])
-  c.next()
-  // near arm: a rolled sleeve and a hand
-  c.ell(15.4, 20.4, 2, 4, "e")
-  c.rect(14, 19, 16, 20, "p")
-  c.ell(15.8, 24.6, 1.6, 1.6, "o")
-  c.next()
-  // head: round and big, then the hair cap and fringe over the top only
-  c.ell(18.5, 11.4, 6.4, 6, "o")
-  c.next()
-  for (let y = 2; y <= 14; y++) {
-    for (let x = 10; x <= 26; x++) {
-      const inCap = ((x - 17.6) / 7.4) ** 2 + ((y - 8) / 5.4) ** 2 <= 1
-      if (inCap && (y <= 9 || x <= 14)) c.put(x, y, "Q")
-    }
-  }
-  c.tri([15, 6], [24, 7], [21, 12], "Q")
-  c.line([14, 4], [19, 3], "O", 1)
-  c.line([16, 5.4], [22, 5], "O", 1)
-  c.pts("P", [[12, 5], [11, 6], [12, 7], [13, 6]])
-  c.pts("p", [[12, 6]])
-  shade(c.b)
-  c.next()
-  c.eye(21, 11, 1)
-  c.pts("p", [[19, 15], [20, 15], [21, 15]])
-  c.pts("P", [[23, 15], [22, 16]])
-  c.pts("o", [[25, 13], [25, 14]])
-  } else {
-    const c = new Front(raw, 1.0)
-    // boots, legs, then the torso in a cream shirt with blue overalls and rolled sleeves
-    c.ell(8, 21.2, 2.8, 1.4, "u")
-    c.ell(15, 21.2, 2.8, 1.4, "u")
-    c.next()
-    c.rect(7, 17, 10, 21, "n")
-    c.rect(13, 17, 16, 21, "n")
-    c.next()
-    c.ell(11.5, 14.6, 5.2, 4.6, "e")
-    c.next()
-    c.rect(7, 14, 16, 19, "B")
-    c.rect(8, 11, 9, 14, "B", true)
-    c.rect(10, 15, 13, 17, "b")
-    c.pts("y", [[10, 16], [13, 16]])
-    c.pts("w", [[8, 11]], true)
-    c.next()
-    c.ell(5, 15, 1.8, 3.4, "e", true)
-    c.rect(3, 14, 6, 15, "p", true)
-    c.ell(5, 18.8, 1.5, 1.5, "o", true)
-    c.next()
-    // hair falling behind the head in two low tails, then the round face
-    c.ell(3.8, 9.6, 2.3, 4.6, "Q", true)
-    c.next()
-    c.ell(11.5, 8, 6.4, 5.8, "o")
-    c.next()
-    // the hair cap and a fringe, parted a little off center, and a pink bow
-    c.ell(11.5, 4.6, 7, 4, "Q")
-    c.tri([5, 5], [11, 3], [11.5, 9.4], "Q")
-    c.tri([18, 5], [12, 3], [12.5, 8.4], "Q")
-    c.line([6, 4], [10, 2.4], "O", 1)
-    c.line([13, 3], [17, 4.4], "O", 1)
-    c.pts("P", [[16, 3], [17, 2], [18, 3], [17, 4], [19, 3]])
-    c.pts("p", [[17, 3]])
-    shade(raw)
-    c.next()
-    c.eyes(7, 8, "k")
-    c.pts("p", [[5, 11], [6, 11], [5, 12], [6, 12]], true)
-    c.pts("P", [[11, 12], [12, 12]])
-    c.pts("q", [[10, 13], [13, 13]])
-    c.pts("k", [[11, 13], [12, 13]])
-  }
-  trim(raw)
-  outline(raw)
-  const rows = raw.cells.map((row) => row.map((cell) => cell.ch).join(""))
-  grids.set(key, rows)
-  return rows
+  return playerGridOf(view)
 }
 
 /** Paint a letter grid onto a 2D context. `cell` is the pixel size of one sprite pixel. */
