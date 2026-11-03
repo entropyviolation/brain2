@@ -10,10 +10,10 @@
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 
-export const DEFAULT_PERCENT_LED_TINT = "#7d6bb8"
+export const DEFAULT_PERCENT_LED_TINT = "#aacdb8"
 
-/** The old default (loud LED purple). A saved copy now reads as the default. */
-const RETIRED_PERCENT_LED_TINTS = new Set(["#7e14ff"])
+/** Old defaults (loud LED purple, then dusty violet). A saved copy now reads as the default sage. */
+const RETIRED_PERCENT_LED_TINTS = new Set(["#7e14ff", "#7d6bb8"])
 
 /** Tiny pin next to the habits blob — refresh / hub merge read this first. */
 export const PERCENT_LED_TINT_STORAGE_KEY = persistKey("habit-led-tint")

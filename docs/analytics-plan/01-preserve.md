@@ -1,10 +1,10 @@
-# Build brief — preserve every Analytics view
+# Build brief — preserve every Data view
 
 Preservation inventory for a later redesign. Groups may move. Rooms may be added. A view id must not be deleted, and a working chart must not be thinned.
 
-Source of the contract: `ANALYTICS_TAB_HELP` in `components/Analytics/analytics-tabs.ts`, the lazy map in `components/Analytics/analytics-views.tsx`, the file table and studio views table in `components/Analytics/README.md`, colocated `components/Analytics/*.test.ts` / `*.test.tsx`, and `07-analytics*` rows in `docs/screenshots/README.md`.
+Source of the contract: `ANALYTICS_TAB_HELP` in `components/Analytics/chrome/analytics-tabs.ts`, the lazy map in `components/Analytics/chrome/analytics-views.tsx`, the file table and studio views table in `components/Analytics/README.md`, colocated `components/Analytics/*.test.ts` / `*.test.tsx`, and `07-analytics*` rows in `docs/screenshots/README.md`.
 
-**Later owner:** a preserve agent. After any shell move, run the existing Analytics tests. Do not redesign charts.
+**Later owner:** a preserve agent. After any shell move, run the existing Data tests. Do not redesign charts.
 
 Count of current view ids: **40**, including the seed `research-report` (Meta). Meaning is specified and is not one of those ids yet. The group redesign in this folder has not shipped.
 
@@ -145,7 +145,7 @@ Count of current view ids: **40**, including the seed `research-report` (Meta). 
 ### `text-events` — Text events
 
 - **Component:** `TextPipelineView.tsx` (`TextEventsView`)
-- **Already good:** Activity instants from the phone text pipeline (log:, discrete triggers, switch markers). Always labeled from text pipeline. Counts by day in the shared Analytics range.
+- **Already good:** Activity instants from the phone text pipeline (log:, discrete triggers, switch markers). Always labeled from text pipeline. Counts by day in the shared Data range.
 - **Test:** no colocated test found
 - **Screenshot:** no sidecar listed
 
@@ -266,7 +266,7 @@ Count of current view ids: **40**, including the seed `research-report` (Meta). 
 
 ## Library
 
-Library stays inside Analytics. Item Types is not moved to Settings. Settings still edits type schemas.
+Library stays inside Data. Item Types is not moved to Settings. Settings still edits type schemas.
 
 ### `item-types` — Item Types
 
@@ -326,7 +326,7 @@ Each item names the file that owns it.
 - **Open in Lists** — `open-in-lists.ts` and `chart-frame.tsx` (`an-open-lists`).
 - **One lazy view at a time** — `analytics-views.tsx`. Switching unmounts the previous view; the loaded chunk stays cached. The shell does not import every chart.
 - **Sample floors / thin-window watermark** — `analytics-range.ts` (`SAMPLE_FLOORS`). Observatory withholds findings with n below 7 (`observatory-findings.ts`). Interpretive views watermark a thin window; they do not print it as a finding.
-- **Library stays inside Analytics** — `analytics-tabs.ts` group `library` and `ItemTypesLibrary.tsx`. Item Types is not moved to Settings.
+- **Library stays inside Data** — `analytics-tabs.ts` group `library` and `ItemTypesLibrary.tsx`. Item Types is not moved to Settings.
 
 Shell tests that guard the studio, not a single chart: `analytics-tabs.test.ts`, `analytics-range.test.ts`, `enhanced-analytics.test.tsx`, `studio-views.test.tsx`, `open-in-lists.test.ts`.
 

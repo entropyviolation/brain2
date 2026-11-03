@@ -33,6 +33,12 @@ Persists on `List.defaultView`. Independent of Details `detailsColumns` and
 Spreadsheet `sheetConfig`. Extra attributes are reading-row chips, not a
 spreadsheet column picker.
 
+## Visit profile (Instagram Account)
+
+_Last mapped: 2026-11-02._
+
+A row of the **Instagram Account** type (`lib/instagram-account-type.ts`), or any row on a list whose item type is Instagram Account, ends in a small raised key with the open-in-new glyph. The rule is hard-wired to the type (`instagramProfileKeyHandle`), so a plain item with a stray `ig-username` gets no key. The username comes from `ig-username`, else `ig-profile`. The link is `https://www.instagram.com/<name>/` in a new tab. In the iOS app a click asks for `instagram://user?username=<name>` first, so the Instagram app opens instead of a browser, and falls back to the https page when it did not (`openInstagramProfile` in `lib/instagram-profile-link.ts`). The key does not open the row or start a drag. Details shows the same key in Actions. It is not a Customize toggle. Component: `list-content/InstagramProfileKey.tsx`.
+
 Helpers: `lib/default-view-prefs.ts`. UI: `dialogs/DefaultViewSettings.tsx`.
 Rows: `list-content/ListContentDefault.tsx`. Folder **All Items** uses the same settings on `__all-items__{folderId}`; Home All on `__all-items__root`; see [`FOLDER_ALL_ITEMS.md`](FOLDER_ALL_ITEMS.md).
 
@@ -40,7 +46,7 @@ Rows: `list-content/ListContentDefault.tsx`. Folder **All Items** uses the same 
 
 ## Sort
 
-_Last mapped: 2026-10-24_
+_Last mapped: 2026-10-27._
 
 A clipboard key on the Bulk add / Add item row (Default display only) opens a read-only bulk-add paste of the rows on screen (`Tag:` headers included). **Copy all** copies the names only, one per line. **Close** hides the box. A **Sort** plate sits at the right of that row (Default
 display only). Pick a key; a direction key appears beside it (it is hidden on
@@ -88,11 +94,13 @@ read along whatever axis a thought actually varies on — see
 Helpers: `lib/list-item-sort.ts` (`sortListItems`, `listItemSortOptions`,
 `sanitizeListItemSort`), `resolveDefaultViewSort` / `setDefaultViewSort` in
 `lib/default-view-prefs.ts`. UI: `list-content/ListSortControl.tsx`. Sorting
-happens in `enhanced-list-view.tsx` (`shownTasks`) after the caption search.
+happens in `hooks/useOpenListItems.ts` (`shownTasks`) after the caption search.
 
 ## Search this list
 
-The open list's caption has a magnifier key. It splits the caption: the name
+_Last mapped: 2026-10-27._
+
+The open list's caption (`board/list-inner-caption.tsx`) has a magnifier key. Search state and the filter live in `hooks/useOpenListItems.ts`. The caption splits: the name
 stays on the left, a CRT search field takes the right half. Names only by
 default; **All fields** also reads notes, body, tags, subtasks, and attribute
 values. See [`README.md`](README.md) → One-list search.

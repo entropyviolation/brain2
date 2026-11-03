@@ -1,20 +1,20 @@
 import type { CapacitorConfig } from "@capacitor/cli"
 
 /**
- * Capacitor config for packaging the /mobile Home shell as a native iOS app.
+ * Capacitor config for packaging the desk page as a native iOS app.
  *
  * Build flow:
- *   1. npm run build
- *   2. npm run mobile:cap:sync
- *   3. npm run mobile:ios  (opens Xcode — Run on your device to sideload)
+ *   npm run mobile:ios
+ *   builds the static site beside `npm run dev`, syncs ios/, and launches
+ *   an iPhone Simulator. A physical iPhone is Xcode → Signing → Run.
  */
 const config: CapacitorConfig = {
   appId: "com.cogs.mobile",
   appName: "BRAIN2",
   webDir: "out",
   server: {
-    // Open the mobile Home shell (not the full desktop tab bar).
-    appStartPath: "mobile/",
+    // Open the desk page. Its Menu sheet carries the phone keys
+    // (`components/Mobile/phone-desk-keys.tsx`). The shell stays at /mobile/.
     androidScheme: "https",
     iosScheme: "capacitor",
   },

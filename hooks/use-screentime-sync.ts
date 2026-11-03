@@ -1,7 +1,7 @@
 /**
  * hooks/use-screentime-sync.ts — Pull ActivityWatch into the Screen Time scope
  *
- * Mount-only, like `useSleepSync`: Time Grid and Analytics poll while they are
+ * Mount-only, like `useSleepSync`: Time Grid and Data poll while they are
  * on screen. Entry dialogs do not call this. Settings "Sync now" calls
  * `syncScreenTime()` itself so a closed Tracking tab can still refresh.
  *

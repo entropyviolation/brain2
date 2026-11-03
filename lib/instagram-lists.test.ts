@@ -13,10 +13,13 @@ import {
   ensureInstagramFollowingList,
   findInstagramFollowersList,
   findInstagramFollowingList,
+  ensureInstagramAnalysisLists,
   importInstagramExportTexts,
+  mergeDuplicateInstagramAnalysisLists,
   INSTAGRAM_FOLLOWERS_LIST_ID,
   INSTAGRAM_FOLLOWING_LIST_ID,
 } from "@/lib/instagram-lists"
+import { createListItem, itemTitle } from "@/lib/item-utils"
 import { pinSystemListsToHome } from "@/lib/home-system-lists"
 import { planDuplicateList } from "@/lib/lists-duplicate"
 import { useListsUiStore } from "@/lib/lists-ui-store"
@@ -135,6 +138,25 @@ describe("Instagram lists", () => {
     expect(again?.title).toBe("Ada Lovelace")
     expect(again?.attributes?.[IG_FOLLOWS_ME_BACK]).toBe(true)
     expect(useTaskStore.getState().tasks.find((task) => task.id === bob?.id)).toBeTruthy()
+  })
+
+  it("folds copies of an analysis list into the one on the fixed id", () => {
+    ensureInstagramAnalysisLists()
+    const store = useTaskStore.getState()
+    const original = store.lists.find((l) => l.id === "instagram-mutuals")!
+    for (const id of ["instagram-mutuals-aaa", "instagram-mutuals-bbb"]) {
+      store.addList({ ...original, id, createdAt: new Date() })
+    }
+    store.addTask(createListItem("kept", ["instagram-mutuals-bbb"]) as never)
+    expect(useTaskStore.getState().lists.filter((l) => l.name === "Instagram mutuals")).toHaveLength(3)
+
+    expect(mergeDuplicateInstagramAnalysisLists()).toBe(2)
+    const after = useTaskStore.getState()
+    expect(after.lists.filter((l) => l.name === "Instagram mutuals").map((l) => l.id)).toEqual(["instagram-mutuals"])
+    expect(after.tasks.find((t) => itemTitle(t) === "kept")?.lists).toEqual(["instagram-mutuals"])
+    expect(after.removedListIds).toContain("instagram-mutuals-aaa")
+    expect(ensureInstagramAnalysisLists()).toContain("instagram-mutuals")
+    expect(useTaskStore.getState().lists.filter((l) => l.name === "Instagram mutuals")).toHaveLength(1)
   })
 
   it("does not copy either Instagram flag onto a duplicate", () => {

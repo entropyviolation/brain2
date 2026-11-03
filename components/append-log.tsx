@@ -16,7 +16,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   formatAppendLog,
   formatAppendStamp,
-  formatAppendStampLine,
+  planLogLabel,
   getAppendLogViewMode,
   setAppendLogViewMode,
   sortAppendLogNewestFirst,
@@ -229,7 +229,15 @@ export function AppendLog({
           <ol className="append-log-list">
             {visible.map((entry) => (
               <li key={entry.id} className="append-log-entry">
-                <div className="append-log-stamp">{formatAppendStampLine(entry, now)}</div>
+                <div className="append-log-stamp">
+                  {formatAppendStamp(entry.createdAt, now)}
+                  {entry.stampSuffix?.trim() ? (
+                    <>
+                      {" "}
+                      <strong className="append-log-label">{planLogLabel(entry.stampSuffix)}</strong>
+                    </>
+                  ) : null}
+                </div>
                 <pre className="append-log-body">{entry.text}</pre>
               </li>
             ))}

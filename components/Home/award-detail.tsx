@@ -6,7 +6,7 @@
  * the points rules that paid it (with today's number and the rule's own
  * explanation), and the other rows the same thing earned that day. Pure
  * reading is `explainPointAward` (`lib/points-award-explain.ts`). Used by the
- * Home Latest award detail and the Analytics Points ledger.
+ * Home Latest award detail and the Data Points ledger.
  */
 "use client"
 

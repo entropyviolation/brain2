@@ -16,6 +16,19 @@ describe("openTargetReducer", () => {
     expect(openTargetReducer(null, { type: "OPEN_OBJECTIVES" })).toEqual({ type: "objectives" })
   })
 
+  it("opens an item-type list", () => {
+    expect(openTargetReducer(null, { type: "OPEN_ITEM_TYPE", id: "book" })).toEqual({
+      type: "item-type",
+      id: "book",
+    })
+    expect(
+      openTargetFromEntry(
+        { kind: "item-type", id: "book" },
+        { isAll: false, currentFolderId: null, rootAllFolderId: ROOT_ALL_FOLDER_ID },
+      ),
+    ).toEqual({ type: "item-type", id: "book" })
+  })
+
   it("opens objectives from grid entry", () => {
     expect(
       openTargetFromEntry(

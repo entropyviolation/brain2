@@ -453,7 +453,7 @@ async function openThread(id, atEpoch, highlightMid) {
 }
 
 // ---------- Brain2: link a relationship to a Person ----------
-// Only inside Brain2 (Analytics → Texts frames this page). Brain2 posts People I Know
+// Only inside Brain2 (Data → Texts frames this page). Brain2 posts People I Know
 // here (names and the numbers saved on each). Linking saves this chat's numbers on that
 // Person in Brain2, so its texts and calls pens show their name. The links are also
 // saved here (settings → people_links), so every number on one Person becomes one

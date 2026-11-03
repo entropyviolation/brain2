@@ -7,6 +7,7 @@
  * and `fetchHomeAirQuality` (US AQI, same TTL).
  */
 
+import { shiftUtcDateKey } from "@/lib/date-utils"
 import { TTL, cached } from "@/lib/api-cache"
 import { resolveCityLabel, searchCities } from "@/lib/city-search"
 
@@ -393,16 +394,6 @@ function metersToMiles(meters: number | undefined): number | undefined {
   return Math.round((meters / 1609.344) * 10) / 10
 }
 
-function shiftDateKeyLocal(date: string, days: number): string {
-  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-  if (!m) return date
-  const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days))
-  const y = dt.getUTCFullYear()
-  const mo = String(dt.getUTCMonth() + 1).padStart(2, "0")
-  const d = String(dt.getUTCDate()).padStart(2, "0")
-  return `${y}-${mo}-${d}`
-}
-
 export function aqiLabel(usAqi: number): string {
   if (usAqi <= 50) return "Good"
   if (usAqi <= 100) return "Moderate"
@@ -591,7 +582,7 @@ async function fetchHomeClimatePayload(
   url.searchParams.set("wind_speed_unit", "mph")
   url.searchParams.set("timezone", "auto")
   url.searchParams.set("start_date", date)
-  url.searchParams.set("end_date", shiftDateKeyLocal(date, 6))
+  url.searchParams.set("end_date", shiftUtcDateKey(date, 6))
   const res = await fetch(url.toString())
   if (!res.ok) return null
   const data = (await res.json()) as OpenMeteoHomePayload

@@ -19,6 +19,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface ModuleHtmlDoc {
   id: string
@@ -84,3 +85,5 @@ export const useModuleHtmlStore = create<ModuleHtmlState>()(
     { name: persistKey("module-html"), version: 1, storage: createCogsJSONStorage() },
   ),
 )
+
+registerPhoneWindowStore(useModuleHtmlStore)

@@ -226,11 +226,18 @@ export function resolveGlossaryPrefix(raw: string): GlossaryPrefix | null {
 export const BIM_MAIN_INFO = `${BIM_INTRO}
 
 ────────────────────────────────
+Just type — most of what you send needs no command
+• Plain text is logged as a time-stamped event. One-letter forms work: o, up, back. took addy / ate … / drank … log intake.
+• A message that starts with a link (reel, tiktok, article) → Inbox → Links. Words after the link are the note.
+• Word: then text files it under that name — Brain2: fix the clock · Cleaning: bedroom floor · Idea: …
+• tp: your thought — a guiding strand of this moment: why you are doing something, what you expect next, how it lands.
+• A photo with no clear caption asks what it is: journal, outfit, log, inbox (anything else), or skip (1–4). Or caption it: inbox: album cover inspo · outfit: · photo: · journal: title.
+• Telegram understands the exact keys below. BIM chat in the app also takes plain sentences (facts, questions) when LLM is on.
+
 Basics
-• Pair once from Settings → Message ingest (pair: 123456 or /start 123456).
 • Case-insensitive. A verb may be followed by : or a space.
 • Ambiguous names get a numbered list — reply with the number or the name.
-• Retries are deduped so Telegram does not double-write.
+• Questions ("when did I last …?") are not logged. Ask them in BIM chat with LLM on.
 • Pinned grocery survives a closed laptop. Live replies 24/7 need: npm run phone:hub
 
 What you can do (families)
@@ -241,14 +248,14 @@ What you can do (families)
 • Grocery — groc / store (dump/add/pin); got: / bought: / x / check off
 • Needed — needed: batteries · get: then lines → list "needed"
 • To-do — to do today:, do: / next action:, read to do today
-• Log — switch: (view, from:, to:) / log categories / log: or log (colon optional; loc: place) / tp: / thought process: / log: tp: (Thought process: a guiding strand of this moment — why you are doing something, what you expect next, and how it lands; not a general note, a one-word mood, or a short activity log such as brushed teeth) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; saved keywords (log: went outside, log keywords); smoked weed, drank water, ate …, took …
+• Log — switch: (view, from:, to:) / log categories / log: or log (colon optional; loc: place) / tp: (thought process — log info) / intake: / intake food|drink|drug: / cycle: / st: / switch task: / so: / switch objective: / switch goal: / transit:; saved keywords (log: went outside, log keywords); smoked weed, drank water, ate …, took …
   On a log line, a switch line, or a tracking-note clock, no am/pm means military time (12:04 is noon, 1:00 is 1:00am, 1pm is 1:00pm). inbox: text is not parsed this way.
 • Monitor — currently / stopped / switched to
 • Capture / add — inbox:, qa:, add:, idea:, quick add: (-mb / -monkey → Monkey brain; -p / -plain → as written). Plain text with no verb is a log line.
 • -i / -inbox at the end of any message — it lands where it was going, and also in Inbox
 • Bulk — bulk: / bulk add; Name: dumps; before 9/12:
 • Track — at:, track:, mood:, sleep:, start:/stop, gps:, screen:/call:/text:
-• Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:. Thought process is tp: / thought process: / log: tp: — a guiding strand of this moment: why you are doing something, what you expect next, and how it lands. Not this general note, not a one-word mood, and not a short activity log such as brushed teeth
+• Notes — n / note: (optional clock, est or unknown), day:, memo:, jot:.
 • Read — read: / show: / dump: / peek:, lists, folders, search, today, count, tags, ops
 • Scan — receipt photo, journal/PDF → Docs, inv pantry
 • iPhone Notes — iphone-notes: park from Shortcut
@@ -262,8 +269,28 @@ How to see more (from inside this chat)
 • all commands — one glossary of every command and keyword, every type
   (includes legacy aliases and retired bare g)
 
-Also: help (short sheet) · ping (is ${BIM_SHORT} awake?)
+Also: help (short sheet) · ping (is ${BIM_SHORT} awake?) · pair: 123456 (once, from Settings → Message ingest)
 On disk: docs/BIM_COMMANDS.md · docs/MESSAGE_INGEST.md`
+
+/** `info` inside BIM chat: talk first, shortcuts second. Telegram keeps `BIM_MAIN_INFO`. */
+export const BIM_CHAT_INFO = `${BIM_SHORT} chat — just talk.
+
+With LLM on, plain sentences work:
+• Tell me a fact: "The last time I saw Shelby was July 5th" · "Elijah comes home nov 18th"
+• Ask: "When did I last shower?" · "how many times did I smoke this week" — answered from your data, nothing is filed
+• Ask me to make something: "make a habit for stretching" · "countdown to when Elijah comes home"
+• Anything else is logged as a time-stamped event.
+
+Shortcuts skip the model. They are instant, exact, and work offline (Telegram understands only these):
+• tp: thought — a guiding strand of this moment
+• Word: text — files under that name (Brain2: …, Cleaning: …)
+• took / ate / drank … — intake · o · up · back — one-word logs
+• A link first — Inbox → Links
+• 📷 attaches a photo; caption it (inbox: …, outfit: …, journal: …) or leave it blank and I ask what it is
+• groc · gm · today menu · undo
+
+The LLM key turns the model off: shortcuts only.
+More: all commands · {prefix} info (groc info, log info, add info) · help`
 
 const INFO_BY_FAMILY: Record<string, string> = {
   grocery: `${BIM_SHORT} · Grocery
@@ -364,6 +391,7 @@ How to use it
   Why you are doing something, what you expect next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth.
   Colon required, so bare tp and bare thought process are not this. Pen Text log. eventKind thought-process. Also a Thought Process item on Lists → Tracking → Thought Process. Quick Add thought process: / tp: uses this write.
   First line is the title; a line under it is the note. Same clocks as a log line.
+• nfc:vitamin-d  — NFC tag saved in Settings → NFC tags. \`nfc:adderall 2\` sets that scan’s quantity. Writes the tag’s tracking instant and, when bound, today’s daily habit. A door tag alternates left and back. The same tag within 20 seconds is ignored.
 • Presets (Settings → Discrete event triggers):
   smoked weed · drank water · ate {item} · took {item}
 
@@ -508,7 +536,7 @@ Send "note commands".`,
   sleep: `${BIM_SHORT} · Sleep
 • sleep: 11:30-7:00  ·  slept:
 • Inside gm: bed / wake / dream, or all nighter
-• Analytics → Sleep shows nights and all-nighter days (text pipeline labeled)
+• Data → Sleep shows nights and all-nighter days (text pipeline labeled)
 
 Send "sleep commands".`,
 

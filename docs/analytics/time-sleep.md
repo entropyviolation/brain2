@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/SleepAnalytics.tsx`. Math: `lib/sleep-log.ts`, `lib/sleep-inference.ts`, `lib/sleep-sun.ts`, `components/Analytics/sleep-rhythm.ts`. Styles: `components/Analytics/time-rhythms.css`. Tests: `SleepAnalytics.test.tsx`, `time-rhythms.test.ts`.
+File: `components/Analytics/time/SleepAnalytics.tsx`. Math: `lib/sleep-log.ts`, `lib/sleep-inference.ts`, `lib/sleep-sun.ts`, `components/Analytics/time/sleep-rhythm.ts`. Styles: `components/Analytics/time/time-rhythms.css`. Tests: `SleepAnalytics.test.tsx`, `time-rhythms.test.ts`.
 
 ## Data in
 

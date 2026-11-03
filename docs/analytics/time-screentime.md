@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/ScreenTimeView.tsx`. Math: `lib/tracking-summary.ts`, `components/Analytics/hour-day.ts`, `components/Analytics/screen-time-stats.ts`. Styles: `time-rhythms.css`. Tests: `ScreenTimeView.test.tsx`, `time-rhythms.test.ts`.
+File: `components/Analytics/time/ScreenTimeView.tsx`. Math: `lib/tracking-summary.ts`, `components/Analytics/hour-day.ts`, `components/Analytics/time/screen-time-stats.ts`. Styles: `time-rhythms.css`. Tests: `ScreenTimeView.test.tsx`, `time-rhythms.test.ts`.
 
 ## Data in
 

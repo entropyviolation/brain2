@@ -1,0 +1,84 @@
+/*
+ * components/Bim/bim-ink.css — BIM's phosphor, shared by the desktop console and the phone tab.
+ *
+ * One idea: the ghost ink of the Dash (`#5cf2d6`) that drifts, slowly, to the Dash's blue (`#8fd3ff`)
+ * and back. `--bim-ink` is the drifting ink; `--bim-ink-2` runs the other way, so a second section
+ * of the same screen never matches the first. `--bim-lcd` (white-blue) and `--bim-violet` are fixed.
+ * Put `.bim-ink` on the screen's root and read the tokens below it. Drift stops under reduced motion.
+ */
+
+@property --bim-ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #5cf2d6;
+}
+
+@property --bim-ink-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #8fd3ff;
+}
+
+/* About three minutes a lap. `steps` keeps repaint to one tick a second instead of every frame. */
+@keyframes bim-drift {
+  0%,
+  100% {
+    --bim-ink: #5cf2d6;
+  }
+  50% {
+    --bim-ink: #8fd3ff;
+  }
+}
+
+@keyframes bim-drift-2 {
+  0%,
+  100% {
+    --bim-ink-2: #8fd3ff;
+  }
+  50% {
+    --bim-ink-2: #5cf2d6;
+  }
+}
+
+.bim-ink {
+  --bim-lcd: #cdeeff;
+  --bim-violet: #b39cff;
+  --bim-fault: #ff9a9a;
+  --bim-glass: #020708;
+  --bim-glass-2: #061214;
+  --bim-mono: var(--font-dotgothic), "DotGothic16", "w95fa", ui-monospace, monospace;
+  --bim-pixel: var(--font-silkscreen), Silkscreen, "w95fa", ui-monospace, monospace;
+  --bim-legend: color-mix(in srgb, var(--bim-ink) 72%, #9fb8bd);
+  --bim-dim: color-mix(in srgb, var(--bim-ink) 52%, transparent);
+  --bim-line: color-mix(in srgb, var(--bim-ink) 30%, transparent);
+  --bim-ghost: color-mix(in srgb, var(--bim-ink) 8%, transparent);
+  --bim-glow: 0 0 1px color-mix(in srgb, var(--bim-ink) 90%, transparent), 0 0 7px color-mix(in srgb, var(--bim-ink) 42%, transparent);
+  --bim-glow-2: 0 0 1px color-mix(in srgb, var(--bim-ink-2) 90%, transparent), 0 0 7px color-mix(in srgb, var(--bim-ink-2) 42%, transparent);
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
+  animation:
+    bim-drift 180s steps(90) infinite,
+    bim-drift-2 180s steps(90) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bim-ink {
+    animation: none;
+  }
+}
+
+/* The glass: black, a faint bloom, scanlines. The same well the Dash and the habit CRTs sit in. */
+.bim-glass {
+  position: relative;
+  color: var(--bim-ink);
+  text-shadow: var(--bim-glow);
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 90% at 50% 30%, var(--bim-glass-2) 0%, var(--bim-glass) 72%);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--bim-ink) 9%, transparent),
+    inset 0 0 28px rgba(0, 0, 0, 0.7),
+    0 0 0 3px #3b4044,
+    0 -1px 0 3px #6b7175;
+}

@@ -97,8 +97,8 @@ export function ModulesPanel({ onTaskSelect }: ModulesPanelProps) {
             Build mini-apps and widgets from your lists, items, and stats.
           </p>
         </div>
-        <Button className="mod-build" onClick={() => setBuilding(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button type="button" className="todo-cap is-primary mod-build" data-no95="" onClick={() => setBuilding(true)}>
+          <Plus className="h-4 w-4" />
           Build module
         </Button>
       </div>
@@ -127,9 +127,11 @@ export function ModulesPanel({ onTaskSelect }: ModulesPanelProps) {
                     <WorkspaceGlyph module={m} />
                     <span className="mod-ws-title">{m.title}</span>
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
-                      className="mod-caption-btn"
+                      className="todo-cap is-mod mod-caption-btn"
+                      data-no95=""
                       onClick={(e) => {
                         e.stopPropagation()
                         openModulePopout(m.id)

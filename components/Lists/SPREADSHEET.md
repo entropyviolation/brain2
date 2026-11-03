@@ -137,7 +137,7 @@ Fullscreen is not remembered across visits.
 
 ## What’s not Google Sheets
 
-Not in this pass (keep Win95/Cogs, don’t clone the product):
+Not in this pass (keep Win95/Brain2, don’t clone the product):
 
 - Formulas as a first-class language beyond per-cell `=A1` and column `formula` attributes
 - Fill-down from the keyboard (the fill handle already exists)

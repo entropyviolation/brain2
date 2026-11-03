@@ -10,7 +10,7 @@ import { lazy, Suspense, useEffect } from "react"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { linkSessionAndPen } from "@/lib/session-pen"
 
-const FocusBar = lazy(() => import("./FocusBar"))
+const FocusBar = lazy(() => import("./focus-bar/FocusBar"))
 
 export function FocusBarDock() {
   // A painting session and the pen clock pause, resume and stop together.

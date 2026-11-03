@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/CircadianView.tsx`. Math: `components/Analytics/hour-day.ts`, `components/Analytics/circadian-rhythm.ts`. Styles: `time-rhythms.css`. Tests: `hour-day.test.ts`, `time-rhythms.test.ts`.
+File: `components/Analytics/time/CircadianView.tsx`. Math: `components/Analytics/hour-day.ts`, `components/Analytics/time/circadian-rhythm.ts`. Styles: `time-rhythms.css`. Tests: `hour-day.test.ts`, `time-rhythms.test.ts`.
 
 ## Data in
 

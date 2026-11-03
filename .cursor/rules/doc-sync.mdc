@@ -1,0 +1,22 @@
+---
+description: Update the tree, sync docs, refresh the screenshot gallery, or prepare a push — the separate doc-sync pass, not ordinary coding
+alwaysApply: false
+---
+
+# Doc sync
+
+Use this when the user asks to update the tree, sync docs, refresh the gallery, or prepare a push. Ordinary coding follows `update-docs-after-each-step` and stops there.
+
+1. Run `npm run tree`. The script writes `docs/tree.txt`. Do not read that file into the chat.
+2. Run `npm run docs:check`. It compares parseable README file lists to the files on disk. Fix a listed path that is missing, or a file a fenced tree clearly left out. If the checker says a list is prose, report it. Do not guess a rewrite.
+3. Edit `docs/tree.md` only when a top-level folder or a named room appeared or disappeared. It is a room map. Folder READMEs own the per-file lists. Do not paste `tree.txt` into it.
+4. Refresh the gallery only if the user asked. Do not recapture all 97 shots. Run `npm run screenshot-targets` and capture with `BRAIN2_ONLY` for the ids whose manifest sources changed. A full recapture is a gallery day. The app must already be running. Do not kill it or take port 3000.
+
+`npm run docs:check` is the drift check. CI runs it. CI does not rewrite `tree.txt`. No Action writes prose or recaptures screenshots.
+
+```text
+❌ BAD: open docs/tree.txt, then rewrite every README file list by hand
+✅ GOOD: npm run tree && npm run docs:check, then a one-line room-map edit if a room appeared
+❌ BAD: npm run capture-screenshots
+✅ GOOD: BRAIN2_ONLY=08-home-tracking-week.png npm run capture-screenshots
+```

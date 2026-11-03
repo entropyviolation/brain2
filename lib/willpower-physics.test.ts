@@ -35,6 +35,8 @@ import {
   WILLPOWER_GRAVITY,
   WILLPOWER_HELD_Z,
   WILLPOWER_MAX_Z,
+  PHONE_DISH_Z,
+  containWillpowerBodies,
   WILLPOWER_PERSPECTIVE,
   WILLPOWER_RESTITUTION,
   WILLPOWER_STIR_HOP,
@@ -580,6 +582,52 @@ describe("willpower physics", () => {
     const meanVz = hops.reduce((s, b) => s + b.vz, 0) / hops.length
     const apexN = predictBounceFlight(0, meanVz, DEFAULT_WILLPOWER_PHYSICS).apex
     expect(apexN).toBeGreaterThan(10)
+  })
+
+  it("keeps a phone contained dish inside the visible oval", () => {
+    const w = worldOf({ contain: true, cx: 90, cy: 78, rx: 36, ry: 22 })
+    let bodies = [
+      stone({ id: "fly", x: w.cx + 4, y: w.cy, vx: 4000, vy: -3200, vz: 4000, r: 6 }),
+    ]
+    for (let i = 0; i < 48; i++) bodies = stepWillpowerWorld(bodies, w, 1 / 60)
+    const b = bodies[0]!
+    const dx = b.x - w.cx
+    const dy = b.y - w.cy
+    const e = (dx * dx) / (w.rx * w.rx) + (dy * dy) / (w.ry * w.ry)
+    expect(e).toBeLessThanOrEqual(1.02)
+    expect(b.z).toBeLessThanOrEqual(PHONE_DISH_Z + 0.01)
+  })
+
+  it("parks a resting phone gem restored outside the oval", () => {
+    const w = worldOf({ contain: true, cx: 90, cy: 78, rx: 36, ry: 22, height: 160 })
+    const resting = stone({ id: "rest", x: w.cx, y: w.height, r: 6 })
+    const parked = containWillpowerBodies([resting], w)
+    const b = parked[0]!
+    const rx = Math.max(w.rx - b.r, 8)
+    const ry = Math.max(w.ry - b.r, 8)
+    const e = ((b.x - w.cx) ** 2) / (rx * rx) + ((b.y - w.cy) ** 2) / (ry * ry)
+    expect(e).toBeLessThanOrEqual(1.01)
+    expect(b.vx).toBe(0)
+    expect(b.vy).toBe(0)
+  })
+
+  it("does not move a desktop gem that sits past the phone rim", () => {
+    const w = worldOf()
+    const resting = stone({ id: "rest", x: w.cx, y: w.cy + w.ry * 1.2, r: 6 })
+    const parked = containWillpowerBodies([resting], w)
+    expect(parked[0]).toBe(resting)
+    expect(parked[0]!.y).toBe(resting.y)
+  })
+
+  it("still lets a desktop world climb past the phone dish ceiling", () => {
+    const w = worldOf()
+    const bodies = stepWillpowerWorld(
+      [stone({ id: "fly", x: w.cx, y: w.cy, vx: 0, vy: 0, vz: 4000, z: 280, r: 6 })],
+      w,
+      1 / 30,
+    )
+    expect(bodies[0]!.z).toBeGreaterThan(PHONE_DISH_Z)
+    expect(bodies[0]!.z).toBeLessThanOrEqual(900)
   })
 
 })

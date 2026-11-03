@@ -24,6 +24,8 @@ Unchecking a Details column hides it in this list’s Details table only. It doe
 |-------|---------|
 | `undefined` | Current Details defaults: schema attributes in `displayedAttributes` order (or declaration order), plus Urgency / Importance / Scheduled on Next Actions lists |
 | `[]` | No extra columns (Name / Actions remain) |
+
+Actions holds **Open**. On a row of the Instagram Account type it also holds the Visit profile key (`list-content/InstagramProfileKey.tsx`, see [`DEFAULT_VIEW.md`](DEFAULT_VIEW.md#visit-profile-instagram-account)). _Last mapped: 2026-11-02._
 | `["pages", "__field_importance__", …]` | Those columns, in that order |
 
 Helpers: `lib/details-columns.ts` (`resolveDetailsColumnIds` / `defaultDetailsColumnIds`). UI: `dialogs/DetailsViewSettings.tsx`. Render: `list-content/ListContentDetails.tsx`. Folder **All Items** persists `detailsColumns` on `__all-items__{folderId}`; Home All on `__all-items__root` ([`FOLDER_ALL_ITEMS.md`](FOLDER_ALL_ITEMS.md)).

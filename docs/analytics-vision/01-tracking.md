@@ -1,6 +1,6 @@
-# Analytics vision — Tracking
+# Data vision — Tracking
 
-This is a product design for an Analytics surface that reads **Tracking data only**. It is grounded in the records Tracking actually stores: minute intervals, pens, tags, day notes, cycle marks, sleep nights, counts, and the clocks those writers use. It does not describe any Analytics screen that already exists.
+This is a product design for an Data surface that reads **Tracking data only**. It is grounded in the records Tracking actually stores: minute intervals, pens, tags, day notes, cycle marks, sleep nights, counts, and the clocks those writers use. It does not describe any Data screen that already exists.
 
 The question the surface should answer is not “how many charts can we draw.” It is: given a life recorded as parallel paintings of the same minutes, what structure is really there, which of it is observed, and which of it is a guess the logger left behind.
 
@@ -12,7 +12,7 @@ Tracking does not store slot arrays. One painted stretch is a `TimeEntry`: a loc
 
 An omitted `kind` is an **interval**. `kind: "instant"` is a discrete event at `startMin` with `endMin === startMin`, so duration is 0. Occupancy and untracked gaps ignore instants. Sunrise lines, “smoked weed,” a thought, a text, and a switch tick are instants. An interval may name instants as its edges (`startEventId`, `endEventId`).
 
-A block that crosses midnight is **two rows** that share `spanId`. `23:00–02:00` is Thursday `1380–1440` plus Friday `0–120`. `00:00` as an end clock means the end of this day, not a wrap. An explicit later `endDate` can fill whole days in between (capped around 31 days in the slice helper). Analytics must treat `spanId` as one logical event and the rows as day-slices, or a night walk will be counted twice as two short days and never as one three-hour bout.
+A block that crosses midnight is **two rows** that share `spanId`. `23:00–02:00` is Thursday `1380–1440` plus Friday `0–120`. `00:00` as an end clock means the end of this day, not a wrap. An explicit later `endDate` can fill whole days in between (capped around 31 days in the slice helper). Data must treat `spanId` as one logical event and the rows as day-slices, or a night walk will be counted twice as two short days and never as one three-hour bout.
 
 The vault is `brain2-timegrid-store` (persist v15): `scopes`, `tags`, `entries`, `removedEntryIds`, a mirror of `dayNotes`, `untrackedNotes`, `hiddenPenIds`, `confirmedEventIds`, `enableCycleTracking`, `cycleDetailsOpen`. Day notes’ source of truth is the separate append log `brain2-tracking-day-notes`. Cycle flags live in `brain2-cycle-marks`. Sleep statements live in the sleep store and are **copied** onto the grid as ordinary blocks. Screen Time, phone pings, text, GPS, and “working now” all end as the same `TimeEntry` shape, with different stamps.
 
@@ -32,7 +32,7 @@ These are properties of the records, not chart preferences.
 | Variants have two honest totals | **Reach**: minutes of the parent that included Elijah. Overlaps, so Elijah + Rebecca can exceed the parent. **Split**: each distinct variant set (Elijah only / Rebecca only / both / unlabeled) partitions the parent and sums to it. |
 | Estimated time is marked, not dropped by default | `precision: "estimated"` is assumed or reconstructed. Omitted precision is certain. A serious view offers “observed only” by dropping estimated rows, and always says how many minutes that hid. |
 | Hidden pens still count | `hiddenPenIds` only removes a pen from the well. Paint stays. |
-| Sleep and hand paint may disagree | Re-deriving sleep replaces only `generatedBy.kind === "sleep"` rows for that night. A hand-painted overlap is kept. Analytics should show the disagreement, not pick a winner silently. |
+| Sleep and hand paint may disagree | Re-deriving sleep replaces only `generatedBy.kind === "sleep"` rows for that night. A hand-painted overlap is kept. Data should show the disagreement, not pick a winner silently. |
 | Companion rules fill blanks | A `PenLink` (“Ian’s House always means Social”) paints a normal block in the other scope **only on minutes that scope left empty**, unless a person asked to overwrite. |
 
 `entryMinutes` is `max(0, endMin − startMin)`. Logical span minutes are the sum of slices that share `spanId`.
@@ -95,7 +95,7 @@ Seeded ids and names:
 | `iphone-calls` | iPhone Calls | A person, as an interval | Who / Exact |
 | `iphone-texts` | iPhone Texts | A person, as an instant whose title is the message | Who / Exact |
 
-People add scopes by name. `displayDepth` and `depthLabels` are how that view is drawn. Analytics should let the person pick a depth **without** writing `displayDepth`, and should label the lens (“Exact” vs “Country”) on every chart that uses it.
+People add scopes by name. `displayDepth` and `depthLabels` are how that view is drawn. Data should let the person pick a depth **without** writing `displayDepth`, and should label the lens (“Exact” vs “Country”) on every chart that uses it.
 
 ### 2.3 `TrackPen` — one color in one view
 
@@ -140,7 +140,7 @@ Special Activity pens created by language, not by the seed:
 
 `PenVariant`: `{ id, name, color?, penId? }`. The detail **is** a pen (`penId`) whose parent is the pen that owns the list. Adding a detail creates or adopts that child. A same-name pen that already counts as someone else is not stolen.
 
-Action-format placeholders that always resolve: `{minutes}`, `{x}`, `{hours}`, `{duration}`, `{name}`, `{pen}`, `{start}`, `{end}`. Optional, and they decide which template wins: `{location}`, `{project}` (and the spaced forms). This is a naming rule for a Done row, not a second time series. Analytics of Tracking should treat the template as a label generator, and the minutes as the `TimeEntry`.
+Action-format placeholders that always resolve: `{minutes}`, `{x}`, `{hours}`, `{duration}`, `{name}`, `{pen}`, `{start}`, `{end}`. Optional, and they decide which template wins: `{location}`, `{project}` (and the spaced forms). This is a naming rule for a Done row, not a second time series. Data of Tracking should treat the template as a label generator, and the minutes as the `TimeEntry`.
 
 ### 2.4 `TrackTag` — the cross-scope label
 
@@ -164,7 +164,7 @@ These are still `TimeEntry` rows. The Tracking log classifies **Activity instant
 | Thought process | `eventKind === "thought-process"` | `thought-process` | 0 |
 | Spent | `eventKind === "spend"`, or a positive `spendAmount` | `spend` | 0. `spendAmount` is integer cents. `spendOn` is what (also `title`). `spendSource` is where the money came from. |
 | Switch | Switch pen, Objective pen, or any instant with `switchTo` | `switch`, `switch-task`, `switch-objective`, or stored kind | 0 |
-| Note | Text log via `note:` / `n` | slug of the title if grouped as an event | 0 |
+| Note | Text log instant, no `eventKind` (`note:` / `n`, or the Note composer) | none. Not an event. Time → Log skips it | 0 |
 
 A `log:` line may also be a **range** (a real interval on Text log) or a start/end pair that becomes one span. A trailing `loc: home` does not change `eventKind`; it paints a **second** instant on Location at the same minute, reusing or creating that Location pen.
 
@@ -248,7 +248,7 @@ Deleting a count drops its ticks and **leaves** intake instants already painted.
 | `follicular` | After a bleed ends, when no ovulation during or after that bleed is still in effect — including the whole gap when nobody marked ovulation. |
 | `unknown` | No marks, or a day before the first bleed and before any ovulation. |
 
-`enableCycleTracking` (timegrid store) only shows the Tracking log cycle section. It does not delete marks. New stores start false; an upgrade of an older blob that omitted the key sets it true. `cycleDetailsOpen` hides or shows the phase line. Analytics should respect concealment: if the latch is closed, do not draw phase charts.
+`enableCycleTracking` (timegrid store) only shows the Tracking log cycle section. It does not delete marks. New stores start false; an upgrade of an older blob that omitted the key sets it true. `cycleDetailsOpen` hides or shows the phase line. Data should respect concealment: if the latch is closed, do not draw phase charts.
 
 **Estimates** (`assessCycleDay`) never write marks and never replace `phaseForDate` as the marked truth. A day is `basis: "estimated"` only when no ovulation was marked for that cycle and a guess can be said aloud. `basis: "marked"` has confidence 1. Estimated days have lower confidence plus a reason sentence.
 
@@ -305,7 +305,7 @@ Two pointers, at most one of each:
 | Work session | `operationId`, `startedAt` ISO, `title` (operation name), `scopeId`, `penId`, `trackingEntryIds`, `pausedAt?`, `pausedAccumMs?` | Ordinary blocks titled with the operation name. Pause freezes paint; the gap is accumulated milliseconds, not a tracked block. |
 | Pen-color session | `penId`, `scopeId`, `title` (pen name), `startedAt`, `trackingEntryIds`, pause fields | Same slice math, in that pen’s own view. `spanId` `pen-color-<startedAt>`. Does not write a Done row. |
 
-`trackingEntryIds` is the foreign key from the session to the blocks. When the session ends, the blocks remain. Analytics of a finished day should read the blocks. Analytics of “right now” may read the live pointer, including pause.
+`trackingEntryIds` is the foreign key from the session to the blocks. When the session ends, the blocks remain. Data of a finished day should read the blocks. Data of “right now” may read the live pointer, including pause.
 
 Header **Update state** stamps the present only: extend the open stretch up to now, or paint this minute with a seam if the pen already touches it. It erases future minutes. It never paints through midnight.
 
@@ -317,7 +317,7 @@ Header **Update state** stamps the present only: extend the open stretch up to n
 
 ### 2.16 Sun, as an axis not a record of life
 
-`DaySunTimes` for a local date and a lat/lng pin: `sunriseMinutes`, `sunsetMinutes`, plus clock labels. Cached per `YYYY-MM-DD|lat|lng`; first write wins so last week is not restamped with today’s clock. Polar days with no rise or set are null. Default pin in the astronomy helper is San Diego. This is a clock the grid already draws. Analytics can shift “hours after sunrise” without pretending the sun is a pen.
+`DaySunTimes` for a local date and a lat/lng pin: `sunriseMinutes`, `sunsetMinutes`, plus clock labels. Cached per `YYYY-MM-DD|lat|lng`; first write wins so last week is not restamped with today’s clock. Polar days with no rise or set are null. Default pin in the astronomy helper is San Diego. This is a clock the grid already draws. Data can shift “hours after sunrise” without pretending the sun is a pen.
 
 ### 2.17 Adjacent clock series that is not a Tracking row
 
@@ -755,7 +755,7 @@ What would be learned: the places the two instruments disagree (Activity says Re
 
 What would be learned: which phrases repeat (`eventKind` counts), which words are hapaxes, whether thought-process titles cluster at the same hours as switch spikes (a planning burst). A bag of `eventKind` over the week, sorted by count, is the right first instrument. Topic models on a few dozen notes are not.
 
-Search already matches name, notes, project, mood word, sensation, vibe, narrative, reframe, about, pen, secondary pen, counts-as names, and action templates. Analytics can offer that same find as a drill, then chart the hit set (when those blocks happen). The hit set is a cohort of blocks, not a new entity.
+Search already matches name, notes, project, mood word, sensation, vibe, narrative, reframe, about, pen, secondary pen, counts-as names, and action templates. Data can offer that same find as a drill, then chart the hit set (when those blocks happen). The hit set is a cohort of blocks, not a new entity.
 
 ---
 
@@ -836,7 +836,7 @@ Align `MetricDatapoint.at` to date + minute. Attach the presence tuple at that m
 
 ## 7. Information architecture
 
-One Analytics area called **Tracking**. Default period: the last 28 local days, including today, with empty days kept. Default scope lens: Activity at Exact, with a depth control that does not write the grid’s `displayDepth`. Default certainty: include estimated, and show the quality strip so that choice is visible. A switch, **Observed only**, drops `precision: "estimated"`.
+One Data area called **Tracking**. Default period: the last 28 local days, including today, with empty days kept. Default scope lens: Activity at Exact, with a depth control that does not write the grid’s `displayDepth`. Default certainty: include estimated, and show the quality strip so that choice is visible. A switch, **Observed only**, drops `precision: "estimated"`.
 
 If cycle details are concealed, the Body section omits phase charts and shows the same concealed latch the log uses.
 
@@ -851,7 +851,7 @@ The landing view when the period is one day, and the drill target from every oth
 - Day notes in append order, with `createdAt`.
 - Sleep statement if this date is a morning or the evening before one.
 
-Drill: click a slab → the block (pen, secondaries, tags, variants, title, notes, project, books, pages, mood reading, provenance, span siblings). Click a gap → the note and Fill’s range, without painting from Analytics.
+Drill: click a slab → the block (pen, secondaries, tags, variants, title, notes, project, books, pages, mood reading, provenance, span siblings). Click a gap → the note and Fill’s range, without painting from Data.
 
 ### 7.2 Shape
 

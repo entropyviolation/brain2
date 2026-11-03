@@ -31,6 +31,9 @@ describe("GoalsTracker", () => {
   it("renders the objectives & goals header and the goal", () => {
     const { container } = render(<GoalsTracker />)
     expect(screen.getByText("Objectives & Goals")).toBeInTheDocument()
+    expect(container.querySelector(".gol-fascia")).toBeTruthy()
+    expect(container.querySelector(".gol-phone")).toBeNull()
+    expect(container.querySelector(".gol-desk-plate")).toBeTruthy()
     const plate = container.querySelector("[data-desk-plate='goals'] img")
     expect(plate).toHaveAttribute("src", orbFor("home-goals"))
     expect(screen.getAllByText("Read 3 books").length).toBeGreaterThan(0)

@@ -2,7 +2,7 @@ Science and Sanity × Brain2
 Sep 23, 2026 · @allie
 Overview
 Brain2 is already a working model of Korzybski's general semantics. The book never mentions software, but its central claims describe the app's design. A record is a map, not the life it describes. Every map leaves things out. Every claim should carry its date and its order of abstraction. A person is a time-binder who builds on what earlier states of themselves recorded.
-Korzybski's core claim is in Chapter IV: "A map is not the territory it represents, but, if correct, it has a similar structure to the territory, which accounts for its usefulness" (p. 58). Brain2's first law, capture once, connect everywhere, and its second law, Analytics is the heart, are attempts to build a personal map with the structure of the life it maps.
+Korzybski's core claim is in Chapter IV: "A map is not the territory it represents, but, if correct, it has a similar structure to the territory, which accounts for its usefulness" (p. 58). Brain2's first law, capture once, connect everywhere, and its second law, Data is the heart, are attempts to build a personal map with the structure of the life it maps.
 How this sits with the other two books: [`MAP_LOOP_MEANING.md`](MAP_LOOP_MEANING.md). This file is the map instrument. Do not re-sequence the work from that brief.
 
 How to read this doc. Part 1 lists the parallels, grouped by what they touch in Brain2: structure (the data model), function (what the rooms do), process (the loops) and future (the roadmap). Each parallel names the idea, quotes or cites the text, and names the Brain2 code or doc that already carries it. Part 2 proposes five new features and five changes that apply more of the book. Part 3 is the work order: ten slices, the files they land in, and what done means. Execute Part 3. Do not re-sequence the work from the essay. Page numbers are the book's own, from the fifth edition (1994) scan.
@@ -18,7 +18,7 @@ A. Structure: the data model
     ◦ In Brain2: the same stack appears in the data. The event is the raw process: ActivityWatch window events, a phone text to BIM, a minute of the day. The object is the painted block or captured Item. The label is the pen, type or tag. Labels of labels are pen parents under Counts as (lib/pen-tree.ts): Balboa Park → at the park → Out → Mexico. That chain is Korzybski's labels "hung, one to the other, in a series."
 3. Orders of abstraction must not be confused.
     ◦ The book: "Once we abstract, we abstract in different orders, and so we order" (p. 404). Confusing the orders is "identification", which he treats as the root of mis-evaluation.
-    ◦ In Brain2: docs/COUNTS_AS.md states the rule: "Painting still writes this pen." Nesting is "not a relabel". The stored block stays at its own order. Show as (displayDepth) only picks which order the grid and Analytics display: Country, Area or Exact. Higher-order rollups are computed at read time, so they never overwrite the lower-order record.
+    ◦ In Brain2: docs/COUNTS_AS.md states the rule: "Painting still writes this pen." Nesting is "not a relabel". The stored block stays at its own order. Show as (displayDepth) only picks which order the grid and Data display: Country, Area or Exact. Higher-order rollups are computed at read time, so they never overwrite the lower-order record.
 4. Non-allness: characteristics are always left out.
     ◦ The book: "Nature is inexhaustible; the events have infinite numbers of characteristics" (p. 375). On the Differential, the free-hanging strings show "characteristics left out, neglected, or forgotten in the abstracting" (p. 399).
     ◦ In Brain2: the design assumes the record is incomplete. Items take open-ended attributes and per-item schemas (itemAttributeDefinitions). The Tracking day-notes field holds jots "while you figure out where they belong." Untracked and AFK time is shown as untracked, not filled in. Screen Time says "0 blocks means AW had nothing usable yet, not a broken pipe." The README's "The graph has no ceiling" is the product version of non-allness.
@@ -30,7 +30,7 @@ A. Structure: the data model
     ◦ In Brain2: nearly everything carries a date, and the app is careful about which date. Sleep belongs to "the calendar day you are looking at, not 'last night'." Week and Infinite views label sunrise and sunset "from that row's date... not today's clock on every row." lib/item-activity.ts is an append-only ledger in which "entries are never rewritten". Each state of an item is dated and kept.
 7. Non-elementalism: do not split verbally what cannot be split empirically.
     ◦ The book: language lets us "split 'body' and 'mind', 'emotion' and 'intellect', 'space' and 'time', etc., which as a matter of fact cannot be separated empirically" (p. lxii). Korzybski's answer is joined terms such as space-time and organism-as-a-whole.
-    ◦ In Brain2: the first law, "Isolation is a bug", is non-elementalism. One Item primitive runs through Lists, Scheduler, Habits, Tracking, Modules and Analytics. Tags "belong to time rather than to pens", which joins Tracking and Habits. Opening a block shows what else was happening: the Activity, Location, Mood and Company views of those same minutes. It is one event seen from several sides, not four separate events.
+    ◦ In Brain2: the first law, "Isolation is a bug", is non-elementalism. One Item primitive runs through Lists, Scheduler, Habits, Tracking, Modules and Data. Tags "belong to time rather than to pens", which joins Tracking and Habits. Opening a block shows what else was happening: the Activity, Location, Mood and Company views of those same minutes. It is one event seen from several sides, not four separate events.
 8. Structure is the only content of knowledge.
     ◦ The book: "structure is the only possible content of science and of all human 'knowledge'" (p. 348). "We must realize that structure, and structure alone, is the only link between languages and the empirical world" (p. 50). Language is "names" plus "relational terms" (p. 250).
     ◦ In Brain2: meaning comes from structure. Typed links have inverses and derived backlinks (lib/links.ts). Formulas like LOOKUP, ROLLUP and COUNTIF compute across items. The module law "Item is the only noun" follows: modules add relations and views, not new kinds of stuff.
@@ -43,10 +43,10 @@ B. Function: what the rooms do
     ◦ In Brain2: a second brain does time-binding at personal scale: each day's self starts where the last one stopped. Reviews (daily through yearly), the item History tab, the usually ~N duration glance and Calibration all pass one period's record to the next.
 11. Description first, inference next.
     ◦ The book: "the natural survival order is 'senses' first, 'mind' next; object first, label next; description first, inference next." Reversing it, with "inferences evaluated as descriptions", is a symptom he finds in "practically all forms of 'mental' ills" (p. 317).
-    ◦ In Brain2: this is the closest match in the codebase. Derived values are "labeled, never asserted". Each carries a FieldEstimate naming how it was produced (lib/estimated-values.ts), shows an est. chip, and waits for confirmation in the period review. Once confirmed, it is "sticky": a later derivation cannot overwrite it. Assumed Tracking blocks are drawn hatched, and Analytics can hide assumed time. In other words, Brain2 keeps observed data and inferred data in separate, marked orders.
+    ◦ In Brain2: this is the closest match in the codebase. Derived values are "labeled, never asserted". Each carries a FieldEstimate naming how it was produced (lib/estimated-values.ts), shows an est. chip, and waits for confirmation in the period review. Once confirmed, it is "sticky": a later derivation cannot overwrite it. Assumed Tracking blocks are drawn hatched, and Data can hide assumed time. In other words, Brain2 keeps observed data and inferred data in separate, marked orders.
 12. Similar structure makes prediction possible, and prediction brings security.
     ◦ The book: "If the two structures are similar... our predictions are verified." If not, "we feel insecure, a floating anxiety, fear, worry, disappointment" (p. 269).
-    ◦ In Brain2: Analytics checks the map against the territory. Plan-vs-reality gives a 0–100 "intention → outcome variance score". Calibration measures actual / estimated. Overcommit warns when day-pushes and logged minutes trend apart. Korzybski's link between bad maps and anxiety also explains the ADHD design: a planner that predicts badly causes distress, and one that predicts well is calming.
+    ◦ In Brain2: Data checks the map against the territory. Plan-vs-reality gives a 0–100 "intention → outcome variance score". Calibration measures actual / estimated. Overcommit warns when day-pushes and logged minutes trend apart. Korzybski's link between bad maps and anxiety also explains the ADHD design: a planner that predicts badly causes distress, and one that predicts well is calming.
 13. Infinite-valued evaluation, not either-or.
     ◦ The book: "I accept the many-valued, more general... 'logic of probability'... which in my non-el system becomes infinite-valued" (p. 93). He rejects "the two-valued, 'either-or' type of orientations" (p. xxxiii).
     ◦ In Brain2: evaluations are graded rather than binary. Belief strength is a continuous 0–1 value from trust-weighted evidence, with 0.5 meaning no net evidence (lib/belief-strength.ts). Completion tiers give bare minimum, goal and exceptional levels in place of done or not done. Habits earn daily grades and points, and Tracking blocks are either certain or assumed.
@@ -65,7 +65,7 @@ C. Process: the loops
     ◦ In Brain2: the interface keeps showing which level you are looking at and how a value was made. Examples: the Show as depth, the est. chip, hatched assumed blocks, the ancestor path in the Counts-as picker (Home › Ocean Beach › San Diego), and the provenance sentence on each FieldEstimate.
 18. Self-reflexiveness: maps of maps.
     ◦ The book: "we can map our maps indefinitely. Also, every map is at least... a map of the map-maker" (p. xvii). "If the map could be ideally correct, it would include... the map of the map" (p. 58).
-    ◦ In Brain2: Analytics is a map of the vault, and Calibration is a map of your estimates, which are themselves maps. item-activity records changes to the map. Every data point also maps its maker: what you chose to capture shows your habits of attention.
+    ◦ In Brain2: Data is a map of the vault, and Calibration is a map of your estimates, which are themselves maps. item-activity records changes to the map. Every data point also maps its maker: what you chose to capture shows your habits of attention.
 19. The spiral of knowledge, and its failure mode.
     ◦ The book: the structure of knowledge is "circular... or of spiral structure... an 'effect' becomes a causative factor for future effects" (p. 12). How we formulate at one date shapes how we abstract next: "healthfully if our abstracting is open, non-finalistic... pathologically if not" (p. xviii).
     ◦ In Brain2: the loop is plan → track → review → plan. Habits feed points, points feed priority, and priority feeds the next plan. The code also guards against the pathological spiral. sleep-inference ignores blocks the sleep log generated itself, "or the log would end up reading its own output back as evidence."
@@ -105,7 +105,7 @@ What it is. A new Differential tab on item detail and on any painted block. It d
 • Event: the raw source, such as the ActivityWatch window events, the BIM text as sent, the receipt photo or the painted minutes.
 • Object: the record Brain2 made from it.
 • Label: the pen, type and tags.
-• Higher labels: Counts-as parents, the goals it serves, and the Analytics rollups it feeds.
+• Higher labels: Counts-as parents, the goals it serves, and the Data rollups it feeds.
 Beside the stack hang strings: characteristics this record left out. Examples are scopes with nothing painted for those minutes (no Mood, no Company), empty attributes, and an unconfirmed est. value. Clicking a string captures that characteristic.
 From the text. "The free hanging strings (Bₙ) indicate the most important characteristics left out, neglected, or forgotten in the abstracting" (p. 399). The strings, Korzybski says, "help to train in non-identity" (p. 427). He called the Differential "the first structurally appropriate model of the abstracting process" (p. xvii).
 Where it lands. components/ItemDetail/ (new tab) and the block dialog in Tracking. It reads lib/pen-tree.ts, lib/links.ts, lib/estimated-values.ts and the "what else was happening" query. Drawn in the Win95 chrome, it becomes a Differential you can handle.
@@ -134,28 +134,28 @@ Where it lands. lib/reviews-store.ts (handoff record), the Home Plan rail (shows
 Part 2b — Five key changes
 These change behavior that already ships. Each one takes a principle Brain2 applies in one room and applies it everywhere.
 1. Extend "labeled, never asserted" to every derived value
-Today. FieldEstimate provenance covers time fields: duration, and where a habit sat in the day. Belief strength, habit grades, points, Analytics sentences and Counts-as rollups are also derived, but they show no est. mark and no provenance sentence.
-Change. Give every value an order: observed (from an event: ActivityWatch, a timestamp), recorded (entered by the user), derived (computed from other values) or inferred (guessed). The order is stored on the value and drawn the same way everywhere, with a small mark and a sentence on hover. Analytics can then filter by order the way it can already hide assumed time.
+Today. FieldEstimate provenance covers time fields: duration, and where a habit sat in the day. Belief strength, habit grades, points, Data sentences and Counts-as rollups are also derived, but they show no est. mark and no provenance sentence.
+Change. Give every value an order: observed (from an event: ActivityWatch, a timestamp), recorded (entered by the user), derived (computed from other values) or inferred (guessed). The order is stored on the value and drawn the same way everywhere, with a small mark and a sentence on hover. Data can then filter by order the way it can already hide assumed time.
 From the text. "Inferences evaluated as descriptions" is the reversal Korzybski finds behind most mis-evaluation (p. 317). Consciousness of abstracting means "remembering that we abstract in different orders" (p. 417). The UI can do the remembering.
 2. Counts-as ladders for every label, not just pens
-Today. Only Tracking pens nest. Types, tags, lists and goals are flat labels, and Analytics can roll up time by depth but not items.
-Change. Apply lib/pen-tree.ts's rule, "Painting always writes the specific pen. Display depth decides which ancestor", to item types, tags and folders. For example, a Novel counts as a Book, which counts as Reading. Add one global Show as control in Analytics, so every chart can move up and down the same ladder. Records keep their exact label, and rollups are computed at read time.
+Today. Only Tracking pens nest. Types, tags, lists and goals are flat labels, and Data can roll up time by depth but not items.
+Change. Apply lib/pen-tree.ts's rule, "Painting always writes the specific pen. Display depth decides which ancestor", to item types, tags and folders. For example, a Novel counts as a Book, which counts as Reading. Add one global Show as control in Data, so every chart can move up and down the same ladder. Records keep their exact label, and rollups are computed at read time.
 From the text. Labels "are hung, one to the other, in a series" (p. 399). "We could hang on the 'animal' object as many levels of labels, which stand for higher order abstractions, as" we need (p. 394). The ladder already exists for time, and this change gives it to everything else.
 3. Infinite-valued completion by default
 Today. CompletionStatus has six values (active, done, partial, deferred, cancelled, missed), but the main To Do action is a two-valued checkbox. Completion tiers exist only when a type opts in.
 Change. Make completing something a graded action by default: a quick 0–100% slider or bare / goal / exceptional on every task, with a single click still meaning goal. Partial work is credited to points, habits and plan-vs-reality instead of counting as zero.
 From the text. Korzybski replaces "the two-valued, 'either-or' type of orientations" (p. xxxiii) with "infinite-valued" evaluation (p. 93). He notes that either-or works only "on the gross level" (p. xxxiii), which is where a checkbox belongs, not as the default for all work.
-4. Index and date every Analytics statement, and show what it leaves out
+4. Index and date every Data statement, and show what it leaves out
 Today. Insight sentences are written as undated, unindexed generalizations. lib/calibration.ts produces "You typically underestimate by 40% — tasks take longer than you plan." The sentence has no date range, no sample size and no indication of which kinds of task. Overcommit already does better, with a sentence plus n.
-Change. Every Analytics sentence carries three extensional devices:
+Change. Every Data sentence carries three extensional devices:
 • Index: which subset, for example "writing tasks".
 • Date: the range, for example "Aug 1–Sep 20".
 • Etc.: coverage, for example "n = 34; 61% of tasks had no estimate".
 For example: "From Aug 1 to Sep 20, writing tasks₁ ran 1.4× your estimate (n = 34). Errands ran 0.9×. 61% of tasks had no estimate." A pure lib/extensional-copy.ts helper builds these sentences for every card.
 From the text. The extensional devices "should be used habitually and permanently" (p. lx). A generalization without indexes spreads "over the world"; an indexed one is limited to "the individual Smith₁" (p. lxi). Non-allness: "no map represents all of 'its' presumed territory" (p. xvii). The coverage figure states that limit in numbers.
 5. Rewrite judgment copy in extensional language, throughout the app
-Today. The friend-copy rules already say "Never shame overdue". Elsewhere the app still names things by identity: the Needs Attention reason zombie, the Analytics Regret view, and insight sentences that begin "You typically…".
-Change. Audit all user-facing strings (friend, BIM replies, Needs Attention reasons, Reviews, Analytics). Describe the event instead of labeling the person or the item. For example, "Zombie" becomes "pushed 9 times since Jul 3", and a habit streak ends as "done 4 of the last 5 days; not yet today", not as a loss. Add a lint test that fails on new copy containing always, never or you are followed by a trait.
+Today. The friend-copy rules already say "Never shame overdue". Elsewhere the app still names things by identity: the Needs Attention reason zombie, the Data Regret view, and insight sentences that begin "You typically…".
+Change. Audit all user-facing strings (friend, BIM replies, Needs Attention reasons, Reviews, Data). Describe the event instead of labeling the person or the item. For example, "Zombie" becomes "pushed 9 times since Jul 3", and a habit streak ends as "done 4 of the last 5 days; not yet today", not as a loss. Add a lint test that fails on new copy containing always, never or you are followed by a trait.
 From the text. Korzybski's whole theory is about semantic reactions: words produce whole-organism responses. "We say 'this is a pencil'... unconditionally false to facts... Thus our s.r are at once trained in delusional values" (p. 35). Copy that labels a person trains the same reaction his students showed. Copy that describes events and dates them trains "an automatic delay of reactions" (p. lviii).
 
 Part 3 — The plan
@@ -180,15 +180,15 @@ Decisions locked here, so the next agent does not relitigate them:
 
 Part 2b change 1. Lane: Estimates (`lib/estimated-values.ts` and the call sites that already show est.).
 
-Grow `FieldEstimate` with `order` rather than a second provenance type. Time fields already carry the estimate; this slice gives the same order and the same hover sentence to belief strength, habit grades, points, Counts-as rollup labels, and any Analytics number that is computed. A user-typed number stays **recorded** and gets no est. mark.
+Grow `FieldEstimate` with `order` rather than a second provenance type. Time fields already carry the estimate; this slice gives the same order and the same hover sentence to belief strength, habit grades, points, Counts-as rollup labels, and any Data number that is computed. A user-typed number stays **recorded** and gets no est. mark.
 
-Done when a derived number on an open screen shows the existing mark plus a sentence naming the order and how the value was made, and a unit test locks the four order names. Analytics can filter by order the way it can already hide assumed time.
+Done when a derived number on an open screen shows the existing mark plus a sentence naming the order and how the value was made, and a unit test locks the four order names. Data can filter by order the way it can already hide assumed time.
 
 Do not design a new chip. Do not mark a typed value as inferred.
 
 ### GS-2 — Extensional sentences
 
-Part 2b change 4. Lane: Analytics. Depends on the shared range in `analytics-range-store.ts`. May proceed beside GS-1.
+Part 2b change 4. Lane: Data. Depends on the shared range in `analytics-range-store.ts`. May proceed beside GS-1.
 
 Add `lib/extensional-copy.ts`. Every interpretive sentence is built from three parts: the date range, the indexed subset, and the coverage (n, and the share of the set the claim does not cover). Calibration is the first consumer. Overcommit already has a sentence plus n; route it through the helper. Then plan-vs-reality and the Regret view's prose.
 
@@ -203,7 +203,7 @@ Do not rewrite view names in the changer. Do not present a thin window as a find
 Part 2b change 5. Depends on GS-2's helper for any sentence that states a count. Three lanes, three pulls, no shared files:
 
 - Home interiors: `lib/needs-attention.ts` and `NeedsAttention.tsx`. The visible reason "Zombie" becomes a dated count, for example "pushed 9 times since Jul 3". The id `zombie` may stay.
-- Analytics: insight lines that begin "You typically…". A habit streak ends as "done 4 of the last 5 days; not yet today".
+- Data: insight lines that begin "You typically…". A habit streak ends as "done 4 of the last 5 days; not yet today".
 - Friend and BIM: `lib/friend-copy.ts` and BIM reply strings. The existing rule stands — never shame overdue — and extends: describe the event, date it, do not say what the person is.
 
 Done when those surfaces no longer ship an identity label, and a lint test over the files this slice touched fails on a new string matching `always`, `never`, or `you are` plus a trait. Start the lint on those files. Do not sweep the repository in the same change.
@@ -263,7 +263,7 @@ Do not teach the diagram. Do not wait on GS-8 to ship the pen version.
 
 Part 2b change 2. Depends on GS-7 so the differential grows a rung instead of a second inspector. Lane: Item (`lib/pen-tree.ts`'s rule, applied beside it — do not overload the pen graph with types).
 
-Types, tags, and lists get a single parent. A Novel counts as a Book, which counts as Reading. Painting, creating, and tagging still write the exact label. One Show as control in Analytics moves charts up and down that ladder at read time. Goals already hang from objectives; do not give them a second parent pointer.
+Types, tags, and lists get a single parent. A Novel counts as a Book, which counts as Reading. Painting, creating, and tagging still write the exact label. One Show as control in Data moves charts up and down that ladder at read time. Goals already hang from objectives; do not give them a second parent pointer.
 
 Done when Novel rolled up to Reading in that control is still stored as Novel, and a test proves the rollup is computed on read.
 
@@ -296,19 +296,19 @@ Claim one slice. GS-3's three surfaces are three claims. GS-7's item tab and blo
 | Slice | Owns | Does not touch |
 |-------|------|----------------|
 | GS-1 | `lib/estimated-values.ts`, est. call sites | New chip CSS |
-| GS-2 | `lib/extensional-copy.ts`, Analytics prose | Chart frames, view names |
-| GS-3 | The one surface claimed (needs-attention, Analytics prose, or friend/BIM copy) | The other two |
+| GS-2 | `lib/extensional-copy.ts`, Data prose | Chart frames, view names |
+| GS-3 | The one surface claimed (needs-attention, Data prose, or friend/BIM copy) | The other two |
 | GS-4 | `lib/extensional-check.ts`, then Docs, Reviews, BIM | Auto-rewrite |
 | GS-5 | Reviews evening/weekly, `lib/links.ts`, `lib/second-brain-types.ts` | Morning review order |
 | GS-6 | `lib/reviews-store.ts`, then Home Plan rail | A new exporter |
 | GS-7 | Item detail Differential, then Tracking block dialog | Type/tag/list parents |
-| GS-8 | Parent pointer for types, tags, lists; Analytics Show as | Pen graph internals, multi-parent |
+| GS-8 | Parent pointer for types, tags, lists; Data Show as | Pen graph internals, multi-parent |
 | GS-9 | Completion, points, habit credit, plan-vs-reality | Checkbox removal |
 | GS-10 | Formulation snapshots via `lib/item-activity.ts`, item-detail timeline | Concept extraction |
 
 ### Done for the wave
 
-A person can see the order of a number, read an Analytics sentence that names its subset, its dates, and what it leaves out, keep a generalized sentence if they want it, describe a period before they conclude, hand the next period a premise, and open a differential on one block. The chrome still does not mention the book.
+A person can see the order of a number, read an Data sentence that names its subset, its dates, and what it leaves out, keep a generalized sentence if they want it, describe a period before they conclude, hand the next period a premise, and open a differential on one block. The chrome still does not mention the book.
 
 ## Source notes
 

@@ -68,7 +68,7 @@ export function inTrackWindow(record: PhoneRecord, now: number, textDays: number
   return textDays > 0 && record.at >= now - textDays * 86_400_000
 }
 
-/** Days of texts Tracking keeps, from `COGS_PHONE_SYNC_TEXT_DAYS` (default 30). */
+/** Days of texts Tracking keeps, from `BRAIN2_PHONE_SYNC_TEXT_DAYS` (default 30). */
 export function textDaysFromEnv(raw: string | undefined): number {
   const n = Number(raw)
   return raw !== undefined && raw.trim() !== "" && Number.isFinite(n) && n >= 0 ? n : DEFAULT_TEXT_DAYS

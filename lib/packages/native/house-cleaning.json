@@ -1,0 +1,7 @@
+{
+  "id": "house-cleaning",
+  "name": "House Cleaning App",
+  "version": "1.0.0",
+  "description": "Tidy: areas with hierarchical chores, importance + estimates, a per-task timer, today’s goal, bulk paste, a Needed list, Stuck mode, and Bare-minimum / Goal / Exceptional plans.",
+  "nativeTemplate": "house-cleaning"
+}

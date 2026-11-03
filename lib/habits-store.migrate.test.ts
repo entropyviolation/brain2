@@ -501,6 +501,21 @@ describe("habit content writes", () => {
     expect(saved.monthlyAverageBeatBonus).toBe(0)
   })
 
+  it("v27 fills showPausedHabits off and leaves pauses, shorthand, and cells as stored", () => {
+    const blob = {
+      ...v9State(),
+      tasks: [{ ...laundry, shorthandName: "laundry", pauses: [{ from: "2026-09-02", to: "2026-09-30" }] }],
+    }
+    const next = migrateHabitsState(blob, 26)
+    expect(HABITS_STORE_PERSIST_VERSION).toBe(27)
+    expect(next.showPausedHabits).toBe(false)
+    const task = next.tasks.find((t) => t.id === "custom-laundry")
+    expect(task?.pauses).toEqual([{ from: "2026-09-02", to: "2026-09-30" }])
+    expect(task?.shorthandName).toBe("laundry")
+    expect(next.weeklyData["2026-09-01"]?.["custom-laundry"]).toEqual({ completed: true })
+    expect(migrateHabitsState({ ...blob, showPausedHabits: true }, 27).showPausedHabits).toBe(true)
+  })
+
   it("single-period week view does not change habitWeekWindow", () => {
     const migrated = migrateHabitsState({ ...v9State(), habitWeekWindow: "thisMoon" }, 26)
     expect(migrated.habitWeekView).toBe(false)

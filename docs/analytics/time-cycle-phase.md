@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-Files: `components/Analytics/CyclePhaseView.tsx`, `cycle-phase-concealed.tsx` (the gate; unchanged). Math: `cycle-phase-stats.ts`, `cycle-wheel.ts`, `lib/cycle-estimate.ts`. Styles: `time-rhythms.css`. Tests: `CyclePhaseView.test.tsx`, `cycle-phase-stats.test.ts`, `time-rhythms.test.ts`.
+Files: `components/Analytics/time/CyclePhaseView.tsx`, `cycle-phase-concealed.tsx` (the gate; unchanged). Math: `cycle-phase-stats.ts`, `cycle-wheel.ts`, `lib/cycle-estimate.ts`. Styles: `time-rhythms.css`. Tests: `CyclePhaseView.test.tsx`, `cycle-phase-stats.test.ts`, `time-rhythms.test.ts`.
 
 The view stays hidden behind **Show cycle** while cycle tracking is on and the latch is closed. Not a diagnosis.
 

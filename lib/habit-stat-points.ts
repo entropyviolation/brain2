@@ -39,6 +39,8 @@ import type {
   WeeklyTask,
 } from "./types"
 
+export type { HabitStatSet }
+
 export const BETTER_THAN_LAST_WEEK_CHOICE = "betterThanLastWeek"
 
 export const HABIT_STAT_SET_LABELS: Record<HabitStatSet, string> = {

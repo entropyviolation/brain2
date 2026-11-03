@@ -26,7 +26,7 @@ surface. The top-level **Docs** tab uses the HTML WYSIWYG
 The editor's value is **markdown text** (the same string stored in `Item.body` for
 ItemDetail). The host owns persistence; `RichTextEditor` keeps no persisted state.
 The "Body" detail panel that wires this to the store is
-`components/ItemDetail/BodyPanel.tsx` (writes via `useTaskStore.updateTask`,
+`components/ItemDetail/tabs/body/BodyPanel.tsx` (writes via `useTaskStore.updateTask`,
 debounced).
 
 The Docs tab stores **sanitized HTML** via `DocumentEditor` + `lib/doc-html.ts`

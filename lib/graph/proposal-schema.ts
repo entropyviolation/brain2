@@ -8,7 +8,7 @@ import type { RelationDef } from "@/lib/links"
 import type { NewRelationInput } from "@/lib/relation-registry"
 import type { RelationRule } from "@/lib/graph/relation-rules"
 
-export type ProposalOrigin = `model:${string}` | `import:${string}` | `densify:${string}`
+export type ProposalOrigin = `model:${string}` | `import:${string}` | `densify:${string}` | `extract:${string}`
 
 export interface GraphProposal {
   id: string

@@ -1,6 +1,8 @@
-# Analytics vision
+# Data vision
 
-This folder is a product design for the analytics tab Brain2’s stored records can support. It is synthesized from Tracking, Habits, Plan, Now, and Telegram. It ignores the current analytics UI on purpose: nothing here audits or describes the Analytics tab that already ships.
+This folder is a product design for the analysis the Data tab (formerly Analytics) can support from Brain2’s stored records. It is synthesized from Tracking, Habits, Plan, Now, and Telegram. It ignores the current Data UI on purpose: nothing here audits or describes the Data tab that already ships.
+
+_Last mapped: 2026-10-28._ The person’s intention for the whole tab is wider than these inventories. Data is also a place to view existing rows in plain spreadsheet libraries, to add and update sources (Instagram, texts, browser history), and to clean, annotate, correct, or confirm the data on some screens. That intention, and what already ships, is [`components/Analytics/README.md`](../../components/Analytics/README.md). This folder stays the analysis inventory.
 
 | File | What it covers |
 | --- | --- |
@@ -9,7 +11,7 @@ This folder is a product design for the analytics tab Brain2’s stored records 
 | [`03-plan.md`](03-plan.md) | Events, planned actions, period prose, and the task’s schedule |
 | [`04-now.md`](04-now.md) | The header Now door, reconstructed from what its writers leave behind |
 | [`05-telegram.md`](05-telegram.md) | The phone door (BIM): the rolling conversation and the stamps that survive it |
-| [`06-language.md`](06-language.md) | **Intention, unbuilt.** Read the sentences already stored — task why, why an action was not taken, gratitude, day / week / month / season plan text, optional habit prioritize-why prose, and the other prose fields — with classical counts and, beside them, sentiment, machine learning, language models, and vector embeddings. A word cloud is one picture among others. |
+| [`06-language.md`](06-language.md) | **Intention, unbuilt.** Read the sentences already stored — task why, why an action was not taken, gratitude, day / week / month / season plan text, optional habit prioritize-why prose, and the other prose fields — with classical counts and, beside them, sentiment, machine learning, language models, and vector embeddings. Local only. A word cloud is one picture among others. The first grouping is [`docs/analytics-plan/13-local-readings.md`](../analytics-plan/13-local-readings.md). |
 | [`ANALYTICS_VISION.md`](ANALYTICS_VISION.md) | One tab: each section’s implementation, then the joins across them |
 
 Plan writings are **prospective**; Tracking paint, task actuals, and day-summary prose are **retrospective** ([`TEMPORAL_POLARITY.md`](../TEMPORAL_POLARITY.md)).

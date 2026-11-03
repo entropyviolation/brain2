@@ -1,16 +1,18 @@
 /**
- * components/Analytics/analytics-chrome.css — Analytics window
+ * components/Analytics/analytics-chrome.css — Data window
  *
  * Title bar + status bar stay Lists furniture. Chrome (range bay, left index)
- * is house milled fascia — brushed bays, engraved nameplates, equal metal keys,
- * active key = CRT `#070c0a` + round power lamp, phosphor label `#7dffc4` only.
+ * is house milled fascia — brushed bays, engraved nameplates. Group and view
+ * keys are latching keycaps at this layer (silver skirt, active = CRT
+ * `#070c0a` + round power lamp, phosphor `#7dffc4`). _Last mapped: 2026-10-27._
  * Studio canvases stay a light instrument interior (Karla, ink on face-gray
  * `var(--chrome-face)`, white plot wells, phosphor traces `#3dff8a` only — not a dark CRT
  * theme, not cream). Empty / thin frames stay honest.
  * docs/DESIGN_STYLE.md#milled-fascia
  *
  * `analytics-atlas.css` loads after this file and re-skins the same selectors
- * (cobalt band, card catalog, FIG. plates). Layout and behavior live here.
+ * (cabinet drawers, index cards, cobalt band, FIG. plates). That skin stays.
+ * Layout and behavior live here.
  */
 
 .fm98.an95 {
@@ -71,7 +73,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--an-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
     var(--chrome-pewter);
@@ -132,7 +134,7 @@
   padding: 4px 10px 5px 22px;
   background: var(--an-key-face);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   border: none;
   cursor: pointer;
   border-radius: var(--r-2, 2px);
@@ -179,7 +181,7 @@
   padding: 4px 9px;
   border-radius: var(--r-2, 2px);
   color: var(--an-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   font-variant-numeric: tabular-nums;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
@@ -313,13 +315,18 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 5px 10px 6px 22px;
-  background: var(--an-key-face);
-  border: none;
-  border-radius: var(--r-2, 2px);
-  box-shadow: var(--an-key-ring);
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  padding: 4px 10px 8px 22px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  color: #1f2226;
+  text-shadow: none;
   cursor: pointer;
   text-align: left;
   top: auto;
@@ -1556,7 +1563,7 @@
 
 .an-drill,
 .an-popup {
-  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif);
+  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif;
   /* 26px keycap centered on the title chip in the dialog's 24px pad. */
   --b2-close-top: 25px;
   --b2-close-right: 18px;
@@ -1569,7 +1576,7 @@
   gap: 12px;
 }
 
-/* Crisp Analytics popup titles — no CRT glow / blur (see win95 unskinned CRT opt-out). */
+/* Crisp Data popup titles — no CRT glow / blur (see win95 unskinned CRT opt-out). */
 .an-drill h2.font-semibold.tracking-tight,
 .an-popup h2.font-semibold.tracking-tight {
   display: inline-block;
@@ -1592,7 +1599,7 @@
   letter-spacing: 0.06em;
   line-height: 1.25;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   filter: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -2221,4 +2228,61 @@
 .an95 .an-ledger .an-n {
   margin-left: auto;
   flex: none;
+}
+
+/* Phone. The studio fascia above stays on a wide window. */
+@media (max-width: 767px) {
+  .fm98.an95 {
+    height: auto;
+    min-height: 0;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .fm98.an95 .an-ledger-search {
+    min-width: 0;
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .fm98.an95 .an-phase-table,
+  .fm98.an95 table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .fm98.an95 .an-range-chip,
+  .fm98.an95 .an-group-btn,
+  .fm98.an95 .an-view-btn {
+    min-height: 44px;
+  }
+
+  body.win95-app .fm98.an95 :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .an-drill :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .an-popup :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  body.win95-app .an-drill,
+  body.win95-app .an-popup {
+    box-sizing: border-box !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+  }
 }

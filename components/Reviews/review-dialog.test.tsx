@@ -42,8 +42,8 @@ describe("ReviewDialog drafts and date scope", () => {
   it("saves a draft on close and does not award points or mark the night done", () => {
     const onClose = vi.fn()
     const view = render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={onClose} />)
-    goTo("Summary")
-    fireEvent.change(screen.getByPlaceholderText("A short recap…"), { target: { value: "kept the draft" } })
+    goTo("Day summary")
+    fireEvent.change(screen.getByRole("textbox", { name: /^Day summary/ }), { target: { value: "kept the draft" } })
     fireEvent.click(within(document.querySelector(".hpp-actions")!).getByRole("button", { name: "Close" }))
     const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
     expect(saved?.summary).toBe("kept the draft")
@@ -53,13 +53,13 @@ describe("ReviewDialog drafts and date scope", () => {
     view.unmount()
 
     render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
-    expect(screen.getByPlaceholderText("A short recap…")).toHaveValue("kept the draft")
+    expect(screen.getByRole("textbox", { name: /^Day summary/ })).toHaveValue("kept the draft")
   })
 
   it("awards section points only when the night is submitted", () => {
     render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
-    goTo("Summary")
-    fireEvent.change(screen.getByPlaceholderText("A short recap…"), { target: { value: "done for the night" } })
+    goTo("Day summary")
+    fireEvent.change(screen.getByRole("textbox", { name: /^Day summary/ }), { target: { value: "done for the night" } })
     fireEvent.click(screen.getByRole("button", { name: /^Save$/i }))
     const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
     expect(saved?.endCompleted).toBe(true)
@@ -169,9 +169,9 @@ describe("ReviewDialog steps", () => {
   it("walks the night one question at a time and keeps a draft when moving on", () => {
     render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
     expect(screen.getByRole("heading", { name: "Unfinished items" })).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText("A short recap…")).not.toBeInTheDocument()
-    goTo("Summary")
-    fireEvent.change(screen.getByPlaceholderText("A short recap…"), { target: { value: "a quiet day" } })
+    expect(screen.queryByRole("textbox", { name: /^Day summary/ })).not.toBeInTheDocument()
+    goTo("Day summary")
+    fireEvent.change(screen.getByRole("textbox", { name: /^Day summary/ }), { target: { value: "a quiet day" } })
     fireEvent.click(screen.getByRole("button", { name: /^Next/ }))
     expect(screen.getByRole("heading", { name: "Gratitude" })).toBeInTheDocument()
     const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
@@ -188,6 +188,24 @@ describe("ReviewDialog steps", () => {
     fireEvent.click(screen.getByRole("button", { name: "Finish" }))
     expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.endCompleted).toBe(true)
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it("opens the time grid on the ritual day", () => {
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("How the day was spent")
+    expect(document.querySelector('[data-ui-name="Night time glance"]')).toBeTruthy()
+    expect(document.querySelector('[data-ui-name="Time grid"]')).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "Time grid" }))
+    const grid = document.querySelector('[data-ui-name="Time grid"]')
+    expect(grid).toBeTruthy()
+    const label = new Date("2026-10-04T00:00:00").toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+    expect(grid).toHaveTextContent(label)
+    expect(within(grid as HTMLElement).queryByRole("button", { name: "Previous day" })).not.toBeInTheDocument()
   })
 })
 

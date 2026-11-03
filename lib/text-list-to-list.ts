@@ -57,6 +57,7 @@ export function textListToBrainList(name: string, lines: string[]): { list: List
     name: name.trim() || "List",
     color: "#5b8def",
     createdAt: new Date(),
+    scheduleable: false,
   }
   const items: Task[] = []
   let index = 0

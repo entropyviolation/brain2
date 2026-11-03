@@ -12,10 +12,17 @@
  */
 import type { IncomingMessage, IngestEvent, IngestEventStatus } from "./types"
 
+/** Shelf a person chose for a text, from the Telegram detail. */
+export type TelegramFeedShelf = "event" | "food" | "drink" | "drug" | "thought"
+
 export interface TelegramFeedOutcome {
   kind: string
   status: IngestEventStatus
   summary: string
+  /** Tracking entry this text was filed as. Set when the write landed, or when someone classifies it. */
+  entryId?: string
+  /** Shelf chosen in the Telegram detail. Omitted until then. The text stays in the feed either way. */
+  shelf?: TelegramFeedShelf
 }
 
 export interface TelegramFeedRow {
