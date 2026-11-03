@@ -8,8 +8,9 @@
  */
 
 import { RESIDENTS, isShy, type Resident } from "./cast"
+import { CROPS } from "./farm"
 import { act as actOf, isAsleep, type GameState } from "./engine"
-import { FIRE_SLOTS, isSolidTile, MAP_H, MAP_W, NODES, STATIONS, TILE, tileIndex, type GameNode, type StationId, type World } from "./world"
+import { FIRE_SLOTS, isSolidTile, MAP_H, MAP_W, NODES, PLOTS, STATIONS, TILE, tileIndex, type GameNode, type StationId, type World } from "./world"
 
 export const WALK = 54
 export const RUN = 92
@@ -33,6 +34,8 @@ export type Sim = {
   px: number
   py: number
   face: 1 | -1
+  /** Which way the player is walking, for choosing a side or front sprite. */
+  facing: "side" | "front"
   moving: boolean
   running: boolean
   clock: number
@@ -53,7 +56,7 @@ export function newSim(spawn: [number, number], s: GameState): Sim {
     const tile = asleep ? r.day : anchor.tile
     npcs[r.id] = { id: r.id, x: center(tile[0]), y: center(tile[1]), goal: asleep ? "day" : anchor.goal, path: [], wait: Math.random() * 2, face: 1, asleep, gathering: anchor.gathering && !asleep }
   }
-  return { px: center(spawn[0]), py: center(spawn[1]), face: 1, moving: false, running: false, clock: 0, npcs, pet: { x: center(spawn[0]) - 12, y: center(spawn[1]) } }
+  return { px: center(spawn[0]), py: center(spawn[1]), face: 1, facing: "front", moving: false, running: false, clock: 0, npcs, pet: { x: center(spawn[0]) - 12, y: center(spawn[1]) } }
 }
 
 function walkable(world: World, x: number, y: number, a: number) {
@@ -87,7 +90,9 @@ function bfs(world: World, from: [number, number], to: [number, number], a: numb
 
 /** Where a friend wants to be right now, as a tile, with a label for the goal and a wander radius. */
 export function anchorFor(r: Resident, s: GameState, gatherIndex: number): { tile: [number, number]; goal: string; radius: number; gathering: boolean } {
-  const evening = s.minutes >= 18 * 60 && !isAsleep(r, s.minutes)
+  // dusk draws the social ones to the fire; so does an urgent real-life worry, any hour they are awake
+  const council = (s.real ?? []).some((t) => !t.done && t.urgent)
+  const evening = (s.minutes >= 18 * 60 || council) && !isAsleep(r, s.minutes)
   if (evening && r.social && r.act <= actOf(s)) {
     const slot = FIRE_SLOTS[gatherIndex % FIRE_SLOTS.length]!
     return { tile: slot, goal: `fire${gatherIndex}`, radius: 0, gathering: true }
@@ -121,6 +126,7 @@ export function stepSim(sim: Sim, world: World, s: GameState, input: StepInput, 
     if (!blocked(world, sim.px + vx, sim.py, a)) sim.px += vx
     if (!blocked(world, sim.px, sim.py + vy, a)) sim.py += vy
     if (vx !== 0) sim.face = vx > 0 ? 1 : -1
+    sim.facing = Math.abs(vx) >= Math.abs(vy) ? "side" : "front"
   }
 
   // the companion trails the player
@@ -182,6 +188,7 @@ export type Target =
   | { kind: "npc"; id: string; x: number; y: number; label: string }
   | { kind: "node"; node: GameNode; x: number; y: number; label: string }
   | { kind: "station"; id: StationId; x: number; y: number; label: string }
+  | { kind: "plot"; id: string; x: number; y: number; label: string }
 
 const NODE_LABEL: Record<string, string> = {
   berry: "Pick berries", acorn: "Gather acorns", reed: "Cut reeds", clover: "Pick clover", pebble: "Pick up pebbles",
@@ -206,6 +213,11 @@ export function nearest(sim: Sim, s: GameState): Target | null {
   }
   for (const [id, st] of Object.entries(STATIONS) as Array<[StationId, (typeof STATIONS)[StationId]]>) {
     consider({ kind: "station", id, x: center(st.x), y: center(st.y), label: st.label }, TALK_REACH + 4)
+  }
+  for (const pl of PLOTS) {
+    const p = s.farm[pl.id]
+    const label = !p?.tilled ? "Till the soil" : !p.crop ? "Plant seeds" : p.grown >= (CROPS[p.crop]?.days ?? 99) ? "Harvest" : p.watered ? "Check the crop" : "Water the crop"
+    consider({ kind: "plot", id: pl.id, x: center(pl.x), y: center(pl.y), label }, TALK_REACH - 9)
   }
   for (const node of NODES) consider({ kind: "node", node, x: center(node.x), y: center(node.y), label: NODE_LABEL[node.kind] ?? "Gather" }, TALK_REACH - 4)
   return best

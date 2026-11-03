@@ -1,5 +1,5 @@
 /**
- * lib/baby-game/cast.ts — The twenty residents of Mossmere Hollow
+ * lib/baby-game/cast.ts — The twenty-four residents of Mossmere Hollow
  *
  * One resident per drawn species (`sprites.ts`). The chain is five acts of four or five friends: each act's
  * friends hand their keepsake to the next, and the last one in an act holds a Lamp part. Everything a resident
@@ -68,7 +68,7 @@ export const RESIDENTS: Resident[] = [
     wants: ["jam"], gives: "hatchling-bell", gate: 3, condition: "morning", likes: ["sweet", "soft"], hates: "fishy",
     day: [6, 9], social: true,
     bio: "Still wearing half her egg. Believes it is a very good hat.",
-    hello: "Peep! Are you the new Nestkeeper? Nice hat. Mine's an egg.",
+    hello: "Peep! Are you the Center of The World? Nice hat. Mine's an egg.",
     quest: "I lost the Evening Song the night the lamp went out. Bring me Berry Jam. Singing is hungry work!",
     thanks: "JAM! I remember a note! It's a small one. Thank you!",
     give: "Here. This is the bell I rang when I hatched. Ring it when you're brave.",
@@ -193,6 +193,22 @@ export const RESIDENTS: Resident[] = [
     ],
   },
   {
+    id: "blackduck", name: "Inky", title: "The little black duckling", zone: "pond", act: 2,
+    wants: ["reed", "button"], gives: "midnight-feather", gate: 4, condition: "rain", likes: ["watery", "fishy"], hates: "crunchy",
+    day: [41, 13], social: true, rainLover: true,
+    bio: "Hatched black as a button among cream-colored siblings, and has decided that is the best color to be.",
+    hello: "Peep. Yes, I'm the dark one. It's very good for being found in the rain. Hello.",
+    quest: "One River Reed to chew on and one Shiny Button for my collection. I'm told I'm too small for opinions. I have a few.",
+    thanks: "A reed that bends AND a button that shines. This is the best day of my whole life so far, which is nine days.",
+    give: "My Midnight Feather. It's the first feather I ever grew in. Everyone else's came in pale. Mine came in like a small piece of the night.",
+    clue: "I love rainy days. Everyone else hides. I paddle out and the whole pond sounds like applause. Ask me when it's raining.",
+    story: [
+      "My siblings are the color of cream. I'm the color of the ink in Sage's jar. We still swim in a line.",
+      "Dabble says I'm her favorite and I'm not supposed to know. Everyone knows.",
+      "When the Hush came the pond went silent and I thought, finally, a place where nobody can see me. I hated it. Please light the lamp.",
+    ],
+  },
+  {
     id: "seal", name: "Mochi", title: "Round and unbothered", zone: "pond", act: 2,
     wants: ["frost-feather", "quill"], gives: "lamp-glass", gate: 6, condition: "rain", likes: ["fishy", "soft"], hates: "shiny", rainLover: true,
     day: [44, 21], social: false,
@@ -255,6 +271,54 @@ export const RESIDENTS: Resident[] = [
       "I nap to catch the lamp's last warmth. It left a stripe on the grass. I follow it.",
       "Rue has been hiding something shiny. Fox things. You'd understand if you were a fox.",
       "Hush or no Hush, a cat is a cat. Be quiet, be warm, be there.",
+    ],
+  },
+  {
+    id: "possum", name: "Tuck", title: "Eldest of the possum three", zone: "hill", act: 3,
+    wants: ["basket"], gives: "pouch-stone", gate: 4, condition: "sneak", likes: ["soft", "cozy"], hates: "musical",
+    day: [5, 32], social: true,
+    bio: "Faints when startled. Is working on it. Rides his sisters' backs when the grass is tall.",
+    hello: "Oh! Hi. Sorry. If I fall over, I'm fine. It's a possum thing. Hello.",
+    quest: "A Reed Basket, please. For the three of us to sleep in. We've been sharing one leaf and it is not a good leaf.",
+    thanks: "A basket! A real one! Mabel is going to cry and Sprout is going to jump in it immediately.",
+    give: "My Pouch Stone. It's warm from sleeping on it. Please don't startle me while I hand it over, or I'll drop it, and then myself.",
+    clue: "I'm only brave when nobody has surprised me today. Walk, don't run. Then ask.",
+    story: [
+      "There are three of us. We were born in the same blink. I'm the eldest by one second and I mention it a lot.",
+      "When I play dead, I can hear everything. Everyone says kind things when they think I'm gone.",
+      "I'm not scared of the dark. I'm scared of being the only one awake in it. That's why there are three of us.",
+    ],
+  },
+  {
+    id: "possum2", name: "Mabel", title: "Nightshift possum", zone: "hill", act: 3,
+    wants: ["jam", "stack"], gives: "pearl-button", gate: 5, condition: "evening", likes: ["sweet", "earthy"], hates: "fishy", sleeps: [6, 15],
+    day: [11, 32], social: true,
+    bio: "Sleeps all day, hangs from branches by her tail all night, and takes her work very seriously.",
+    hello: "*upside down* Hello. I'm on duty. The duty is looking at the stars. It's important.",
+    quest: "Berry Jam to keep me going and a Pebble Stack to prop up my branch. Don't ask how a pebble stack props a branch. Just trust me.",
+    thanks: "Jam. Stable branch. I could hang here forever. I intend to.",
+    give: "A Pearl Button. I found it in the grass and it looked like a small moon. I've been keeping it company.",
+    clue: "I'm only fully awake after sundown. Come then and I'll hand you anything. Before that I'm useless and rude.",
+    story: [
+      "Tuck worries. Sprout wanders. Somebody has to look at the stars and tell them we're still here.",
+      "Hanging by my tail makes the whole world turn upside down. It's very calming. The Hush is just up. Down, we're fine.",
+      "I count stars. I'm at nine hundred and four. They don't move much. They do blink, though, when you say a good thing.",
+    ],
+  },
+  {
+    id: "possum3", name: "Sprout", title: "Youngest, loudest, smallest", zone: "hill", act: 3,
+    wants: ["crown", "pie"], gives: "lullaby-twig", gate: 5, condition: "fed", likes: ["green", "sweet"], hates: "bookish",
+    day: [14, 30], social: true,
+    bio: "Third out of three. Has never once been quiet. Tiny, white, and unstoppable.",
+    hello: "HI! Hi hi hi! Are you the Center of The World? Can I ride on you? ...No? Okay! Hi!",
+    quest: "A Clover Crown to be tall and a Minnow Pie to eat! Crown first! Pie second! Pie also first!",
+    thanks: "I'm tall! I'm full! I'm so tall AND so full! Mabel, LOOK!",
+    give: "My Lullaby Twig. It hums when it's windy. It helps me sleep and it'll help you. Please keep it nice.",
+    clue: "Feed me first. Everything makes more sense once I've been fed. That's how it is when you're three out of three.",
+    story: [
+      "Tuck says I'm too loud. Mabel says I'm a lighthouse. I like being a lighthouse.",
+      "When I get scared I go quiet. It's the quietest I've ever been. That's how you know.",
+      "If the lamp comes back, I'll be the loudest thing in the whole valley and nobody can stop me. Okay. Some people can. It's Tuck.",
     ],
   },
   {
@@ -376,7 +440,7 @@ export const RESIDENTS: Resident[] = [
     wants: ["song-page", "lamp"], gives: "lamp-spark", gate: 8, condition: "alone", likes: ["earthy", "cozy"], hates: "shiny",
     day: [28, 10], social: false, sleeps: [6, 14],
     bio: "Quiet and watchful. Has been carrying something warm since the Hush.",
-    hello: "...Nestkeeper. I've been expecting you. Not quickly. Slowly. As things should be.",
+    hello: "...Center of The World. I've been expecting you. Not quickly. Slowly. As things should be.",
     quest: "Sage's Song Page, so I remember the words. And a Moss Lamp, because the dark is still the dark.",
     thanks: "The words. The light. I can almost hear it.",
     give: "The Lamp Spark. It's been warm in my chest since the Hush. I'm afraid of the dark. I'm not afraid of you.",
@@ -407,8 +471,11 @@ export type Temper = {
   love: Tag
 }
 
+/** Friends whose species is not in the app's roster borrow the personality of a kin species. */
+const PERSONA_OF: Record<string, string> = { blackduck: "duckling", possum: "mouse", possum2: "kitten", possum3: "hedgehog" }
+
 export function temper(id: string): Temper {
-  const p = speciesPersonality(id)
+  const p = speciesPersonality(PERSONA_OF[id] ?? id)
   return {
     tone: p.tone,
     cadence: p.cadence,

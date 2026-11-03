@@ -75,6 +75,7 @@ Nothing here reads storage; to show a person's saved copy, pass it to
 ## Files
 
 - `blueprint.ts`: types, `NODE_TAG`, `validateBlueprint`.
+- `adapters/overcome-bimby.ts` (_2026-11-02_): the Overcome BIMBY and its one built pipeline, five stages; lab `/lab/overcome`; code `lib/overcome-bimby/`.
 - `adapters/bim-flow.ts`, `adapters/tracking-helper.ts`, `adapters/lists-helper.ts` (_2026-11-02_: five code stages and the tool list from `lib/lists-helper/tools.ts`; its lab is `/lab/lists-helper`). `Mind.pipeline.flow` is optional now.
 - `adapters/bim-flow.ts`, `adapters/tracking-helper.ts`, `adapters/habit-helper.ts`. The two
   helper adapters tell their flows apart by shape (`wire` or `match`), so `helperOfBlueprint` and

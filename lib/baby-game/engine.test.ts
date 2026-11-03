@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest"
 import { RESIDENTS, approachDistance, temper, type Condition } from "./cast"
 import {
   advance, approach, ask, askBlocks, chat, conditionMet, craft, DAY_LIMIT, favor, fish, gather, gift, hearts, makeErrands, newGame,
-  placePart, sleep, spook, talk, turnIn, weatherFor, type GameState,
+  addRealTask, claimQuest, completeRealTask, enterFestival, harvest, questProgress, urgentCount, visibleQuests, placePart, plant, playMinigame, sleep, sellPrice, skillLevel, spook, starlogCount, talk, till, turnIn, water, waterAll, weatherFor, type GameState,
 } from "./engine"
+import { CROPS, cycleName, dayOfCycle, festivalOn, levelOf } from "./farm"
 import { LAMP_PARTS } from "./items"
-import { scriptedReply } from "./llm"
+import { councilTalk, scriptedReply } from "./llm"
+import { questById } from "./quests"
+import { anchorFor } from "./sim"
 
 const rand = () => 0.5
 const bond = { level: 1, routine: false }
@@ -27,7 +30,8 @@ describe("a day in the hollow", () => {
   it("starts clear and brings rain on a schedule", () => {
     expect(weatherFor(1)).toBe("clear")
     expect(weatherFor(3)).toBe("rain")
-    expect(new Set(Array.from({ length: 40 }, (_, i) => weatherFor(i + 1))).size).toBe(2)
+    const seen = new Set(Array.from({ length: 80 }, (_, i) => weatherFor(i + 1)))
+    expect([...seen].sort()).toEqual(["clear", "fog", "meteor", "rain"])
   })
 
   it("gives trust for the first talk of the day and not the second", () => {
@@ -172,7 +176,7 @@ describe("free talk", () => {
 })
 
 describe("the whole story, played by a patient bot", () => {
-  it("can be finished: all twenty keepsakes, five parts, a lit lamp", () => {
+  it("can be finished: every keepsake, five parts, a lit lamp", () => {
     let s = newGame()
     for (let act = 1; act <= 5; act++) {
       for (const r of RESIDENTS.filter((x) => x.act === act)) {
@@ -194,12 +198,181 @@ describe("the whole story, played by a patient bot", () => {
       s = placePart(s, LAMP_PARTS[act - 1]!).s
     }
     expect(s.ended).toBe(true)
-    expect(s.stats.keepsakes).toBe(20)
+    expect(s.stats.keepsakes).toBe(RESIDENTS.length)
   })
 
   it("makes errands from friends whose zone is open", () => {
     for (let day = 1; day < 30; day++) {
       for (const e of makeErrands(day, 2)) expect(RESIDENTS.find((r) => r.id === e.who)!.act).toBeLessThanOrEqual(2)
     }
+  })
+})
+
+
+describe("the farm", () => {
+  const nights = (s: GameState, n: number) => {
+    let cur = s
+    for (let i = 0; i < n; i++) cur = sleep(cur, 1, bond)
+    return cur
+  }
+
+  it("needs tilling, then a seed in its cycle, then water each night", () => {
+    let s = newGame()
+    expect(plant(s, "plot-0", "glowbean-seed").ok).toBe(false)
+    s = till(s, "plot-0").s
+    expect(till(s, "plot-0").ok).toBe(false)
+    s = plant(s, "plot-0", "glowbean-seed").s
+    expect(s.farm["plot-0"]!.crop).toBe("glowbean")
+    // an unwatered night grows nothing; a watered one grows a step
+    s = { ...sleep(s, 1, bond), weather: "clear" }
+    expect(s.farm["plot-0"]!.grown).toBe(0)
+    s = water(s, "plot-0").s
+    s = sleep(s, 1, bond)
+    expect(s.farm["plot-0"]!.grown).toBe(1)
+  })
+
+  it("lets rain do the watering and pays out a ripe crop", () => {
+    let s = till(newGame(), "plot-1").s
+    s = plant(s, "plot-1", "glowbean-seed").s
+    s.farm["plot-1"]!.grown = CROPS.glowbean!.days
+    const res = harvest(s, "plot-1", () => 1)
+    expect(res.ok).toBe(true)
+    expect(res.s.inv.glowbean).toBe(CROPS.glowbean!.yield)
+    expect(res.s.farm["plot-1"]).toMatchObject({ tilled: true, grown: 0 })
+    expect(res.s.skills.farming).toBeGreaterThan(0)
+    expect(harvest(res.s, "plot-1", () => 1).ok).toBe(false)
+  })
+
+  it("refuses a seed out of its cycle", () => {
+    let s = till(newGame(), "plot-2").s
+    s = { ...s, inv: { ...s.inv, "snowpearl-seed": 1 } }
+    const res = plant(s, "plot-2", "snowpearl-seed")
+    expect(res.ok).toBe(false)
+    expect(res.msgs[0]!.text).toContain("Frosttide")
+  })
+
+  it("waters everything thirsty and stops when energy runs out", () => {
+    let s = newGame()
+    for (const id of ["plot-0", "plot-1", "plot-2"]) {
+      s = till(s, id).s
+      s = { ...s, inv: { ...s.inv, "glowbean-seed": 5 } }
+      s = plant(s, id, "glowbean-seed").s
+    }
+    const res = waterAll({ ...s, energy: 2 })
+    expect(res.s.energy).toBe(0)
+    expect(Object.values(res.s.farm).filter((p) => p.watered)).toHaveLength(2)
+  })
+
+  it("levels skills with use and rewards each level", () => {
+    expect(levelOf(0)).toBe(1)
+    expect(levelOf(12)).toBe(2)
+    expect(levelOf(100)).toBe(5)
+    let s = newGame()
+    s = { ...s, skills: { ...s.skills, foraging: 11 } }
+    const res = gather(s, "berry-0", "berry", rand)
+    expect(skillLevel(res.s, "foraging")).toBe(2)
+    expect(res.msgs.some((m) => m.text.includes("level 2"))).toBe(true)
+    expect(res.s.energy).toBe(s.energy - 3)
+    expect(gather({ ...res.s, nodes: {} }, "berry-0", "berry", rand).s.energy).toBe(res.s.energy - 2)
+  })
+
+  it("runs a seven-day cycle with a festival on the last day", () => {
+    expect(cycleName(1)).toBe("Bloomtide")
+    expect(cycleName(8)).toBe("Gleamtide")
+    expect(dayOfCycle(7)).toBe(7)
+    expect(festivalOn(7)?.name).toBe("Petal Parade")
+    expect(festivalOn(6)).toBeNull()
+    expect(sellPrice("glowbean", 7)).toBeGreaterThan(sellPrice("glowbean", 6))
+    let s = withItems(newGame(), { jam: 1 })
+    s = { ...s, day: 7 }
+    const res = enterFestival(s, "jam")
+    expect(res.ok).toBe(true)
+    expect(res.s.stats.ribbons).toBe(1)
+    expect(enterFestival(res.s, "jam").ok).toBe(false)
+    expect(enterFestival({ ...s, day: 6 }, "jam").ok).toBe(false)
+  })
+
+  it("keeps a Starlog of what you have held and pays on every fifth", () => {
+    let s = newGame()
+    const before = starlogCount(s)
+    const res = gather(s, "acorn-0", "acorn", rand)
+    expect(starlogCount(res.s)).toBe(before + 1)
+    const extra = nights(res.s, 1)
+    expect(extra.found.acorn).toBe(true)
+  })
+
+  it("lets a lucky crafter make two", () => {
+    let s = { ...withItems(newGame(), { berry: 3 }), skills: { farming: 0, foraging: 0, fishing: 0, crafting: 12 } }
+    const res = craft(s, "jam", () => 0)
+    expect(res.s.inv.jam).toBe(2)
+  })
+})
+
+describe("mini game rewards", () => {
+  it("pays once a day per game, and only after dark for the glade", () => {
+    const s = newGame()
+    expect(playMinigame(s, "glade", 2).ok).toBe(false)
+    const night = { ...s, minutes: 21 * 60 }
+    const first = playMinigame(night, "glade", 2)
+    expect(first.ok).toBe(true)
+    expect(first.s.inv.firefly).toBe(4)
+    const second = playMinigame(first.s, "glade", 2)
+    expect(second.s.inv.firefly).toBe(4)
+    expect(second.s.energy).toBeLessThan(first.s.energy)
+    expect(playMinigame(s, "echo", 0).s.inv.echopetal).toBeUndefined()
+    expect(playMinigame(s, "echo", 1).s.inv.echopetal).toBe(1)
+    expect(playMinigame({ ...s, energy: 1 }, "stairs", 2).ok).toBe(false)
+  })
+})
+
+describe("quests and the real-life council", () => {
+  it("shows a quest once its giver trusts you, and pays it when the objective is met", () => {
+    let s = newGame()
+    expect(visibleQuests(s).some((q) => q.id === "breakfast-song")).toBe(false)
+    s = setAnimal(s, "chick", { trust: 25 })
+    expect(visibleQuests(s).some((q) => q.id === "breakfast-song")).toBe(true)
+    expect(claimQuest(s, "breakfast-song").ok).toBe(false)
+    s = withItems(s, { berry: 3 })
+    const res = claimQuest(s, "breakfast-song")
+    expect(res.ok).toBe(true)
+    expect(res.s.questsDone["breakfast-song"]).toBe(true)
+    expect(res.s.inv["glowbean-seed"]).toBe(6)
+    expect(claimQuest(res.s, "breakfast-song").ok).toBe(false)
+  })
+
+  it("counts crafts, fish, harvests and mini games toward quests", () => {
+    let s = newGame()
+    s = craft(withItems(s, { reed: 3 }), "basket").s
+    expect(questProgress(s, questById("cozy-nest")!).ready).toBe(true)
+    s = fish(s, "fish-x", 1, rand).s
+    expect(s.stats.fished).toBe(1)
+    s = playMinigame(s, "echo", 1).s
+    expect(questProgress(s, questById("purr-experiment")!).ready).toBe(true)
+  })
+
+  it("holds real-life tasks, rewards finishing them, and pulls friends to the fire when urgent", () => {
+    let s = addRealTask(newGame(), "book flights to New York", true).s
+    expect(s.real).toHaveLength(1)
+    expect(urgentCount(s)).toBe(1)
+    expect(addRealTask(s, "   ", false).ok).toBe(false)
+    const done = completeRealTask(s, s.real[0]!.id)
+    expect(done.ok).toBe(true)
+    expect(done.s.buttons).toBe(s.buttons + 18)
+    expect(urgentCount(done.s)).toBe(0)
+    expect(completeRealTask(done.s, s.real[0]!.id).ok).toBe(false)
+    const resident = RESIDENTS.find((r) => r.id === "chick")!
+    const sim = anchorFor(resident, { ...s, minutes: 10 * 60 }, 0)
+    expect(sim.gathering).toBe(true)
+    expect(anchorFor(resident, { ...done.s, minutes: 10 * 60 }, 0).gathering).toBe(false)
+  })
+
+  it("answers the council from a script with no model, and keeps to awake friends", async () => {
+    const s = addRealTask({ ...newGame(), minutes: 10 * 60 }, "finish the CD designs", true).s
+    const reply = await councilTalk(s, s.real[0]!, "I'm stuck", null, 0)
+    expect(reply.lines.length).toBeGreaterThan(0)
+    expect(reply.plan).toHaveLength(3)
+    const fake = await councilTalk(s, s.real[0]!, "hi", async () => ({ lines: [{ who: "chick", say: "We're with you." }, { who: "nobody", say: "x" }], plan: ["Open the file."] }), 0)
+    expect(fake.lines).toHaveLength(1)
+    expect(fake.lines[0]!.by).toBe("model")
   })
 })

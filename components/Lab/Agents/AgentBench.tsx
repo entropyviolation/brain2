@@ -130,6 +130,7 @@ export function AgentBench() {
 
   return (
     <div className="ab-lab" data-ui-name="Agent bench" data-ui-docs="components/Lab/Agents/README.md">
+      <a className="ab-back" href="/" title="Back to the app">← Back to the app</a>
       <h1>Agent bench</h1>
       <p className="ab-note">
         Ask different ways of answering the same lines, then score them. The question here is the Lists BIMBY&apos;s: which tool does this line mean? Nothing is written.

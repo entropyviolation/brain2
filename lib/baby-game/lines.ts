@@ -55,9 +55,25 @@ const EVENING: Record<FriendTone, string> = {
   coach: "You made it to evening. Count that.",
 }
 
-export function smallTalk(tone: FriendTone, mood: number, weather: "clear" | "rain", hour: number, pick: number): string {
+const METEOR: Record<FriendTone, string> = {
+  gentle: "Did you see? The sky is dropping wishes. Gently.",
+  playful: "SHOOTING STARS! Make a wish! Make FIVE wishes!",
+  direct: "Meteor shower. Bring a jar for the shards.",
+  coach: "The sky is showing off tonight. Good time to dig for treasure.",
+}
+
+const FOG: Record<FriendTone, string> = {
+  gentle: "The fog is so soft. It muffles worries.",
+  playful: "I can't see my own nose! It's out there somewhere.",
+  direct: "Fog. Go slow. Nothing will startle anything today.",
+  coach: "Can't see far, so we look at what's right here. Good practice.",
+}
+
+export function smallTalk(tone: FriendTone, mood: number, weather: "clear" | "rain" | "meteor" | "fog", hour: number, pick: number): string {
   if (mood < 0) return GRUMPY[tone]
   if (weather === "rain" && pick % 3 === 0) return RAIN[tone]
+  if (weather === "meteor" && pick % 3 === 0) return METEOR[tone]
+  if (weather === "fog" && pick % 3 === 0) return FOG[tone]
   if (hour >= 18 && pick % 3 === 1) return EVENING[tone]
   const pool = SMALL_TALK[tone]
   return pool[pick % pool.length]!

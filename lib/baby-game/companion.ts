@@ -33,5 +33,7 @@ export function perkFor(animalId: string): Perk {
 /** The sprite id for any friend, including uploaded pictures and species outside the twenty. */
 export function spriteFor(animalId: string): string {
   if (GAME_SPECIES.includes(animalId)) return animalId
+  // the hyrax is a companion-only species, drawn by hand in `hyrax.ts`
+  if (/hyrax|dassie/i.test(animalId)) return "hyrax"
   return GAME_SPECIES[hashString(animalId || "friend") % GAME_SPECIES.length]!
 }

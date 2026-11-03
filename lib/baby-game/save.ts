@@ -17,7 +17,7 @@ export function loadGame(): GameState {
     const saved = JSON.parse(raw) as Partial<GameState>
     if (saved?.v !== 1) return newGame()
     const base = newGame()
-    return { ...base, ...saved, stats: { ...base.stats, ...saved.stats }, inv: saved.inv ?? base.inv, animals: saved.animals ?? {} } as GameState
+    return { ...base, ...saved, stats: { ...base.stats, ...saved.stats }, real: saved.real ?? [], made: saved.made ?? {}, questsDone: saved.questsDone ?? {}, inv: saved.inv ?? base.inv, animals: saved.animals ?? {} } as GameState
   } catch {
     return newGame()
   }

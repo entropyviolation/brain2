@@ -8,10 +8,14 @@
 
 import { RESIDENTS } from "@/lib/baby-game/cast"
 import { act as actOf, hearts, hour, nodeReady, type GameState } from "@/lib/baby-game/engine"
-import { paintGrid, playerGrid, spriteGrid } from "@/lib/baby-game/sprites"
+import { paintGrid, playerGrid, spriteGrid, SPRITE_FOOT, SPRITE_SIZE } from "@/lib/baby-game/sprites"
 import type { Sim } from "@/lib/baby-game/sim"
 import { center } from "@/lib/baby-game/sim"
-import { GATES, MAP_H, MAP_W, NODES, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
+import { CROPS } from "@/lib/baby-game/farm"
+import { ZONES, zoneAt } from "@/lib/baby-game/world"
+import { drawCampfire, drawCrop, drawNodeArt, drawRain, HOUSE_TILES, paintHouse } from "./art"
+import { treeArt, treeAt } from "./trees"
+import { GATES, MAP_H, MAP_W, NODES, PLOTS, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
 
 export const VIEW_W = 304
 export const VIEW_H = 192
@@ -27,66 +31,159 @@ function px(ctx: CanvasRenderingContext2D, color: string, x: number, y: number, 
   ctx.fillRect(Math.round(x), Math.round(y), w, h)
 }
 
-function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: number, tick = 0) {
+/** Smooth value noise, so neighboring tiles of grass shade into one another instead of repeating. */
+function vnoise(x: number, y: number): number {
+  const xi = Math.floor(x)
+  const yi = Math.floor(y)
+  const fx = x - xi
+  const fy = y - yi
+  const u = fx * fx * (3 - 2 * fx)
+  const v = fy * fy * (3 - 2 * fy)
+  const a = h2(xi, yi, 77)
+  const b = h2(xi + 1, yi, 77)
+  const c = h2(xi, yi + 1, 77)
+  const d = h2(xi + 1, yi + 1, 77)
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v
+}
+
+type Nb = { n: number; e: number; s: number; w: number }
+
+function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: number, tick = 0, nb?: Nb) {
   const x = tx * TILE
   const y = ty * TILE
   const r = (k: number) => h2(tx, ty, k)
   const speck = (color: string, n: number, k = 1) => {
     for (let i = 0; i < n; i++) px(ctx, color, x + Math.floor(r(k + i) * 15), y + Math.floor(r(k + i + 9) * 15))
   }
+  const blade = (color: string, n: number, k = 1) => {
+    for (let i = 0; i < n; i++) {
+      const bx = x + 1 + Math.floor(r(k + i) * 13)
+      const by = y + 2 + Math.floor(r(k + i + 9) * 12)
+      px(ctx, color, bx, by, 1, 2)
+      px(ctx, color, bx + 1, by - 1, 1, 1)
+    }
+  }
   switch (tile) {
     case T.GRASS:
     case T.FLOWER: {
-      px(ctx, "#86cc84", x, y, 16, 16)
-      speck("#74b872", 5)
-      speck("#9ad896", 3, 20)
+      {
+        const n = vnoise(tx * 0.3, ty * 0.3) * 0.7 + vnoise(tx * 0.9 + 9, ty * 0.9) * 0.3
+        px(ctx, n < 0.4 ? "#6fb865" : n < 0.62 ? "#7cc46e" : "#8ed17a", x, y, 16, 16)
+        // soft mottling inside the tile, so no two tiles read the same
+        if (r(30) < 0.5) px(ctx, n < 0.5 ? "#74be68" : "#88cd78", x + 2 + Math.floor(r(31) * 8), y + 2 + Math.floor(r(32) * 8), 4, 3)
+        if (r(33) < 0.4) px(ctx, n < 0.5 ? "#68b25e" : "#7cc46e", x + 2 + Math.floor(r(34) * 8), y + 8 + Math.floor(r(35) * 5), 3, 2)
+      }
+      blade("#58a553", 4)
+      blade("#a6e08f", 2, 20)
+      // a tuft: three blades leaning, lit on the left
+      if (r(36) < 0.35) {
+        const tx0 = x + 3 + Math.floor(r(37) * 9)
+        const ty0 = y + 6 + Math.floor(r(38) * 8)
+        px(ctx, "#3f8a4a", tx0, ty0, 1, 4)
+        px(ctx, "#58a553", tx0 + 1, ty0 - 1, 1, 5)
+        px(ctx, "#a6e08f", tx0 - 1, ty0 + 1, 1, 3)
+        px(ctx, "#3f8a4a", tx0 + 2, ty0 + 1, 1, 3)
+      }
       if (tile === T.FLOWER) {
-        const colors = ["#ffffff", "#ffb3d1", "#e2ceff", "#b4e2ff"]
-        const c = colors[Math.floor(r(5) * 4)]!
-        const fx = x + 3 + Math.floor(r(6) * 9)
-        const fy = y + 3 + Math.floor(r(7) * 9)
-        px(ctx, c, fx, fy)
-        px(ctx, c, fx + 1, fy + 1)
-        px(ctx, c, fx - 1, fy + 1)
-        px(ctx, c, fx, fy + 2)
-        px(ctx, "#f0609a", fx, fy + 1)
+        const colors = ["#e8506a", "#ff9db8", "#ffffff", "#c9a8ff"]
+        for (let n = 0; n < 2; n++) {
+          const c = colors[Math.floor(r(5 + n) * 4)]!
+          const fx = x + 2 + Math.floor(r(6 + n * 3) * 11)
+          const fy = y + 3 + Math.floor(r(7 + n * 3) * 10)
+          px(ctx, "#3f8a4a", fx, fy + 1, 1, 3)
+          px(ctx, c, fx - 1, fy, 3, 1)
+          px(ctx, c, fx, fy - 1, 1, 3)
+          px(ctx, "#fbf1e6", fx, fy)
+        }
       }
       break
     }
     case T.DARK:
-      px(ctx, "#3f7a52", x, y, 16, 16)
-      speck("#356c47", 6)
-      speck("#4f8f62", 3, 30)
+      px(ctx, "#356b48", x, y, 16, 16)
+      speck("#2b5a3c", 6)
+      speck("#47805a", 3, 30)
+      speck("#6b4a38", 2, 40)
       break
-    case T.PATH:
-      px(ctx, "#cdb497", x, y, 16, 16)
-      speck("#bba083", 6)
-      speck("#dcc7ad", 3, 40)
+    case T.PATH: {
+      px(ctx, "#d9c19a", x, y, 16, 16)
+      speck("#c7ac84", 6)
+      speck("#e8d5b4", 3, 40)
+      // a few set stones
+      for (let i = 0; i < 2; i++) {
+        if (r(50 + i) < 0.4) {
+          const sx = x + 2 + Math.floor(r(52 + i) * 10)
+          const sy = y + 2 + Math.floor(r(54 + i) * 10)
+          px(ctx, "#a89472", sx, sy + 1, 3, 2)
+          px(ctx, "#c9b794", sx, sy, 3, 1)
+        }
+      }
+      // grass creeping in from any side that borders grass
+      if (nb) {
+        const edge = (side: number, horizontal: boolean, far: boolean, k: number) => {
+          if (side === T.PATH || side === T.BRIDGE || side === T.DOOR || side === T.GATE || side === T.SAND || side === T.STAIRS) return
+          for (let i = 0; i < 16; i++) {
+            const depth = 1 + Math.floor(r(k + i) * 3)
+            const col = r(k + i + 40) < 0.5 ? "#58a553" : "#7cc46e"
+            if (horizontal) px(ctx, col, x + i, far ? y + 16 - depth : y, 1, depth)
+            else px(ctx, col, far ? x + 16 - depth : x, y + i, depth, 1)
+          }
+        }
+        edge(nb.n, true, false, 200)
+        edge(nb.s, true, true, 240)
+        edge(nb.w, false, false, 280)
+        edge(nb.e, false, true, 320)
+      }
       break
+    }
     case T.SAND:
-      px(ctx, "#e4d5c4", x, y, 16, 16)
-      speck("#d3c2ad", 5)
+      px(ctx, "#ecdcb8", x, y, 16, 16)
+      speck("#dccaa2", 5)
+      speck("#f6ead0", 2, 20)
       break
     case T.SNOW:
       px(ctx, "#eef4fa", x, y, 16, 16)
-      speck("#d3e2ef", 6)
+      speck("#cfe0ee", 6)
       speck("#ffffff", 3, 50)
       break
-    case T.HILL:
-      px(ctx, "#a98a6e", x, y, 16, 16)
-      speck("#957658", 6)
-      speck("#bd9e82", 3, 60)
+    case T.HILL: {
+      // bare rock and earth, with moss gathering in soft patches that run across tile edges
+      const m = vnoise(tx * 0.45 + 3, ty * 0.45) * 0.7 + vnoise(tx * 1.3, ty * 1.3 + 5) * 0.3
+      px(ctx, "#9c8a76", x, y, 16, 16)
+      speck("#877664", 6)
+      speck("#b3a28c", 3, 60)
+      if (m > 0.52) {
+        px(ctx, m > 0.64 ? "#6aa05a" : "#7fb06a", x, y, 16, 16)
+        blade("#4f8f4a", 3, 80)
+        blade("#a6e08f", 2, 90)
+        speck("#5f9a52", 4, 95)
+      } else if (m > 0.44) {
+        for (let i = 0; i < 4; i++) px(ctx, "#7fb06a", x + Math.floor(r(100 + i) * 13), y + Math.floor(r(110 + i) * 13), 3, 2)
+      }
+      if (r(70) < 0.14) {
+        px(ctx, "#8a8294", x + 3, y + 8, 6, 4)
+        px(ctx, "#b8b0c4", x + 3, y + 8, 6, 1)
+        px(ctx, "#6a6274", x + 3, y + 11, 6, 1)
+      }
       break
-    case T.HAY:
-      px(ctx, "#dcc3ae", x, y, 16, 16)
-      for (let i = 0; i < 4; i++) px(ctx, "#c8ac95", x + Math.floor(r(i) * 12), y + 2 + i * 4, 4, 1)
+    }
+    case T.HAY: {
+      const m = vnoise(tx * 0.4, ty * 0.4 + 8)
+      px(ctx, m > 0.55 ? "#7cc46e" : "#dcc3ae", x, y, 16, 16)
+      if (m > 0.55) {
+        blade("#58a553", 4)
+        blade("#a6e08f", 2, 20)
+      } else {
+        for (let i = 0; i < 4; i++) px(ctx, "#c8ac95", x + Math.floor(r(i) * 12), y + 2 + i * 4, 4, 1)
+        for (let i = 0; i < 3; i++) px(ctx, "#ecd9c8", x + Math.floor(r(20 + i) * 12), y + 1 + i * 5, 3, 1)
+      }
       break
+    }
     case T.WATER: {
-      px(ctx, "#5aa8e0", x, y, 16, 16)
+      px(ctx, "#3f86c8", x, y, 16, 16)
       const shift = Math.floor(tick * 3) % 16
-      px(ctx, "#8cc8f0", x + ((2 + shift + tx * 3) % 12), y + 4, 4, 1)
-      px(ctx, "#8cc8f0", x + ((8 + shift + ty * 5) % 12), y + 11, 3, 1)
-      px(ctx, "#4a92cc", x + ((5 + tx) % 11), y + 8, 3, 1)
+      px(ctx, "#6fb0e6", x + ((2 + shift + tx * 3) % 12), y + 4, 4, 1)
+      px(ctx, "#6fb0e6", x + ((8 + shift + ty * 5) % 12), y + 11, 3, 1)
+      px(ctx, "#2f6fb0", x + ((5 + tx) % 11), y + 8, 3, 1)
       break
     }
     case T.BRIDGE:
@@ -95,35 +192,52 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
       px(ctx, "#bf967a", x, y, 16, 1)
       break
     case T.WALL:
-      px(ctx, "#e9e1ea", x, y, 16, 16)
-      for (let i = 0; i < 4; i++) px(ctx, "#cfc5d2", x, y + i * 4 + 3, 16, 1)
-      px(ctx, "#b8aebd", x, y, 1, 16)
+      px(ctx, "#efe8dc", x, y, 16, 16)
+      px(ctx, "#8a5a44", x, y, 2, 16)
+      px(ctx, "#8a5a44", x + 14, y, 2, 16)
+      px(ctx, "#d6ccbb", x + 2, y + 8, 12, 1)
+      px(ctx, "#b8ab94", x + 2, y + 15, 12, 1)
       break
     case T.ROOF:
-      px(ctx, "#c85a76", x, y, 16, 16)
-      for (let i = 0; i < 4; i++) px(ctx, i % 2 ? "#a8405e" : "#d9718a", x, y + i * 4, 16, 2)
-      px(ctx, "#7a2c46", x, y + 15, 16, 1)
+      px(ctx, "#b9764a", x, y, 16, 16)
+      for (let i = 0; i < 4; i++) px(ctx, i % 2 ? "#a5633b" : "#cd8a5c", x, y + i * 4, 16, 2)
+      px(ctx, "#7a4326", x, y + 15, 16, 1)
       break
     case T.DOOR:
-      px(ctx, "#e9e1ea", x, y, 16, 16)
+      px(ctx, "#efe8dc", x, y, 16, 16)
       px(ctx, "#6b4630", x + 3, y + 1, 10, 15)
       px(ctx, "#8a5a44", x + 4, y + 2, 8, 6)
-      px(ctx, "#b4e2ff", x + 6, y + 3, 4, 3)
-      px(ctx, "#ffb3d1", x + 10, y + 10, 2, 2)
+      px(ctx, "#b4d8f0", x + 6, y + 3, 4, 3)
+      px(ctx, "#e8506a", x + 10, y + 10, 2, 2)
       break
     case T.TREE: {
-      px(ctx, "#6b4630", x + 6, y + 10, 4, 6)
-      px(ctx, "#5a3628", x + 9, y + 10, 1, 6)
-      const dark = r(3) < 0.5
-      const c1 = dark ? "#2c7a45" : "#3d9a58"
-      const c2 = dark ? "#216238" : "#2f8248"
-      const c3 = dark ? "#4fa766" : "#62bd78"
-      px(ctx, c2, x + 2, y + 3, 12, 8)
-      px(ctx, c1, x + 3, y + 1, 10, 9)
-      px(ctx, c1, x + 1, y + 5, 14, 4)
-      px(ctx, c3, x + 4, y + 2, 4, 2)
-      px(ctx, c3, x + 3, y + 4, 2, 2)
-      px(ctx, c2, x + 6, y + 9, 8, 2)
+      const pine = r(3) < 0.4
+      if (pine) {
+        px(ctx, "#5a3628", x + 7, y + 11, 2, 5)
+        const tiers: Array<[number, number, number]> = [[2, 1, 6], [1, 5, 8], [0, 9, 10]]
+        for (const [inset, ty0, w] of tiers) {
+          const cx = x + 8 - w / 2 - (inset ? 0 : 0)
+          px(ctx, "#1f5a3a", cx, y + ty0 + 1, w, 4)
+          px(ctx, "#2b7a4a", cx + 1, y + ty0, w - 2, 3)
+          px(ctx, "#4fa066", cx + 2, y + ty0, 2, 1)
+        }
+        px(ctx, "#1f5a3a", x + 7, y, 2, 2)
+      } else {
+        px(ctx, "#6b4630", x + 6, y + 9, 4, 7)
+        px(ctx, "#4e3224", x + 9, y + 9, 1, 7)
+        const light = r(4) < 0.5
+        const c1 = light ? "#3d9a58" : "#2c8048"
+        const c2 = light ? "#2a7a45" : "#1f6238"
+        const c3 = light ? "#7fd08a" : "#62bd78"
+        px(ctx, c2, x + 1, y + 4, 14, 8)
+        px(ctx, c1, x + 2, y + 1, 12, 9)
+        px(ctx, c1, x, y + 5, 16, 4)
+        px(ctx, c3, x + 4, y + 2, 5, 2)
+        px(ctx, c3, x + 2, y + 5, 3, 2)
+        px(ctx, c3, x + 10, y + 4, 2, 2)
+        px(ctx, c2, x + 3, y + 10, 10, 2)
+        if (r(8) < 0.25) px(ctx, "#e8506a", x + 11, y + 6, 2, 2)
+      }
       break
     }
     case T.ROCK: {
@@ -131,13 +245,55 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
       px(ctx, "#a7b2bc", x + 3, y + 4, 8, 4)
       px(ctx, "#6c7782", x + 3, y + 11, 11, 3)
       px(ctx, "#c8d2da", x + 4, y + 5, 3, 1)
+      px(ctx, "#6fa05a", x + 3, y + 4, 4, 1)
+      px(ctx, "#6fa05a", x + 9, y + 12, 4, 2)
+      break
+    }
+    case T.SOIL:
+      px(ctx, "#8a6048", x, y, 16, 16)
+      speck("#74503a", 5)
+      speck("#a37860", 3, 70)
+      break
+    case T.STONE: {
+      // a ruined wall: warm blocks with moss on the shady side
+      px(ctx, "#d8cdb8", x, y, 16, 16)
+      for (let row = 0; row < 4; row++) {
+        px(ctx, "#b8ab94", x, y + row * 4 + 3, 16, 1)
+        const off = row % 2 ? 4 : 10
+        px(ctx, "#b8ab94", x + off, y + row * 4, 1, 3)
+      }
+      px(ctx, "#efe6d4", x, y, 16, 1)
+      if (r(80) < 0.6) px(ctx, "#6fa05a", x + Math.floor(r(81) * 9), y + 9 + Math.floor(r(82) * 5), 5, 2)
+      break
+    }
+    case T.ARCH: {
+      // a pillar with the spring of an arch at its top
+      px(ctx, "#d8cdb8", x + 2, y, 12, 16)
+      px(ctx, "#efe6d4", x + 2, y, 3, 16)
+      px(ctx, "#b8ab94", x + 11, y, 3, 16)
+      px(ctx, "#cdbfa6", x, y + 1, 16, 3)
+      px(ctx, "#efe6d4", x, y + 1, 16, 1)
+      px(ctx, "#6fa05a", x + 3, y + 10, 3, 2)
+      px(ctx, "#6fa05a", x + 9, y + 13, 3, 2)
+      break
+    }
+    case T.STAIRS: {
+      // steps that run one way here and the other way next door
+      const flip = (tx + ty) % 2 === 0
+      px(ctx, "#cdbfa6", x, y, 16, 16)
+      for (let i = 0; i < 4; i++) {
+        const sy = flip ? y + i * 4 : y + 12 - i * 4
+        px(ctx, i % 2 ? "#e2d6c0" : "#efe6d4", x, sy, 16, 3)
+        px(ctx, "#a89472", x, flip ? sy + 3 : sy - 1, 16, 1)
+      }
+      px(ctx, "#6fa05a", x + 1, y + 14, 3, 1)
       break
     }
     case T.GATE:
-      px(ctx, "#cdb497", x, y, 16, 16)
+      px(ctx, "#d9c19a", x, y, 16, 16)
       break
     default:
-      px(ctx, "#86cc84", x, y, 16, 16)
+      px(ctx, "#7cc46e", x, y, 16, 16)
   }
 }
 
@@ -151,85 +307,44 @@ export function buildMapCanvas(world: World): HTMLCanvasElement {
     for (let tx = 0; tx < MAP_W; tx++) {
       const tile = world.tiles[tileIndex(tx, ty)]!
       if (tile === T.WATER) continue
-      paintTile(ctx, tile, tx, ty)
+      // a tree is drawn standing, later; the map only paints the ground beneath it
+      const at = (x: number, y: number) => (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H ? T.TREE : world.tiles[tileIndex(x, y)]!)
+      paintTile(ctx, tile === T.TREE ? (zoneAt(tx, ty) === "wood" ? T.DARK : T.GRASS) : tile, tx, ty, 0, { n: at(tx, ty - 1), e: at(tx + 1, ty), s: at(tx, ty + 1), w: at(tx - 1, ty) })
     }
   }
+  paintHouse(ctx, HOUSE_TILES.x * TILE, HOUSE_TILES.y * TILE)
   return canvas
 }
 
 const spriteCache = new Map<string, HTMLCanvasElement>()
-function spriteCanvas(id: string): HTMLCanvasElement {
-  let c = spriteCache.get(id)
+function spriteCanvas(id: string, view: "front" | "side" = "front"): HTMLCanvasElement {
+  const key = `${id}:${view}`
+  let c = spriteCache.get(key)
   if (!c) {
     c = document.createElement("canvas")
-    c.width = c.height = 16
-    paintGrid(c.getContext("2d")!, id === "player" ? playerGrid() : spriteGrid(id), 0, 0, 1)
-    spriteCache.set(id, c)
+    c.width = c.height = SPRITE_SIZE
+    paintGrid(c.getContext("2d")!, id === "player" ? playerGrid(view) : spriteGrid(id, view), 0, 0, 1)
+    spriteCache.set(key, c)
   }
   return c
 }
 
-function drawNode(ctx: CanvasRenderingContext2D, kind: string, x: number, y: number, ready: boolean, t: number) {
-  const dim = !ready
-  switch (kind) {
-    case "berry":
-      px(ctx, "#2f8248", x + 2, y + 6, 12, 8)
-      px(ctx, "#3d9a58", x + 3, y + 4, 10, 8)
-      px(ctx, "#62bd78", x + 4, y + 5, 3, 2)
-      if (!dim) for (const [bx, by] of [[5, 7], [9, 6], [7, 10], [11, 9]] as const) px(ctx, "#e04848", x + bx, y + by, 2, 2)
-      break
-    case "acorn":
-      px(ctx, "#5a3628", x + 7, y + 8, 2, 7)
-      px(ctx, dim ? "#3d7a50" : "#3d9a58", x + 3, y + 2, 10, 8)
-      if (!dim) for (const [bx, by] of [[5, 5], [9, 4], [8, 8]] as const) px(ctx, "#c48e74", x + bx, y + by, 2, 2)
-      break
-    case "reed":
-      for (const bx of [4, 7, 10]) {
-        px(ctx, dim ? "#7aa07a" : "#4fbf5a", x + bx, y + 3 + (bx % 3), 1, 11)
-        if (!dim) px(ctx, "#8a5a44", x + bx - 1, y + 2 + (bx % 3), 3, 3)
-      }
-      break
-    case "clover":
-      for (const [bx, by] of [[4, 8], [9, 6], [7, 11]] as const) {
-        px(ctx, dim ? "#7aa87a" : "#2a9a4a", x + bx, y + by, 3, 3)
-        px(ctx, dim ? "#7aa87a" : "#4fbf5a", x + bx + 1, y + by - 1, 1, 5)
-      }
-      break
-    case "pebble":
-      px(ctx, "#9aa6b0", x + 3, y + 9, 5, 4)
-      px(ctx, "#d6dde2", x + 4, y + 9, 3, 1)
-      px(ctx, "#8e99a4", x + 9, y + 7, 4, 4)
-      break
-    case "feather":
-      px(ctx, "#ffffff", x + 4, y + 10, 7, 2)
-      px(ctx, "#d6dde2", x + 6, y + 8, 5, 2)
-      px(ctx, "#9aa6b0", x + 3, y + 12, 3, 1)
-      break
-    case "mushroom":
-      px(ctx, "#fbf1e6", x + 7, y + 9, 3, 5)
-      px(ctx, dim ? "#c89aa8" : "#e04848", x + 4, y + 5, 9, 5)
-      if (!dim) px(ctx, "#ffffff", x + 6, y + 6, 2, 2)
-      break
-    case "shell":
-      px(ctx, "#e2ceff", x + 4, y + 8, 8, 5)
-      px(ctx, "#9a72e0", x + 6, y + 10, 4, 2)
-      px(ctx, "#ffffff", x + 5, y + 8, 2, 1)
-      break
-    case "dig":
-      px(ctx, dim ? "#a98a6e" : "#8a6c52", x + 2, y + 8, 12, 6)
-      px(ctx, "#a98a6e", x + 4, y + 6, 8, 4)
-      if (!dim) {
-        px(ctx, "#5a3628", x + 6, y + 9, 1, 1)
-        px(ctx, "#5a3628", x + 9, y + 11, 1, 1)
-      }
-      break
-    case "fish":
-      px(ctx, "#8cc8f0", x + 3 + Math.floor(Math.sin(t * 3) * 1.4), y + 6, 8, 1)
-      px(ctx, "#8cc8f0", x + 5, y + 9, 5, 1)
-      if (!dim) px(ctx, "#d6dde2", x + 7 + Math.floor(Math.sin(t * 2) * 2), y + 7, 2, 1)
-      break
+/** Stand a sprite on a ground line, facing right, or mirrored to face left. */
+function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, ground: number, face: 1 | -1) {
+  const top = Math.round(ground - SPRITE_FOOT - 1)
+  if (face === 1) {
+    ctx.drawImage(img, Math.round(x - SPRITE_SIZE / 2), top)
+    return
   }
-  if (ready && Math.sin(t * 4 + x) > 0.82) px(ctx, "#ffffff", x + 12, y + 3, 1, 1)
+  ctx.save()
+  ctx.translate(Math.round(x), 0)
+  ctx.scale(-1, 1)
+  ctx.drawImage(img, -SPRITE_SIZE / 2, top)
+  ctx.restore()
+}
+
+function drawNode(ctx: CanvasRenderingContext2D, kind: string, x: number, y: number, ready: boolean, t: number) {
+  drawNodeArt(ctx, kind, x, y, ready, t)
 }
 
 function drawStation(ctx: CanvasRenderingContext2D, id: string, x: number, y: number, s: GameState, t: number) {
@@ -262,7 +377,7 @@ function drawStation(ctx: CanvasRenderingContext2D, id: string, x: number, y: nu
       px(ctx, "#4a5560", x + 4, y + 14, 8, 2)
       px(ctx, n >= 4 ? "#9aa6b0" : "#4a5560", x + 3, y + 2, 10, 2)
       px(ctx, "#2b1d2e", x + 4, y + 3, 8, 7)
-      const colors = ["#f0609a", "#8cc8f0", "#30b8a8", "#9aa6b0", "#ff9a8a"]
+      const colors = ["#f0609a", "#b5c0ff", "#30b8a8", "#9aa6b0", "#ff9a8a"]
       for (let i = 0; i < 5; i++) if (s.parts.length > i) px(ctx, colors[i]!, x + 5 + (i % 3) * 2, y + 4 + Math.floor(i / 3) * 3, 2, 2)
       if (n >= 5) {
         const glow = 0.5 + Math.sin(t * 3) * 0.2
@@ -274,21 +389,115 @@ function drawStation(ctx: CanvasRenderingContext2D, id: string, x: number, y: nu
       }
       break
     }
-    case "fire": {
-      px(ctx, "#5a3628", x + 2, y + 12, 12, 3)
-      px(ctx, "#8a5a44", x + 4, y + 11, 8, 2)
-      px(ctx, "#9aa6b0", x + 1, y + 13, 3, 2)
-      px(ctx, "#9aa6b0", x + 12, y + 13, 3, 2)
-      const f = Math.floor(Math.sin(t * 9) * 1.4)
-      px(ctx, "#e04848", x + 5, y + 5 + f, 6, 7)
-      px(ctx, "#ff9a8a", x + 6, y + 6, 4, 5)
-      px(ctx, "#ffd9e6", x + 7, y + 8, 2, 3)
+    case "glade": {
+      // a ring of glowcaps around a jar on a stump
+      for (const [bx, by] of [[1, 9], [13, 9], [3, 13], [11, 13], [7, 14]] as const) {
+        px(ctx, "#6b5a8a", bx, y + by, 2, 2)
+        px(ctx, "#b6f0a4", bx, y + by - 1, 2, 1)
+      }
+      px(ctx, "#8a5a44", x + 4, y + 8, 8, 6)
+      px(ctx, "#c48e74", x + 4, y + 7, 8, 2)
+      px(ctx, "rgba(220,240,255,0.7)", x + 5, y + 2, 6, 6)
+      px(ctx, "#9a72e0", x + 5, y + 1, 6, 2)
+      if (Math.sin(t * 3) > -0.3) px(ctx, "#f4ffe8", x + 7, y + 4, 2, 2)
       break
     }
+    case "falls": {
+      px(ctx, "#6b5a68", x + 1, y + 9, 14, 6)
+      px(ctx, "#8fbf6a", x + 1, y + 8, 14, 3)
+      px(ctx, "#6b5a68", x + 4, y + 4, 8, 5)
+      px(ctx, "#8fbf6a", x + 4, y + 3, 8, 2)
+      px(ctx, "#b5d8f6", x + 7, y, 2, 4)
+      px(ctx, "#ffffff", x + 7, y + Math.floor((t * 8) % 4), 1, 2)
+      break
+    }
+    case "echo": {
+      px(ctx, "rgba(240,230,255,0.35)", x + 3, y, 10, 5)
+      px(ctx, "rgba(240,230,255,0.25)", x + 2, y + 5, 12, 5)
+      px(ctx, "#2f8248", x + 7, y + 8, 2, 7)
+      for (const [dx, dy, c] of [[7, 3, "#f0609a"], [3, 7, "#4e9ce8"], [11, 7, "#9a72e0"], [7, 11, "#30b8a8"]] as const) px(ctx, c, x + dx - 1, y + dy - 1, 4, 4)
+      px(ctx, "#fbf1e6", x + 6, y + 6, 4, 4)
+      px(ctx, "#2b1d2e", x + 7, y + 7, 1, 1)
+      px(ctx, "#2b1d2e", x + 9, y + 7, 1, 1)
+      break
+    }
+    case "stairs": {
+      for (let i = 0; i < 5; i++) {
+        px(ctx, i % 2 ? "#d6c4b2" : "#e9dccd", x + 1 + i * 3, y + 12 - i * 2, 14 - i * 3, 3)
+        px(ctx, "#a8927e", x + 1 + i * 3, y + 14 - i * 2, 14 - i * 3, 1)
+      }
+      px(ctx, "#2b1d2e", x + 12, y + 2, 3, 5)
+      px(ctx, "#f6cfe0", x + 12, y + 3, 3, 3)
+      break
+    }
+    case "fire":
+      drawCampfire(ctx, x, y, t)
+      break
   }
 }
 
+const CROP_COLOR: Record<string, [string, string]> = {
+  glowbean: ["#4fd68a", "#b6f0a4"], puffroot: ["#9a72e0", "#e2ceff"], moonmelon: ["#30b8a8", "#a8f4e6"],
+  spiralkale: ["#4fbf5a", "#b6f0a4"], twinklegourd: ["#f0609a", "#ffb3d1"], snowpearl: ["#b4e2ff", "#ffffff"],
+}
+
+function drawPlot(ctx: CanvasRenderingContext2D, x: number, y: number, p: GameState["farm"][string] | undefined, t: number) {
+  if (!p?.tilled) return
+  px(ctx, p.watered ? "#5c3f58" : "#7a5070", x + 1, y + 1, 14, 14)
+  for (let i = 0; i < 3; i++) {
+    px(ctx, p.watered ? "#4a3048" : "#654060", x + 1, y + 3 + i * 4, 14, 1)
+    px(ctx, p.watered ? "#78577a" : "#946a86", x + 1, y + 4 + i * 4, 14, 1)
+  }
+  if (p.watered) px(ctx, "#b5c0ff", x + 3 + Math.floor(Math.abs(Math.sin(t * 2 + x)) * 8), y + 3, 1, 1)
+  if (!p.crop) return
+  drawCrop(ctx, p.crop, x, y, p.grown / (CROPS[p.crop]!.days), t)
+}
+
+/** Butterflies drifting over the flowers. Scenery: nothing happens if you walk into one. */
+const FLIES: Array<{ hx: number; hy: number; c: [string, string]; k: number }> = [
+  { hx: 20, hy: 17, c: ["#ffb3d1", "#e8506a"], k: 0 }, { hx: 28, hy: 16, c: ["#b4d8f0", "#3f86c8"], k: 1 },
+  { hx: 26, hy: 23, c: ["#e2ceff", "#8a6fe0"], k: 2 }, { hx: 8, hy: 8, c: ["#ffffff", "#9aa6b0"], k: 3 },
+  { hx: 40, hy: 14, c: ["#ffb3d1", "#e8506a"], k: 4 }, { hx: 20, hy: 30, c: ["#ffd9c0", "#e8915a"], k: 5 },
+  { hx: 38, hy: 33, c: ["#b4d8f0", "#3f86c8"], k: 6 }, { hx: 8, hy: 31, c: ["#ffffff", "#9aa6b0"], k: 7 },
+]
+
+const flyY = (p: (typeof FLIES)[number], t: number) => p.hy * TILE + 8 + Math.cos(t * 0.37 + p.k) * 10
+
+function drawFly(ctx: CanvasRenderingContext2D, p: (typeof FLIES)[number], t: number) {
+  const x = p.hx * TILE + 8 + Math.sin(t * 0.5 + p.k * 2) * 22
+  const y = flyY(p, t) - 6 + Math.sin(t * 4 + p.k) * 2
+  const flap = Math.sin(t * 14 + p.k * 3) > 0 ? 3 : 1
+  ctx.fillStyle = "rgba(30,20,40,0.15)"
+  ctx.fillRect(Math.round(x - 2), Math.round(y + 9), 4, 1)
+  px(ctx, p.c[1], x - flap - 1, y - 2, flap, 3)
+  px(ctx, p.c[1], x + 1, y - 2, flap, 3)
+  px(ctx, p.c[0], x - flap - 1, y - 1, flap - 1 || 1, 2)
+  px(ctx, p.c[0], x + 2, y - 1, flap - 1 || 1, 2)
+  px(ctx, "#2b1d2e", x, y - 2, 1, 4)
+}
+
 export type Pop = { x: number; y: number; born: number; kind: "heart" | "plus" | "bad" | "text"; text?: string }
+
+/** Mirror the shore into the water: each row below the water's top edge copies the row above it, rippled and faded. */
+function reflect(ctx: CanvasRenderingContext2D, map: HTMLCanvasElement, world: World, tx: number, ty: number, t: number) {
+  let top = ty
+  while (top > 0 && world.tiles[tileIndex(tx, top - 1)] === T.WATER) top -= 1
+  if (top === 0) return
+  const depth = (ty - top) * TILE
+  for (let row = 0; row < TILE; row++) {
+    const d = depth + row
+    const src = top * TILE - 1 - d
+    if (src < 0) break
+    const wobble = Math.round(Math.sin(t * 2.2 + d * 0.55 + tx) * (0.8 + d / 22))
+    ctx.globalAlpha = Math.max(0.12, 0.62 - d / 130)
+    ctx.drawImage(map, tx * TILE + wobble, src, TILE, 1, tx * TILE, ty * TILE + row, TILE, 1)
+  }
+  ctx.globalAlpha = 1
+  // a cool veil, a bright waterline, and a few glints that come and go
+  px(ctx, "rgba(70,130,200,0.18)", tx * TILE, ty * TILE, TILE, TILE)
+  if (ty === top) for (let i = 0; i < 3; i++) px(ctx, "rgba(255,255,255,0.7)", tx * TILE + ((i * 6 + tx * 5) % 12), ty * TILE, 3, 1)
+  if (Math.sin(t * 1.7 + tx * 2.3 + ty * 1.3) > 0.8) px(ctx, "#ffffff", tx * TILE + 4 + ((tx * 7 + ty * 3) % 8), ty * TILE + 5 + ((tx + ty) % 6), 2, 1)
+}
 
 export type Frame = {
   s: GameState
@@ -319,26 +528,47 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   const ty0 = Math.floor(camY / TILE)
   for (let ty = ty0; ty <= ty0 + VIEW_H / TILE + 1; ty++) {
     for (let tx = tx0; tx <= tx0 + VIEW_W / TILE + 1; tx++) {
-      if (tx < MAP_W && ty < MAP_H && f.world.tiles[tileIndex(tx, ty)] === T.WATER) paintTile(ctx, T.WATER, tx, ty, t)
+      if (tx < MAP_W && ty < MAP_H && f.world.tiles[tileIndex(tx, ty)] === T.WATER) {
+        paintTile(ctx, T.WATER, tx, ty, t)
+        reflect(ctx, f.map, f.world, tx, ty, t)
+      }
     }
   }
 
   const a = actOf(s)
   for (const g of GATES) {
     if (a >= g.act) continue
+    // a shut gate: a stone arch with a plank door and a vine over it
     const gx = g.x * TILE
     const gy = g.y * TILE
-    px(ctx, "#5a3628", gx, gy + 1, 3, 15)
-    px(ctx, "#5a3628", gx + 13, gy + 1, 3, 15)
-    px(ctx, "#a67c5e", gx + 2, gy + 3, 12, 3)
-    px(ctx, "#a67c5e", gx + 2, gy + 9, 12, 3)
-    px(ctx, "#8a5a44", gx + 3, gy + 5, 10, 1)
+    px(ctx, "#d8cdb8", gx, gy, 3, 16)
+    px(ctx, "#d8cdb8", gx + 13, gy, 3, 16)
+    px(ctx, "#b8ab94", gx + 2, gy, 1, 16)
+    px(ctx, "#cdbfa6", gx, gy, 16, 3)
+    px(ctx, "#8a5a44", gx + 3, gy + 3, 10, 13)
+    for (let i = 0; i < 3; i++) px(ctx, "#6b4630", gx + 5 + i * 3, gy + 3, 1, 13)
+    px(ctx, "#6b4630", gx + 3, gy + 8, 10, 1)
+    px(ctx, "#6fa05a", gx + 1, gy + 3, 2, 5)
+    px(ctx, "#6fa05a", gx + 11, gy + 1, 4, 2)
   }
 
   for (const [id, st] of Object.entries(STATIONS)) drawStation(ctx, id, st.x * TILE, st.y * TILE, s, t)
   for (const n of NODES) {
     if (n.x * TILE < camX - 16 || n.x * TILE > camX + VIEW_W || n.y * TILE < camY - 16 || n.y * TILE > camY + VIEW_H) continue
     drawNode(ctx, n.kind, n.x * TILE, n.y * TILE, nodeReady(s, n.id), t)
+  }
+
+  for (const pl of PLOTS) drawPlot(ctx, pl.x * TILE, pl.y * TILE, s.farm[pl.id], t)
+  // fairy-ring mushrooms glow once it is dark
+  if (hour(s) >= 19 || hour(s) < 6) {
+    for (const n of NODES) {
+      if (n.kind !== "mushroom" || n.x * TILE < camX - 16 || n.x * TILE > camX + VIEW_W) continue
+      const g = ctx.createRadialGradient(n.x * TILE + 8, n.y * TILE + 8, 1, n.x * TILE + 8, n.y * TILE + 8, 18)
+      g.addColorStop(0, "rgba(255,160,220,0.45)")
+      g.addColorStop(1, "rgba(255,160,220,0)")
+      ctx.fillStyle = g
+      ctx.fillRect(n.x * TILE - 10, n.y * TILE - 10, 36, 36)
+    }
   }
 
   // everything that stands, sorted by its feet
@@ -356,23 +586,25 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
       y: npc.y,
       draw: () => {
         const bob = npc.asleep ? 0 : Math.round(Math.abs(Math.sin(t * 5 + npc.x)) * (npc.path.length ? 1.5 : 0.5))
-        shadow(npc.x, npc.y + 6, 10)
+        shadow(npc.x, npc.y + 5, 14)
         ctx.globalAlpha = npc.asleep ? 0.8 : 1
-        ctx.drawImage(spriteCanvas(r.id), Math.round(npc.x - 8), Math.round(npc.y - 13 - bob + (npc.asleep ? 3 : 0)))
+        const next = npc.path[0]
+        const across = !!next && Math.abs(center(next[0]) - npc.x) >= Math.abs(center(next[1]) - npc.y)
+        drawSprite(ctx, spriteCanvas(r.id, across ? "side" : "front"), npc.x, npc.y + 4 - bob + (npc.asleep ? 2 : 0), npc.face)
         ctx.globalAlpha = 1
         if (npc.asleep) {
-          px(ctx, "#b4e2ff", npc.x + 4, npc.y - 14 + Math.floor(Math.sin(t * 2) * 1), 3, 1)
-          px(ctx, "#b4e2ff", npc.x + 6, npc.y - 17 + Math.floor(Math.sin(t * 2 + 1) * 1), 2, 1)
+          px(ctx, "#b4e2ff", npc.x + 8, npc.y - 22 + Math.floor(Math.sin(t * 2) * 1), 3, 1)
+          px(ctx, "#b4e2ff", npc.x + 10, npc.y - 25 + Math.floor(Math.sin(t * 2 + 1) * 1), 2, 1)
         } else if (s.weather === "rain" && !r.rainLover) {
-          px(ctx, "#2a7a3e", npc.x - 5, npc.y - 20, 10, 2)
-          px(ctx, "#4fbf5a", npc.x - 4, npc.y - 21, 8, 1)
+          px(ctx, "#2a7a3e", npc.x - 6, npc.y - 30, 12, 2)
+          px(ctx, "#4fbf5a", npc.x - 5, npc.y - 31, 10, 1)
         }
         if (f.marked.has(r.id) && !npc.asleep) {
           const bounce = Math.round(Math.sin(t * 6) * 1.5)
-          px(ctx, "#f0609a", npc.x - 1, npc.y - 25 + bounce, 2, 5)
-          px(ctx, "#f0609a", npc.x - 1, npc.y - 18 + bounce, 2, 2)
+          px(ctx, "#f0609a", npc.x - 1, npc.y - 38 + bounce, 2, 5)
+          px(ctx, "#f0609a", npc.x - 1, npc.y - 31 + bounce, 2, 2)
         }
-        if (npc.gathering && hour(s) >= 18 && Math.sin(t * 2 + npc.x) > 0.9) px(ctx, "#f0609a", npc.x - 6, npc.y - 18, 1, 1)
+        if (npc.gathering && hour(s) >= 18 && Math.sin(t * 2 + npc.x) > 0.9) px(ctx, "#f0609a", npc.x - 8, npc.y - 26, 1, 1)
       },
     })
   }
@@ -380,18 +612,74 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   bodies.push({
     y: sim.py,
     draw: () => {
-      shadow(sim.px, sim.py + 4, 10)
-      ctx.drawImage(spriteCanvas("player"), Math.round(sim.px - 8), Math.round(sim.py - 14 - jump))
+      shadow(sim.px, sim.py + 4, 14)
+      drawSprite(ctx, spriteCanvas("player", sim.moving && sim.facing === "side" ? "side" : "front"), sim.px, sim.py + 4 - jump, sim.face)
     },
   })
   bodies.push({
     y: sim.pet.y,
     draw: () => {
-      shadow(sim.pet.x, sim.pet.y + 4, 8)
-      ctx.drawImage(spriteCanvas(f.petSprite), Math.round(sim.pet.x - 6), Math.round(sim.pet.y - 11 - (sim.moving ? Math.round(Math.abs(Math.sin(t * 9 + 1)) * 2) : 0)), 12, 12)
+      shadow(sim.pet.x, sim.pet.y + 4, 12)
+      drawSprite(ctx, spriteCanvas(f.petSprite, sim.moving && sim.facing === "side" ? "side" : "front"), sim.pet.x, sim.pet.y + 4 - (sim.moving ? Math.round(Math.abs(Math.sin(t * 9 + 1)) * 2) : 0), sim.px >= sim.pet.x ? 1 : -1)
     },
   })
+  {
+    const x0 = Math.max(0, Math.floor(camX / TILE) - 2)
+    const x1 = Math.min(MAP_W - 1, Math.ceil((camX + VIEW_W) / TILE) + 2)
+    const y0 = Math.max(0, Math.floor(camY / TILE) - 1)
+    const y1 = Math.min(MAP_H - 1, Math.ceil((camY + VIEW_H) / TILE) + 5)
+    for (let ty = y0; ty <= y1; ty++) {
+      for (let tx = x0; tx <= x1; tx++) {
+        if (f.world.tiles[tileIndex(tx, ty)] !== T.TREE) continue
+        const { kind, variant } = treeAt(tx, ty, zoneAt(tx, ty))
+        const art = treeArt(kind, variant)
+        const baseY = (ty + 1) * TILE
+        const cx = tx * TILE + TILE / 2
+        bodies.push({
+          y: baseY - 1,
+          draw: () => {
+            // fade a tree you are standing behind, so you can always see yourself
+            const behind = Math.abs(sim.px - cx) < art.reach && sim.py < baseY - 4 && sim.py > baseY - art.rise
+            ctx.globalAlpha = behind ? 0.5 : 1
+            ctx.drawImage(art.img, Math.round(cx - art.w / 2), baseY - art.h + 2)
+            ctx.globalAlpha = 1
+          },
+        })
+      }
+    }
+  }
+  for (const fly of FLIES) bodies.push({ y: flyY(fly, t) + 40, draw: () => drawFly(ctx, fly, t) })
   bodies.sort((p, q) => p.y - q.y).forEach((b) => b.draw())
+
+  // sun shafts through the wood, and fireflies drifting over everything after dark
+  {
+    const w = ZONES.wood
+    for (let i = 0; i < 4; i++) {
+      const sx = w.x0 * TILE + 30 + i * 80
+      const sway = Math.sin(t * 0.4 + i) * 4
+      ctx.fillStyle = "rgba(255,235,250,0.10)"
+      ctx.beginPath()
+      ctx.moveTo(sx + sway, w.y0 * TILE)
+      ctx.lineTo(sx + 26 + sway, w.y0 * TILE)
+      ctx.lineTo(sx - 22, (w.y1 + 1) * TILE)
+      ctx.lineTo(sx - 48, (w.y1 + 1) * TILE)
+      ctx.fill()
+    }
+  }
+  if (night || hour(s) >= 19) {
+    for (let i = 0; i < 26; i++) {
+      const fx = camX + ((i * 83 + Math.sin(t * 0.5 + i) * 16 + t * 2) % VIEW_W)
+      const fy = camY + ((i * 47 + Math.cos(t * 0.4 + i * 2) * 12) % VIEW_H)
+      const on = Math.sin(t * 1.8 + i * 1.7) > 0
+      if (!on) continue
+      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, 7)
+      g.addColorStop(0, "rgba(200,255,190,0.8)")
+      g.addColorStop(1, "rgba(200,255,190,0)")
+      ctx.fillStyle = g
+      ctx.fillRect(fx - 7, fy - 7, 14, 14)
+      px(ctx, "#f4ffe8", fx, fy)
+    }
+  }
 
   // floating hearts and numbers
   for (const p of f.pops) {
@@ -430,17 +718,48 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   else if (hr >= 20 || hr < 6) tint = `rgba(20,30,80,${night ? 0.5 : 0.4})`
   else if (hr < 7) tint = "rgba(240,150,170,0.12)"
   if (s.weather === "rain") tint = tint || "rgba(70,100,150,0.16)"
+  if (s.weather === "meteor") tint = tint || "rgba(60,40,140,0.12)"
+  if (s.weather === "fog") tint = tint || "rgba(225,210,248,0.2)"
   if (tint) {
     ctx.fillStyle = tint
     ctx.fillRect(0, 0, VIEW_W, VIEW_H)
   }
-  if (s.weather === "rain") {
-    ctx.fillStyle = "rgba(220,235,255,0.7)"
-    for (let i = 0; i < 70; i++) {
-      const rx = (i * 53 + t * 40) % VIEW_W
-      const ry = (i * 37 + t * 150) % VIEW_H
-      ctx.fillRect(Math.floor(rx), Math.floor(ry), 1, 3)
+  if (s.weather === "rain") drawRain(ctx, VIEW_W, VIEW_H, t)
+  if (s.weather === "meteor") {
+    for (let i = 0; i < 4; i++) {
+      const life = (t * 0.45 + i * 0.27) % 1
+      const mx = ((i * 97 + 40) % VIEW_W) + life * -70 + 60
+      const my = life * 120 - 10 + i * 6
+      ctx.globalAlpha = Math.sin(life * Math.PI)
+      for (let k = 0; k < 9; k++) px(ctx, k === 0 ? "#ffffff" : k < 4 ? "#b4e2ff" : "#9a72e0", mx + k * 2, my - k * 1.3, 2, 1)
+      ctx.globalAlpha = 1
     }
+  }
+  if (s.weather === "fog") {
+    for (let i = 0; i < 7; i++) {
+      const fx = ((i * 71 + t * 6) % (VIEW_W + 80)) - 40
+      const fy = 20 + ((i * 53) % (VIEW_H - 30))
+      ctx.fillStyle = "rgba(245,238,255,0.22)"
+      ctx.fillRect(Math.round(fx), Math.round(fy), 60, 10)
+      ctx.fillRect(Math.round(fx) + 10, Math.round(fy) - 4, 40, 18)
+    }
+  }
+  // drifting pollen sparkles, always
+  for (let i = 0; i < 16; i++) {
+    const sx = (i * 61 + Math.sin(t * 0.6 + i) * 14 + t * 3) % VIEW_W
+    const sy = (i * 43 + Math.cos(t * 0.5 + i * 2) * 10 - t * 4 + VIEW_H * 4) % VIEW_H
+    if (Math.sin(t * 2 + i * 3) > -0.2) px(ctx, i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? "#ffd6e8" : "#d6f6ff", sx, sy)
+  }
+  if (night) {
+    // the moon, and a few stars
+    const mx = VIEW_W - 30
+    ctx.fillStyle = "#f4eefc"
+    ctx.beginPath()
+    ctx.arc(mx, 20, 8, 0, Math.PI * 2)
+    ctx.fill()
+    px(ctx, "#d6cde8", mx - 3, 17, 3, 3)
+    px(ctx, "#d6cde8", mx + 2, 22, 3, 2)
+    for (let i = 0; i < 6; i++) if (Math.sin(t * 1.5 + i * 2) > -0.4) px(ctx, "#ffffff", VIEW_W - 70 + ((i * 23) % 60), 8 + ((i * 11) % 24))
   }
   if (hr >= 18 && s.parts.length >= 1) {
     // the lit lamp and the fire glow through the evening

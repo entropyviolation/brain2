@@ -1,20 +1,25 @@
 /**
  * lib/baby-game/llm.ts — The model as a voice, never the rules (a BIMBY for the game)
  *
- * Two small jobs, each with a closed output:
+ * Three small jobs, each with a closed output:
  *  1. **Free talk.** You type a line to a friend. The model answers in character, and picks only from closed
  *     lists: a feeling, a trust nudge of −1..2, and which *true* fact to share (`none | wants | likes | clue`).
  *     `engine.chat` clamps the nudge, caps it per day, and writes the fact itself from the cast. A model can
  *     never invent a quest, an item, or a heart.
- *  2. **The diary.** At bedtime the companion writes one short page from what actually happened (`GameState.today`).
+ *  2. **Voicing.** Everything else a friend says (hellos, small talk, story beats, quests, thanks, gift and approach reactions) is first
+ *     written by the game, then, when a model is up, *re-voiced* in the friend's own words (`voiceLine`). The rewrite is
+ *     thrown away if it drops any item name or runs long, so facts survive; the script is the fallback.
+ *  3. **The diary.** At bedtime the companion writes one short page from what actually happened (`GameState.today`).
  * No Ollama, no reply in time, or bad JSON: the same shapes come back from a script and `by` says `scripted`.
  * Transport is the one BIM chat already uses (`lib/bim-flow/chat-models.ts`, `ollama.ts`).
  */
 
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall, type ModelCall } from "@/lib/bim-flow/ollama"
-import { CONDITION_TEXT, type Resident, temper } from "./cast"
-import { type ChatReply, hearts, type GameState, hour, scriptedDiary, tasteFact } from "./engine"
+import { CONDITION_TEXT, RESIDENTS, type Resident, temper } from "./cast"
+import { act as actOf, type ChatReply, hearts, isAsleep, type GameState, hour, scriptedDiary, tasteFact, type RealTask } from "./engine"
+import { ITEMS } from "./items"
+import { lifeBrief, type LifeContext } from "./life"
 import { smallTalk } from "./lines"
 
 const FEELINGS = ["warm", "curious", "shy", "grumpy", "delighted"] as const
@@ -67,17 +72,20 @@ const TONE_VOICE = {
   coach: "warm and encouraging, like a good coach",
 } as const
 
-function chatSystem(r: Resident, s: GameState, h: number): string {
+function chatSystem(r: Resident, s: GameState, h: number, life?: LifeContext): string {
   const t = temper(r.id)
   return [
-    `You are ${r.name}, a baby ${r.id} in Mossmere Hollow, a cozy farm village. ${r.bio}`,
+    `You are ${r.name}, a baby ${r.id} in Mossmere Hollow, a cozy hidden valley of forests, still lakes and farm fields. ${r.bio}`,
     `Your voice is ${TONE_VOICE[t.tone]}. You are ${t.cadence === "quiet" ? "shy and say very little" : t.cadence === "eager" ? "eager and talkative" : "friendly"}.`,
-    `The Hush has silenced the Evening Song since the Hollow Lamp went dark. You miss it. You are talking to the Nestkeeper, the newcomer. You have ${h} of 10 hearts for them.`,
+    `The Hush has silenced the Evening Song since the Hollow Lamp went dark. You miss it. You are talking to the Center of The World, the newcomer. You have ${h} of 10 hearts for them.`,
     `It is ${s.weather === "rain" ? "raining" : "dry"} and about ${hour(s)}:00.`,
     "Reply in character in at most two short sentences. Never say you are an AI. Never invent items, places, or promises.",
-    `trust: 2 if the Nestkeeper was kind, specific, and spoke in a way you like; 1 if friendly; 0 if neutral; -1 only if rude.`,
+    `trust: 2 if the Center of The World was kind, specific, and spoke in a way you like; 1 if friendly; 0 if neutral; -1 only if rude.`,
     `reveal: "wants" only if they ask what you need; "likes" if they ask what you like; "clue" if they ask how to win your trust or when to visit; otherwise "none".`,
-  ].join("\n")
+    lifeBrief(life),
+  ]
+    .filter(Boolean)
+    .join("\n")
 }
 
 function validReply(raw: unknown): ChatReply | null {
@@ -107,17 +115,71 @@ export function scriptedReply(r: Resident, s: GameState, line: string, pick: num
 }
 
 /** One typed line to one friend. Never throws. */
-export async function askAnimal(r: Resident, s: GameState, line: string, call: ModelCall | null, pick: number): Promise<ChatReply> {
+export async function askAnimal(r: Resident, s: GameState, line: string, call: ModelCall | null, pick: number, life?: LifeContext): Promise<ChatReply> {
   const h = hearts(s, r.id)
   if (!call) return scriptedReply(r, s, line, pick)
   try {
-    const raw = await call({ system: chatSystem(r, s, h), user: `The Nestkeeper says: "${line.slice(0, 240)}"`, schema: REPLY_SCHEMA, maxTokens: 160 })
+    const raw = await call({ system: chatSystem(r, s, h, life), user: `The Center of The World says: "${line.slice(0, 240)}"`, schema: REPLY_SCHEMA, maxTokens: 160 })
     const reply = validReply(raw)
     if (reply) return reply
   } catch {
     // fall through to the script
   }
   return scriptedReply(r, s, line, pick)
+}
+
+/** What a scripted line is, for the voicing prompt. */
+export function lineKind(r: Resident, line: string): string {
+  if (line === r.hello) return "a first hello to a stranger"
+  if (r.story.includes(line)) return "a story from your own past, told because you now trust them"
+  if (line === r.quest) return "asking for what you need"
+  if (line === r.clue) return "hinting at when and how they could win your trust"
+  if (line === r.thanks) return "thanking them for bringing what you asked for"
+  if (line === r.give) return "handing over your keepsake"
+  return "a little everyday talk"
+}
+
+const VOICE_SCHEMA = {
+  type: "object",
+  properties: { say: { type: "string", maxLength: 260 } },
+  required: ["say"],
+}
+
+/** Every item name the script mentions, so a rewrite can be checked for dropping one. */
+export function itemNamesIn(text: string): string[] {
+  const low = text.toLowerCase()
+  return Object.values(ITEMS).map((d) => d.name).filter((n) => low.includes(n.toLowerCase()))
+}
+
+/** A rewrite is kept only if it says everything the script did: every item name, every number, and not much more. */
+export function keepsFacts(script: string, rewrite: string): boolean {
+  const low = rewrite.toLowerCase()
+  if (!rewrite.trim() || rewrite.length > script.length * 2.2 + 60) return false
+  if (!itemNamesIn(script).every((n) => low.includes(n.toLowerCase()))) return false
+  return (script.match(/\d+/g) ?? []).every((d) => rewrite.includes(d))
+}
+
+/**
+ * Re-voice a scripted line in this friend's own words. `kind` says what is happening ("a story from them", "thanking you for
+ * the items", "reacting to a gift"). Returns null when there is no model, it fails, or it changes the facts: keep the script.
+ */
+export async function voiceLine(r: Resident, s: GameState, script: string, kind: string, call: ModelCall | null, life?: LifeContext): Promise<string | null> {
+  if (!call || !script.trim()) return null
+  try {
+    const raw = (await call({
+      system: [
+        chatSystem(r, s, hearts(s, r.id), life),
+        `Rewrite the line below in your own voice, as ${kind}. Keep every fact: every item name, number, time and condition must stay exactly as written. Add no new promises, places, or items. At most two short sentences.`,
+      ].join("\n"),
+      user: `Line: "${script.slice(0, 400)}"`,
+      schema: VOICE_SCHEMA,
+      maxTokens: 160,
+    })) as { say?: unknown }
+    const out = typeof raw?.say === "string" ? raw.say.trim().replace(/^"|"$/g, "") : ""
+    return keepsFacts(script, out) ? out.slice(0, 280) : null
+  } catch {
+    return null
+  }
 }
 
 const DIARY_SCHEMA = {
@@ -127,15 +189,18 @@ const DIARY_SCHEMA = {
 }
 
 /** The companion's page for tonight, from what really happened. */
-export async function writeDiary(s: GameState, companion: string, tone: keyof typeof TONE_VOICE, call: ModelCall | null): Promise<{ text: string; by: "model" | "scripted" }> {
+export async function writeDiary(s: GameState, companion: string, tone: keyof typeof TONE_VOICE, call: ModelCall | null, life?: LifeContext): Promise<{ text: string; by: "model" | "scripted" }> {
   const script = { text: scriptedDiary(s, companion), by: "scripted" as const }
   if (!call || !s.today.length) return script
   try {
     const raw = (await call({
       system: [
-        `You are ${companion}, a baby animal who follows the Nestkeeper around Mossmere Hollow and keeps a tiny diary.`,
+        `You are ${companion}, a baby animal who follows the Center of The World around Mossmere Hollow and keeps a tiny diary.`,
         `Voice: ${TONE_VOICE[tone]}. Write one diary page of two or three short sentences about the day, using only the events listed. Do not invent events, names, or items.`,
-      ].join("\n"),
+        lifeBrief(life),
+      ]
+        .filter(Boolean)
+        .join("\n"),
       user: `Day ${s.day}. Events:\n${s.today.map((x) => `- ${x}`).join("\n")}`,
       schema: DIARY_SCHEMA,
       maxTokens: 220,
@@ -144,6 +209,84 @@ export async function writeDiary(s: GameState, companion: string, tone: keyof ty
     return text ? { text: text.slice(0, 360), by: "model" } : script
   } catch {
     return script
+  }
+}
+
+// ─── the council: friends banding together over something real ───────────
+
+export type CouncilLine = { who: string; name: string; say: string; by: "model" | "scripted" }
+export type CouncilReply = { lines: CouncilLine[]; plan?: string[] }
+
+/** Friends awake and in reach, closest first. */
+export function councilMembers(s: GameState): Resident[] {
+  return RESIDENTS.filter((r) => r.act <= actOf(s) && !isAsleep(r, s.minutes)).sort((a, b) => hearts(s, b.id) - hearts(s, a.id)).slice(0, 6)
+}
+
+const COUNCIL_LINES: Record<keyof typeof TONE_VOICE, string[]> = {
+  gentle: ["That sounds heavy. Let's hold one small piece of it together.", "You don't have to do all of it today. Just the next soft step."],
+  playful: ["Okay okay okay! Quest time! Tiny steps! Silly victory dance after!", "We believe in you SO LOUDLY."],
+  direct: ["Pick the first step. Do it. Then the next.", "Ten minutes. Timer on. Go."],
+  coach: ["You've done harder things. Start with two minutes and see.", "We're right here. Small steps, big day."],
+}
+
+export const SCRIPTED_PLAN = ["Open it and just look at it for two minutes.", "Do the smallest next piece of it.", "Tell someone, or tell us, when it's moving."]
+
+/** The no-model council: the closest friends each say something in their tone, and a plain three-step plan. */
+export function scriptedCouncil(s: GameState, task: RealTask | null, pick: number): CouncilReply {
+  const members = councilMembers(s).slice(0, 3)
+  const lines = members.map((r, i) => {
+    const pool = COUNCIL_LINES[temper(r.id).tone]
+    return { who: r.id, name: r.name, say: pool[(pick + i) % pool.length]!, by: "scripted" as const }
+  })
+  if (task) lines.unshift({ who: members[0]?.id ?? "", name: members[0]?.name ?? "Everyone", say: `About "${task.text}": we're on it with you.`, by: "scripted" })
+  return { lines: lines.slice(0, 4), plan: task ? SCRIPTED_PLAN : undefined }
+}
+
+const COUNCIL_SCHEMA = (ids: string[]) => ({
+  type: "object",
+  properties: {
+    lines: {
+      type: "array",
+      maxItems: 3,
+      items: { type: "object", properties: { who: { type: "string", enum: ids }, say: { type: "string", maxLength: 200 } }, required: ["who", "say"] },
+    },
+    plan: { type: "array", maxItems: 3, items: { type: "string", maxLength: 110 } },
+  },
+  required: ["lines", "plan"],
+})
+
+/**
+ * The friends talk it over in plain text. `task` is something real the player told them; `line` is what the player just said
+ * (may be empty). The model only chooses who speaks (from the awake friends), what they say, and up to three tiny steps.
+ */
+export async function councilTalk(s: GameState, task: RealTask | null, line: string, call: ModelCall | null, pick: number, life?: LifeContext): Promise<CouncilReply> {
+  const members = councilMembers(s)
+  if (!call || !members.length) return scriptedCouncil(s, task, pick)
+  try {
+    const raw = (await call({
+      system: [
+        "You are a group of baby animal friends in Mossmere Hollow who care about the Center of The World, their person. They have told you about something real in their life.",
+        `The friends: ${members.map((r) => `${r.name} (a baby ${r.id}; voice: ${TONE_VOICE[temper(r.id).tone]})`).join("; ")}.`,
+        "Reply as up to three of the friends, each in their own voice, one or two short sentences, in plain text. Be kind, specific, and small: help them start, never lecture, never shame. You cannot do the task for them. Also give up to three tiny concrete steps (each under 110 characters) for the real task.",
+        lifeBrief(life),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      user: [task ? `The real task: "${task.text}"${task.urgent ? " (urgent)" : ""}.` : "No particular task right now.", line ? `The Center of The World says: "${line.slice(0, 240)}"` : "The Center of The World just sat down by the fire."].join("\n"),
+      schema: COUNCIL_SCHEMA(members.map((r) => r.id)),
+      maxTokens: 360,
+    })) as { lines?: Array<{ who?: unknown; say?: unknown }>; plan?: unknown }
+    const lines: CouncilLine[] = []
+    for (const l of raw.lines ?? []) {
+      const r = members.find((m) => m.id === l.who)
+      const say = typeof l.say === "string" ? l.say.trim().slice(0, 220) : ""
+      if (r && say && lines.length < 3) lines.push({ who: r.id, name: r.name, say, by: "model" })
+    }
+    if (!lines.length) return scriptedCouncil(s, task, pick)
+    const plan = Array.isArray(raw.plan) ? raw.plan.filter((x): x is string => typeof x === "string" && !!x.trim()).slice(0, 3) : []
+    return { lines, plan: task ? (plan.length ? plan : SCRIPTED_PLAN) : undefined }
+  } catch {
+    return scriptedCouncil(s, task, pick)
   }
 }
 

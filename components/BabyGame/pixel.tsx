@@ -1,14 +1,14 @@
 /**
  * components/BabyGame/pixel.tsx — Sprites and item icons as small canvases
  *
- * `PixelSprite` paints one of the twenty 16×16 species (or the Nestkeeper). `ItemIcon` paints an 8×8 item
+ * `PixelSprite` paints one of the twenty 32×32 species (or the Center of The World). `ItemIcon` paints an 8×8 item
  * shape in the item's three tones. Both draw crisp rects, so any `scale` stays sharp.
  */
 "use client"
 
 import { useEffect, useRef } from "react"
 import { item, SHAPES } from "@/lib/baby-game/items"
-import { paintGrid, playerGrid, spriteGrid, SPRITE_PALETTE } from "@/lib/baby-game/sprites"
+import { paintGrid, playerGrid, spriteGrid, SPRITE_PALETTE, SPRITE_SIZE } from "@/lib/baby-game/sprites"
 
 export function itemGrid(id: string): string[] {
   const def = item(id)
@@ -18,7 +18,7 @@ export function itemGrid(id: string): string[] {
 }
 
 export function gridFor(id: string): string[] {
-  return id === "player" ? playerGrid() : spriteGrid(id)
+  return id === "player" ? playerGrid("front") : spriteGrid(id, "front")
 }
 
 function useGrid(grid: string[], scale: number) {
@@ -36,7 +36,7 @@ function useGrid(grid: string[], scale: number) {
 export function PixelSprite({ id, scale = 4, label }: { id: string; scale?: number; label?: string }) {
   const grid = gridFor(id)
   const ref = useGrid(grid, scale)
-  return <canvas ref={ref} width={16 * scale} height={16 * scale} role="img" aria-label={label ?? id} className="bg-pixel" />
+  return <canvas ref={ref} width={SPRITE_SIZE * scale} height={SPRITE_SIZE * scale} role="img" aria-label={label ?? id} className="bg-pixel" />
 }
 
 export function ItemIcon({ id, scale = 3 }: { id: string; scale?: number }) {
@@ -46,3 +46,23 @@ export function ItemIcon({ id, scale = 3 }: { id: string; scale?: number }) {
 }
 
 export { SPRITE_PALETTE }
+
+/** The tool bar's icons: small hand-drawn grids in the sprite palette. */
+export type ToolId = "hand" | "hoe" | "seeds" | "can" | "scythe"
+
+const TOOL_GRIDS: Record<Exclude<ToolId, "seeds">, readonly string[]> = {
+  hand: ["..k.k.k.", ".kokokok", "kooooook", "kooooook", ".koooopk", "..koopk.", "...kok..", "........"],
+  hoe: ["......kk", "....kkSk", ".....kSk", "...kT.kk", "..kT....", ".kT.....", "kT......", "k......."],
+  can: ["........", "..kkk...", "kkBBBkk.", "kBbBBBBk", "kBbBBBDk", "kBBBBBDk", ".kkkkkk.", "........"],
+  scythe: ["..kkkk..", ".kSwwSk.", "kS.kkkSk", "k..kT.kk", "...kT...", "...kT...", "...kT...", "...kk..."],
+}
+
+export function ToolIcon({ id, seed, scale = 4 }: { id: ToolId; seed?: string | null; scale?: number }) {
+  if (id === "seeds") return seed ? <ItemIcon id={seed} scale={scale} /> : <ItemIcon id="glowbean-seed" scale={scale} />
+  return <GridIcon grid={TOOL_GRIDS[id]} scale={scale} label={id} />
+}
+
+function GridIcon({ grid, scale, label }: { grid: readonly string[]; scale: number; label: string }) {
+  const ref = useGrid(grid as string[], scale)
+  return <canvas ref={ref} width={8 * scale} height={8 * scale} role="img" aria-label={label} className="bg-pixel" />
+}

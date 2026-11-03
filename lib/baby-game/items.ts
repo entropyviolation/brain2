@@ -26,7 +26,7 @@ export const WHIM_TAGS: Record<string, Tag> = {
   curl: "cozy",
 }
 
-export type ItemKind = "material" | "trinket" | "keepsake" | "part"
+export type ItemKind = "material" | "trinket" | "keepsake" | "part" | "seed" | "crop"
 
 export type ItemDef = {
   id: string
@@ -41,6 +41,8 @@ export type ItemDef = {
   blurb: string
   /** What it takes to craft, for trinkets. */
   recipe?: Record<string, number>
+  /** What it sells for at the Stump, when that is not a third of `value`. */
+  sellFor?: number
 }
 
 const mat = (id: string, name: string, shape: string, tones: ItemDef["tones"], tags: Tag[], value: number, blurb: string): ItemDef => ({
@@ -97,6 +99,44 @@ add(
   made("stack", "Pebble Stack", "stack", ["s", "S", "d"], ["earthy"], 7, { pebble: 3 }, "Three stones that agreed to stay."),
 )
 
+
+const crop = (id: string, name: string, shape: string, tones: ItemDef["tones"], tags: Tag[], sellFor: number, blurb: string): ItemDef => ({
+  id, name, kind: "crop", shape, tones, tags, value: sellFor * 3, sellFor, blurb,
+})
+
+const seed = (crop: string, name: string, price: number, blurb: string): ItemDef => ({
+  id: `${crop}-seed`, name, kind: "seed", shape: "seed", tones: ["t", "T", "u"], tags: [], value: Math.ceil(price / 2), sellFor: Math.max(1, Math.floor(price / 3)), blurb,
+})
+
+add(
+  mat("firefly", "Jarred Firefly", "bulb", ["c", "b", "B"], ["shiny", "cozy"], 6, "Caught, admired, and let out again. The glow stays on your hands."),
+  mat("dewgem", "Dew Gem", "gem", ["c", "C", "m"], ["shiny", "watery"], 8, "A drop of the waterfall that decided to stay."),
+  mat("echopetal", "Echo Petal", "leaf", ["p", "P", "q"], ["musical", "soft"], 7, "It hums back whatever you hum at it."),
+  mat("stairchip", "Stair Chip", "stone", ["v", "V", "x"], ["earthy", "shiny"], 7, "A step off a staircase that goes nowhere in particular."),
+  mat("starshard", "Star Shard", "star", ["c", "b", "B"], ["shiny", "musical"], 9, "A little bit of the night, fallen on purpose."),
+  crop("glowbean", "Glowbean", "bean", ["g", "G", "h"], ["green", "shiny"], 8, "Pods that glow a faint green when you whisper to them."),
+  crop("puffroot", "Puffroot", "root", ["v", "V", "x"], ["earthy", "cozy"], 11, "Round, warm, and slightly proud of being underground."),
+  crop("moonmelon", "Moonmelon", "melon", ["c", "C", "m"], ["sweet", "watery"], 24, "Striped like a small moon. Cool to the touch, even at noon."),
+  crop("spiralkale", "Spiralkale", "swirl", ["g", "G", "h"], ["green", "crunchy"], 12, "It curls in the direction of whoever is being kind."),
+  crop("twinklegourd", "Twinklegourd", "gourd", ["p", "P", "q"], ["sweet", "shiny"], 18, "Blinks when nobody is looking, which is how you know."),
+  crop("snowpearl", "Snowpearl", "round", ["w", "b", "B"], ["watery", "soft"], 20, "Grows in frost and tastes like the first cold morning."),
+  seed("glowbean", "Glowbean Seeds", 4, "Bloomtide and Gleamtide. Ready in 3 nights."),
+  seed("puffroot", "Puffroot Seeds", 6, "Bloomtide and Mosstide. Ready in 4 nights."),
+  seed("moonmelon", "Moonmelon Seeds", 14, "Gleamtide and Mosstide. Ready in 6 nights."),
+  seed("spiralkale", "Spiralkale Seeds", 7, "Mosstide and Frosttide. Ready in 4 nights."),
+  seed("twinklegourd", "Twinklegourd Seeds", 11, "Frosttide and Bloomtide. Ready in 5 nights."),
+  seed("snowpearl", "Snowpearl Seeds", 12, "Frosttide only. Ready in 5 nights."),
+)
+
+add(
+  made("stew", "Glowbean Stew", "jar", ["g", "G", "h"], ["cozy", "green"], 16, { glowbean: 2, puffroot: 1 }, "Warm all the way down, and faintly lit."),
+  made("sorbet", "Melon Sorbet", "pie", ["c", "C", "m"], ["sweet", "watery"], 20, { moonmelon: 1, berry: 1 }, "Cold enough to make your ears ring pleasantly."),
+  made("crisps", "Kale Crisps", "leaf", ["g", "G", "h"], ["crunchy", "green"], 12, { spiralkale: 2 }, "They crunch in a key somewhere near C."),
+  made("lantern", "Gourd Lantern", "bulb", ["p", "P", "q"], ["shiny", "cozy"], 22, { twinklegourd: 1, mushroom: 1 }, "A carved gourd with a glowcap inside. Friendly, not spooky."),
+  made("pillow", "Puffroot Pillow", "round", ["v", "V", "x"], ["soft", "cozy"], 18, { puffroot: 2, feather: 1 }, "It sighs when you lean on it."),
+  made("starcharm", "Star Charm", "star", ["c", "b", "B"], ["shiny", "musical"], 26, { starshard: 2, button: 1 }, "Hums a note only the person holding it can hear."),
+)
+
 /** Keepsakes, one per friend, and the five Lamp parts (given by the last friend of each act). */
 const keep = (id: string, name: string, shape: string, tones: ItemDef["tones"], tags: Tag[], blurb: string, kind: ItemKind = "keepsake"): ItemDef => ({
   id,
@@ -118,10 +158,14 @@ add(
   keep("skipping-stone", "Skipping Stone", "stone", ["l", "s", "S"], ["watery", "earthy"], "Seven skips on a good day. Marlow keeps count."),
   keep("yuzu-charm", "Yuzu Charm", "round", ["o", "O", "Q"], ["sweet", "cozy"], "A warm little fruit that keeps its warmth."),
   keep("frost-feather", "Frost Feather", "feather", ["b", "B", "n"], ["soft", "watery"], "Never melts. Fizz considers this showing off."),
+  keep("midnight-feather", "Midnight Feather", "feather", ["A", "z", "y"], ["soft", "watery"], "Inky's first feather. It came in like a small piece of the night."),
   keep("lamp-glass", "Lamp Glass", "bulb", ["c", "b", "B"], ["shiny", "watery"], "The lamp's glass. Mochi thought it was a very nice piece of ice.", "part"),
   keep("crumb-charm", "Crumb Charm", "heart", ["o", "O", "Q"], ["sweet"], "A crumb Nib saved, shaped, and fell in love with."),
   keep("leaf-mitten", "Leaf Mitten", "leaf", ["g", "G", "h"], ["green", "soft"], "One mitten, for a paw that only needs one."),
   keep("purr-pebble", "Purr Pebble", "heart", ["a", "A", "z"], ["cozy", "earthy"], "Warm in the hand. It buzzes when you are sad."),
+  keep("pouch-stone", "Pouch Stone", "stone", ["a", "A", "z"], ["cozy", "earthy"], "Tuck's warm sleeping stone. Heavier than it looks, and calmer."),
+  keep("pearl-button", "Pearl Button", "button", ["w", "l", "s"], ["shiny", "earthy"], "Mabel found it in the grass. It looked like a very small moon."),
+  keep("lullaby-twig", "Lullaby Twig", "stalk", ["t", "T", "u"], ["soft", "musical"], "Sprout's twig. It hums when it's windy, and it helps you sleep."),
   keep("lamp-oil", "Lamp Oil Flask", "jar", ["c", "C", "m"], ["shiny", "cozy"], "The lamp's oil. Rue was keeping it somewhere safe and sly.", "part"),
   keep("wag-whistle", "Wag Whistle", "tube", ["o", "O", "Q"], ["musical"], "Only dogs and very good friends can hear it."),
   keep("silver-horseshoe", "Silver Horseshoe", "ring", ["s", "w", "S"], ["shiny", "earthy"], "Juniper outgrew it. She says she did not."),
@@ -139,6 +183,8 @@ export function item(id: string): ItemDef {
 }
 
 export const RECIPES = Object.values(ITEMS).filter((def) => def.recipe)
+
+export const SEEDS = Object.values(ITEMS).filter((def) => def.kind === "seed")
 
 /** Eight rows of eight. M main, L light, D dark, k outline, w white, G leaf. */
 export const SHAPES: Record<string, readonly string[]> = {
@@ -165,5 +211,12 @@ export const SHAPES: Record<string, readonly string[]> = {
   drop: ["...kk...", "..kMMk..", "..kLMk..", ".kLMMMk.", "kLwMMMDk", "kMMMMMDk", ".kMMMDk.", "..kkkk.."],
   leaf: ["......kk", "....kkMk", "..kkLMMk", ".kLLMMDk", "kLMMMDDk", "kMMDDkk.", "kDkk....", "kk......"],
   key: ["..kkk...", ".kLMMk..", ".kM.Mk..", ".kMMDk..", "..kMk...", "..kMkk..", "..kMMk..", "..kkk..."],
+  seed: ["........", "...kk...", "..kLMk..", ".kLMMDk.", ".kMMMDk.", "..kMDk..", "...kk...", "........"],
+  star: ["...kk...", "...kk...", "kkkLMkkk", "kLLMMMDk", ".kkMMDk.", ".kMMkDk.", "kMDkkMDk", ".kk..kk."],
+  bean: ["........", "..kkkk..", ".kLMMMk.", "kLMwMMDk", "kMMMMDDk", ".kMDDDk.", "..kkkk..", "........"],
+  root: [".G.GG.G.", "..kGGk..", ".kLMMDk.", "kLMMMMDk", "kMMMMMDk", ".kMMMDk.", "..kMDk..", "...kk..."],
+  gourd: ["...kk...", "..kGGk..", ".kLMMDk.", "kLMMMMDk", ".kMMMDk.", "kLMMMMDk", "kMMMMDDk", ".kkkkkk."],
+  swirl: ["..kkkk..", ".kLMMMk.", "kLMkkMMk", "kMMkLMDk", "kMMMMMDk", ".kMMMDk.", "..kkkk..", "........"],
+  melon: ["..kkkk..", ".kLMLMk.", "kLMDMMDk", "kMLMDMDk", "kMDMLMDk", "kMMDMMDk", ".kMMMDk.", "..kkkk.."],
   cog: ["..k..k..", ".kMkkMk.", "kkMMMMkk", "kMMkkMMk", "kMMkkMDk", "kkMMMDkk", ".kMkkDk.", "..k..k.."],
 }

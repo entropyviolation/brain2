@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { RESIDENTS } from "./cast"
 import { ITEMS } from "./items"
-import { buildWorld, GATES, isSolidTile, MAP_H, MAP_W, NODES, reachable, STATIONS, tileIndex, zoneAt, ZONE_ACT } from "./world"
+import { buildWorld, GATES, PLOTS, isSolidTile, MAP_H, MAP_W, NODES, reachable, STATIONS, tileIndex, zoneAt, ZONE_ACT } from "./world"
 
 const SPAWN: [number, number] = [24, 22]
 const world = buildWorld(RESIDENTS.map((r) => r.day))
@@ -68,6 +68,13 @@ describe("the chain", () => {
     }
   })
 
+  it("puts all sixteen plots on soil you can walk to from the start", () => {
+    const world = buildWorld(RESIDENTS.map((r) => r.day))
+    const reached = reachable(world, [STATIONS.bed.x, STATIONS.bed.y + 1], 1)
+    expect(PLOTS).toHaveLength(16)
+    for (const p of PLOTS) expect(reached.has(tileIndex(p.x, p.y)), p.id).toBe(true)
+  })
+
   it("ends each act with a Lamp part, and only there", () => {
     for (let act = 1; act <= 5; act++) {
       const group = RESIDENTS.filter((r) => r.act === act)
@@ -76,7 +83,7 @@ describe("the chain", () => {
   })
 
   it("builds every crafted item from raw materials a node or the Stump supplies", () => {
-    const supplied = new Set(["berry", "acorn", "reed", "clover", "pebble", "feather", "mushroom", "shell", "fish", "button"])
+    const supplied = new Set(["berry", "acorn", "reed", "clover", "pebble", "feather", "mushroom", "shell", "fish", "button", "starshard", "glowbean", "puffroot", "moonmelon", "spiralkale", "twinklegourd", "snowpearl"])
     for (const def of Object.values(ITEMS).filter((d) => d.recipe)) {
       for (const m of Object.keys(def.recipe!)) expect(supplied.has(m), `${def.name} needs ${m}`).toBe(true)
     }

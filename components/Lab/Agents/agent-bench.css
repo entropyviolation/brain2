@@ -25,3 +25,6 @@
 .ab-table tr.is-pass td:first-child { color: #2f6b45; }
 .ab-cmp { display: grid; gap: 4px; margin-top: 8px; }
 .ab-cmp p { margin: 0; }
+
+.ab-back { display: inline-block; margin-bottom: 0.5rem; font-size: 0.85rem; color: inherit; opacity: 0.7; text-decoration: none; }
+.ab-back:hover { opacity: 1; text-decoration: underline; }
