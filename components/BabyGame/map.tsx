@@ -2,14 +2,16 @@
  * components/BabyGame/map.tsx — The world map, opened with M
  *
  * One small canvas painted from the same tile array the game walks on: five pixels a tile, trees as dark canopy dots, water
- * blue, zones outlined and named, zones behind a closed gate dimmed. Friends who are up and about show as dots, the player
+ * blue, zones outlined and named, zones behind a closed gate dimmed, friends' homes as small cobalt roofs. Friends who are up and about show as dots, the player
  * as a pulsing pin, stations as small squares. It redraws a few times a second so you can watch people move.
+ * In development mode (`onPick`) a click on the map teleports you to that tile.
  */
 "use client"
 
 import { useEffect, useRef } from "react"
-import { RESIDENTS } from "@/lib/baby-game/cast"
+import { RESIDENTS, inValley } from "@/lib/baby-game/cast"
 import type { Sim } from "@/lib/baby-game/sim"
+import { HOMES } from "@/lib/baby-game/homes"
 import { MAP_H, MAP_W, STATIONS, T, TILE, tileIndex, ZONE_ACT, ZONES, type World, type ZoneId } from "@/lib/baby-game/world"
 import { Plate } from "./panels"
 
@@ -22,7 +24,7 @@ const COLOR: Record<number, string> = {
   [T.ARCH]: "#cdbfa6", [T.STAIRS]: "#efe6d4", [T.FENCE]: "#a67c5e",
 }
 
-export function MapPanel({ world, act, getSim, onClose }: { world: World; act: number; getSim: () => Sim | null; onClose: () => void }) {
+export function MapPanel({ world, act, getSim, onClose, onPick }: { world: World; act: number; getSim: () => Sim | null; onClose: () => void; onPick?: (tile: [number, number]) => void }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const base = useRef<HTMLCanvasElement | null>(null)
 
@@ -64,6 +66,13 @@ export function MapPanel({ world, act, getSim, onClose }: { world: World; act: n
         bc.fillStyle = "#2b1d2e"
         bc.fillText(label, z.x0 * PX + 6, z.y0 * PX + 13)
       }
+      // homes: small cobalt roofs
+      for (const h of Object.values(HOMES)) {
+        bc.fillStyle = "#2f5fe0"
+        bc.fillRect(h.x * PX, h.y * PX + 1, PX, PX - 1)
+        bc.fillStyle = "#6a8ff0"
+        bc.fillRect(h.x * PX + 1, h.y * PX, PX - 2, 1)
+      }
       for (const st of Object.values(STATIONS)) {
         bc.fillStyle = "#f0609a"
         bc.fillRect(st.x * PX - 1, st.y * PX - 1, PX + 2, PX + 2)
@@ -78,7 +87,7 @@ export function MapPanel({ world, act, getSim, onClose }: { world: World; act: n
       if (!sim) return
       for (const r of RESIDENTS) {
         const npc = sim.npcs[r.id]
-        if (!npc || npc.asleep || r.act > act) continue
+        if (!npc || npc.asleep || !inValley(r, act)) continue
         ctx.fillStyle = "#ffffff"
         ctx.fillRect((npc.x / TILE) * PX - 2, (npc.y / TILE) * PX - 2, 4, 4)
         ctx.fillStyle = "#4e9ce8"
@@ -98,9 +107,26 @@ export function MapPanel({ world, act, getSim, onClose }: { world: World; act: n
   }, [act, getSim, world])
 
   return (
-    <Plate title="Map of Mossmere Hollow" onClose={onClose} wide>
-      <canvas ref={ref} width={MAP_W * PX} height={MAP_H * PX} className="bg-map" aria-label="World map" />
-      <p className="bg-faint">Red pin: you. Blue dots: friends who are up. Pink squares: places to visit. Dimmed regions (✕) are behind a gate. Press M to close.</p>
+    <Plate title="Map of Valdivia" onClose={onClose} wide>
+      <canvas
+        ref={ref}
+        width={MAP_W * PX}
+        height={MAP_H * PX}
+        className={`bg-map${onPick ? " is-pick" : ""}`}
+        aria-label="World map"
+        onClick={
+          onPick
+            ? (e) => {
+                const r = e.currentTarget.getBoundingClientRect()
+                const tx = Math.floor(((e.clientX - r.left) / r.width) * MAP_W)
+                const ty = Math.floor(((e.clientY - r.top) / r.height) * MAP_H)
+                onPick([Math.max(0, Math.min(MAP_W - 1, tx)), Math.max(0, Math.min(MAP_H - 1, ty))])
+              }
+            : undefined
+        }
+      />
+      {onPick ? <p className="bg-dev-note">Development mode: click the map to teleport there.</p> : null}
+      <p className="bg-faint">Red pin: you. Blue dots: friends who are up. Pink squares: places to visit. Cobalt roofs: friends' homes. Dimmed regions (✕) are behind a gate. Press M to close.</p>
     </Plate>
   )
 }

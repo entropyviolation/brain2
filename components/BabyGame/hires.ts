@@ -8,6 +8,10 @@
 
 export const HI = 2
 
+/** How many real pixels the village paints per game pixel before Scale2x runs (the casa stays at 1). Painters keep working
+ * in game pixels because `drawFrame` scales the context; art that wants more detail (`homeart-hi.ts`) paints in halves. */
+export const DETAIL = 2
+
 /** Scale2x on 32-bit pixels: `src` is w×h, `dst` is 2w×2h. */
 export function scale2x(src: Uint32Array, dst: Uint32Array, w: number, h: number) {
   const W = w * 2
@@ -44,7 +48,12 @@ export class HiRes {
   private src: Uint32Array
   private dst: Uint32Array
 
-  constructor(private w: number, private h: number) {
+  /** `detail` real pixels per game pixel in the low frame; `w` and `h` are game pixels. */
+  constructor(private w: number, private h: number, readonly detail = 1) {
+    w *= detail
+    h *= detail
+    this.w = w
+    this.h = h
     this.low = document.createElement("canvas")
     this.low.width = w
     this.low.height = h

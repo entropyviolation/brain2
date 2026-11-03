@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { pngText, readGen, recipeFromPrompt, withGenNote, workflowNotes } from "./comfy-png.mjs"
+import { applyOverrides, pngText, rawPromptOf, readGen, recipeFromPrompt, withGenNote, workflowNotes } from "./comfy-png.mjs"
 
 /** A tiny PNG: signature, tEXt chunks, then an IDAT the reader must stop at. CRCs are not checked. */
 function png(chunks: Record<string, string>): Uint8Array {
@@ -66,9 +66,38 @@ describe("ComfyUI PNG recipes", () => {
 
   it("changes one note, drops bad values, cleans tags", () => {
     const a = withGenNote({}, "a.png", { verdict: "like", kind: "character" }, 5)
-    expect(a["a.png"]).toEqual({ verdict: "like", kind: "character", text: "", tags: [], at: 5 })
+    expect(a["a.png"]).toEqual({ verdict: "like", kind: "character", text: "", tags: [], issues: [], at: 5 })
     const b = withGenNote(a, "a.png", { verdict: "great", tags: [" Cute", "cute", "", "Clean outline"] }, 6)
-    expect(b["a.png"]).toEqual({ verdict: null, kind: "character", text: "", tags: ["cute", "clean outline"], at: 6 })
+    expect(b["a.png"]).toEqual({ verdict: null, kind: "character", text: "", tags: ["cute", "clean outline"], issues: [], at: 6 })
     expect(withGenNote(b, "b.png", { kind: "tree" }, 7)["b.png"].kind).toBeNull()
+  })
+
+  it("keeps issues clean and unique", () => {
+    const a = withGenNote({}, "a.png", { issues: ["Extra limbs", "extra limbs", " ", "background"] }, 1)
+    expect(a["a.png"].issues).toEqual(["extra limbs", "background"])
+  })
+
+  const graph = {
+    1: { class_type: "CheckpointLoaderSimple", inputs: { ckpt_name: "m.safetensors" } },
+    2: { class_type: "LoraLoader", inputs: { model: ["1", 0], clip: ["1", 1], lora_name: "l.safetensors", strength_model: 1.2, strength_clip: 1 } },
+    4: { class_type: "CLIPTextEncode", inputs: { clip: ["2", 1], text: "old" } },
+    5: { class_type: "CLIPTextEncode", inputs: { clip: ["2", 1], text: "neg" } },
+    6: { class_type: "EmptyLatentImage", inputs: { width: 768, height: 768, batch_size: 1 } },
+    7: { class_type: "KSampler", inputs: { model: ["2", 0], positive: ["4", 0], negative: ["5", 0], latent_image: ["6", 0], seed: 5, steps: 22, cfg: 7, sampler_name: "euler", scheduler: "normal", denoise: 1 } },
+    9: { class_type: "SaveImage", inputs: { images: ["7", 0], filename_prefix: "sprite" } },
+  }
+
+  it("changes only the asked knobs on a copy of the graph", () => {
+    const g = applyOverrides(graph, { positive: "new", seed: 9, width: 512, loraStrength: 0.8, prefix: "try me" })
+    expect(recipeFromPrompt(g)).toMatchObject({ positive: "new", negative: "neg", seed: 9, steps: 22, width: 512, height: 768 })
+    expect(g[2].inputs.strength_model).toBe(0.8)
+    expect(g[9].inputs.filename_prefix).toBe("try-me")
+    expect(graph[4].inputs.text).toBe("old")
+  })
+
+  it("says so when a prompt is wired from another node", () => {
+    const wired = { ...graph, 4: { class_type: "CLIPTextEncode", inputs: { clip: ["2", 1], text: ["8", 0] } } }
+    expect(() => applyOverrides(wired, { positive: "x" })).toThrow(/wired/)
+    expect(rawPromptOf(png({ prompt: JSON.stringify(graph) }))?.[7].class_type).toBe("KSampler")
   })
 })

@@ -138,6 +138,39 @@ function paint(kind: TreeKind, seed: number): TreeArt {
   return { img: canvas, w, h, reach: kind === "pine" ? 14 : 20, rise: kind === "pine" ? 58 : 44 }
 }
 
+/** A stump, seedling or sapling, drawn straight to the canvas (a few pixels each, so nothing to cache). `seed` is 0..1 and picks the lean. */
+export function drawSprout(ctx: CanvasRenderingContext2D, stage: "stump" | "seedling" | "sapling", kind: TreeKind, cx: number, baseY: number, seed: number) {
+  const ramp = RAMPS[kind]
+  const px = (c: string, x: number, y: number, w = 1, h = 1) => {
+    ctx.fillStyle = c
+    ctx.fillRect(Math.round(cx + x), Math.round(baseY + y), w, h)
+  }
+  const bark = kind === "birch" ? ["#f0ece4", "#d6d0c4", "#2b1d2e"] : ["#8a5a44", "#6b4630", "#4e3224"]
+  px("rgba(20,30,20,0.25)", -5, -3, 10, 2)
+  if (stage === "stump") {
+    px(bark[2]!, -5, -7, 10, 6)
+    px(bark[1]!, -4, -7, 8, 5)
+    px(bark[0]!, -4, -9, 8, 3)
+    px(bark[1]!, -2, -8, 4, 1)
+    px(bark[2]!, -1, -8, 2, 1)
+    return
+  }
+  const lean = seed < 0.33 ? -1 : seed > 0.66 ? 1 : 0
+  if (stage === "seedling") {
+    px(ramp[1]!, 0, -6, 1, 4)
+    px(ramp[3]!, -3, -7, 3, 2)
+    px(ramp[4]!, 1, -8, 3, 2)
+    px(ramp[0]!, -3, -5, 3, 1)
+    return
+  }
+  px(bark[1]!, 0, -10, 2, 8)
+  px(bark[2]!, 1, -10, 1, 8)
+  px(ramp[0]!, -5 + lean, -17, 10, 8)
+  px(ramp[2]!, -4 + lean, -18, 8, 8)
+  px(ramp[3]!, -3 + lean, -18, 5, 4)
+  px(ramp[5]!, -2 + lean, -17, 2, 1)
+}
+
 export function treeArt(kind: TreeKind, variant: number): TreeArt {
   const key = `${kind}${variant % 4}`
   let art = cache.get(key)
@@ -158,6 +191,8 @@ export function treeAt(tx: number, ty: number, zone: string | null): { kind: Tre
   if (zone === "wood") return { kind: pick("pine", "oak", 0.62), variant }
   if (zone === "orchard") return { kind: pick("blossom", "oak", 0.34), variant }
   if (zone === "hill" || zone === "cove" || zone === "barn") return { kind: pick("pine", "birch", 0.6), variant }
+  if (zone === "marsh") return { kind: pick("birch", "oak", 0.7), variant }
+  if (zone === "stacks") return { kind: pick("oak", "pine", 0.5), variant }
   if (zone === "meadow" || zone === "pond" || zone === "farm") return { kind: pick("birch", "oak", 0.4), variant }
   return { kind: r < 0.45 ? "pine" : r < 0.8 ? "oak" : "birch", variant }
 }

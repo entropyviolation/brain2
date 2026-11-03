@@ -13,3 +13,10 @@ export type PoseSource = (view: View, pose: string) => string[] | null
 
 export const paletteSink: { target: Record<string, string> | null } = { target: null }
 export const poseSources = new Map<string, PoseSource>()
+
+/** Add colors to the shared sprite palette (a generated person brings their own letters). Safe to call again. */
+export function registerColors(colors: Record<string, string>) {
+  const sink = paletteSink.target
+  if (!sink) return
+  for (const [ch, hex] of Object.entries(colors)) if (sink[ch] === undefined) sink[ch] = hex
+}

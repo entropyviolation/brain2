@@ -1,233 +1,30 @@
 /**
- * components/BabyGame/casa-paint.ts — paints the inside of the cottage: Hall, Noble Floor, Loft
+ * components/BabyGame/casa-paint.ts — paints the inside of the cottage: Hall, Noble Floor, Loft, and the furniture in every room
  *
  * After Casa Batlló. Every room is painted once into a canvas (`floorCanvas`); a frame copies the camera's slice, stands the
  * columns, plants, bed and lamp and the two walkers sorted by their feet, then lays the night over it. Plaster is cream with a
  * seafoam shade and a crackle of fine cracks; wood is honey; glass is blue, teal, green and white; metal is silver, never gold.
- * The rules, the plan and the walking are `lib/baby-game/casa.ts`.
+ * The rooms off them are `casa-rooms.ts`, the helpers `casa-kit.ts`, the furniture sprites `lib/baby-game/furniture-sprites.ts` placed by
+ * `casa-furniture.ts`. The rules, the plan and the walking are `lib/baby-game/casa.ts`.
  */
 
-import { CT, floorOf, type FloorId, type Walker } from "@/lib/baby-game/casa"
+import { CEIL, CT, floorOf, type FloorId, type Walker } from "@/lib/baby-game/casa"
+import { PLACEMENTS, type Placement } from "@/lib/baby-game/casa-furniture"
+import { spriteScale } from "@/lib/baby-game/sprites"
+import { pieceSize } from "@/lib/baby-game/casa-pieces"
+import { FURNITURE_SPRITES, type FurnitureSprite } from "@/lib/baby-game/furniture-sprites"
 import { bayerAt } from "./dither"
+import { archDoor, archRing, clamp, disc, GLASS, glassAt, glassDisc, h2, LEAD, mix, paintView, parquet, PLASTER, plaster, px, SILVER, STONE, stairFlight, stairRail, view, wallLight, wood, WOOD, type Ctx } from "./casa-kit"
+import { decorate, drawAmbient } from "./casa-deco"
+import { gradeCanvas } from "./casa-grade"
+import { madeCanvas } from "./casa-made"
+import { paintBoudoir, paintGlasshouse, paintLounge } from "./casa-rooms"
 import { drawSprite, spriteCanvas, strideFrame, VIEW_H, VIEW_W } from "./render"
-
-type Ctx = CanvasRenderingContext2D
-
-const px = (ctx: Ctx, c: string, x: number, y: number, w = 1, h = 1) => {
-  ctx.fillStyle = c
-  ctx.fillRect(Math.round(x), Math.round(y), w, h)
-}
-const h2 = (x: number, y: number, k = 0) => {
-  let t = (x * 374761393 + y * 668265263 + k * 2147483647) >>> 0
-  t = (t ^ (t >>> 13)) * 1274126177
-  return ((t ^ (t >>> 16)) >>> 0) / 4294967296
-}
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
-const rgb = (c: string) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)] as const
-const mix = (a: string, b: string, t: number) => {
-  const [r1, g1, b1] = rgb(a)
-  const [r2, g2, b2] = rgb(b)
-  const f = (u: number, v: number) => Math.round(u + (v - u) * t).toString(16).padStart(2, "0")
-  return `#${f(r1, r2)}${f(g1, g2)}${f(b1, b2)}`
-}
-
-function disc(ctx: Ctx, cx: number, cy: number, rx: number, ry: number, color: string | ((x: number, y: number) => string)) {
-  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
-    for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
-      const dx = (x - cx) / rx
-      const dy = (y - cy) / ry
-      if (dx * dx + dy * dy <= 1) px(ctx, typeof color === "string" ? color : color(x, y), x, y)
-    }
-  }
-}
-
-// ─── palette ────────────────────────────────────────────────────────────────
-
-const PLASTER = ["#a9c7c6", "#bfd8d3", "#d4e7e0", "#e6f2ec", "#f6fbf7"]
-const WOOD = { hi: "#efc690", lite: "#e2ac74", mid: "#cb9058", deep: "#a26e42", dark: "#6f4630" }
-const STONE = { hi: "#fbfdfb", lite: "#e8f0ec", mid: "#cddcd8", shade: "#a9bfbf" }
-const SILVER = { hi: "#f3f7fc", mid: "#cfd8e6", deep: "#8e9ab4" }
-const LEAD = "#58789a"
-const GLASS = ["#f4faf8", "#d4eef4", "#9fd3f0", "#6fb4e8", "#4f8fd8", "#5fc2b8", "#8fdcc8", "#b8e4c8", "#b9b8f0"]
-const GLASS_W = [3, 2, 3, 3, 2, 3, 3, 2, 0.4]
-const glassAt = (a: number, b: number, k = 0) => {
-  const total = GLASS_W.reduce((p, q) => p + q, 0)
-  let r = h2(a, b, k) * total
-  for (let i = 0; i < GLASS.length; i++) {
-    r -= GLASS_W[i]!
-    if (r <= 0) return i
-  }
-  return 0
-}
-
-// ─── materials ──────────────────────────────────────────────────────────────
-
-/** Cream plaster in five dithered steps, with the fine crackle the walls of the house have everywhere. */
-function plaster(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, light: (x: number, y: number) => number) {
-  const cell = 12
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      const i = clamp(Math.round(light(x, y) * 4 + bayerAt(x, y) - 0.5), 0, 4)
-      // crackle: a pixel is a crack where it sits nearly as close to a second cell centre as to the first
-      const cx = Math.floor(x / cell)
-      const cy = Math.floor(y / cell)
-      let d1 = 1e9
-      let d2 = 1e9
-      for (let oy = -1; oy <= 1; oy++) {
-        for (let ox = -1; ox <= 1; ox++) {
-          const fx = (cx + ox + 0.2 + h2(cx + ox, cy + oy, 1) * 0.6) * cell
-          const fy = (cy + oy + 0.2 + h2(cx + ox, cy + oy, 2) * 0.6) * cell
-          const d = Math.hypot(x - fx, y - fy)
-          if (d < d1) {
-            d2 = d1
-            d1 = d
-          } else if (d < d2) d2 = d
-        }
-      }
-      px(ctx, PLASTER[d2 - d1 < 0.9 ? Math.max(0, i - 1) : i]!, x, y)
-    }
-  }
-}
-
-/** How lit the wall is at a pixel: a soft swirl round (cx, cy), dark in the ceiling's corners and at the room's edges. */
-const wallLight = (cx: number, cy: number, W: number) => (x: number, y: number) => {
-  const edge = Math.max(0, (28 - Math.min(x, W - x)) / 28) ** 2
-  const ceil = Math.max(0, (46 - y) / 46) ** 1.5
-  const foot = y > 104 ? ((y - 104) / 24) * 0.4 : 0
-  return clamp(0.72 + 0.09 * Math.sin(x * 0.035 + 1.2 * Math.sin(y * 0.04)) + 0.11 * Math.sin(Math.hypot(x - cx, (y - cy) * 1.5) * 0.14) - 0.34 * ceil - 0.3 * edge - foot, 0, 1)
-}
-
-function wood(ctx: Ctx, x: number, y: number, w: number, h: number, seed = 0) {
-  px(ctx, WOOD.mid, x, y, w, h)
-  for (let j = 1; j < h; j += 3) {
-    for (let i = 0; i < w; i++) {
-      const r = h2(Math.floor((x + i) / 9), y + j, seed)
-      if (r < 0.34) px(ctx, WOOD.lite, x + i, y + j)
-      else if (r > 0.78) px(ctx, WOOD.deep, x + i, y + j)
-    }
-  }
-  px(ctx, WOOD.hi, x, y, w, 1)
-  px(ctx, WOOD.deep, x, y + h - 1, w, 1)
-}
-
-/** The honey herringbone of the parquet: blocks of planks that turn a quarter each way. */
-function parquet(ctx: Ctx, x0: number, y0: number, x1: number, y1: number) {
-  const cols = [WOOD.lite, WOOD.mid, "#d49a60", "#e8b47c"]
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      const bx = Math.floor(x / 8)
-      const by = Math.floor(y / 8)
-      const horiz = (bx + by) % 2 === 0
-      const lane = horiz ? (y % 8) >> 1 : (x % 8) >> 1
-      const seam = horiz ? (y % 2 === 0 && lane === 0) || x % 8 === 0 : (x % 2 === 0 && lane === 0) || y % 8 === 0
-      px(ctx, seam ? WOOD.deep : cols[Math.floor(h2(bx, by, lane) * 4)]!, x, y)
-    }
-  }
-}
-
-// ─── the world outside the windows ──────────────────────────────────────────
-
-const TREES = Array.from({ length: 16 }, (_, i) => ({ x: 70 + i * 24 + h2(i, 1) * 14, y: 100 + h2(i, 2) * 8, r: 12 + h2(i, 3) * 9, c: ["#7fc08a", "#5fa878", "#8fd0a0", "#6fb890"][i % 4]! }))
-const CLOUDS = [[150, 70, 24, 5], [250, 62, 30, 6], [335, 80, 20, 4], [90, 76, 18, 4]] as const
-
-/** The meadow seen through the bay: pale sky, soft clouds, a row of round trees and lawn. */
-function view(x: number, y: number): string {
-  if (y > 112 + Math.round(2 * Math.sin(x * 0.08))) return (x + y) % 7 === 0 ? "#9fd8a8" : "#b4e4b4"
-  for (const t of TREES) {
-    const d = (x - t.x) ** 2 + ((y - t.y) * 1.1) ** 2
-    if (d < t.r * t.r) return d < (t.r * 0.45) ** 2 && x < t.x ? mix(t.c, "#ffffff", 0.3) : t.c
-  }
-  for (const [cx, cy, rx, ry] of CLOUDS) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1) return y > cy + 1 ? "#e6f2f8" : "#ffffff"
-  return mix("#8ec8ee", "#e2f3f8", clamp((y - 40) / 72, 0, 1))
-}
-function paintView(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, skip?: (x: number, y: number) => boolean) {
-  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) if (!skip?.(x, y)) px(ctx, view(x, y), x, y)
-}
-
-// ─── shared pieces ──────────────────────────────────────────────────────────
-
-/** A glass disc held in lead, with a swirl in it and a spark of light. */
-function glassDisc(ctx: Ctx, cx: number, cy: number, r: number, i: number) {
-  const base = GLASS[i]!
-  disc(ctx, cx, cy, r, r, (x, y) => (Math.hypot(x - cx, y - cy) > r - 1 ? LEAD : (Math.floor((Math.atan2(y - cy, x - cx) + Math.PI) * 1.6 + Math.hypot(x - cx, y - cy) * 0.7) & 1 ? mix(base, "#ffffff", 0.22) : base)))
-  px(ctx, "#ffffff", cx - r * 0.5, cy - r * 0.55, 1, 1)
-}
-
-/** A wide arch ring of plaster standing out of the wall: lit on its left, shaded on its right. */
-function archRing(ctx: Ctx, cx: number, cy: number, r0: number, r1: number, baseY: number) {
-  for (let y = Math.floor(cy - r1); y < baseY; y++) {
-    for (let x = Math.floor(cx - r1); x <= Math.ceil(cx + r1); x++) {
-      const d = y < cy ? Math.hypot(x - cx, y - cy) : Math.abs(x - cx)
-      if (d < r0 || d > r1) continue
-      const t = (d - r0) / (r1 - r0)
-      const left = x < cx
-      px(ctx, PLASTER[clamp(Math.round(4 - t * 2 - (left ? 0 : 1.4) + (bayerAt(x, y) - 0.5)), 0, 4)]!, x, y)
-    }
-  }
-}
-
-/** A tall arched wooden door with leaf-shaped panels and an oval of glass, as on the stair landings. */
-function archDoor(ctx: Ctx, x: number, y: number, w: number, h: number, seed = 0) {
-  const top = (px0: number) => y + Math.round((w / 2) * 0.55 * (1 - Math.sqrt(Math.max(0, 1 - ((px0 - x - w / 2) / (w / 2)) ** 2))))
-  for (let i = 0; i < w; i++) {
-    const t = top(x + i)
-    wood(ctx, x + i, t, 1, y + h - t, seed)
-  }
-  wood(ctx, x, y + Math.round(h * 0.45), w, 3, seed + 1)
-  // transom of glass discs
-  for (let k = 0; k < 3; k++) glassDisc(ctx, x + w * (0.25 + 0.25 * k), y + Math.round(h * 0.2) + (k === 1 ? -3 : 0), 4, glassAt(k, seed, 8))
-  // leaf panels
-  for (const [lx, ly, lw, lh] of [[x + 4, y + Math.round(h * 0.5), w / 2 - 6, Math.round(h * 0.36)], [x + w / 2 + 2, y + Math.round(h * 0.5), w / 2 - 6, Math.round(h * 0.36)]] as const) {
-    disc(ctx, lx + lw / 2, ly + lh / 2, lw / 2, lh / 2, (px0, py0) => (px0 < lx + lw / 2 && py0 < ly + lh / 2 ? WOOD.lite : WOOD.deep))
-    disc(ctx, lx + lw / 2, ly + lh / 2, lw / 2 - 2, lh / 2 - 2, (px0, py0) => (px0 < lx + lw / 2 ? WOOD.hi : WOOD.mid))
-  }
-  px(ctx, SILVER.mid, x + w / 2 + 3, y + Math.round(h * 0.62), 2, 3)
-  px(ctx, WOOD.dark, x, y + h - 1, w, 1)
-}
-
-/** A silver-and-white iron stair rail with a honey handrail, running from (x0, y0) up to (x1, y1) on posts. */
-function stairRail(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, posts: number) {
-  for (let i = 0; i <= posts * 4; i++) {
-    const t = i / (posts * 4)
-    const x = x0 + (x1 - x0) * t
-    const y = y0 + (y1 - y0) * t - 22
-    px(ctx, WOOD.lite, x, y, 1, 2)
-    px(ctx, WOOD.hi, x, y - 1)
-    px(ctx, WOOD.deep, x, y + 2)
-    const wave = Math.sin(i * 1.1) * 2.2
-    px(ctx, "#f6fbfb", x + wave, y + 4 + (i % 4) * 3, 1, 3)
-    if (i % 4 === 2) px(ctx, "#cfe0e4", x - 1, y + 7, 3, 1)
-  }
-  for (let i = 0; i <= posts; i++) {
-    const x = x0 + ((x1 - x0) * i) / posts
-    const y = y0 + ((y1 - y0) * i) / posts
-    px(ctx, "#eef6f6", x, y - 21, 2, 21)
-    px(ctx, "#cfe0e4", x + 1, y - 21, 1, 21)
-  }
-}
-
-/** A flight of marble steps climbing up and to the right, riser tiled blue and white. `gy` is the floor it stands on. */
-function stairFlight(ctx: Ctx, x0: number, gy: number, steps: number, run: number, rise: number) {
-  for (let i = 0; i < steps; i++) {
-    const sx = x0 + i * run
-    const top = gy - (i + 1) * rise
-    px(ctx, STONE.shade, sx, top, 400, gy - top)
-    px(ctx, STONE.hi, sx, top, run, 2)
-    px(ctx, STONE.mid, sx, top + 2, run, 1)
-    for (let y = top + 3; y < top + rise; y++) {
-      for (let x = sx; x < sx + run; x++) {
-        const d = (Math.floor((x + y) / 4) + Math.floor((x - y + 400) / 4)) % 2
-        px(ctx, d ? "#a8d2ee" : "#eef6fb", x, y)
-      }
-    }
-    px(ctx, STONE.shade, sx, top + rise - 1, run, 1)
-  }
-}
 
 // ─── the three floors ───────────────────────────────────────────────────────
 
 function paintHall(ctx: Ctx, W: number, H: number) {
-  plaster(ctx, 0, 0, W, 128, wallLight(256, 20, W))
+  plaster(ctx, 0, -CEIL * CT, W, 128, wallLight(256, 20, W))
   // vaulted ribs sweeping across the ceiling
   for (let k = 0; k < 4; k++) archRing(ctx, 96 + k * 108, 134, 74 + k * 4, 80 + k * 4, 40 + k * 3)
   // the blue-and-white diamond wainscot, its top edge a row of points
@@ -280,7 +77,7 @@ function paintHall(ctx: Ctx, W: number, H: number) {
     px(ctx, SILVER.hi, 256 + ox + (ox < 0 ? 6 : -7), 114, 2, 3)
   }
   // a pendant globe in the vault
-  px(ctx, SILVER.mid, 256, 0, 1, 24)
+  px(ctx, SILVER.mid, 256, -CEIL * CT, 1, CEIL * CT + 24)
   disc(ctx, 256, 32, 8, 9, (x, y) => (x < 255 && y < 30 ? "#ffffff" : "#d8eef4"))
   // the floor: pale marble in cool squares, veined, with silver studs at the corners
   for (let y = 128; y < H; y++) {
@@ -300,7 +97,7 @@ function paintHall(ctx: Ctx, W: number, H: number) {
   px(ctx, "#cfeee0", 220, 298, 72, 6)
   px(ctx, "#ffffff", 232, 298, 48, 1)
   // the great stair on the right, with its balustrade
-  px(ctx, mix("#aec9c6", "#6a8fa0", 0.5), 336, 40, 176, 136)
+  px(ctx, mix(PLASTER[1], "#6a8fa0", 0.18), 336, 40, 176, 136)
   stairFlight(ctx, 336, 176, 11, 16, 8)
   stairRail(ctx, 344, 176, 512, 92, 10)
   px(ctx, WOOD.deep, 332, 100, 6, 78)
@@ -309,7 +106,7 @@ function paintHall(ctx: Ctx, W: number, H: number) {
 }
 
 function paintNoble(ctx: Ctx, W: number, H: number) {
-  plaster(ctx, 0, 0, W, 128, wallLight(240, 18, W))
+  plaster(ctx, 0, -CEIL * CT, W, 128, wallLight(240, 18, W))
   // three great arches over the three bays, ribbed into the swirl of the ceiling
   for (let b = 0; b < 3; b++) archRing(ctx, 144 + b * 96, 64, 44, 56, 128)
   // the bay: lead-and-glass band, a wavy wooden frame, a view of the meadow
@@ -374,7 +171,7 @@ function paintNoble(ctx: Ctx, W: number, H: number) {
   // the way down, left: an arched wooden door
   archDoor(ctx, 24, 56, 48, 72, 2)
   // the stair up, right, behind a column of plaster
-  px(ctx, mix("#aec9c6", "#6a8fa0", 0.5), 536, 20, 104, 156)
+  px(ctx, mix(PLASTER[1], "#6a8fa0", 0.18), 536, 20, 104, 156)
   stairFlight(ctx, 544, 176, 6, 16, 12)
   stairRail(ctx, 552, 176, 640, 104, 5)
   px(ctx, WOOD.deep, 540, 120, 6, 58)
@@ -382,7 +179,7 @@ function paintNoble(ctx: Ctx, W: number, H: number) {
   // the floor: parquet, with the bay's coloured light thrown across it
   parquet(ctx, 0, 128, W, H)
   for (let y = 128; y < H; y++) for (let x = 0; x < W; x++) if (y < 150) px(ctx, `rgba(255,255,255,${0.22 - (y - 128) * 0.008})`, x, y)
-  ctx.globalAlpha = 0.2
+  ctx.globalAlpha = 0.3
   for (let j = 0; j < 5; j++) {
     for (let i = 0; i < 24; i++) {
       const g = glassAt(i, j)
@@ -394,7 +191,7 @@ function paintNoble(ctx: Ctx, W: number, H: number) {
   }
   ctx.globalAlpha = 1
   // the chandelier: a bell of crystal beads hung from the swirl of the ceiling
-  px(ctx, SILVER.mid, 240, 0, 1, 14)
+  px(ctx, SILVER.mid, 240, -CEIL * CT, 1, CEIL * CT + 14)
   const bead = (x: number, y: number, k: number) => {
     px(ctx, k % 3 === 0 ? "#ffffff" : k % 3 === 1 ? "#d4eef4" : "#9fd3f0", x, y, 2, 2)
   }
@@ -410,7 +207,7 @@ function paintNoble(ctx: Ctx, W: number, H: number) {
 }
 
 function paintLoft(ctx: Ctx, W: number, H: number) {
-  plaster(ctx, 0, 0, W, 128, wallLight(200, 10, W))
+  plaster(ctx, 0, -CEIL * CT, W, 128, wallLight(200, 10, W))
   // two pebble-shaped skylights of leaded oval glass
   for (const [cx, cy, rx, ry] of [[150, 20, 52, 19], [318, 30, 40, 17]] as const) {
     disc(ctx, cx, cy, rx + 3, ry + 3, (x, y) => (x < cx && y < cy ? "#f6fbf7" : "#c4dcd8"))
@@ -505,7 +302,7 @@ export const CASA_PROPS: Prop[] = [
   { floor: 2, kind: "monstera", x: 416, y: 176 },
 ]
 
-const sizes: Record<Prop["kind"], [number, number]> = { column: [44, 124], fern: [34, 34], palm: [40, 60], ottoman: [44, 22], bed: [152, 104], lamp: [24, 80], monstera: [48, 70] }
+const sizes: Record<Prop["kind"], [number, number]> = { column: [60, 172], fern: [34, 34], palm: [40, 60], ottoman: [44, 22], bed: [152, 104], lamp: [24, 80], monstera: [48, 70] }
 
 function leaf(ctx: Ctx, cx: number, cy: number, r: number, dark: boolean) {
   disc(ctx, cx, cy, r, r * 0.7, (x, y) => (x < cx - 1 && y < cy ? "#8fd0a0" : dark ? "#2f7a58" : "#4f9a6c"))
@@ -525,22 +322,25 @@ function paintProp(ctx: Ctx, kind: Prop["kind"]) {
     px(ctx, STONE.shade, cx - 12, fy - 12, 24, 12)
     px(ctx, STONE.mid, cx - 12, fy - 12, 24, 4)
     px(ctx, STONE.hi, cx - 10, fy - 12, 8, 2)
-    for (let y = 40; y < fy - 12; y++) {
-      for (let x = -7; x <= 7; x++) px(ctx, x < -3 ? STONE.hi : x < 3 ? STONE.lite : x < 6 ? STONE.mid : STONE.shade, cx + x, y)
+    for (let y = 84; y < fy - 12; y++) {
+      for (let x = -9; x <= 9; x++) px(ctx, x < -5 ? STONE.hi : x < 2 ? STONE.lite : x < 7 ? STONE.mid : STONE.shade, cx + x, y)
+      px(ctx, "#8fabb0", cx - 10, y)
+      px(ctx, "#8fabb0", cx + 10, y)
     }
-    for (let y = 62; y < 80; y++) {
-      for (let x = -10; x <= 10; x++) {
+    for (let y = 118; y < 138; y++) {
+      for (let x = -12; x <= 12; x++) {
         const twist = ((x + y * 0.9) % 6 + 6) % 6
         px(ctx, twist < 2 ? STONE.hi : twist < 4 ? STONE.lite : STONE.shade, cx + x, y)
       }
     }
-    px(ctx, STONE.shade, cx - 10, 80, 21, 1)
-    for (let y = 8; y < 42; y++) {
-      const t = (42 - y) / 34
-      const hw = 7 + Math.round(15 * t ** 1.6)
-      for (let x = -hw; x <= hw; x++) px(ctx, PLASTER[clamp(Math.round(3.2 - (x / hw) * 1.2 + (bayerAt(x + cx, y) - 0.5)), 0, 4)]!, cx + x, y)
+    px(ctx, STONE.shade, cx - 10, 138, 21, 1)
+    for (let y = 0; y < 90; y++) {
+      const t = (90 - y) / 90
+      const hw = 7 + Math.round(23 * t ** 1.8)
+      for (let x = -hw; x <= hw; x++) px(ctx, Math.abs(x) === hw ? "#a9c4c6" : PLASTER[clamp(Math.round(3.4 - (x / hw) * 1.4 + (bayerAt(x + cx, y) - 0.5)), 0, 4)]!, cx + x, y)
     }
-    px(ctx, STONE.shade, cx - 8, 42, 17, 2)
+    px(ctx, "#8fabb0", cx - 11, 90, 23, 2)
+    px(ctx, STONE.hi, cx - 10, 92, 21, 2)
   } else if (kind === "fern") {
     pot(16, 12, "#b8dcf0")
     for (let k = 0; k < 9; k++) {
@@ -614,6 +414,43 @@ function propCanvas(kind: Prop["kind"]) {
   return c
 }
 
+/** A furniture sprite (palette plus rows of palette characters) painted once into a canvas. */
+const furnCache = new Map<string, HTMLCanvasElement | null>()
+const FCHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
+export function furnitureCanvas(id: string): HTMLCanvasElement | null {
+  if (furnCache.has(id)) return furnCache.get(id)!
+  const made = madeCanvas(id)
+  if (made) {
+    furnCache.set(id, made)
+    return made
+  }
+  const s: FurnitureSprite | undefined = FURNITURE_SPRITES[id]
+  let c: HTMLCanvasElement | null = null
+  if (s) {
+    c = document.createElement("canvas")
+    c.width = s.w
+    c.height = s.h
+    const ctx = c.getContext("2d")!
+    s.rows.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x]!
+        if (ch !== ".") px(ctx, s.pal[FCHARS.indexOf(ch)]!, x, y)
+      }
+    })
+  }
+  if (c) gradeCanvas(c)
+  furnCache.set(id, c)
+  return c
+}
+
+/** Wall pieces are laid into the room's own canvas: curtains, pendants, mirrors, a fireplace. */
+function paintWallPieces(ctx: Ctx, id: FloorId) {
+  for (const p of PLACEMENTS) {
+    const c = p.floor === id && (p.wall || p.flat) ? furnitureCanvas(p.id) : null
+    if (c) ctx.drawImage(c, Math.round(p.x - c.width / 2), Math.round(p.y - c.height))
+  }
+}
+
 // ─── floors and frames ──────────────────────────────────────────────────────
 
 const floorCache = new Map<FloorId, HTMLCanvasElement>()
@@ -627,9 +464,18 @@ export function floorCanvas(id: FloorId): HTMLCanvasElement {
     c.height = f.h * CT
     const ctx = c.getContext("2d")!
     ctx.imageSmoothingEnabled = false
-    if (id === 0) paintHall(ctx, c.width, c.height)
-    else if (id === 1) paintNoble(ctx, c.width, c.height)
-    else paintLoft(ctx, c.width, c.height)
+    ctx.translate(0, CEIL * CT)
+    const [fw, fh] = [c.width, c.height - CEIL * CT]
+    if (id === 0) paintHall(ctx, fw, fh)
+    else if (id === 1) paintNoble(ctx, fw, fh)
+    else if (id === 2) paintLoft(ctx, fw, fh)
+    else if (id === 3) paintLounge(ctx, fw, fh)
+    else if (id === 4) paintGlasshouse(ctx, fw, fh)
+    else paintBoudoir(ctx, fw, fh)
+    decorate(ctx, id, fw, fh)
+    paintWallPieces(ctx, id)
+    gradeCanvas(c)
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     // the side walls: a soft dark edge so the room reads as a room
     for (let x = 0; x < 14; x++) {
       px(ctx, `rgba(40,70,90,${0.32 - x * 0.023})`, x, 0, 1, c.height)
@@ -645,16 +491,48 @@ const LIGHTS: Record<FloorId, Array<[number, number, number]>> = {
   0: [[256, 40, 80], [88, 90, 46], [24, 110, 30]],
   1: [[240, 60, 110], [450, 100, 50], [48, 100, 30]],
   2: [[200, 100, 70], [150, 30, 60], [318, 90, 50]],
+  3: [[70, 66, 40], [442, 66, 40]],
+  4: [[256, 40, 90]],
+  5: [[110, 70, 70]],
 }
 
-export type CasaFrame = { w: Walker; t: number; night: boolean; petSprite: string; near: string | null }
+/** The lit pieces add a pool of their own at the height of their shade. */
+const glowsOf = (floor: FloorId, off?: Set<number>): Array<[number, number, number]> =>
+  PLACEMENTS.flatMap((p: Placement, i) => (p.floor === floor && p.glow && pieceSize(p.id) && !off?.has(i) ? [[p.x, p.y - (p.lift ?? 0) - pieceSize(p.id)!.h * 0.7, p.glow] as [number, number, number]] : []))
+
+type Body = { y: number; draw: () => void }
+
+/** Everything that stands in a room, ready to be sorted by its feet: the first rooms' props and the furniture. */
+function propBodies(ctx: Ctx, floor: FloorId): Body[] {
+  const bodies: Body[] = CASA_PROPS.filter((p) => p.floor === floor).map((p) => {
+    const [pw, ph] = sizes[p.kind]
+    const fy = p.y + CEIL * CT
+    return { y: fy, draw: () => ctx.drawImage(propCanvas(p.kind), Math.round(p.x - pw / 2), Math.round(fy - ph)) }
+  })
+  for (const p of PLACEMENTS) {
+    const c = p.floor === floor && !p.wall && !p.flat ? furnitureCanvas(p.id) : null
+    if (!c) continue
+    const fy = p.y + CEIL * CT
+    bodies.push({ y: fy, draw: () => ctx.drawImage(c, Math.round(p.x - c.width / 2), Math.round(fy - (p.lift ?? 0) - c.height)) })
+  }
+  return bodies
+}
+
+/** A whole room with its furniture and no one in it, for the lab page. */
+export function roomWhole(ctx: Ctx, id: FloorId) {
+  ctx.drawImage(floorCanvas(id), 0, 0)
+  const bodies = propBodies(ctx, id).sort((a, b) => a.y - b.y)
+  for (const b of bodies) b.draw()
+}
+
+export type CasaFrame = { w: Walker; t: number; night: boolean; petSprite: string; near: string | null; off?: Set<number>; music?: Set<number> }
 
 /** Paint a frame of the house into a 304×192 context. */
 export function drawCasa(ctx: Ctx, f: CasaFrame) {
   const { w, t } = f
   const floor = floorCanvas(w.floor)
   const camX = clamp(Math.round(w.x - VIEW_W / 2), 0, floor.width - VIEW_W)
-  const camY = clamp(Math.round(w.y - VIEW_H / 2 - 8), 0, floor.height - VIEW_H)
+  const camY = clamp(Math.round(w.y - VIEW_H * 0.76), 0, floor.height - VIEW_H)
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, VIEW_W, VIEW_H)
@@ -672,11 +550,15 @@ export function drawCasa(ctx: Ctx, f: CasaFrame) {
     for (let k = 0; k < 6; k++) if (Math.sin(t * 1.7 + k * 1.9) > 0.8) px(ctx, "#ffffff", 120 + k * 11, 14 + ((k * 7) % 12), 2, 1)
   }
 
-  type Body = { y: number; draw: () => void }
-  const bodies: Body[] = CASA_PROPS.filter((p) => p.floor === w.floor).map((p) => {
-    const [pw, ph] = sizes[p.kind]
-    return { y: p.y, draw: () => ctx.drawImage(propCanvas(p.kind), Math.round(p.x - pw / 2), Math.round(p.y - ph)) }
-  })
+  const bodies = propBodies(ctx, w.floor)
+  for (const i of f.music ?? []) {
+    const p = PLACEMENTS[i]
+    if (p?.floor !== w.floor) continue
+    for (let k = 0; k < 3; k++) {
+      const ph = (t * 0.7 + k / 3) % 1
+      px(ctx, k % 2 ? "#9fd3f0" : "#8fdcc8", p.x - 6 + k * 6 + Math.sin(t * 3 + k) * 3, p.y + CEIL * CT - (p.lift ?? 0) - 26 - ph * 22, 2, 3)
+    }
+  }
   const shadow = (x: number, y: number, sw: number) => {
     ctx.fillStyle = "rgba(40,60,90,0.22)"
     ctx.fillRect(Math.round(x - sw / 2), Math.round(y - 1), sw, 3)
@@ -686,18 +568,19 @@ export function drawCasa(ctx: Ctx, f: CasaFrame) {
     y: w.y,
     draw: () => {
       shadow(w.x, w.y + 4, 14)
-      drawSprite(ctx, spriteCanvas("player", w.moving ? w.facing : "back", w.moving ? stride : -1, null), w.x, w.y + 4 - (w.moving ? stride & 1 : 0), w.face)
+      drawSprite(ctx, spriteCanvas("player", w.moving ? w.facing : "back", w.moving ? stride : -1, null), w.x, w.y + 4 + (w.sit ? 3 : 0) - (w.moving ? stride & 1 : 0), w.face)
     },
   })
   bodies.push({
     y: w.pet.y,
     draw: () => {
       shadow(w.pet.x, w.pet.y + 4, 12)
-      drawSprite(ctx, spriteCanvas(f.petSprite, w.moving ? w.facing : "front", w.moving ? strideFrame(t, w.running, 0.5) : -1, null), w.pet.x, w.pet.y + 4, w.x >= w.pet.x ? 1 : -1)
+      drawSprite(ctx, spriteCanvas(f.petSprite, w.moving ? w.facing : "front", w.moving ? strideFrame(t, w.running, 0.5) : -1, null), w.pet.x, w.pet.y + 4, w.x >= w.pet.x ? 1 : -1, spriteScale(f.petSprite))
     },
   })
   bodies.sort((a, b) => a.y - b.y)
   for (const b of bodies) b.draw()
+  drawAmbient(ctx, w.floor, t)
 
   // after dark the windows go blue and the lamps are pools of light
   if (f.night) {
@@ -705,7 +588,8 @@ export function drawCasa(ctx: Ctx, f: CasaFrame) {
     ctx.fillStyle = "rgba(30,46,96,0.36)"
     ctx.fillRect(0, 0, VIEW_W, VIEW_H)
     ctx.globalCompositeOperation = "screen"
-    for (const [lx, ly, lr] of LIGHTS[w.floor]) {
+    for (const [lx, ly0, lr] of [...LIGHTS[w.floor], ...glowsOf(w.floor, f.off)]) {
+      const ly = ly0 + CEIL * CT
       const g = ctx.createRadialGradient(lx - camX, ly - camY, 2, lx - camX, ly - camY, lr)
       g.addColorStop(0, "rgba(220,240,255,0.5)")
       g.addColorStop(1, "rgba(220,240,255,0)")

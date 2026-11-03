@@ -1,5 +1,5 @@
 /**
- * lib/baby-game/world.ts — Mossmere Hollow: a 64×52 tile map built from rectangles
+ * lib/baby-game/world.ts — Valdivia: an 80×64 tile map built from rectangles
  *
  * The whole map starts as forest. Each zone and corridor is carved out, so nothing is reachable except
  * through a corridor, and the four gates sit in those corridors. A gate opens when its act is unlocked
@@ -8,9 +8,11 @@
  * Pure: no canvas here. `components/BabyGame/render.ts` paints it.
  */
 
+import { HOMES, homeDoor } from "./homes"
+
 export const TILE = 16
-export const MAP_W = 64
-export const MAP_H = 52
+export const MAP_W = 80
+export const MAP_H = 64
 
 export const T = {
   GRASS: 0,
@@ -38,25 +40,29 @@ export const T = {
 
 const SOLID = new Set<number>([T.WATER, T.TREE, T.ROCK, T.FENCE, T.WALL, T.ROOF, T.GATE, T.STONE, T.ARCH])
 
-export type ZoneId = "meadow" | "farm" | "highlands" | "lake" | "orchard" | "pond" | "cove" | "hill" | "barn" | "wood"
+export type ZoneId = "meadow" | "farm" | "highlands" | "lake" | "orchard" | "pond" | "cove" | "hill" | "barn" | "wood" | "marsh" | "stacks" | "dunes"
 
 type Rect = { x0: number; y0: number; x1: number; y1: number }
 
 export const ZONES: Record<ZoneId, Rect & { name: string }> = {
-  meadow: { name: "Mossmere Meadow", x0: 17, y0: 14, x1: 30, y1: 25 },
-  farm: { name: "Homestead Patch", x0: 17, y0: 27, x1: 22, y1: 33 },
-  orchard: { name: "Dewdrop Orchard", x0: 3, y0: 4, x1: 15, y1: 16 },
-  pond: { name: "Lilting Pond", x0: 33, y0: 11, x1: 45, y1: 24 },
-  cove: { name: "Frost Cove", x0: 36, y0: 3, x1: 45, y1: 10 },
-  hill: { name: "Burrow Hill", x0: 3, y0: 26, x1: 15, y1: 37 },
-  barn: { name: "Hayloft Yard", x0: 32, y0: 27, x1: 44, y1: 37 },
-  wood: { name: "Whispering Wood", x0: 17, y0: 3, x1: 30, y1: 12 },
-  highlands: { name: "Aspen Highlands", x0: 50, y0: 4, x1: 62, y1: 22 },
-  lake: { name: "Mirror Lake", x0: 46, y0: 26, x1: 62, y1: 48 },
+  meadow: { name: "Balboa Meadow", x0: 17, y0: 14, x1: 30, y1: 25 },
+  farm: { name: "Permaculture Patch", x0: 17, y0: 27, x1: 22, y1: 33 },
+  orchard: { name: "Refraction Orchard", x0: 3, y0: 4, x1: 15, y1: 16 },
+  pond: { name: "Moiré Pond", x0: 33, y0: 11, x1: 45, y1: 24 },
+  cove: { name: "Ice Halo Cove", x0: 36, y0: 3, x1: 45, y1: 10 },
+  hill: { name: "Fossil Hill", x0: 3, y0: 26, x1: 15, y1: 37 },
+  barn: { name: "Swap Meet Yard", x0: 32, y0: 27, x1: 44, y1: 37 },
+  wood: { name: "Thistle Wood", x0: 17, y0: 3, x1: 30, y1: 12 },
+  highlands: { name: "Kauai Highlands", x0: 50, y0: 4, x1: 62, y1: 22 },
+  lake: { name: "Sparkle Lake", x0: 46, y0: 26, x1: 62, y1: 48 },
+  // the far reaches, added when the map grew from 64×52 to 80×64
+  marsh: { name: "Cobalt Glow Marsh", x0: 3, y0: 41, x1: 29, y1: 60 },
+  stacks: { name: "The Index Stacks", x0: 66, y0: 4, x1: 77, y1: 40 },
+  dunes: { name: "Firework Dunes", x0: 35, y0: 51, x1: 76, y1: 61 },
 }
 
 /** The act that unlocks each zone. The meadow and orchard are open from the start. */
-export const ZONE_ACT: Record<ZoneId, number> = { meadow: 1, farm: 1, highlands: 3, lake: 4, orchard: 1, pond: 2, cove: 2, hill: 3, barn: 4, wood: 5 }
+export const ZONE_ACT: Record<ZoneId, number> = { meadow: 1, farm: 1, highlands: 3, lake: 4, orchard: 1, pond: 2, cove: 2, hill: 3, barn: 4, wood: 5, marsh: 1, stacks: 3, dunes: 4 }
 
 const CORRIDORS: Rect[] = [
   { x0: 9, y0: 18, x1: 16, y1: 19 },
@@ -67,6 +73,11 @@ const CORRIDORS: Rect[] = [
   { x0: 23, y0: 13, x1: 24, y1: 13 },
   { x0: 46, y0: 19, x1: 49, y1: 20 },
   { x0: 56, y0: 23, x1: 57, y1: 25 },
+  // farm → marsh (open), highlands → stacks (behind the highlands' own gate), lake → dunes, marsh → dunes (gated)
+  { x0: 19, y0: 34, x1: 20, y1: 40 },
+  { x0: 63, y0: 19, x1: 65, y1: 20 },
+  { x0: 50, y0: 49, x1: 51, y1: 50 },
+  { x0: 30, y0: 55, x1: 34, y1: 56 },
 ]
 
 export type Gate = { x: number; y: number; act: number }
@@ -84,6 +95,8 @@ export const GATES: Gate[] = [
   { x: 47, y: 20, act: 3 },
   { x: 56, y: 24, act: 4 },
   { x: 57, y: 24, act: 4 },
+  { x: 32, y: 55, act: 4 },
+  { x: 32, y: 56, act: 4 },
 ]
 
 /** Sixteen patches of soil, four by four, south of the meadow. */
@@ -92,14 +105,14 @@ export const PLOTS: Array<{ id: string; x: number; y: number }> = Array.from({ l
 export type StationId = "bed" | "bench" | "stump" | "board" | "lamp" | "fire" | "glade" | "falls" | "echo" | "stairs"
 
 export const STATIONS: Record<StationId, { x: number; y: number; label: string }> = {
-  bed: { x: 21, y: 17, label: "Go to bed" },
+  bed: { x: 19, y: 17, label: "Go inside" },
   bench: { x: 26, y: 17, label: "Workbench" },
-  stump: { x: 28, y: 21, label: "Trade Stump" },
+  stump: { x: 28, y: 21, label: "Swap Stump" },
   board: { x: 19, y: 21, label: "Notice Board" },
-  lamp: { x: 24, y: 20, label: "Hollow Lamp" },
+  lamp: { x: 24, y: 20, label: "Orb Lamp" },
   fire: { x: 24, y: 23, label: "Campfire" },
-  glade: { x: 5, y: 11, label: "Firefly Glade" },
-  falls: { x: 37, y: 13, label: "Mossfall Hop" },
+  glade: { x: 5, y: 11, label: "Orb Light Glade" },
+  falls: { x: 37, y: 13, label: "Sine Hop" },
   echo: { x: 9, y: 32, label: "Echo Flower" },
   stairs: { x: 43, y: 33, label: "Stair Weave" },
 }
@@ -120,7 +133,7 @@ const nodeList: Array<[NodeKind, number, number]> = [
   ["reed", 8, 12], ["reed", 14, 13], ["reed", 11, 15],
   ["clover", 6, 14], ["clover", 12, 10], ["feather", 7, 8], ["dig", 5, 15],
   // meadow
-  ["clover", 18, 16], ["clover", 29, 23], ["clover", 20, 24], ["clover", 27, 15],
+  ["clover", 22, 18], ["clover", 29, 23], ["clover", 20, 24], ["clover", 27, 15],
   ["berry", 29, 15], ["pebble", 18, 23], ["pebble", 28, 24], ["dig", 22, 24],
   // pond and cove
   ["reed", 34, 15], ["reed", 35, 21], ["reed", 43, 22], ["reed", 43, 13],
@@ -145,14 +158,74 @@ const nodeList: Array<[NodeKind, number, number]> = [
   ["mushroom", 19, 5], ["mushroom", 28, 7], ["mushroom", 22, 10], ["mushroom", 26, 4],
   ["acorn", 18, 9], ["acorn", 29, 10], ["acorn", 21, 4], ["acorn", 27, 11],
   ["feather", 20, 7], ["feather", 25, 9], ["dig", 18, 6], ["dig", 29, 5], ["pebble", 23, 8], ["berry", 30, 8],
+  // cobalt glow marsh
+  ["reed", 6, 44], ["reed", 13, 48], ["reed", 24, 45], ["reed", 9, 55], ["reed", 21, 57],
+  ["fish", 9, 49], ["fish", 17, 54], ["fish", 23, 49], ["mushroom", 4, 50], ["mushroom", 15, 58], ["mushroom", 27, 54],
+  ["clover", 11, 42], ["clover", 22, 42], ["feather", 18, 45], ["dig", 6, 58], ["dig", 28, 59], ["shell", 13, 53], ["berry", 4, 42],
+  // the index stacks
+  ["feather", 68, 6], ["feather", 75, 15], ["pebble", 72, 9], ["pebble", 68, 27], ["mushroom", 76, 22], ["mushroom", 67, 34],
+  ["dig", 71, 18], ["dig", 74, 37], ["acorn", 69, 13], ["acorn", 76, 31], ["berry", 72, 25], ["clover", 70, 39],
+  // firework dunes
+  ["shell", 38, 53], ["shell", 47, 60], ["shell", 66, 59], ["pebble", 42, 58], ["pebble", 58, 52], ["pebble", 73, 56],
+  ["dig", 44, 53], ["dig", 55, 59], ["dig", 69, 53], ["dig", 75, 60], ["feather", 61, 56], ["fish", 52, 57], ["fish", 50, 54],
 ]
 
 export const NODES: GameNode[] = nodeList.map(([kind, x, y], i) => ({ id: `${kind}-${i}`, kind, x, y }))
 
+export type PropKind =
+  | "well" | "mailbox" | "firewood" | "signpost" | "birdbath" | "blanket" | "scarecrow" | "wheelbarrow" | "haybale" | "beehive" | "rowboat"
+  | "orb" | "puddle" | "prism" | "library" | "thrift" | "collage" | "fireworks" | "clock" | "pendulum" | "ducklings" | "sprinkler"
+  | "microscope" | "fossil" | "romanesco" | "slime" | "wasps" | "kitten"
+
+/** Everyday things standing in the world, and a few drawn from what the player loves and dreads. What each one does is `lib/baby-game/props.ts`. */
+export const PROPS: Array<{ kind: PropKind; x: number; y: number }> = [
+  { kind: "mailbox", x: 18, y: 18 },
+  { kind: "firewood", x: 20, y: 23 },
+  { kind: "well", x: 17, y: 28 },
+  { kind: "signpost", x: 30, y: 18 },
+  { kind: "birdbath", x: 26, y: 14 },
+  { kind: "blanket", x: 18, y: 25 },
+  { kind: "beehive", x: 12, y: 9 },
+  { kind: "scarecrow", x: 22, y: 29 },
+  { kind: "wheelbarrow", x: 22, y: 32 },
+  { kind: "haybale", x: 38, y: 33 },
+  { kind: "haybale", x: 34, y: 36 },
+  { kind: "rowboat", x: 47, y: 40 },
+  { kind: "orb", x: 21, y: 21 },
+  { kind: "puddle", x: 29, y: 25 },
+  { kind: "prism", x: 26, y: 15 },
+  { kind: "library", x: 18, y: 22 },
+  { kind: "thrift", x: 27, y: 22 },
+  { kind: "collage", x: 27, y: 17 },
+  { kind: "fireworks", x: 41, y: 32 },
+  { kind: "clock", x: 17, y: 22 },
+  { kind: "pendulum", x: 33, y: 22 },
+  { kind: "ducklings", x: 35, y: 23 },
+  { kind: "sprinkler", x: 17, y: 30 },
+  { kind: "microscope", x: 12, y: 31 },
+  { kind: "fossil", x: 7, y: 32 },
+  { kind: "romanesco", x: 13, y: 7 },
+  { kind: "slime", x: 20, y: 10 },
+  { kind: "wasps", x: 28, y: 9 },
+  { kind: "kitten", x: 36, y: 32 },
+  // the far reaches
+  { kind: "orb", x: 12, y: 50 },
+  { kind: "slime", x: 23, y: 53 },
+  { kind: "library", x: 69, y: 5 },
+  { kind: "prism", x: 74, y: 29 },
+  { kind: "fireworks", x: 63, y: 54 },
+  { kind: "puddle", x: 41, y: 55 },
+]
+
+/** Props you can walk over: they lie on the ground or are small enough to step around. */
+export const FLAT_PROPS: ReadonlySet<PropKind> = new Set<PropKind>(["blanket", "puddle", "ducklings", "sprinkler", "fossil", "kitten"])
+
 export type World = {
   tiles: Uint8Array
-  /** Tiles that are solid because of a station standing on them. */
+  /** Tiles that are solid because of a station or a prop standing on them. */
   stationSolid: Set<number>
+  /** Tiles kept clear of trees: around stations, nodes, props, homes and friend spots. New saplings never start here. */
+  held: Set<number>
 }
 
 export const tileIndex = (x: number, y: number) => y * MAP_W + x
@@ -199,6 +272,9 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   })
   carve(ZONES.highlands, flowers(0.14))
   carve(ZONES.lake, flowers(0.1))
+  carve(ZONES.marsh, flowers(0.08))
+  carve(ZONES.stacks, T.HILL)
+  carve(ZONES.dunes, T.SAND)
   // the highlands' own still pond, and a great lake with a sandy rim
   for (let y = 6; y <= 18; y++) {
     for (let x = 51; x <= 63; x++) {
@@ -214,6 +290,17 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
       else if (d <= 1.7) tiles[tileIndex(x, y)] = T.SAND
     }
   }
+  // the marsh: still pools that glow cobalt after dark, strung on a boardwalk
+  const pools: Array<[number, number, number, number]> = [[8, 47, 2.6, 1.8], [17, 51, 3.2, 2.2], [26, 48, 2.4, 2.2], [11, 56, 3, 1.8], [22, 56, 2.2, 1.6]]
+  for (let y = ZONES.marsh.y0; y <= ZONES.marsh.y1; y++) {
+    for (let x = ZONES.marsh.x0; x <= ZONES.marsh.x1; x++) {
+      if (pools.some(([cx, cy, rx, ry]) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1)) tiles[tileIndex(x, y)] = T.WATER
+    }
+  }
+  // the stacks: long shelves of stone with gaps to walk between, like the index at the back of a book
+  for (let y = 8; y <= 36; y += 4) for (let x = 67; x <= 76; x++) if (x !== 71 && x !== 72 && (x + y) % 9 !== 0) tiles[tileIndex(x, y)] = T.STONE
+  // the dunes: one small oasis
+  for (let y = 53; y <= 57; y++) for (let x = 48; x <= 54; x++) if (((x - 51) / 2.2) ** 2 + ((y - 55) / 1.6) ** 2 <= 1) tiles[tileIndex(x, y)] = T.WATER
   for (const c of CORRIDORS) carve(c, T.PATH)
 
   // a brook-sized pond in the orchard
@@ -233,15 +320,20 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   carve({ x0: 23, y0: 3, x1: 24, y1: 12 }, T.PATH)
   carve({ x0: 50, y0: 19, x1: 62, y1: 20 }, T.PATH)
   carve({ x0: 56, y0: 20, x1: 57, y1: 28 }, T.PATH)
+  carve({ x0: 19, y0: 41, x1: 20, y1: 44 }, T.PATH)
+  carve({ x0: 4, y0: 44, x1: 29, y1: 44 }, T.PATH)
+  carve({ x0: 71, y0: 4, x1: 72, y1: 40 }, T.PATH)
+  carve({ x0: 35, y0: 55, x1: 47, y1: 55 }, T.PATH)
+  carve({ x0: 55, y0: 55, x1: 76, y1: 55 }, T.PATH)
+  carve({ x0: 50, y0: 51, x1: 51, y1: 52 }, T.PATH)
+  // a boardwalk across the marsh's middle pool
+  for (let x = 13; x <= 21; x++) tiles[tileIndex(x, 51)] = T.BRIDGE
 
-  // the cottage: a marble ruin, five tiles wide and four tall (painted by `art.ts`)
-  for (let x = 19; x <= 23; x++) {
-    tiles[tileIndex(x, 14)] = T.ROOF
-    tiles[tileIndex(x, 15)] = T.ROOF
-    tiles[tileIndex(x, 16)] = T.WALL
-    tiles[tileIndex(x, 17)] = T.WALL
+  // the cottage: a tall Gaudí house, seven tiles wide and seven tall (painted by `art.ts`); its door opens into `casa.ts`
+  for (let x = 16; x <= 22; x++) {
+    for (let y = 11; y <= 17; y++) tiles[tileIndex(x, y)] = y <= 13 ? T.ROOF : T.WALL
   }
-  tiles[tileIndex(21, 17)] = T.DOOR
+  tiles[tileIndex(19, 17)] = T.DOOR
 
   // the hayloft
   for (let x = 36; x <= 41; x++) {
@@ -272,6 +364,17 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
     hold(s.x, s.y, 2)
     if (tiles[tileIndex(s.x, s.y)] !== T.DOOR) stationSolid.add(tileIndex(s.x, s.y))
   }
+  for (const p of PROPS) {
+    hold(p.x, p.y, 1)
+    if (!FLAT_PROPS.has(p.kind)) stationSolid.add(tileIndex(p.x, p.y))
+  }
+  // every friend's home is solid, with its door and a little yard kept clear
+  for (const h of Object.values(HOMES)) {
+    hold(h.x, h.y, 1)
+    hold(...homeDoor(h), 1)
+    // the house is HOME_SCALE tiles wide, so its footing is solid on both sides of the middle tile
+    for (let dx = -1; dx <= 1; dx++) stationSolid.add(tileIndex(h.x + dx, h.y))
+  }
   for (const n of NODES) hold(n.x, n.y, 2)
   for (const [x, y] of reserved) hold(x, y, 2)
   hold(10, 22, 1)
@@ -282,8 +385,15 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
     for (let y = zone.y0; y <= zone.y1; y++) {
       for (let x = zone.x0; x <= zone.x1; x++) {
         const i = tileIndex(x, y)
+        // one roll per tile whether or not it is held, so moving a prop never reshuffles the trees
+        const roll = rand()
         if (!base.includes(tiles[i]!) || keep.has(i)) continue
-        if (rand() < density) tiles[i] = tile
+        if (tile === T.TREE && zone !== ZONES.wood) {
+          // groves and clearings: a smooth noise mask scales the chance, and no two trees touch
+          if (roll >= density * (0.25 + 1.5 * groveNoise(x, y))) continue
+          if ([tiles[i - 1], tiles[i - MAP_W - 1], tiles[i - MAP_W], tiles[i - MAP_W + 1]].includes(T.TREE)) continue
+          tiles[i] = tile
+        } else if (roll < density) tiles[i] = tile
       }
     }
   }
@@ -296,8 +406,31 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   scatter(ZONES.pond, T.TREE, 0.05, [T.GRASS])
   scatter(ZONES.highlands, T.TREE, 0.12, [T.GRASS, T.FLOWER])
   scatter(ZONES.lake, T.TREE, 0.08, [T.GRASS, T.FLOWER])
+  scatter(ZONES.marsh, T.TREE, 0.07, [T.GRASS, T.FLOWER])
+  scatter(ZONES.stacks, T.TREE, 0.04, [T.HILL])
+  scatter(ZONES.dunes, T.ROCK, 0.04, [T.SAND])
 
-  return { tiles, stationSolid }
+  return { tiles, stationSolid, held: keep }
+}
+
+/** Smooth 0..1 value noise at about 9 tiles, so trees gather in groves instead of sprinkling evenly. */
+function groveNoise(x: number, y: number): number {
+  const h = (a: number, b: number) => {
+    let t = (a * 374761393 + b * 668265263) >>> 0
+    t = (t ^ (t >>> 13)) * 1274126177
+    return ((t ^ (t >>> 16)) >>> 0) / 4294967296
+  }
+  const gx = x / 9
+  const gy = y / 9
+  const x0 = Math.floor(gx)
+  const y0 = Math.floor(gy)
+  const fx = gx - x0
+  const fy = gy - y0
+  const sx = fx * fx * (3 - 2 * fx)
+  const sy = fy * fy * (3 - 2 * fy)
+  const top = h(x0, y0) * (1 - sx) + h(x0 + 1, y0) * sx
+  const bot = h(x0, y0 + 1) * (1 - sx) + h(x0 + 1, y0 + 1) * sx
+  return top * (1 - sy) + bot * sy
 }
 
 export function unlockedAct(partsPlaced: number): number {

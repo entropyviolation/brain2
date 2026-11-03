@@ -30,7 +30,42 @@ export const SUBJECTS = {
   "red-panda": "baby red panda with a striped ringed tail",
   fennec: "baby fennec fox with huge ears and cream fur",
   raccoon: "baby raccoon with a striped tail and black mask",
+  // Second batch (2026-11-03): cute, obscure and realistic. Each prompt names the real markings so the model stays anatomical.
+  otter: "baby sea otter pup with dark brown fur, a cream face, small round ears, whiskers and webbed feet",
+  "giant-panda": "giant panda cub with black ears, black eye patches, black legs and a fluffy white body",
+  "kitten-siamese": "little siamese kitten with cream fur, dark brown face mask, ears, paws and tail, and blue eyes",
+  "kitten-grey": "little grey tabby kitten with darker stripes, white paws and pale green eyes",
+  hyrax: "baby rock hyrax dassie pup with short round brown-grey fur, tiny rounded ears, no visible tail, stubby legs and a pale belly",
+  quokka: "baby quokka with round brown-grey fur, a short rounded nose, small round ears and a smiling face",
+  pika: "baby pika with a round fluffy body, tiny round ears, no visible tail and soft grey-brown fur",
+  "dik-dik": "baby dik-dik antelope fawn with slender legs, a tan coat, large dark eyes and a long soft pointed nose",
+  "sugar-glider": "baby sugar glider with soft blue-grey fur, a black stripe down its back, huge dark eyes, big pale ears and a bushy tail",
+  pangolin: "baby pangolin with overlapping brown scales on its back, a pale pink belly, a small pointed face and a thick tail",
+  dormouse: "baby hazel dormouse with golden orange fur, big black eyes, small round ears and a fluffy tail",
+  tarsier: "baby tarsier with enormous round eyes, soft grey-brown fur, long thin fingers and a thin tail",
+  // Redesign batch (2026-11-03): Pilgrim, Daria and Vonnegut. Short, round, chunky bodies so side and front match; no yellow.
+  "redesign-bunny": "baby bunny kit with soft cream-white and light grey fur, long floppy ears with pink insides, a pink nose, small sleepy eyes, a round chubby body and a tiny round cotton tail",
+  "redesign-fawn": "baby fawn with warm brown fur, a few small white spots, big round friendly dark eyes with white highlights, a small dark nose, short stubby legs, a short chubby body and small rounded ears",
+  "redesign-wolf": "baby wolf pup with fluffy grey and cream fur, a big round head, small pointed ears, a short snout, big paws, a short chubby body and a small fluffy tail, gentle dark eyes",
 }
+
+/** Ids from the second batch: three singles and two sheets each, with the glitch guards. */
+const SECOND = ["otter", "giant-panda", "kitten-siamese", "kitten-grey", "hyrax", "quokka", "pika", "dik-dik", "sugar-glider", "pangolin", "dormouse", "tarsier"]
+
+/**
+ * People (2026-11-02): village-sim villagers in the manner of Stardew Valley and Pacha. Same graph and LoRA as the animals;
+ * the prompt asks for chibi proportions and real clothes. `person-*` ids use `human()` and `humanSheet()` below.
+ */
+export const PEOPLE = {
+  "person-center": "pixie fairy girl, pale skin, brown eyes, strawberry blonde wavy hair, small pointed ears, a black corset over a black blouse, black layered skirt, black and grey scarves, a silver chain belt with silver o rings, white go-go boots",
+  "person-baker": "friendly village baker woman, chestnut bun, white apron over a mustard blouse, long green skirt, brown shoes",
+  "person-fisher": "old fisherman with a white beard, yellow rain hat, navy sweater, rolled grey trousers, tall rubber boots",
+  "person-kid": "small village boy with messy blond hair, red striped t-shirt, green shorts, sneakers",
+  "person-teacher": "young teacher with round glasses, black bob haircut, lavender cardigan over a white shirt, plum pleated skirt, flat shoes",
+}
+
+/** Glitch guards for the second batch: the usual SDXL failures in small animals. */
+const GLITCH = "deformed, extra legs, extra limbs, extra tail, extra ears, extra eyes, asymmetrical face, cropped, cut off, floating parts, human hands, "
 
 const NEGATIVE =
   "blurry, photo, realistic, 3d render, gradient, smooth shading, text, watermark, background scenery, multiple characters, sprite sheet, multiple views, collage, background, text"
@@ -39,6 +74,12 @@ const SHEET_NEGATIVE = "blurry, photo, realistic, 3d render, gradient, smooth sh
 const single = (what) => `pixel art, one single cute fluffy ${what}, detailed, full body, centered, flat colors, clean outline, plain white background`
 const sheet = (what) =>
   `pixel art character turnaround sheet of a cute fluffy ${what}, detailed, four views: front, side, back, three-quarter, flat colors, clean outline, plain white background`
+
+const human = (what) =>
+  `pixel art, stardew valley style villager character sprite, ${what}, chibi proportions, big head, small body, full body, standing, facing the viewer, 16-bit farming game, detailed shading, dark outline, plain white background`
+const humanSheet = (what) =>
+  `pixel art, stardew valley style character sheet, ${what}, chibi proportions, three views in a row: front, side, back, full body, 16-bit farming game, dark outline, plain white background`
+const HUMAN_NEGATIVE = `${NEGATIVE}, realistic, anime, 3d, blurry, extra limbs, cropped, text`
 
 /** The liked graph (sprite_00032_.png), with the prompt, seed and file prefix filled in. */
 export function graph(positive, negative, seed, prefix) {
@@ -58,19 +99,58 @@ export function graph(positive, negative, seed, prefix) {
   }
 }
 
-async function queue(prompt) {
-  const res = await fetch(`${COMFY}/prompt`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt }) })
+async function queue(prompt, front = false) {
+  const res = await fetch(`${COMFY}/prompt`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, front }) })
   if (!res.ok) throw new Error(`ComfyUI ${res.status}: ${await res.text()}`)
   return (await res.json()).prompt_id
 }
 
+/**
+ * Chibi pass for people (2026-11-03): a 28-row sprite needs a big head to keep a face. `person-center-chibi` asks for Stardew
+ * proportions from text alone and, from `center-a.png` in the ComfyUI input folder (the liked tall render), by img2img.
+ */
+const CHIBI_WHAT =
+  "pixie fairy girl, big head and small body, pale skin, (big dark brown eyes:1.5), long wavy strawberry blonde hair, small pointed ears, black corset with straps, black layered short skirt, grey scarf tied at the waist, silver chain belt with silver o rings, white go-go boots"
+const CHIBI_NEGATIVE = (extra) => `${extra}, green eyes, blue eyes, teal eyes, hazel eyes`
+const chibi = (what) =>
+  `pixel art, stardew valley villager sprite, ${what}, chibi proportions, head is a third of the height, big eyes, small hands, full body, standing, facing the viewer, 16-bit farming game, detailed shading, dark outline, plain white background`
+
+function img2img(positive, negative, seed, prefix, denoise) {
+  const g = graph(positive, negative, seed, prefix)
+  g[10] = { class_type: "LoadImage", inputs: { image: "center-a.png" } }
+  g[11] = { class_type: "ImageScale", inputs: { image: ["10", 0], upscale_method: "nearest-exact", width: 768, height: 768, crop: "center" } }
+  g[12] = { class_type: "VAEEncode", inputs: { pixels: ["11", 0], vae: ["3", 0] } }
+  g[7].inputs.latent_image = ["12", 0]
+  g[7].inputs.denoise = denoise
+  return g
+}
+
+async function chibiBatch() {
+  for (const seed of [5, 11, 23, 42, 77, 91]) console.log(`chibi text seed ${seed}:`, await queue(graph(chibi(CHIBI_WHAT), CHIBI_NEGATIVE(HUMAN_NEGATIVE), seed, "sprite-person-chibi"), true))
+  for (const [seed, d] of [[5, 0.6], [11, 0.6], [23, 0.72], [42, 0.72]]) console.log(`chibi img2img seed ${seed} denoise ${d}:`, await queue(img2img(chibi(CHIBI_WHAT), CHIBI_NEGATIVE(HUMAN_NEGATIVE), seed, "sprite-person-chibi-i2i", d), true))
+}
+
+const REDESIGN = ["redesign-bunny", "redesign-fawn", "redesign-wolf"]
+const REDESIGN_BAD = "creepy, scary, uncanny, long body, elongated body, long neck, long snout, stretched, yellow, golden, gold, "
+
 async function main() {
+  if (process.argv[2] === "person-center-chibi") return chibiBatch()
   const ids = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SUBJECTS)
+  if (ids[0] === "second") ids.splice(0, 1, ...SECOND)
+  if (ids[0] === "redesign") ids.splice(0, 1, ...REDESIGN)
   for (const id of ids) {
+    if (PEOPLE[id]) {
+      for (const seed of [5, 11, 23, 42]) console.log(`${id} single seed ${seed}:`, await queue(graph(human(PEOPLE[id]), HUMAN_NEGATIVE, seed, `sprite-${id}`)))
+      for (const seed of [5, 11]) console.log(`${id} sheet seed ${seed}:`, await queue(graph(humanSheet(PEOPLE[id]), HUMAN_NEGATIVE.replace(", sprite sheet, multiple views", ""), seed, `sprite-${id}-sheet`)))
+      continue
+    }
     const what = SUBJECTS[id]
     if (!what) throw new Error(`no subject "${id}"; known: ${Object.keys(SUBJECTS).join(", ")}`)
-    for (const seed of [5, 11]) console.log(`${id} single seed ${seed}:`, await queue(graph(single(what), NEGATIVE, seed, `sprite-${id}`)))
-    console.log(`${id} sheet:`, await queue(graph(sheet(what), SHEET_NEGATIVE, 5, `sprite-${id}-sheet`)))
+    const redesign = REDESIGN.includes(id)
+    const second = SECOND.includes(id) || redesign
+    const bad = redesign ? GLITCH + REDESIGN_BAD : second ? GLITCH : ""
+    for (const seed of redesign ? [5, 11, 23, 42, 77] : second ? [5, 11, 23] : [5, 11]) console.log(`${id} single seed ${seed}:`, await queue(graph(single(what), bad + NEGATIVE, seed, `sprite-${id}`)))
+    for (const seed of redesign ? [5, 11, 23] : second ? [5, 11] : [5]) console.log(`${id} sheet seed ${seed}:`, await queue(graph(sheet(what), bad + SHEET_NEGATIVE, seed, `sprite-${id}-sheet`)))
   }
 }
 

@@ -31,6 +31,8 @@ export type DevFlags = {
   overlay: boolean
   /** Friends who have not been met or unlocked yet are drawn, walk about, and show on the map. */
   reveal: boolean
+  /** The weather you set stays put when a new day would roll a different one. */
+  lockWeather?: Weather
 }
 
 export const DEV_SPEEDS = [1, 2, 4, 8] as const

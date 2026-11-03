@@ -65,7 +65,12 @@ async function snapAll(preview?: string) {
       const found = parts(img.mask, img.w, img.h)
       const part = found[src.part]
       if (!part) throw new Error(`${id} ${view}: ${src.file} has ${found.length} figures, no #${src.part}`)
-      const grid = place(snapPart(img.rgba, img.w, part, SPRITE_PALETTE, src.height, { skip: src.skip ?? "" }), { flip: src.flip })
+      let grid: string[]
+      try {
+        grid = place(snapPart(img.rgba, img.w, part, SPRITE_PALETTE, src.height, { skip: src.skip ?? "" }), { flip: src.flip })
+      } catch (e) {
+        throw new Error(`${id} ${view}: ${(e as Error).message}`)
+      }
       grids[id]![view] = src.faceless ? faceless(grid) : grid
     }
   }

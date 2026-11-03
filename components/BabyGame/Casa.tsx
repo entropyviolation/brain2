@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react"
+import { PLACEMENTS } from "@/lib/baby-game/casa-furniture"
 import { floorOf, newWalker, spotNear, stepWalker, takeStairs, type Walker } from "@/lib/baby-game/casa"
 import { drawCasa } from "./casa-paint"
 import { HI, HiRes } from "./hires"
@@ -29,6 +30,10 @@ export function Casa({ night, petSprite, onExit, onBed, onLook }: Props) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const walker = useRef<Walker>(newWalker(0))
   const keys = useRef(new Set<string>())
+  /** Pieces switched off (lamps) or playing (the record players), by index into `PLACEMENTS`. */
+  const off = useRef(new Set<number>())
+  const music = useRef(new Set<number>())
+  const rummaged = useRef(0)
   const [label, setLabel] = useState<string | null>(null)
   const [floorName, setFloorName] = useState(floorOf(0).name)
   const cb = useRef({ onExit, onBed, onLook })
@@ -42,6 +47,30 @@ export function Casa({ night, petSprite, onExit, onBed, onLook }: Props) {
       if (spot.kind === "exit") cb.current.onExit()
       else if (spot.kind === "bed") cb.current.onBed()
       else if (spot.kind === "look") cb.current.onLook(spot.text ?? spot.label)
+      else if (spot.kind === "use") {
+        const pc = PLACEMENTS[spot.piece!]!
+        const name = pc.id.replace(/-/g, " ")
+        if (spot.use === "lamp") {
+          const was = off.current.has(spot.piece!)
+          if (was) off.current.delete(spot.piece!)
+          else off.current.add(spot.piece!)
+          cb.current.onLook(was ? `You switch the ${name} on. The corner gets kinder.` : `You switch the ${name} off. The dark leans in, curious.`)
+        } else if (spot.use === "sit") {
+          w.x = pc.x
+          w.y = pc.y + 7
+          w.facing = "front"
+          w.sit = true
+          cb.current.onLook(pc.look ?? `You sit on the ${name}. It takes you in without a word.`)
+        } else if (spot.use === "music") {
+          const on = !music.current.has(spot.piece!)
+          if (on) music.current.add(spot.piece!)
+          else music.current.delete(spot.piece!)
+          cb.current.onLook(on ? "The needle lands. Something between rain and a cello fills the room." : "The needle lifts. The room remembers the tune a little longer.")
+        } else {
+          const finds = ["a button the colour of a pond", "a note that says only: later", "a spool of silver thread", "one glove, very sure of itself", "a dried flower pressed flat as a promise", "nothing, but warm nothing", "a tiny key to something you have not met yet"]
+          cb.current.onLook(`In the ${name} you find ${finds[rummaged.current++ % finds.length]}. You put it back where it was happier.`)
+        }
+      }
       else {
         takeStairs(w, spot)
         setFloorName(floorOf(w.floor).name)
@@ -81,7 +110,7 @@ export function Casa({ night, petSprite, onExit, onBed, onLook }: Props) {
       const spot = spotNear(walker.current)
       const next = spot ? spot.label : null
       setLabel((p) => (p === next ? p : next))
-      drawCasa(hi.lowCtx, { w: walker.current, t: now / 1000, night, petSprite, near: spot?.id ?? null })
+      drawCasa(hi.lowCtx, { w: walker.current, t: now / 1000, night, petSprite, near: spot?.id ?? null, off: off.current, music: music.current })
       hi.present(display)
       raf = requestAnimationFrame(loop)
     }

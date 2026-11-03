@@ -6,7 +6,8 @@
  */
 
 import { clearPeopleCache, drawPerson, type PersonPose } from "./draw"
-import { poseSources, type View } from "./registry"
+import { GEN_PEOPLE } from "./gen-people"
+import { poseSources, registerColors, type View } from "./registry"
 import { CENTER_SPEC, parsePerson, type PersonSpec } from "./spec"
 
 const KEY = "brain2-baby-game-player"
@@ -44,11 +45,28 @@ export function setPlayerSpec(spec: PersonSpec | null) {
 /** The idle poses the generic pass makes that a person does not have. */
 const POSES: Record<string, PersonPose> = { blink: "blink", breathe: "breathe" }
 
+/**
+ * A snapped ComfyUI render of her (`gen-people.ts`, made by `scripts/baby-snap-person.mjs`) wins over the drawer, like a liked
+ * generation wins over a hand-drawn animal. It has no hand-drawn poses, so the generic walk and idle passes animate it. Set
+ * `localStorage["brain2-baby-game-player-drawn"] = "1"` to see the drawer's version instead.
+ */
+function generated() {
+  try {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("brain2-baby-game-player-drawn") === "1") return null
+  } catch {
+    // no storage: use the generated one
+  }
+  const g = GEN_PEOPLE.player
+  if (g) registerColors(g.palette)
+  return g ?? null
+}
+
 poseSources.set("player", (view: View, pose: string) => {
+  if (generated()) return null
   const p = (POSES[pose] ?? pose) as PersonPose
   return drawPerson(getPlayerSpec(), view, p)
 })
 
 export function playerGridOf(view: View): string[] {
-  return drawPerson(getPlayerSpec(), view, "stand")
+  return generated()?.[view] ?? drawPerson(getPlayerSpec(), view, "stand")
 }

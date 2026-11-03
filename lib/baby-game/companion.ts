@@ -1,11 +1,11 @@
 /**
  * lib/baby-game/companion.ts — The friend you opened the game from, and what they bring along
  *
- * The companion follows you around Mossmere Hollow in the sprite for their species (a friend that is not one
+ * The companion follows you around Valdivia in the sprite for their species (a friend that is not one
  * of the twenty gets a stable stand-in picked by their id). What they are good at comes from the weights the
  * app already stores for them: whichever of daily habits, today's To Do, and Next Actions they weigh most.
  * Their bond level (`lib/friend-stats.ts`) is the real-life half: each level past the first is +4 energy
- * and +1 button a morning.
+ * and +1 gem a morning.
  */
 
 import { speciesPersonality } from "@/lib/baby-animal-personality"
@@ -31,9 +31,10 @@ export function perkFor(animalId: string): Perk {
 }
 
 /** The sprite id for any friend, including uploaded pictures and species outside the twenty. */
-export function spriteFor(animalId: string): string {
+export function spriteFor(animalId: string, name = ""): string {
   if (GAME_SPECIES.includes(animalId)) return animalId
   // the hyrax is a companion-only species, drawn by hand in `hyrax.ts`
-  if (/hyrax|dassie/i.test(animalId)) return "hyrax"
+  // (an uploaded friend carries its species in its display name, e.g. "baby hyrax of contentedness")
+  if (/hyrax|dassie/i.test(`${animalId} ${name}`)) return "hyrax"
   return GAME_SPECIES[hashString(animalId || "friend") % GAME_SPECIES.length]!
 }

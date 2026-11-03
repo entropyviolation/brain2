@@ -83,7 +83,7 @@ describe("the chain", () => {
   })
 
   it("builds every crafted item from raw materials a node or the Stump supplies", () => {
-    const supplied = new Set(["berry", "acorn", "reed", "clover", "pebble", "feather", "mushroom", "shell", "fish", "button", "starshard", "glowbean", "puffroot", "moonmelon", "spiralkale", "twinklegourd", "snowpearl"])
+    const supplied = new Set(["berry", "acorn", "reed", "clover", "pebble", "feather", "mushroom", "shell", "fish", "button", "starshard", "glowbean", "puffroot", "moonmelon", "spiralkale", "twinklegourd", "snowpearl", "shadowradish", "mandalichoke", "schrodinberry", "parallaxpepper", "fadeleek", "quincidence", "hypnagogicpea", "aurorasprout"])
     for (const def of Object.values(ITEMS).filter((d) => d.recipe)) {
       for (const m of Object.keys(def.recipe!)) expect(supplied.has(m), `${def.name} needs ${m}`).toBe(true)
     }

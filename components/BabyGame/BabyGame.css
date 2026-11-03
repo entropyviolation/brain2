@@ -766,7 +766,19 @@
   }
 }
 
+/* a wrong note: a stepped shake in whole stage pixels (3px = one game pixel) */
+.bg-echo.is-wrong { animation: bg-echo-shake 0.3s steps(1, end); }
+@keyframes bg-echo-shake {
+  0% { transform: translate(6px, 0); }
+  15% { transform: translate(-6px, 3px); }
+  30% { transform: translate(3px, -3px); }
+  50% { transform: translate(-3px, 0); }
+  70% { transform: translate(3px, 0); }
+  85% { transform: translate(0, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .bg-echo.is-wrong,
   .bg-fx-bounce,
   .bg-toasts li {
     animation: none;
@@ -822,3 +834,62 @@
 .bg-tool kbd { position: absolute; left: 2px; top: 0; font: 9px/1 monospace; color: #2b1d2e; background: none; border: 0; padding: 0; }
 .bg-tool em { position: absolute; right: 2px; bottom: 0; font: 700 10px/1 monospace; color: #2b1d2e; font-style: normal; }
 .bg-prompt { bottom: 62px; }
+
+/* character design */
+.bg-design { display: grid; grid-template-columns: 170px 1fr; gap: 12px; }
+.bg-design-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; max-height: 380px; overflow-y: auto; align-content: start; }
+.bg-design-pick { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; padding: 4px 8px; border: 1px solid var(--bg-plate-lo); border-radius: 4px; background: #fff; font: inherit; text-align: left; cursor: pointer; }
+.bg-design-pick.is-on { border: 2px solid #2b1d2e; background: #fbf1e6; }
+.bg-design-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.bg-design-dot.is-redo { background: #c8553d; }
+.bg-design-dot.is-done { background: #2fae82; }
+.bg-design-views { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.bg-design-views figure { margin: 0; padding: 6px; border: 1px solid var(--bg-plate-lo); border-radius: 4px; background: #f3efe8; text-align: center; }
+.bg-design-views figcaption { font-size: 11px; opacity: 0.7; }
+.bg-design-status { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.bg-design-note { display: grid; gap: 3px; margin-bottom: 6px; }
+.bg-design-note textarea { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 2px solid #2b1d2e; background: #fbf1e6; font: inherit; color: #2b1d2e; resize: vertical; }
+@media (max-width: 640px) { .bg-design { grid-template-columns: 1fr; } .bg-design-list { max-height: 140px; } }
+
+/* the inside of the cottage: its own canvas laid over the stage, same size as the world's */
+.bg-casa {
+  position: absolute;
+  inset: 0;
+  background: #0b1016;
+}
+.bg-casa-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(7, 20, 15, 0.7);
+  color: #cfe0e4;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+/* development mode (devpanel.tsx): a lilac rule marks every dev-only surface so it never reads as play */
+.bg-dev-key { outline: 2px solid #9a72e0; outline-offset: -2px; }
+.bg-dev-readout { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 2px 9px; border: 1px solid #9a72e0; border-radius: 3px; background: rgba(20, 12, 34, 0.86); color: #d9c8ff; font: 11px/1.3 ui-monospace, Menlo, monospace; cursor: pointer; }
+.bg-dev-quickbar { position: absolute; top: 34px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: calc(100% - 16px); z-index: 3; }
+.bg-dev-quick { padding: 2px 8px; border: 1px solid #9a72e0; border-radius: 3px; background: rgba(20, 12, 34, 0.86); color: #d9c8ff; font: 11px/1.3 ui-monospace, Menlo, monospace; cursor: pointer; white-space: nowrap; }
+.bg-dev-quick.is-on { background: #7d5bd6; color: #fff; border-color: #fff; }
+.bg-dev-readout b { color: #fff; letter-spacing: 0.08em; }
+.bg-dev { display: grid; gap: 6px; max-height: 52vh; overflow: auto; padding-right: 4px; }
+.bg-dev-h { margin: 6px 0 2px; font: 700 12px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.06em; color: #5b4a7a; }
+.bg-dev-row { display: flex; gap: 6px; align-items: center; }
+.bg-dev-row .bg-chat-input { flex: 1 1 auto; }
+.bg-dev-coords { max-width: 220px; }
+.bg-dev-range { width: 100%; }
+.bg-dev-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+.bg-dev-place { font-size: 12px; padding: 2px 8px; }
+.bg-dev-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px; }
+.bg-dev-item { display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; gap: 6px; padding: 3px 6px; border: 1px solid var(--bg-plate-lo); border-radius: 4px; background: #fff; font-size: 12px; }
+.bg-dev-item:has(input[type="range"]) { grid-template-columns: 1fr 90px auto auto; }
+.bg-dev-item em { font-style: normal; font-variant-numeric: tabular-nums; min-width: 2.5ch; text-align: right; }
+.bg-dev-item .bg-key { padding: 1px 6px; font-size: 11px; }
+.bg-dev-note { margin: 6px 0 0; color: #5b4a7a; font-size: 12px; text-align: center; }
+.bg-map.is-pick { cursor: crosshair; }
+.bg-econ { padding: 6px 8px; border: 1px solid var(--bg-plate-lo); border-left: 3px solid #2fae82; border-radius: 4px; background: #fff; margin: 6px 0; }
+.bg-econ p { margin: 2px 0 4px; }

@@ -163,7 +163,7 @@ function lifts(pose: PersonPose): { l: number; r: number; armL: number; armR: nu
 }
 
 const SLEEVES: Record<string, "none" | "short" | "long" | "roll"> = {
-  tee: "short", longsleeve: "long", sweater: "long", hoodie: "long", shirt: "roll", dress: "short", overalls: "roll", jacket: "long",
+  tee: "short", longsleeve: "long", sweater: "long", hoodie: "long", shirt: "roll", dress: "short", overalls: "roll", jacket: "long", corset: "long",
 }
 
 function paintPattern(c: Ctx, x0: number, y0: number, x1: number, y1: number) {
@@ -219,6 +219,14 @@ function shoeFront(c: Ctx, x0: number, lift: number) {
       P.rect(wide[0]!, y1 - 1, wide[1]!, y1, "shoe")
       P.rect(wide[0]!, y1, wide[1]!, y1, "shoe", 3)
       P.set(flip ? wide[0]! : wide[1]!, y1 - 1, "shoe", 1)
+      break
+    case "gogo":
+      // tall white boots to the knee, a chunky sole, a dark zip line
+      P.rect(x0, y1 - 4, x0 + 2, y1 - 3, "shoe", 1)
+      P.rect(wide[0]!, y1 - 2, wide[1]!, y1 - 1, "shoe")
+      P.rect(x0, y1 - 4, x0 + 2, y1 - 2, "shoe")
+      P.rect(wide[0]!, y1, wide[1]!, y1, "ink", 4)
+      P.set(flip ? x0 + 2 : x0, y1 - 3, "shoe", 3)
       break
     case "sneakers":
       P.rect(wide[0]!, y1 - 1, wide[1]!, y1 - 1, "shoe")
@@ -306,7 +314,7 @@ function torsoFront(c: Ctx, back: boolean) {
 }
 
 function sleeveSlot(c: Ctx): Slot {
-  return c.s.top.kind === "overalls" ? "top" : "top"
+  return c.s.top.kind === "corset" ? "top2" : "top"
 }
 
 function armUp(c: Ctx, side: 0 | 1, pose: PersonPose) {
@@ -385,6 +393,20 @@ function detailsFront(c: Ctx, x0: number, x1: number, rows: number) {
       P.rect(13, shirtRows, 18, shirtRows, "bottom", 3)
       break
     }
+    case "corset": {
+      // sweetheart neckline, boning, a laced center, a deeper hem
+      P.rect(13, t0 + 1, 18, t0 + 1, "skin", 1)
+      P.rect(15, t0 + 1, 16, t0 + 1, "skin")
+      P.rect(14, t0 + 2, 17, t0 + 2, "top", 3)
+      for (let y = t0 + 2; y <= rows; y++) {
+        P.set(13, y, "top", 3)
+        P.set(18, y, "top", 3)
+        P.set(15, y, "metal", y % 2 ? 1 : 3)
+        P.set(16, y, "metal", y % 2 ? 3 : 1)
+      }
+      P.rect(x0, rows, x1, rows, "top", 3)
+      break
+    }
     case "jacket":
       P.rect(15, t0 + 1, 16, rows, "top2")
       P.rect(15, t0 + 1, 16, t0 + 1, "skin", 3)
@@ -421,6 +443,10 @@ function backDetails(c: Ctx, x0: number, x1: number, rows: number) {
     P.set(17, t0 + 3, "metal", 1)
     P.rect(14, t0 + 5, 17, t0 + 6, "bottom", 3)
     P.rect(15, t0 + 5, 16, t0 + 5, "bottom")
+  } else if (s.top.kind === "corset") {
+    P.rect(13, t0 + 1, 18, t0 + 1, "top", 1)
+    for (let y = t0 + 2; y <= rows; y++) P.set(y % 2 ? 15 : 16, y, "metal", 3)
+    P.rect(14, t0 + 2, 17, t0 + 2, "top", 3)
   } else if (s.top.kind === "shirt" || s.top.kind === "jacket") {
     P.rect(13, t0 + 1, 18, t0 + 1, "top2", 1)
     P.rect(16, t0 + 2, 16, rows, "top", 3)
@@ -449,6 +475,7 @@ function headFront(c: Ctx, back: boolean) {
   if (!back) face(c)
 
   // scarf at the neck belongs under the chin
+  if (s.extras.includes("pointyears") && !back) for (const x of [9, 22]) { P.set(x, h0 + 6, "skin"); P.set(x === 9 ? 8 : 23, h0 + 5, "skin", 1) }
   hairCap(c, back)
   if (s.hair.style === "long" || s.hair.style === "bob") frontStrands(c, back)
   hat(c, back)
@@ -769,6 +796,11 @@ function shoeSide(c: Ctx, x: number, y: number, far: boolean) {
       P.rect(x, y - 1, x + 4, y, "shoe", t)
       P.rect(x, y, x + 4, y, "shoe", 3)
       break
+    case "gogo":
+      P.rect(x, y - 4, x + 2, y - 2, "shoe", t)
+      P.rect(x, y - 1, x + 4, y - 1, "shoe", t)
+      P.rect(x, y, x + 4, y, "ink", 4)
+      break
     case "sneakers":
       P.rect(x, y - 1, x + 4, y - 1, "shoe", t)
       P.rect(x, y, x + 4, y, "sole")
@@ -923,6 +955,25 @@ function extras(c: Ctx, view: View) {
       P.rect(12, g.t0 - 1, 19, g.t0, "ex")
       P.rect(12, g.t0, 19, g.t0, "ex", 3)
       if (view === "front") P.rect(17, g.t0 + 1, 18, g.t0 + 4, "ex")
+    }
+  }
+  if (s.extras.includes("chainbelt")) {
+    const y = g.t0 + g.torsoH - 2
+    if (view === "side") {
+      for (let x = 13; x <= 18; x++) P.set(x, y, "metal", x % 2 ? 1 : 3)
+      P.rect(16, y + 1, 17, y + 3, "metal", 1)
+      P.set(16, y + 2, "ink")
+    } else {
+      for (let x = 12; x <= 19; x++) P.set(x, y, "metal", x % 2 ? 1 : 3)
+      if (view === "front") {
+        // two O rings and a hanging chain
+        for (const x of [14, 18]) {
+          P.rect(x, y + 1, x, y + 2, "metal", 3)
+          P.rect(x - 1, y + 3, x + 1, y + 5, "metal", 1)
+          P.set(x, y + 4, "ink")
+        }
+        P.rect(16, y + 1, 16, y + 2, "metal", 3)
+      }
     }
   }
   if (s.extras.includes("satchel")) {

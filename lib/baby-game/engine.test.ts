@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest"
 import { RESIDENTS, approachDistance, temper, type Condition } from "./cast"
 import {
-  advance, approach, ask, askBlocks, chat, conditionMet, craft, DAY_LIMIT, favor, fish, gather, gift, hearts, makeErrands, newGame,
-  addRealTask, claimQuest, completeRealTask, enterFestival, harvest, questProgress, urgentCount, visibleQuests, placePart, plant, playMinigame, sleep, sellPrice, skillLevel, spook, starlogCount, talk, till, turnIn, water, waterAll, weatherFor, type GameState,
+  advance, approach, ask, contribute, take, drawLimit, freeRiding, standing, deliverErrand, shelfCount, askBlocks, buy, stocked, chat, conditionMet, craft, DAY_LIMIT, favor, fish, gather, gift, hearts, makeErrands, newGame,
+  addRealTask, claimQuest, completeRealTask, enterFestival, harvest, questProgress, urgentCount, visibleQuests, placePart, plant, playMinigame, sleep, sell, sellPrice, skillLevel, spook, starlogCount, talk, till, turnIn, water, waterAll, weatherFor, type GameState,
 } from "./engine"
 import { CROPS, cycleName, dayOfCycle, festivalOn, levelOf } from "./farm"
-import { LAMP_PARTS } from "./items"
+import { ITEMS, LAMP_PARTS } from "./items"
 import { councilTalk, scriptedReply } from "./llm"
+import { spriteFor } from "./companion"
 import { questById } from "./quests"
 import { anchorFor } from "./sim"
+import { ECONOMIES } from "./economy"
 
 const rand = () => 0.5
 const bond = { level: 1, routine: false }
@@ -118,7 +120,7 @@ describe("asking for a keepsake", () => {
     expect(turnIn(setAnimal(withItems(newGame(), { jam: 1 }), "chick", { trust: 25 }), "chick").s.animals.chick!.stage).toBe("turned")
   })
 
-  it("holds Pippin to the morning", () => {
+  it("holds Ada to the morning", () => {
     const s = ready("morning")
     expect(ask(s, "chick", ctx).s.inv["hatchling-bell"]).toBe(1)
     const noon = advance(s, 6 * 60)
@@ -243,12 +245,28 @@ describe("the farm", () => {
     expect(harvest(res.s, "plot-1", () => 1).ok).toBe(false)
   })
 
+  it("stocks only seeds that can be planted today", () => {
+    // only a world with a market remnant sells anything
+    const s = { ...newGame(), buttons: 500, economy: ECONOMIES.mixed }
+    const bean = buy(s, "glowbean-seed")
+    expect(bean.ok).toBe(true)
+    const pearl = buy(s, "snowpearl-seed")
+    expect(pearl.ok).toBe(false)
+    expect(pearl.msgs[0]!.text).toContain("until their cycle")
+    expect(stocked(ITEMS["snowpearl-seed"]!, s.day)).toBe(false)
+    expect(stocked(ITEMS["snowpearl-seed"]!, 22)).toBe(true)
+  })
+
+  it("gives every cycle at least two crops of its own", () => {
+    for (let c = 0; c < 4; c++) expect(Object.values(CROPS).filter((x) => x.cycles.length === 1 && x.cycles[0] === c).length).toBeGreaterThanOrEqual(2)
+  })
+
   it("refuses a seed out of its cycle", () => {
     let s = till(newGame(), "plot-2").s
     s = { ...s, inv: { ...s.inv, "snowpearl-seed": 1 } }
     const res = plant(s, "plot-2", "snowpearl-seed")
     expect(res.ok).toBe(false)
-    expect(res.msgs[0]!.text).toContain("Frosttide")
+    expect(res.msgs[0]!.text).toContain("Deep Yin")
   })
 
   it("waters everything thirsty and stops when energy runs out", () => {
@@ -277,8 +295,8 @@ describe("the farm", () => {
   })
 
   it("runs a seven-day cycle with a festival on the last day", () => {
-    expect(cycleName(1)).toBe("Bloomtide")
-    expect(cycleName(8)).toBe("Gleamtide")
+    expect(cycleName(1)).toBe("Lotus Bloom")
+    expect(cycleName(8)).toBe("High Yang")
     expect(dayOfCycle(7)).toBe(7)
     expect(festivalOn(7)?.name).toBe("Petal Parade")
     expect(festivalOn(6)).toBeNull()
@@ -357,7 +375,8 @@ describe("quests and the real-life council", () => {
     expect(addRealTask(s, "   ", false).ok).toBe(false)
     const done = completeRealTask(s, s.real[0]!.id)
     expect(done.ok).toBe(true)
-    expect(done.s.buttons).toBe(s.buttons + 18)
+    expect(done.s.inv.gem).toBe((s.inv.gem ?? 0) + Math.round(18 * ECONOMIES["gift-commons"]!.gemRate))
+    expect(done.s.buttons).toBe(s.buttons)
     expect(urgentCount(done.s)).toBe(0)
     expect(completeRealTask(done.s, s.real[0]!.id).ok).toBe(false)
     const resident = RESIDENTS.find((r) => r.id === "chick")!
@@ -374,5 +393,104 @@ describe("quests and the real-life council", () => {
     const fake = await councilTalk(s, s.real[0]!, "hi", async () => ({ lines: [{ who: "chick", say: "We're with you." }, { who: "nobody", say: "x" }], plan: ["Open the file."] }), 0)
     expect(fake.lines).toHaveLength(1)
     expect(fake.lines[0]!.by).toBe("model")
+  })
+})
+
+describe("the companion's sprite", () => {
+  it("uses the hand-drawn hyrax for a friend whose name says so, even when the id does not", () => {
+    expect(spriteFor("img-3f9a", "baby hyrax of contentedness")).toBe("hyrax")
+    expect(spriteFor("hyrax")).toBe("hyrax")
+    expect(spriteFor("bunny", "Thimble")).toBe("bunny")
+  })
+})
+
+
+describe("the Commons", () => {
+  const bond = { level: 1, routine: false }
+  const nights = (s: GameState, n: number) => {
+    let cur = s
+    for (let i = 0; i < n; i++) cur = sleep(cur, 1, bond)
+    return cur
+  }
+  const known = (s: GameState, id: string, trust = 20): GameState => ({ ...s, animals: { ...s.animals, [id]: { ...(s.animals[id] ?? { trust: 0, mood: 0, stage: "new", talked: false, gifted: false, approached: false, favored: false, chats: 0, spooked: false, fed: false, played: false, heard: 0, cluedAt: 0 }), trust } } })
+
+  it("starts with a stocked shelf you can take from free", () => {
+    const s = newGame()
+    expect(shelfCount(s)).toBeGreaterThan(0)
+    const r = take(s, "berry")
+    expect(r.ok).toBe(true)
+    expect(r.s.buttons).toBe(s.buttons)
+    expect(r.s.inv.berry).toBe((s.inv.berry ?? 0) + 1)
+  })
+
+  it("limits the daily share, and refills it at dawn", () => {
+    let s = newGame()
+    for (let i = 0; i < drawLimit(newGame()); i++) s = take(s, "berry").s
+    expect(take(s, "clover").ok).toBe(false)
+    expect(sleep(s, 1, bond).commons.drawn).toBe(0)
+  })
+
+  it("lets you leave things and rewards giving with standing, not money", () => {
+    let s = newGame()
+    for (let i = 0; i < 4; i++) s = contribute({ ...s, inv: { ...s.inv, pebble: 1 } }, "pebble").s
+    expect(s.commons.gave).toBe(4)
+    expect(standing(s).name).toBe("Neighbor")
+    expect(drawLimit(s)).toBeGreaterThan(drawLimit(newGame()))
+    expect(s.buttons).toBe(newGame().buttons)
+  })
+
+  it("refuses what cannot be shared", () => {
+    expect(contribute(newGame(), "berry-nonexistent").ok).toBe(false)
+    expect(contribute({ ...newGame(), inv: { orb1: 1 } }, "orb1").ok).toBe(false)
+  })
+
+  it("has friends who know you stock the shelf each morning", () => {
+    const s = known(newGame(), "chick")
+    const next = sleep(s, 1, bond)
+    expect(next.commons.stock.berry ?? 0).toBeGreaterThan(s.commons.stock.berry ?? 0)
+    expect(next.today.join(" ")).toMatch(/stocked the Commons/)
+  })
+
+  it("returns a gift in kind next morning (tit for tat)", () => {
+    let s = known({ ...newGame(), inv: { berry: 2 } }, "chick")
+    s = gift(s, "chick", "berry").s
+    const next = sleep(s, 1, bond)
+    expect(next.inv.berry ?? 0).toBeGreaterThan(s.inv.berry ?? 0)
+    expect(next.today.join(" ")).toMatch(/returned the favor/)
+  })
+
+  it("mirrors someone who only takes, and forgives them when they give once", () => {
+    let s = known({ ...newGame(), day: 10, inv: { berry: 2 } }, "chick")
+    s = { ...s, commons: { ...s.commons, took: 12, gave: 0, lastGave: 0 } }
+    expect(freeRiding(s)).toBe(true)
+    expect(drawLimit(s)).toBe(1)
+    const gifted = gift(s, "chick", "berry").s
+    const next = sleep(gifted, 1, bond)
+    expect(next.today.join(" ")).toMatch(/did not return/)
+    const forgiven = contribute({ ...s, inv: { pebble: 1 } }, "pebble").s
+    expect(freeRiding(forgiven)).toBe(false)
+  })
+
+  it("thanks an errand in kind: gems and the friend's own offering, never wages", () => {
+    const s = newGame()
+    const e = s.errands[0]!
+    const r = deliverErrand({ ...s, inv: { ...s.inv, [e.item]: e.qty } }, e.id)
+    expect(r.ok).toBe(true)
+    expect(r.s.buttons).toBe(0)
+    expect(r.s.inv.gem).toBeGreaterThan(s.inv.gem ?? 0)
+  })
+
+  it("pays scrip only where the economy keeps a market remnant", () => {
+    const s = { ...newGame(), economy: ECONOMIES.mixed }
+    const e = s.errands[0]!
+    const r = deliverErrand({ ...s, inv: { ...s.inv, [e.item]: e.qty } }, e.id)
+    expect(r.s.buttons).toBe(s.buttons + Math.ceil(e.reward / 2))
+  })
+
+  it("keeps selling to the Stump a way of stocking the shelf", () => {
+    expect(sell({ ...newGame(), inv: { pebble: 1 } }, "pebble").ok).toBe(false)
+    const s = { ...newGame(), inv: { pebble: 1 }, economy: ECONOMIES.mixed }
+    const r = sell(s, "pebble")
+    expect(r.s.commons.stock.pebble).toBe((s.commons.stock.pebble ?? 0) + 1)
   })
 })

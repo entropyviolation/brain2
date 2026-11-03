@@ -2,9 +2,12 @@
  * components/BabyGame/art.ts — Hand-painted scenery: the marble cottage, plants, the campfire, crops, and rain
  *
  * Everything here draws with plain rectangles at the game's native pixel size, so it stays crisp when the canvas is scaled.
- * The cottage is a white marble ruin in the Escher manner: arched doorway between fluted columns, arched windows, a roof that is
- * half terracotta and half open sky, ivy, and a stairway that climbs the right side to an arch that opens onto nothing.
+ * The cottage is a Gaudí house: a wave of dragon-scale roof, a bulb tower, trencadís mosaic walls, a catenary door between
+ * bone-shaped pillars, oval stained-glass windows and wrought-iron balconies.
  */
+
+import { ditherRect } from "./dither"
+import { drawTasteProp, type PropEnv } from "./propart"
 
 type Ctx = CanvasRenderingContext2D
 
@@ -19,143 +22,236 @@ const h2 = (x: number, y: number, k = 0) => {
   return ((t ^ (t >>> 16)) >>> 0) / 4294967296
 }
 
-const M = { hi: "#fbf9fd", lite: "#f0ecf5", mid: "#dcd6e6", shade: "#bdb5cc", deep: "#9a92ab", vein: "#c9c1d7", crack: "#8a829c" }
+const M = { hi: "#fbfefc", lite: "#eaf4f0", mid: "#d0e4e0", shade: "#aecac8", deep: "#8aaaae", vein: "#c4dcd8", crack: "#7f9fa6" }
 const TERRA = { hi: "#e8926a", mid: "#d0724e", deep: "#a8523a", rim: "#7e3a2c" }
-const IVY = { hi: "#8fd48a", mid: "#4f9a4e", deep: "#2f7a45" }
+const IVY = { hi: "#9fdc9a", mid: "#5fae6a", deep: "#3a8a58" }
 
-function block(ctx: Ctx, x: number, y: number, w: number, h: number, seed: number) {
-  px(ctx, M.lite, x, y, w, h)
-  px(ctx, M.hi, x, y, w, 1)
-  px(ctx, M.hi, x, y, 1, h)
-  px(ctx, M.shade, x, y + h - 1, w, 1)
-  px(ctx, M.shade, x + w - 1, y, 1, h)
-  if (h2(seed, 1) < 0.5) px(ctx, M.vein, x + 2 + Math.floor(h2(seed, 2) * (w - 6)), y + 1 + Math.floor(h2(seed, 3) * (h - 3)), 3, 1)
-  if (h2(seed, 4) < 0.18) px(ctx, M.crack, x + 3, y + 2, 1, Math.max(1, h - 4))
-}
+/** Trencadís: the broken-tile mosaic Gaudí lined his roofs, benches and chimneys with. Pastel blues and greens, a little white, no yellow. */
+const TILES = ["#6fc8b8", "#8fd8ec", "#7fb4e4", "#a8e4cc", "#5fa8cc", "#b8dcf4", "#8ad0a8", "#f4faf8"]
+const PALE = ["#e6f3ee", "#dcecf4", "#f1f8f4", "#d2e8e4", "#e2eff8", "#d8f0e8"]
+const GROUT = "#6e93a6"
+const SILVER = { hi: "#f3f7fc", mid: "#cfd8e6", deep: "#8e9ab4" }
 
-/** A fluted column, capital and base, `h` tall. */
-function column(ctx: Ctx, x: number, y: number, h: number) {
-  px(ctx, M.mid, x + 1, y + 3, 6, h - 6)
-  px(ctx, M.hi, x + 1, y + 3, 1, h - 6)
-  px(ctx, M.hi, x + 3, y + 3, 1, h - 6)
-  px(ctx, M.shade, x + 5, y + 3, 1, h - 6)
-  px(ctx, M.shade, x + 7, y + 3, 1, h - 6)
-  px(ctx, M.lite, x, y, 8, 3)
-  px(ctx, M.hi, x, y, 8, 1)
-  px(ctx, M.shade, x, y + 2, 8, 1)
-  px(ctx, M.lite, x - 1, y + h - 3, 10, 3)
-  px(ctx, M.shade, x - 1, y + h - 1, 10, 1)
-}
-
-function archFill(ctx: Ctx, cx: number, top: number, w: number, h: number, fill: string, rim = M.shade) {
-  // a round-headed opening: a rectangle with a half-disc on top
-  const r = w / 2
-  for (let y = 0; y < h; y++) {
-    const inset = y < r ? Math.round(r - Math.sqrt(Math.max(0, r * r - (r - y) * (r - y)))) : 0
-    px(ctx, fill, cx - r + inset, top + y, w - inset * 2, 1)
-  }
-  for (let y = 0; y < Math.min(h, r + 1); y++) {
-    const inset = Math.round(r - Math.sqrt(Math.max(0, r * r - (r - y) * (r - y))))
-    px(ctx, rim, cx - r + inset - 1, top + y, 1, 1)
-    px(ctx, rim, cx + r - inset, top + y, 1, 1)
+/** A filled ellipse of one colour, or of a colour chosen per pixel. */
+function disc(ctx: Ctx, cx: number, cy: number, rx: number, ry: number, color: string | ((x: number, y: number) => string)) {
+  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
+    for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+      const dx = (x - cx) / rx
+      const dy = (y - cy) / ry
+      if (dx * dx + dy * dy <= 1) px(ctx, typeof color === "string" ? color : color(x, y), x, y)
+    }
   }
 }
 
-/** The whole cottage, painted on a 80×64 area whose top-left is (ox, oy): five tiles wide, four tall. */
+/**
+ * The whole cottage, painted on a 112×112 area whose top-left is (ox, oy): seven tiles wide and seven tall, four floors high.
+ * It is a Gaudí house in pastel blue and green: a plinth and ground floor of blue-and-white diamond tile with a catenary
+ * door and oval windows, a noble floor with a great bay of stained-glass discs between bone-shaped columns, an upper floor
+ * of balconies, a roof of dragon scales rolling in a wave, a bulb tower with a silver star, and a whiplash vine. The door
+ * is the bottom-centre tile (x 48..64) and opens into `casa.ts`.
+ */
 export function paintHouse(ctx: Ctx, ox: number, oy: number) {
   const P = (c: string, x: number, y: number, w = 1, h = 1) => px(ctx, c, ox + x, oy + y, w, h)
+  const roofTop = (x: number) => 22 + Math.round(3 * Math.sin(x * 0.14 + 0.6))
+  const eave = (x: number) => 42 + Math.round(1.6 * Math.sin(x * 0.27))
+  const edgeL = (y: number) => 4 + Math.round(1.4 * Math.sin(y * 0.22))
+  const edgeR = (y: number) => 108 - Math.round(1.4 * Math.sin(y * 0.22 + 1.3))
+  const wave = (x: number, y: number, mid: number) => Math.abs(y - (mid + 3 * Math.sin(x * 0.13))) < 3.5
 
-  // the broken roof: terracotta barrels on the left, open sky and a bare rafter on the right
-  const roofTop = 16
-  for (let row = 0; row < 7; row++) {
-    const left = 4 + row
-    const right = row < 4 ? 66 - row * 2 : 58 - (row - 3) * 2
-    for (let x = left; x < right; x += 4) {
-      const tone = (x / 4 + row) % 2 ? TERRA.mid : TERRA.hi
-      P(tone, x, roofTop + row * 4, 4, 4)
-      P(TERRA.deep, x + 3, roofTop + row * 4, 1, 4)
-      P(TERRA.rim, x, roofTop + row * 4 + 3, 4, 1)
-    }
-  }
-  // sky showing through the fallen part, a beam across it
-  P("#a8d8f4", 52, 24, 14, 8)
-  P("#c8e8fa", 52, 24, 14, 2)
-  P("#6b4630", 50, 30, 18, 2)
-  P("#8a5a44", 50, 30, 18, 1)
-
-  // the marble body
-  const bodyTop = 32
-  for (let by = bodyTop; by < 58; by += 7) {
-    for (let bx = 4; bx < 76; bx += 11) block(ctx, ox + bx + ((by / 7) % 2 ? 5 : 0) - 5 * ((by / 7) % 2 ? 1 : 0), oy + by, 11, 7, bx * 7 + by)
-  }
-  px(ctx, M.lite, ox + 2, oy + bodyTop - 3, 76, 3)
-  px(ctx, M.hi, ox + 2, oy + bodyTop - 3, 76, 1)
-  px(ctx, M.shade, ox + 2, oy + bodyTop - 1, 76, 1)
-  // a cornice with a few missing teeth
-  for (let x = 4; x < 76; x += 5) if (h2(x, 9) > 0.25) px(ctx, M.mid, ox + x, oy + bodyTop - 5, 3, 2)
-
-  // the doorway: columns and a round arch, a plank door inside
-  column(ctx, ox + 25, oy + 31, 33)
-  column(ctx, ox + 47, oy + 31, 33)
-  archFill(ctx, ox + 40, oy + 33, 18, 31, M.shade, M.deep)
-  archFill(ctx, ox + 40, oy + 36, 14, 28, "#7a4e3a", M.deep)
-  for (let x = 34; x < 47; x += 3) P("#5a3628", x, 40, 1, 24)
-  P("#5a3628", 33, 50, 14, 1)
-  P("#ffb3d1", 44, 52, 2, 2)
-  // the keystone
-  P(M.hi, 38, 33, 4, 3)
-  P(M.shade, 38, 35, 4, 1)
-
-  // arched windows with sky-blue glass and a flower box
-  for (const wx of [11, 62]) {
-    archFill(ctx, ox + wx + 4, oy + 38, 10, 14, "#7fb8d8", M.deep)
-    px(ctx, "#c8e8fa", ox + wx, oy + 41, 3, 1)
-    px(ctx, "#4e86a8", ox + wx + 4, oy + 42, 1, 10)
-    px(ctx, "#4e86a8", ox + wx, oy + 46, 9, 1)
-    px(ctx, M.shade, ox + wx - 1, oy + 52, 11, 2)
-    px(ctx, "#8a5a44", ox + wx, oy + 52, 9, 2)
-    for (let i = 0; i < 4; i++) {
-      px(ctx, i % 2 ? "#ff9db8" : "#ffffff", ox + wx + 1 + i * 2, oy + 50, 2, 2)
-      px(ctx, "#4f9a4e", ox + wx + 1 + i * 2, oy + 52, 1, 1)
+  // walls: pale mosaic above, a diamond-tiled ground floor, a bright wave through each storey
+  for (let y = 40; y < 106; y++) {
+    for (let x = edgeL(y); x < edgeR(y); x++) {
+      if (y < eave(x)) continue
+      const row = Math.floor(y / 3)
+      const col = Math.floor((x + (row % 2) * 2) / 3)
+      const seed = h2(col, row, 3)
+      let c = wave(x, y, 55) || wave(x, y, 91) ? TILES[Math.floor(seed * TILES.length)]! : PALE[Math.floor(seed * PALE.length)]!
+      if (y >= 74) {
+        // diamonds, blue and white, as in the hall inside
+        const d = (Math.floor((x + y) / 5) + Math.floor((x - y + 200) / 5)) % 2
+        c = d ? "#9fcdee" : "#eef6fb"
+        if ((x + y) % 5 === 0 || (x - y + 200) % 5 === 0) c = d ? "#7fb4e0" : "#cfe4f2"
+      } else if (y % 3 === 0 || (x + (row % 2) * 2) % 3 === 0) c = GROUT
+      else if (y % 3 === 1 && (x + (row % 2) * 2) % 3 === 1 && seed > 0.5) c = "#ffffff"
+      P(c, x, y)
     }
   }
 
-  // ivy climbing the left and over the cornice
-  for (let i = 0; i < 26; i++) {
-    const y = 34 + Math.floor(i * 0.9)
-    const x = 6 + Math.round(Math.sin(i * 0.7) * 2)
-    P(i % 3 ? IVY.mid : IVY.hi, x, y, 3, 2)
-    if (i % 4 === 0) P(IVY.deep, x + 2, y + 1, 2, 2)
+  // the roof: dragon scales in rolling rows
+  const scales = [TILES[0]!, TILES[2]!, TILES[3]!, TILES[1]!, TILES[4]!]
+  for (let y = 12; y < 46; y++) {
+    for (let x = 5; x < 107; x++) {
+      if (y < roofTop(x) || y >= eave(x) + 1) continue
+      const r = Math.floor(y / 3)
+      const sx = Math.floor((x + (r % 2) * 2.5) / 5)
+      let c = scales[(sx * 3 + r * 2) % scales.length]!
+      const dx = Math.floor(x + (r % 2) * 2.5) % 5
+      const dy = y % 3
+      if (dy === 2 || ((dx === 0 || dx === 4) && dy === 1)) c = "#4a7fa0"
+      P(c, x, y)
+      if (dy === 0 && dx > 0 && dx < 4) px(ctx, "rgba(255,255,255,0.45)", ox + x, oy + y)
+    }
   }
-  for (let i = 0; i < 12; i++) P(i % 2 ? IVY.mid : IVY.hi, 8 + i * 5, bodyTop - 5 + (i % 3), 3, 3)
-
-  // the plinth and three worn steps
-  px(ctx, M.mid, ox, oy + 58, 80, 3)
-  px(ctx, M.hi, ox, oy + 58, 80, 1)
-  px(ctx, M.shade, ox + 4, oy + 61, 72, 2)
-  px(ctx, M.lite, ox + 28, oy + 61, 24, 3)
-  px(ctx, M.shade, ox + 28, oy + 63, 24, 1)
-
-  // the impossible stairway on the right: it climbs up the corner to an arch that opens onto the sky, and the top step is the bottom one
-  for (let i = 0; i < 7; i++) {
-    px(ctx, i % 2 ? M.lite : M.hi, ox + 62 + i * 2, oy + 29 - i * 3, 14 - i * 2, 3)
-    px(ctx, M.shade, ox + 62 + i * 2, oy + 31 - i * 3, 14 - i * 2, 1)
+  // the ridge: soft aqua fins like the spine of a sleeping dragon
+  for (let x = 30; x < 106; x += 4) {
+    const top = roofTop(x)
+    P("#7fd0c0", x, top - 3, 2, 3)
+    P("#c4f0e8", x + 1, top - 4, 1, 1)
+    P("#4f9aa0", x, top, 2, 1)
   }
-  column(ctx, ox + 69, oy + 4, 14)
-  archFill(ctx, ox + 74, oy + 6, 8, 12, "#a8d8f4", M.deep)
-  P("#ffffff", 72, 8, 2, 1)
-
-  // pots and a bench on the plinth
-  for (const [x, c] of [[16, "#ff9db8"], [60, "#c9a8ff"]] as const) {
-    px(ctx, "#b9764a", ox + x, oy + 54, 5, 4)
-    px(ctx, "#8a4f2e", ox + x, oy + 57, 5, 1)
-    px(ctx, "#2f7a45", ox + x, oy + 51, 5, 3)
-    px(ctx, c, ox + x + 1, oy + 50, 2, 2)
+  // a marble ribbon under the eave that rolls with it
+  for (let x = 5; x < 107; x++) {
+    P(M.hi, x, eave(x) + 1)
+    P(M.mid, x, eave(x) + 2)
+    P(M.shade, x, eave(x) + 3)
   }
+
+  // the bulb tower: a mosaic shaft spiralled in tile, an aqua bulb, a silver four-armed star
+  for (let y = 12; y < 44; y++) {
+    for (let x = 8; x < 24; x++) {
+      const bulge = Math.round(1.4 * Math.sin((y - 12) * 0.4))
+      if (x < 10 - bulge || x > 21 + bulge) continue
+      let c = TILES[(Math.floor((x + y) / 2) + 2) % 7]!
+      if ((x + y) % 6 === 0) c = GROUT
+      P(c, x, y)
+    }
+  }
+  disc(ctx, ox + 16, oy + 9, 8, 7.5, (x, y) => (y < oy + 7 && x < ox + 16 ? "#d8f6f0" : (x + y) % 5 === 0 ? "#5fa8b0" : "#8fdcd0"))
+  P("#ffffff", 11, 4, 3, 1)
+  P(SILVER.mid, 16, -2, 1, 6)
+  P(SILVER.mid, 13, 0, 7, 1)
+  P(SILVER.hi, 16, -2, 1, 1)
+  P(SILVER.hi, 13, 0, 1, 1)
+
+  // the dome tower on the right, with a window that opens onto the sky
+  disc(ctx, ox + 92, oy + 20, 10, 10, (x, y) => (x < ox + 92 && y < oy + 15 ? "#d4f2f8" : ((x >> 1) + (y >> 1)) % 3 === 0 ? TILES[2]! : TILES[1]!))
+  for (let y = 12; y < 28; y++) {
+    const half = y < 18 ? Math.round(3.6 * Math.sqrt((y - 12) / 6)) : 4
+    P("#b4e0f6", 92 - half, y, half * 2 + 1, 1)
+    P(SILVER.mid, 92 - half - 1, y)
+    P(SILVER.mid, 92 + half + 1, y)
+  }
+  P("#ffffff", 90, 15, 2, 1)
+  P(SILVER.mid, 92, 6, 1, 4)
+  P(SILVER.hi, 92, 6, 1, 1)
+
+  // the noble floor: a great bay of stained-glass discs between two bone-shaped columns
+  for (let y = 46; y < 68; y++) {
+    const top = 46 + Math.round(2 * Math.sin(y * 0.2))
+    P(M.mid, 26, y, 60, 1)
+    void top
+  }
+  for (let x = 28; x < 84; x++) {
+    const sag = Math.round(2.4 * Math.sin(x * 0.28))
+    for (let y = 47 + sag; y < 66 + sag; y++) {
+      const cx = Math.floor((x - 28) / 5)
+      const cy = Math.floor((y - 47 - sag) / 5)
+      const lx = (x - 28) % 5
+      const ly = (y - 47 - sag) % 5
+      if (lx === 0 || ly === 0) P("#58789a", x, y)
+      else if ((lx - 2.5) ** 2 + (ly - 2.5) ** 2 < 9) {
+        const r = h2(cx, cy, 11)
+        P(r < 0.18 ? "#f4faf8" : r < 0.36 ? "#5fa8d8" : r < 0.54 ? "#8fd8ec" : r < 0.72 ? "#5fc2b0" : r < 0.88 ? "#a8e4c8" : "#b4b8f0", x, y)
+      } else P("#58789a", x, y)
+    }
+  }
+  P("#ffffff", 32, 49, 3, 1)
+  for (const side of [-1, 1] as const) {
+    const cx = 56 + side * 18
+    for (let y = 44; y < 72; y++) {
+      const hw = 2 + Math.round(1.8 * Math.cos(((y - 44) / 28) * Math.PI * 2))
+      P(M.lite, cx - hw, y, hw * 2 + 1)
+      P(M.hi, cx - hw, y, 2)
+      P(M.shade, cx + hw, y)
+      P(M.deep, cx + hw - 1, y)
+    }
+    disc(ctx, ox + cx, oy + 44, 4.5, 2.5, (x) => (x < ox + cx ? M.hi : M.lite))
+  }
+  // upper floor: three round-topped windows with a pale iron balcony each
+  for (const wx of [30, 56, 82]) {
+    disc(ctx, ox + wx, oy + 76, 7, 8, (x) => (x < ox + wx ? M.hi : M.shade))
+    disc(ctx, ox + wx, oy + 76, 5, 6.5, (x, y) => (((x - ox - wx + 5) % 3 === 0 || (y - oy - 69) % 3 === 0) ? "#58789a" : TILES[Math.floor(h2(Math.floor((x - ox - wx + 5) / 3) + wx, Math.floor((y - oy - 69) / 3), 5) * 6)]!))
+  }
+
+  // the balcony ribbon at the foot of the noble floor, with round mask holes
+  for (let x = 24; x < 88; x++) {
+    const w = Math.round(Math.sin(x * 0.6))
+    P(M.mid, x, 68 + w, 1, 4)
+    P(M.hi, x, 68 + w)
+    P(SILVER.mid, x, 65 + Math.round(1.4 * Math.sin(x * 0.7)))
+  }
+  for (const dx of [32, 44, 68, 80]) disc(ctx, ox + dx, oy + 70.5, 2, 1.5, "#4a6a8a")
+  for (let i = 0; i < 12; i++) {
+    P(i % 2 ? "#cfeaf8" : "#ffffff", 26 + i * 5, 64 + (i % 2), 2, 2)
+    P("#5fae6a", 26 + i * 5, 66, 1, 2)
+  }
+
+  // the catenary doorway between two bone-shaped pillars
+  for (const side of [-1, 1] as const) {
+    const cx = 56 + side * 17
+    for (let y = 76; y < 106; y++) {
+      const hw = 2 + Math.round(1.6 * Math.cos(((y - 76) / 30) * Math.PI * 2))
+      P(M.lite, cx - hw, y, hw * 2 + 1)
+      P(M.hi, cx - hw, y, 2)
+      P(M.shade, cx + hw, y)
+      P(M.deep, cx + hw - 1, y)
+    }
+    disc(ctx, ox + cx, oy + 75, 3.5, 2, (x) => (x < ox + cx ? M.hi : M.lite))
+  }
+  for (let y = 80; y < 106; y++) {
+    const half = y < 90 ? Math.round(9 * Math.sqrt((y - 80) / 10)) : 9
+    P(M.hi, 56 - half - 1, y, half * 2 + 3)
+    P(y < 87 ? "#4a6aa8" : "#2f6a78", 56 - half, y, half * 2 + 1)
+  }
+  for (let y = 80; y < 90; y++) {
+    const half = Math.round(9 * Math.sqrt((y - 80) / 10))
+    for (let x = 56 - half; x <= 56 + half; x++) {
+      const a = Math.atan2(y - 90, x - 56)
+      const ring = Math.hypot(x - 56, (y - 90) * 1.2)
+      let c = TILES[Math.floor(((a + Math.PI) / Math.PI) * 4 + (ring > 5 ? 3 : 0)) % 7]!
+      if (Math.abs(Math.sin(a * 4)) < 0.1) c = SILVER.mid
+      P(c, x, y)
+    }
+  }
+  for (let y = 90; y < 106; y++) {
+    for (let x = 47; x < 66; x++) if (x % 3 === 0) P("#4f9aa8", x, y)
+    const c = Math.round(4.2 * Math.sin((y - 90) * 0.55))
+    P(SILVER.mid, 56 + c, y)
+    P(SILVER.deep, 56 - c, y)
+  }
+  P(SILVER.hi, 60, 98, 2, 2)
+  P(M.hi, 54, 76, 4, 3)
+  P("#a8e4cc", 55, 77, 2, 1)
+
+  // oval stained-glass windows flanking the door, in marble frames
+  for (const wx of [16, 96]) {
+    disc(ctx, ox + wx, oy + 90, 8, 9.5, (x) => (x < ox + wx ? M.hi : M.shade))
+    disc(ctx, ox + wx, oy + 90, 6, 8, (x, y) => ((x - ox - wx + 8) % 3 === 0 || (y - oy - 80) % 3 === 0 ? "#58789a" : TILES[Math.floor(h2(Math.floor((x - ox - wx + 8) / 3) + wx, Math.floor((y - oy - 80) / 3), 5) * 6)]!))
+    P("#ffffff", wx - 3, 85, 2, 1)
+  }
+
+  // a whiplash vine up the left edge, in flower
+  for (let i = 0; i < 52; i++) {
+    const y = 104 - i
+    const x = 6 + Math.round(2.6 * Math.sin(i * 0.42))
+    P(i % 3 ? IVY.mid : IVY.hi, x, y, 2, 1)
+    if (i % 6 === 2) {
+      P("#cfeaf8", x + 2, y, 2, 2)
+      P("#ffffff", x + 2, y, 1, 1)
+    }
+  }
+
+  // the plinth: a stone base with a wavy mosaic bench-ribbon on top, and three worn steps
+  px(ctx, M.mid, ox, oy + 104, 112, 3)
+  for (let x = 0; x < 112; x++) px(ctx, TILES[(Math.floor(x / 3) + Math.floor(x / 11)) % 7]!, ox + x, oy + 104 + Math.round(0.8 * Math.sin(x * 0.4)), 1, 1)
+  px(ctx, M.shade, ox + 6, oy + 107, 100, 3)
+  px(ctx, M.lite, ox + 40, oy + 107, 32, 3)
+  px(ctx, M.shade, ox + 40, oy + 109, 32, 1)
+  px(ctx, M.shade, ox + 36, oy + 110, 40, 2)
 }
 
-/** Painted over the whole map once, after the tiles: the cottage over its five-by-four tile block. */
-export const HOUSE_TILES = { x: 19, y: 14, w: 5, h: 4 }
+/** Painted over the whole map once, after the tiles: the cottage over its seven-by-seven tile block. */
+export const HOUSE_TILES = { x: 16, y: 11, w: 7, h: 7 }
 
 // ─── plants and ground things ──────────────────────────────────────────────
 
@@ -336,13 +432,21 @@ export function drawCampfire(ctx: Ctx, x: number, y: number, t: number) {
 
 // ─── crops ────────────────────────────────────────────────────────────────
 
-const CROP_ART: Record<string, { leaf: string; leaf2: string; fruit: string; fruit2: string; shape: "pod" | "round" | "tall" | "leafy" | "pearl" }> = {
+const CROP_ART: Record<string, { leaf: string; leaf2: string; fruit: string; fruit2: string; shape: "pod" | "round" | "tall" | "leafy" | "pearl" | "split" | "mandala" | "flicker" | "leek" | "quince" }> = {
   glowbean: { leaf: "#2a9a4a", leaf2: "#6fd27a", fruit: "#7fe09a", fruit2: "#d6ffd6", shape: "pod" },
   puffroot: { leaf: "#3d9a58", leaf2: "#8fdc92", fruit: "#9a72e0", fruit2: "#e2ceff", shape: "round" },
   moonmelon: { leaf: "#2f8248", leaf2: "#62bd78", fruit: "#30b8a8", fruit2: "#a8f4e6", shape: "round" },
   spiralkale: { leaf: "#2a7a45", leaf2: "#5fd27a", fruit: "#4fbf5a", fruit2: "#b6f0a4", shape: "leafy" },
   twinklegourd: { leaf: "#2f8248", leaf2: "#62bd78", fruit: "#e8506a", fruit2: "#ffb3d1", shape: "tall" },
   snowpearl: { leaf: "#3d8aa0", leaf2: "#9ad4e6", fruit: "#d6ecff", fruit2: "#ffffff", shape: "pearl" },
+  shadowradish: { leaf: "#2a7a45", leaf2: "#5fd27a", fruit: "#4b4456", fruit2: "#9a92a6", shape: "split" },
+  mandalichoke: { leaf: "#3d8a78", leaf2: "#8fdcc8", fruit: "#9a72e0", fruit2: "#e2ceff", shape: "mandala" },
+  schrodinberry: { leaf: "#3a6aa8", leaf2: "#8fb4f0", fruit: "#7a56d8", fruit2: "#f3eef6", shape: "flicker" },
+  parallaxpepper: { leaf: "#2f8248", leaf2: "#62bd78", fruit: "#e04848", fruit2: "#ff9a8a", shape: "tall" },
+  fadeleek: { leaf: "#6aa890", leaf2: "#b6e0cc", fruit: "#e6eef0", fruit2: "#ffffff", shape: "leek" },
+  quincidence: { leaf: "#3d8a58", leaf2: "#8fdc92", fruit: "#e8915a", fruit2: "#f6c9a0", shape: "quince" },
+  hypnagogicpea: { leaf: "#3a6aa8", leaf2: "#8fb4f0", fruit: "#9a72e0", fruit2: "#b4e2ff", shape: "pod" },
+  aurorasprout: { leaf: "#1a7068", leaf2: "#a8f4e6", fruit: "#4fbf5a", fruit2: "#b4e2ff", shape: "round" },
 }
 
 /** One plot: tilled soil with furrows, then the crop at its stage. `frac` is growth 0..1; ripe at 1. */
@@ -387,6 +491,31 @@ export function drawCrop(ctx: Ctx, id: string, x: number, y: number, frac: numbe
       px(ctx, a.fruit2, x + 5, y + 3 + bob, 3, 2)
       px(ctx, a.leaf, x + 5, y + 6 + bob, 6, 1)
       px(ctx, a.leaf, x + 6, y + 8 + bob, 4, 1)
+    } else if (a.shape === "split") {
+      px(ctx, a.fruit, x + 5, y + 2 + bob, 6, 6)
+      px(ctx, a.fruit2, x + 6, y + 3 + bob, 2, 2)
+      px(ctx, "#2e2933", x + 7, y + 9, 2, 3)
+    } else if (a.shape === "mandala") {
+      px(ctx, a.fruit, x + 4, y + 3 + bob, 8, 8)
+      px(ctx, a.fruit2, x + 5, y + 4 + bob, 6, 1)
+      px(ctx, a.fruit2, x + 5, y + 9 + bob, 6, 1)
+      px(ctx, a.fruit2, x + 5, y + 4 + bob, 1, 6)
+      px(ctx, a.fruit2, x + 10, y + 4 + bob, 1, 6)
+      px(ctx, a.leaf2, x + 7, y + 6 + bob, 2, 2)
+    } else if (a.shape === "flicker") {
+      // ripe and unripe at once: a checker that swaps while you watch
+      px(ctx, a.fruit, x + 4, y + 3 + bob, 8, 8)
+      const phase = Math.floor(t * 3)
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j + phase) % 2 === 0) px(ctx, a.fruit2, x + 4 + i * 2, y + 3 + j * 2 + bob, 2, 2)
+    } else if (a.shape === "leek") {
+      px(ctx, a.fruit, x + 6, y + 1 + bob, 4, 10)
+      px(ctx, a.fruit2, x + 6, y + 2 + bob, 1, 6)
+      px(ctx, a.leaf2, x + 5, y + bob, 6, 2)
+    } else if (a.shape === "quince") {
+      px(ctx, a.fruit, x + 4, y + 4 + bob, 8, 7)
+      px(ctx, a.fruit, x + 6, y + 2 + bob, 4, 3)
+      px(ctx, a.fruit2, x + 5, y + 5 + bob, 2, 2)
+      px(ctx, a.leaf2, x + 7, y + 1 + bob, 2, 2)
     } else if (a.shape === "pearl") {
       px(ctx, a.fruit, x + 4, y + 3 + bob, 8, 8)
       px(ctx, a.fruit2, x + 5, y + 4 + bob, 3, 2)
@@ -402,28 +531,337 @@ export function drawCrop(ctx: Ctx, id: string, x: number, y: number, frac: numbe
 
 // ─── rain ─────────────────────────────────────────────────────────────────
 
-/** Slanted streaks in two depths, and little rings where they land. `w`/`h` are the view size. */
-export function drawRain(ctx: Ctx, w: number, h: number, t: number) {
-  for (let layer = 0; layer < 2; layer++) {
-    ctx.fillStyle = layer ? "rgba(225,238,255,0.75)" : "rgba(180,205,240,0.5)"
-    const n = layer ? 60 : 90
-    const speed = layer ? 210 : 150
-    for (let i = 0; i < n; i++) {
-      const rx = (i * 53 + layer * 17 + t * (layer ? 30 : 20)) % (w + 20) - 10
-      const ry = (i * 37 + layer * 11 + t * speed) % (h + 20) - 10
-      const len = layer ? 4 : 3
-      for (let k = 0; k < len; k++) ctx.fillRect(Math.floor(rx - k * 0.6), Math.floor(ry + k), 1, 1)
+/** Stable 0..1 hash so every drop and splash keeps its own place without state. */
+function rainHash(n: number) {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453
+  return x - Math.floor(x)
+}
+
+/**
+ * Pixel rain in three depths (far, mid, near), slanted, with a crown of droplets and a flat ring where drops land
+ * on the wet ground, plus a low drifting mist. `w`/`h` are the view size; `ground(worldX, worldY)` says whether a world pixel is open floor, `camX`/`camY` place the view in the world. Stateless: everything comes from `t`.
+ */
+export function drawRain(ctx: Ctx, w: number, h: number, t: number, ground?: (wx: number, wy: number) => boolean, camX = 0, camY = 0) {
+  // far / mid / near: count, fall speed, streak length, colour, sideways lean per pixel fallen
+  const layers = [
+    { n: 70, speed: 120, len: 3, color: "rgba(150,180,225,0.45)", lean: 0.3 },
+    { n: 50, speed: 170, len: 5, color: "rgba(190,214,245,0.7)", lean: 0.3 },
+    { n: 28, speed: 240, len: 7, color: "rgba(240,248,255,0.92)", lean: 0.3 },
+  ]
+  layers.forEach((L, li) => {
+    ctx.fillStyle = L.color
+    const span = h + 24
+    for (let i = 0; i < L.n; i++) {
+      const seed = i + li * 100
+      const fall = (rainHash(seed) * span + t * L.speed) % span
+      const ry = fall - 12
+      const rx = ((rainHash(seed + 0.5) * (w + 60) - fall * L.lean) % (w + 60) + (w + 60)) % (w + 60) - 30
+      for (let k = 0; k < L.len; k++) ctx.fillRect(Math.floor(rx - k * L.lean), Math.floor(ry - k), 1, 1)
+      // the head of a near drop is a touch brighter
+      if (li === 2) {
+        ctx.fillStyle = "#ffffff"
+        ctx.fillRect(Math.floor(rx), Math.floor(ry), 1, 1)
+        ctx.fillStyle = L.color
+      }
+    }
+  })
+
+  // splashes: 4 frames over ~0.55s — impact dot, crown with droplets, droplets falling, wide fading ring.
+  // They are anchored to the world (cells of 76×48 px, two slots each) and only drawn where `ground` says a drop
+  // really lands on open floor, so nothing splashes on water, trees, roofs or walls.
+  const CW = 76
+  const CH = 48
+  for (let cy = Math.floor(camY / CH); cy <= Math.floor((camY + h) / CH); cy++) {
+    for (let cx = Math.floor(camX / CW); cx <= Math.floor((camX + w) / CW); cx++) {
+      for (let slot = 0; slot < 2; slot++) {
+        const id = cx * 7919 + cy * 104729 + slot * 31
+        const period = 0.9 + rainHash(id + 7) * 0.8
+        const cyc = t / period + rainHash(id + 3)
+        const n = Math.floor(cyc)
+        const life = cyc - n
+        if (life > 0.55) continue
+        const wx = Math.floor(cx * CW + rainHash(id * 1.3 + n * 17.7) * CW)
+        const wy = Math.floor(cy * CH + rainHash(id * 1.7 + n * 9.1) * CH)
+        if (ground && !ground(wx, wy)) continue
+        const sx = wx - camX
+        const sy = wy - camY
+        if (sx < -4 || sx > w + 4 || sy < -4 || sy > h + 4) continue
+        const f = Math.floor((life / 0.55) * 4)
+        const c = "#eef6ff"
+        const dim = "rgba(200,225,255,0.6)"
+        if (f === 0) {
+          px(ctx, c, sx, sy, 1, 1)
+        } else if (f === 1) {
+          px(ctx, c, sx - 1, sy, 3, 1)
+          px(ctx, c, sx - 2, sy - 2, 1, 1)
+          px(ctx, c, sx + 2, sy - 2, 1, 1)
+          px(ctx, c, sx, sy - 1, 1, 1)
+        } else if (f === 2) {
+          px(ctx, c, sx - 3, sy - 2, 1, 1)
+          px(ctx, c, sx + 3, sy - 2, 1, 1)
+          px(ctx, c, sx - 1, sy - 3, 1, 1)
+          px(ctx, c, sx + 1, sy - 3, 1, 1)
+          px(ctx, dim, sx - 2, sy, 5, 1)
+        } else {
+          ctx.globalAlpha = 0.65
+          px(ctx, dim, sx - 3, sy, 1, 1)
+          px(ctx, dim, sx + 3, sy, 1, 1)
+          px(ctx, dim, sx - 2, sy + 1, 5, 1)
+          px(ctx, dim, sx - 2, sy - 1, 5, 1)
+          ctx.globalAlpha = 1
+        }
+      }
     }
   }
-  for (let i = 0; i < 14; i++) {
-    const life = (t * 1.5 + i * 0.37) % 1
-    const sx = (i * 97 + 13) % w
-    const sy = (i * 61 + 31) % h
-    ctx.globalAlpha = (1 - life) * 0.7
-    ctx.fillStyle = "#e9f3ff"
-    const r = 1 + Math.floor(life * 4)
-    ctx.fillRect(sx - r, sy, r * 2, 1)
-    ctx.fillRect(sx - r + 1, sy + 1, r * 2 - 2, 1)
-    ctx.globalAlpha = 1
+
+  // floor mist: wide soft bands hugging the bottom edge, drifting slowly
+  for (let i = 0; i < 6; i++) {
+    const mx = ((i * 83 + t * (4 + i)) % (w + 120)) - 60
+    const my = h - 10 - (i % 3) * 7
+    const x = Math.round(mx)
+    ditherRect(ctx, "#d7e6fa", x, my, 90, 6, 0.12)
+    ditherRect(ctx, "#d7e6fa", x + 14, my - 3, 62, 12, 0.19)
+  }
+}
+
+// ─── everyday props ────────────────────────────────────────────────────────
+
+const WOOD = { hi: "#c48e74", mid: "#8a5a44", deep: "#6b4630", dark: "#4e3224" }
+const STONE = { hi: "#cdd6dd", mid: "#9aa6b0", deep: "#6c7782", dark: "#4a5560" }
+const STRAW = { hi: "#ecd6a0", mid: "#d9b87a", deep: "#b8965a" }
+
+/** A prop on one tile whose top-left is (x, y). Tall props rise above the tile; `variant` picks a small variation. */
+export function drawProp(ctx: Ctx, kind: string, x: number, y: number, t: number, variant = 0, env: PropEnv = { rain: false, night: false }) {
+  if (drawTasteProp(ctx, kind, x, y, t, env)) return
+  const shadow = (sx = 1, sw = 14) => px(ctx, "rgba(20,30,20,0.25)", x + sx, y + 13, sw, 3)
+  switch (kind) {
+    case "well": {
+      shadow()
+      // tiled roof, a pyramid of terracotta
+      for (let r = 0; r < 6; r++) {
+        const w = 4 + r * 2
+        px(ctx, r % 2 ? TERRA.mid : TERRA.hi, x + 8 - w / 2, y - 10 + r, w, 1)
+      }
+      px(ctx, TERRA.rim, x + 1, y - 5, 14, 1)
+      px(ctx, TERRA.deep, x + 2, y - 4, 12, 1)
+      // posts and the winding beam
+      px(ctx, WOOD.mid, x + 2, y - 4, 2, 12)
+      px(ctx, WOOD.mid, x + 12, y - 4, 2, 12)
+      px(ctx, WOOD.hi, x + 2, y - 4, 1, 12)
+      px(ctx, WOOD.deep, x + 3, y - 3, 10, 1)
+      // rope and bucket
+      px(ctx, "#d9c7ba", x + 8, y - 2, 1, 6)
+      px(ctx, WOOD.mid, x + 7, y + 4, 3, 3)
+      px(ctx, WOOD.dark, x + 7, y + 5, 3, 1)
+      // the stone ring, with dark water inside
+      px(ctx, STONE.mid, x + 2, y + 8, 12, 6)
+      px(ctx, STONE.hi, x + 1, y + 6, 14, 2)
+      px(ctx, "#2f5f8a", x + 3, y + 7, 10, 1)
+      px(ctx, STONE.deep, x + 2, y + 13, 12, 1)
+      for (const [bx, by, bw] of [[3, 9, 4], [8, 9, 5], [5, 11, 5], [11, 11, 2], [2, 11, 2]] as const) px(ctx, STONE.deep, x + bx, y + by, bw, 1)
+      px(ctx, STONE.hi, x + 3, y + 8, 3, 1)
+      px(ctx, "#4f9a4e", x + 12, y + 12, 2, 2)
+      break
+    }
+    case "mailbox": {
+      shadow(3, 10)
+      px(ctx, WOOD.mid, x + 7, y + 7, 2, 8)
+      px(ctx, WOOD.hi, x + 7, y + 7, 1, 8)
+      px(ctx, WOOD.deep, x + 6, y + 14, 4, 1)
+      px(ctx, "#3d6fb0", x + 3, y + 2, 10, 6)
+      px(ctx, "#6a9ae0", x + 3, y + 1, 10, 2)
+      px(ctx, "#2a4f86", x + 3, y + 7, 10, 1)
+      px(ctx, "#2a4f86", x + 11, y + 3, 2, 4)
+      px(ctx, "#ffb3d1", x + 6, y + 4, 2, 2)
+      px(ctx, "#ffffff", x + 8, y + 5, 1, 1)
+      // the flag: up when the day is fresh
+      const up = Math.sin(t * 0.4) > -0.2
+      px(ctx, "#e0506a", x + 4, up ? y - 3 : y + 0, 3, 2)
+      px(ctx, STONE.deep, x + 4, up ? y - 3 : y + 0, 1, up ? 5 : 3)
+      break
+    }
+    case "firewood": {
+      shadow(0, 16)
+      const log = (lx: number, ly: number) => {
+        px(ctx, WOOD.deep, x + lx, y + ly, 4, 4)
+        px(ctx, "#d9a97a", x + lx + 1, y + ly + 1, 2, 2)
+        px(ctx, "#f0d0a0", x + lx + 1, y + ly + 1, 1, 1)
+        px(ctx, WOOD.dark, x + lx, y + ly + 3, 4, 1)
+      }
+      for (const lx of [0, 4, 8, 12]) log(lx, 10)
+      for (const lx of [2, 6, 10]) log(lx, 6)
+      for (const lx of [4, 8]) log(lx, 2)
+      px(ctx, "#4f9a4e", x + 4, y + 1, 4, 1)
+      break
+    }
+    case "signpost": {
+      shadow(4, 8)
+      px(ctx, WOOD.deep, x + 7, y + 1, 2, 14)
+      px(ctx, WOOD.hi, x + 7, y + 1, 1, 14)
+      // two arrows pointing opposite ways
+      px(ctx, WOOD.hi, x + 2, y + 2, 11, 4)
+      px(ctx, WOOD.hi, x + 13, y + 3, 2, 2)
+      px(ctx, WOOD.mid, x + 2, y + 5, 11, 1)
+      px(ctx, WOOD.deep, x + 4, y + 3, 6, 1)
+      px(ctx, WOOD.hi, x + 3, y + 8, 10, 4)
+      px(ctx, WOOD.hi, x + 1, y + 9, 2, 2)
+      px(ctx, WOOD.mid, x + 3, y + 11, 10, 1)
+      px(ctx, WOOD.deep, x + 6, y + 9, 5, 1)
+      px(ctx, "#4f9a4e", x + 5, y + 14, 6, 1)
+      break
+    }
+    case "birdbath": {
+      shadow(2, 12)
+      px(ctx, STONE.deep, x + 4, y + 12, 8, 2)
+      px(ctx, STONE.hi, x + 4, y + 12, 8, 1)
+      px(ctx, STONE.mid, x + 6, y + 7, 4, 5)
+      px(ctx, STONE.hi, x + 6, y + 7, 1, 5)
+      px(ctx, STONE.mid, x + 2, y + 4, 12, 3)
+      px(ctx, STONE.hi, x + 2, y + 4, 12, 1)
+      px(ctx, STONE.deep, x + 3, y + 7, 10, 1)
+      px(ctx, "#8fd0f0", x + 3, y + 5, 10, 1)
+      if (Math.sin(t * 3 + x) > 0.7) px(ctx, "#ffffff", x + 5 + Math.floor(Math.abs(Math.sin(t)) * 4), y + 5, 1, 1)
+      // a small blue bird that hops on the rim
+      const hop = Math.sin(t * 2.4) > 0.8 ? 1 : 0
+      px(ctx, "#4e86a8", x + 9, y + 2 - hop, 4, 2)
+      px(ctx, "#8fc0e0", x + 11, y + 1 - hop, 2, 2)
+      px(ctx, "#ffb03a", x + 13, y + 2 - hop, 1, 1)
+      px(ctx, "#4e3224", x + 12, y + 1 - hop, 1, 1)
+      px(ctx, "#2a4f86", x + 8, y + 3 - hop, 2, 1)
+      break
+    }
+    case "blanket": {
+      // a gingham picnic cloth with a basket and an apple, lying flat
+      px(ctx, "#c04060", x, y + 2, 16, 12)
+      px(ctx, "#f4c0cc", x + 1, y + 3, 14, 10)
+      for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) if ((i + j) % 2 === 0) px(ctx, "#e8708a", x + 1 + i * 2, y + 3 + j * 2, 2, 2)
+      px(ctx, WOOD.mid, x + 8, y + 6, 6, 5)
+      px(ctx, WOOD.hi, x + 8, y + 6, 6, 1)
+      px(ctx, WOOD.deep, x + 8, y + 8, 6, 1)
+      px(ctx, WOOD.mid, x + 9, y + 4, 1, 2)
+      px(ctx, WOOD.mid, x + 12, y + 4, 1, 2)
+      px(ctx, WOOD.mid, x + 9, y + 4, 4, 1)
+      px(ctx, "#e0506a", x + 4, y + 7, 3, 3)
+      px(ctx, "#f08aa0", x + 4, y + 7, 1, 1)
+      px(ctx, "#4fbf5a", x + 5, y + 6, 2, 1)
+      break
+    }
+    case "scarecrow": {
+      shadow(2, 12)
+      px(ctx, WOOD.mid, x + 7, y, 2, 15)
+      px(ctx, WOOD.hi, x + 7, y, 1, 15)
+      // arms with straw for hands
+      px(ctx, WOOD.mid, x, y + 1, 16, 2)
+      px(ctx, STRAW.mid, x - 1, y, 2, 5)
+      px(ctx, STRAW.mid, x + 15, y, 2, 5)
+      px(ctx, STRAW.hi, x - 1, y, 1, 3)
+      // a blue shirt with a pink patch, straw at the hem
+      px(ctx, "#4a7ab8", x + 4, y + 1, 8, 7)
+      px(ctx, "#6a9ae0", x + 4, y + 1, 3, 7)
+      px(ctx, "#2a4f86", x + 11, y + 1, 1, 7)
+      px(ctx, "#ff9db8", x + 9, y + 4, 2, 2)
+      for (let i = 0; i < 4; i++) px(ctx, STRAW.mid, x + 4 + i * 2, y + 8, 1, 2 + (i % 2))
+      // a sack head with a stitched smile
+      px(ctx, "#e8d4a8", x + 4, y - 6, 8, 7)
+      px(ctx, "#c8b088", x + 11, y - 6, 1, 7)
+      px(ctx, WOOD.dark, x + 6, y - 4, 1, 1)
+      px(ctx, WOOD.dark, x + 9, y - 4, 1, 1)
+      px(ctx, WOOD.dark, x + 6, y - 2, 4, 1)
+      px(ctx, WOOD.dark, x + 6, y - 3, 1, 1)
+      px(ctx, WOOD.dark, x + 9, y - 3, 1, 1)
+      // a floppy hat with a pink band
+      px(ctx, WOOD.deep, x + 2, y - 8, 12, 2)
+      px(ctx, WOOD.mid, x + 4, y - 13, 8, 5)
+      px(ctx, WOOD.hi, x + 4, y - 13, 2, 5)
+      px(ctx, "#ff9db8", x + 4, y - 9, 8, 1)
+      // a crow that does not mind
+      px(ctx, "#2a2a36", x + 12, y - 2, 4, 3)
+      px(ctx, "#2a2a36", x + 14, y - 4, 2, 2)
+      px(ctx, "#ffb03a", x + 16, y - 3, 1, 1)
+      px(ctx, "#4a4a5a", x + 12, y - 2, 1, 1)
+      break
+    }
+    case "wheelbarrow": {
+      shadow(1, 15)
+      // the soil it carries, and a seedling
+      px(ctx, WOOD.deep, x + 6, y + 3, 8, 3)
+      px(ctx, "#8a6048", x + 7, y + 3, 4, 1)
+      px(ctx, "#4fbf5a", x + 9, y + 0, 1, 3)
+      px(ctx, "#8fdc92", x + 10, y + 1, 2, 1)
+      // the tub
+      px(ctx, "#f0607a", x + 5, y + 5, 10, 1)
+      px(ctx, "#c8324e", x + 5, y + 6, 10, 4)
+      px(ctx, "#8a1f3a", x + 7, y + 10, 7, 1)
+      px(ctx, "#f08aa0", x + 6, y + 6, 4, 1)
+      // handles, a leg, and the front wheel
+      px(ctx, WOOD.mid, x + 13, y + 10, 3, 1)
+      px(ctx, WOOD.deep, x + 12, y + 10, 1, 5)
+      px(ctx, "#2f3640", x + 0, y + 8, 6, 6)
+      px(ctx, "#8e99a4", x + 1, y + 9, 4, 4)
+      px(ctx, "#2f3640", x + 2, y + 10, 2, 2)
+      px(ctx, "#cdd6dd", x + 1, y + 9, 1, 1)
+      break
+    }
+    case "haybale": {
+      shadow(0, 16)
+      const bale = (bx: number, by: number, w: number, h: number) => {
+        px(ctx, STRAW.mid, x + bx, y + by, w, h)
+        px(ctx, STRAW.hi, x + bx, y + by, w, 1)
+        px(ctx, STRAW.deep, x + bx, y + by + h - 1, w, 1)
+        px(ctx, STRAW.deep, x + bx + w - 1, y + by, 1, h)
+        for (let ly = 3; ly < h - 1; ly += 3) px(ctx, STRAW.deep, x + bx + 1, y + by + ly, w - 3, 1)
+        px(ctx, WOOD.mid, x + bx + 3, y + by, 1, h)
+        px(ctx, WOOD.mid, x + bx + w - 5, y + by, 1, h)
+      }
+      bale(1, 6, 14, 9)
+      if (variant % 2 === 0) bale(3, -1, 11, 7)
+      px(ctx, STRAW.hi, x + 0, y + 8, 2, 1)
+      px(ctx, STRAW.hi, x + 14, y + 12, 2, 1)
+      break
+    }
+    case "beehive": {
+      shadow(1, 14)
+      px(ctx, WOOD.deep, x + 3, y + 13, 2, 2)
+      px(ctx, WOOD.deep, x + 11, y + 13, 2, 2)
+      px(ctx, WOOD.mid, x + 1, y + 11, 14, 2)
+      px(ctx, WOOD.hi, x + 1, y + 11, 14, 1)
+      // a straw skep built of coils
+      const rows = [[6, 4], [5, 6], [4, 8], [3, 10], [2, 12], [2, 12], [2, 12], [2, 12], [2, 12]] as const
+      rows.forEach(([rx, rw], i) => {
+        px(ctx, i % 2 ? STRAW.deep : STRAW.mid, x + rx, y + 2 + i, rw, 1)
+        px(ctx, STRAW.hi, x + rx, y + 2 + i, 1, 1)
+      })
+      px(ctx, WOOD.dark, x + 7, y + 9, 3, 2)
+      px(ctx, WOOD.dark, x + 8, y + 8, 1, 1)
+      // flowers at the foot and two bees that circle it
+      px(ctx, "#4f9a4e", x + 0, y + 13, 3, 2)
+      px(ctx, "#ff9db8", x + 1, y + 12, 2, 2)
+      px(ctx, "#c9a8ff", x + 13, y + 12, 2, 2)
+      for (let i = 0; i < 2; i++) {
+        const bx = x + 8 + Math.round(Math.cos(t * 3 + i * 3) * 7)
+        const by = y + 4 + Math.round(Math.sin(t * 4 + i * 2) * 4)
+        px(ctx, "#e8b04a", bx, by, 2, 1)
+        px(ctx, "#2a2a36", bx + 1, by, 1, 1)
+        px(ctx, "#ffffff", bx, by - 1, 1, 1)
+      }
+      break
+    }
+    case "rowboat": {
+      // a little blue boat pulled up on the sand, an oar across it
+      px(ctx, "rgba(60,40,20,0.25)", x + 0, y + 11, 16, 3)
+      px(ctx, "#4a7ab8", x + 0, y + 5, 2, 3)
+      px(ctx, "#4a7ab8", x + 14, y + 5, 2, 3)
+      px(ctx, WOOD.deep, x + 2, y + 6, 12, 2)
+      px(ctx, WOOD.hi, x + 0, y + 5, 16, 1)
+      px(ctx, "#4a7ab8", x + 1, y + 8, 14, 2)
+      px(ctx, "#ffffff", x + 1, y + 9, 14, 1)
+      px(ctx, "#2a4f86", x + 3, y + 10, 10, 2)
+      px(ctx, "#6a9ae0", x + 2, y + 8, 5, 1)
+      px(ctx, WOOD.mid, x + 7, y + 6, 2, 1)
+      px(ctx, WOOD.hi, x + 4, y + 2, 1, 5)
+      px(ctx, WOOD.hi, x + 3, y + 1, 3, 2)
+      px(ctx, "#d9c7ba", x + 11, y + 7, 2, 1)
+      break
+    }
   }
 }

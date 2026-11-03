@@ -1,5 +1,5 @@
 /**
- * lib/baby-game/farm.ts — The calendar, the crops, and the four skills of Mossmere Hollow
+ * lib/baby-game/farm.ts — The calendar, the crops, and the four skills of Valdivia
  *
  * Plain data and small pure helpers; the actions that spend energy and change the bag live in `engine.ts`.
  * A cycle is seven days; four cycles make a year. A crop grows one step each night it was watered (rain waters
@@ -7,7 +7,7 @@
  */
 
 export const CYCLE_LEN = 7
-export const CYCLES = ["Bloomtide", "Gleamtide", "Mosstide", "Frosttide"] as const
+export const CYCLES = ["Lotus Bloom", "High Yang", "Anicca", "Deep Yin"] as const
 
 export const cycleOf = (day: number) => Math.floor((day - 1) / CYCLE_LEN) % CYCLES.length
 export const dayOfCycle = (day: number) => ((day - 1) % CYCLE_LEN) + 1
@@ -42,6 +42,15 @@ export const CROPS: Record<string, CropDef> = {
   spiralkale: { id: "spiralkale", seed: "spiralkale-seed", days: 4, cycles: [2, 3], yield: 2 },
   twinklegourd: { id: "twinklegourd", seed: "twinklegourd-seed", days: 5, cycles: [3, 0], yield: 1 },
   snowpearl: { id: "snowpearl", seed: "snowpearl-seed", days: 5, cycles: [3], yield: 1 },
+  // Surreal crops, two per cycle. Each is single-season, so the Stump only stocks it then.
+  shadowradish: { id: "shadowradish", seed: "shadowradish-seed", days: 3, cycles: [0], yield: 2 },
+  mandalichoke: { id: "mandalichoke", seed: "mandalichoke-seed", days: 5, cycles: [0], yield: 1 },
+  schrodinberry: { id: "schrodinberry", seed: "schrodinberry-seed", days: 4, cycles: [1], yield: 2 },
+  parallaxpepper: { id: "parallaxpepper", seed: "parallaxpepper-seed", days: 3, cycles: [1], yield: 2 },
+  fadeleek: { id: "fadeleek", seed: "fadeleek-seed", days: 4, cycles: [2], yield: 2 },
+  quincidence: { id: "quincidence", seed: "quincidence-seed", days: 6, cycles: [2], yield: 1 },
+  hypnagogicpea: { id: "hypnagogicpea", seed: "hypnagogicpea-seed", days: 3, cycles: [3], yield: 2 },
+  aurorasprout: { id: "aurorasprout", seed: "aurorasprout-seed", days: 5, cycles: [3], yield: 1 },
 }
 
 export const CROP_BY_SEED: Record<string, CropDef> = Object.fromEntries(Object.values(CROPS).map((c) => [c.seed, c]))

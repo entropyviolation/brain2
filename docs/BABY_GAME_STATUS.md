@@ -23,7 +23,7 @@ Fixing these is the first job in any of the projects below.
 **Done**
 - 24 animals at 32×32 with front, side and back views; four-frame walk cycles and idle life made from any still (`walk.ts`, `idle.ts`).
 - World grown from 64×52 to 80×64: Cobalt Glow Marsh, The Index Stacks, Firework Dunes. Old saves still load.
-- A home for every friend (`homes.ts`, `homeart.ts`) and friends who walk home at dusk and sleep; the player's Casa with staircases (`Casa.tsx`, `casa.ts`, `casa-paint.ts`).
+- A home for every friend (`homes.ts`, `homeart.ts`) and friends who walk home at dusk and sleep; the player's Casa with staircases (`Casa.tsx`, `casa.ts`, `casa-paint.ts`), now six furnished rooms (Hall, Noble Floor, Loft, Sunken Lounge, Glasshouse, Boudoir) with ComfyUI-drawn furniture from the `homedesignref/` board (`casa-furniture.ts`, `furniture-sprites.ts`, `casa-rooms.ts`).
 - The `Character` contract (`character.ts`), `dharma.ts` (Zen, Taoism, Buddhism per friend), gems economy, prop uses, thrift rack, chemistry and theory helpers.
 - Dev mode on its own sandbox save (`dev.ts`, `devpanel.tsx`); design notes per character (`design-notes.ts`, `designpanel.tsx`).
 - Story from the owner's likes list: quests for orbs, prisms, diatoms, collage, fireworks, index, and so on.
@@ -93,5 +93,6 @@ Fixing these is the first job in any of the projects below.
 
 **Left to do**
 - Keep tagging outputs while developing; that is the training data.
-- Finish and test `snap.mjs` against real liked images.
+- Second batch queued 2026-11-03 (`node scripts/baby-gens-queue.mjs second`): otter, giant panda, siamese and grey kittens, hyrax, quokka, pika, dik-dik, sugar glider, pangolin, dormouse, tarsier. Three singles and two sheets each, with extra glitch negatives. Like the clean ones in `/lab/baby-gens`.
+- Snap more liked images: 7 animals are generated so far; squirrel, red panda, fennec, corgi and the kittens still wait for likes. Side and back views of hedgehog and meerkat come from their unliked turnaround sheets.
 - Restart any dev server started before `baby-gens-api.mjs` existed.

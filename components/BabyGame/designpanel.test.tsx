@@ -8,7 +8,7 @@ describe("design panel", () => {
 
   it("shows three views, saves a note and a redo mark, and picks another friend", () => {
     render(<DesignPanel initial="otter" onBack={() => {}} />)
-    expect(screen.getAllByRole("img")).toHaveLength(3)
+    expect(screen.getAllByRole("img")).toHaveLength(4)
     fireEvent.click(screen.getByText("Needs redesign"))
     fireEvent.change(screen.getByPlaceholderText(/Rounder tail/), { target: { value: "bigger eyes" } })
     const saved = loadDesignNotes().otter

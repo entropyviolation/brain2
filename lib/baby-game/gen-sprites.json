@@ -83,5 +83,121 @@
         "skip": "iIJ"
       }
     }
+  },
+  "possum": {
+    "from": "Ernst, the grey opossum, sprite-possum-sheet_00001_.png front, side and back (liked 2026-11-02); also Tegmark and Kaufman",
+    "views": {
+      "front": {
+        "file": "sprite-possum-sheet_00001_.png",
+        "part": 0,
+        "height": 24,
+        "tol": 60,
+        "shadow": false,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite-possum-sheet_00001_.png",
+        "part": 4,
+        "height": 22,
+        "tol": 60,
+        "shadow": false,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "sprite-possum-sheet_00001_.png",
+        "part": 2,
+        "height": 24,
+        "tol": 60,
+        "shadow": false,
+        "skip": "iIJ"
+      }
+    }
+  },
+  "puppy": {
+    "from": "Irwin, the golden puppy, sprite-puppy-golden-sheet_00001_.png (liked 2026-11-02), front, side and back",
+    "views": {
+      "front": {
+        "file": "sprite-puppy-golden-sheet_00001_.png",
+        "part": 2,
+        "height": 24,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite-puppy-golden-sheet_00001_.png",
+        "part": 3,
+        "height": 24,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "sprite-puppy-golden-sheet_00001_.png",
+        "part": 6,
+        "height": 24,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      }
+    }
+  },
+  "hedgehog": {
+    "from": "Johnston, the hedgehog, sprite-hedgehog_00002_.png and sprite-hedgehog-sheet_00001_.png (liked 2026-11-02), front, side and back from the sheet",
+    "views": {
+      "front": {
+        "file": "sprite-hedgehog-sheet_00001_.png",
+        "part": 0,
+        "height": 20,
+        "tol": 60,
+        "shadow": false,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite-hedgehog-sheet_00001_.png",
+        "part": 2,
+        "height": 18,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "sprite-hedgehog-sheet_00001_.png",
+        "part": 3,
+        "height": 18,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      }
+    }
+  },
+  "meerkat": {
+    "from": "A meerkat, sprite-meerkat_00002_.png front (liked), side and back from sprite-meerkat-sheet_00001_.png (2026-11-02); no cast member yet",
+    "views": {
+      "front": {
+        "file": "sprite-meerkat-sheet_00001_.png",
+        "part": 0,
+        "height": 24,
+        "tol": 60,
+        "shadow": false,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite-meerkat-sheet_00001_.png",
+        "part": 2,
+        "height": 24,
+        "tol": 60,
+        "shadow": false,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "sprite-meerkat-sheet_00001_.png",
+        "part": 4,
+        "height": 24,
+        "tol": 60,
+        "shadow": false,
+        "skip": "iIJ"
+      }
+    }
   }
 }

@@ -42,6 +42,9 @@ export const SPECIES_HOME: Record<string, HomeKind> = {
   penguin: "igloo", seal: "igloo",
 }
 
+/** Homes are drawn this many times bigger than their tile: building size, three tiles wide. */
+export const HOME_SCALE = 3
+
 export const homeKindFor = (species: string): HomeKind => SPECIES_HOME[species] ?? "hutch"
 
 /** Hand-placed for Valdivia (checked by `homes.test.ts`): in the friend's zone, off every node, prop and path. */

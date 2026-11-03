@@ -148,8 +148,15 @@ export function DevPanel(p: {
           </div>
           <h4 className="bg-dev-h">Weather · {g.weather}</h4>
           <div className="bg-keys">
-            {WEATHERS.map((w) => key(w, () => edit((s) => devSetWeather(s, w)), { k: w, primary: g.weather === w }))}
+            {WEATHERS.map((w) => key(w, () => { if (flags.lockWeather) setFlags({ ...flags, lockWeather: w }); edit((s) => devSetWeather(s, w)) }, { k: w, primary: g.weather === w }))}
           </div>
+          <label className="bg-check">
+            <input type="checkbox" checked={!!flags.lockWeather} onChange={() => setFlags({ ...flags, lockWeather: flags.lockWeather ? undefined : g.weather })} onKeyDown={closeKeys} />
+            <span>
+              Hold this weather
+              <small>{flags.lockWeather ? `Locked to ${flags.lockWeather}. Picking another weather moves the lock.` : "Keeps today's weather through new days."}</small>
+            </span>
+          </label>
           <h4 className="bg-dev-h">Farm and gathering</h4>
           <div className="bg-keys">
             {key("Ripen every crop", () => edit(devRipen), { k: "ripen" })}
@@ -188,7 +195,7 @@ export function DevPanel(p: {
           </div>
           <div className="bg-dev-items">
             {QUESTS.filter((qu) => match(qu.title) || match(resident(qu.giver)?.name ?? qu.giver)).map((qu) => (
-              <div key={qu.id} className="bg-dev-item" title={qu.text}>
+              <div key={qu.id} className="bg-dev-item bg-dev-quest" title={qu.text}>
                 <span>
                   <b>{qu.title}</b> <small className="bg-faint">{resident(qu.giver)?.name ?? qu.giver}{g.questsDone[qu.id] ? " · done" : ""}</small>
                 </span>
@@ -332,7 +339,8 @@ export function DevReadout({ tile, g, flags, onOpen }: { tile: string; g: GameSt
 export function drawDevOverlay(ctx: CanvasRenderingContext2D, world: World, sim: Sim, act: number, shake?: { x: number; y: number }) {
   const { camX, camY } = cameraOf(sim, shake)
   ctx.save()
-  ctx.setTransform(1, 0, 0, 1, -camX, -camY)
+  const D = ctx.canvas.width / VIEW_W
+  ctx.setTransform(D, 0, 0, D, -camX * D, -camY * D)
   const x0 = Math.floor(camX / TILE)
   const y0 = Math.floor(camY / TILE)
   for (let ty = y0; ty <= y0 + Math.ceil(VIEW_H / TILE); ty++) {

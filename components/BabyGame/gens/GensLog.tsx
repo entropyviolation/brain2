@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   filterGens,
+  GEN_ISSUES,
   GEN_KIND_LABEL,
   likeScore,
   loraBoard,
@@ -26,6 +27,7 @@ import {
   type GenNote,
   type GenNotes,
   type GenPatch,
+  type GenRecipe,
 } from "@/lib/baby-game/gens"
 
 const KINDS = Object.keys(GEN_KIND_LABEL) as GenKind[]
@@ -48,6 +50,7 @@ export function GensLog() {
   const [setup, setSetup] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [tryFrom, setTryFrom] = useState<Gen | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -66,7 +69,7 @@ export function GensLog() {
   }, [refresh])
 
   const patch = useCallback(async (file: string, p: GenPatch) => {
-    setNotes((old) => ({ ...old, [file]: { ...(old[file] ?? { verdict: null, kind: null, text: "", tags: [], at: 0 }), ...p, at: Date.now() } }))
+    setNotes((old) => ({ ...old, [file]: { ...(old[file] ?? { verdict: null, kind: null, text: "", tags: [], issues: [], at: 0 }), ...p, at: Date.now() } }))
     try {
       const res = await fetch("/api/baby-gens/note", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file, patch: p }) })
       const body = await res.json()
@@ -142,6 +145,8 @@ export function GensLog() {
           </div>
           {load.missing ? <p className="text-sm">That folder does not exist. Set <code>BABY_GENS_DIR</code> to your ComfyUI output folder.</p> : null}
 
+          <TryPanel from={tryFrom} onClear={() => setTryFrom(null)} onDone={() => void refresh()} />
+
           <div className="grid gap-4 lg:grid-cols-2">
             <Board title="Setups" rows={setups} active={setup} onPick={(k) => setSetup(setup === k ? null : k)} />
             <Board title="LoRA at strength" rows={loras} />
@@ -182,7 +187,7 @@ export function GensLog() {
               ))}
             </ul>
             <aside className="md:sticky md:top-4 md:self-start">
-              {current ? <Detail key={current.file} gen={current} note={notes[current.file]} onPatch={(p) => void patch(current.file, p)} /> : <p className="text-sm text-neutral-500">Pick an image to see its recipe and write a note.</p>}
+              {current ? <Detail key={current.file} gen={current} note={notes[current.file]} onPatch={(p) => void patch(current.file, p)} onTry={() => setTryFrom(current)} /> : <p className="text-sm text-neutral-500">Pick an image to see its recipe and write a note.</p>}
             </aside>
           </div>
         </>
@@ -236,7 +241,7 @@ function Card({ gen, note, selected, onSelect, onPatch }: { gen: Gen; note?: Gen
   )
 }
 
-function Detail({ gen, note, onPatch }: { gen: Gen; note?: GenNote; onPatch: (p: GenPatch) => void }) {
+function Detail({ gen, note, onPatch, onTry }: { gen: Gen; note?: GenNote; onPatch: (p: GenPatch) => void; onTry: () => void }) {
   const r = gen.recipe
   const [text, setText] = useState(note?.text ?? "")
   const [tags, setTags] = useState((note?.tags ?? []).join(", "))
@@ -256,6 +261,26 @@ function Detail({ gen, note, onPatch }: { gen: Gen; note?: GenNote; onPatch: (p:
             </option>
           ))}
         </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-neutral-500">What went wrong</span>
+        <div className="flex flex-wrap gap-1">
+          {GEN_ISSUES.map((i) => {
+            const on = (note?.issues ?? []).includes(i)
+            return (
+              <button
+                key={i}
+                type="button"
+                data-no95=""
+                aria-pressed={on}
+                onClick={() => onPatch({ issues: on ? (note?.issues ?? []).filter((x) => x !== i) : [...(note?.issues ?? []), i] })}
+                className={`rounded border px-1.5 py-0.5 text-xs ${on ? "border-amber-700 bg-amber-700 text-white" : "hover:bg-neutral-100 dark:hover:bg-neutral-800"}`}
+              >
+                {i}
+              </button>
+            )
+          })}
+        </div>
       </div>
       <label className="flex flex-col gap-1">
         <span className="text-xs text-neutral-500">Note (what works, what is off)</span>
@@ -284,7 +309,11 @@ function Detail({ gen, note, onPatch }: { gen: Gen; note?: GenNote; onPatch: (p:
           <dt className="text-neutral-500">Seed</dt>
           <dd>{r.seed ?? "?"}</dd>
           <dt className="text-neutral-500">Size</dt>
-          <dd>{r.width && r.height ? `${r.width}×${r.height}` : "?"}</dd>
+          <dd>{r.width && r.height ? `${r.width}×${r.height}${r.batch && r.batch > 1 ? ` × batch ${r.batch}` : ""}` : "?"}</dd>
+          <dt className="text-neutral-500">File</dt>
+          <dd>
+            {gen.file} · {Math.round(gen.bytes / 1024)} KB · {new Date(gen.at).toLocaleString()} · {r.nodes} nodes
+          </dd>
         </dl>
       ) : (
         <p className="text-xs text-neutral-500">No recipe in this file (not saved by ComfyUI's Save Image, or metadata stripped).</p>
@@ -299,6 +328,10 @@ function Detail({ gen, note, onPatch }: { gen: Gen; note?: GenNote; onPatch: (p:
           ))}
         </div>
       ) : null}
+      <RawGraph file={gen.file} />
+      <button type="button" data-no95="" onClick={onTry} className="self-start rounded border border-sky-600 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-300">
+        Try this recipe…
+      </button>
       <button
         type="button"
         onClick={async () => {
@@ -315,6 +348,173 @@ function Detail({ gen, note, onPatch }: { gen: Gen; note?: GenNote; onPatch: (p:
         {copied ? "Copied" : "Copy recipe as JSON"}
       </button>
     </div>
+  )
+}
+
+/** The exact graph ComfyUI ran, fetched on open. */
+function RawGraph({ file }: { file: string }) {
+  const [text, setText] = useState<string | null>(null)
+  const open = async (isOpen: boolean) => {
+    if (!isOpen || text !== null) return
+    try {
+      const body = await (await fetch(`/api/baby-gens/raw/${file.split("/").map(encodeURIComponent).join("/")}`)).json()
+      setText(body.ok && body.prompt ? JSON.stringify(body.prompt, null, 2) : "No graph in this file.")
+    } catch {
+      setText("Could not read the graph.")
+    }
+  }
+  return (
+    <details onToggle={(e) => void open((e.target as HTMLDetailsElement).open)} className="text-xs">
+      <summary className="cursor-pointer text-neutral-500">Exact ComfyUI graph (JSON)</summary>
+      <pre className="mt-1 max-h-72 overflow-auto rounded border bg-neutral-50 p-2 text-[10px] dark:bg-neutral-950">{text ?? "Reading…"}</pre>
+    </details>
+  )
+}
+
+type Form = { positive: string; negative: string; seed: string; count: string; steps: string; cfg: string; width: string; height: string; loraStrength: string; prefix: string }
+const EMPTY_FORM: Form = { positive: "", negative: "", seed: "", count: "1", steps: "22", cfg: "7", width: "768", height: "768", loraStrength: "1.2", prefix: "try" }
+
+const formFrom = (r: GenRecipe | null): Form => ({
+  positive: r?.positive ?? "",
+  negative: r?.negative ?? "",
+  seed: "",
+  count: "1",
+  steps: String(r?.steps ?? 22),
+  cfg: String(r?.cfg ?? 7),
+  width: String(r?.width ?? 768),
+  height: String(r?.height ?? 768),
+  loraStrength: String(r?.loras[0]?.model ?? 1.2),
+  prefix: "try",
+})
+
+/** Try a prompt: queue jobs in the local ComfyUI, starting from an image's exact graph or the liked default. */
+function TryPanel({ from, onClear, onDone }: { from: Gen | null; onClear: () => void; onDone: () => void }) {
+  const [form, setForm] = useState<Form>(EMPTY_FORM)
+  const [open, setOpen] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [queue, setQueue] = useState<{ running: number; pending: number } | null>(null)
+  const wasBusy = useRef(false)
+
+  useEffect(() => {
+    if (!from) return
+    setForm(formFrom(from.recipe))
+    setOpen(true)
+    setStatus(null)
+  }, [from])
+
+  useEffect(() => {
+    if (!open) return
+    let live = true
+    const tick = async () => {
+      try {
+        const q = await (await fetch("/api/baby-gens/queue", { cache: "no-store" })).json()
+        if (!live) return
+        if (q.ok) {
+          setQueue({ running: q.running, pending: q.pending })
+          const busyNow = q.running + q.pending > 0
+          if (wasBusy.current && !busyNow) onDone()
+          wasBusy.current = busyNow
+        } else setQueue(null)
+      } catch {
+        if (live) setQueue(null)
+      }
+    }
+    void tick()
+    const t = setInterval(tick, 4000)
+    return () => {
+      live = false
+      clearInterval(t)
+    }
+  }, [open, onDone])
+
+  const set = (k: keyof Form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const submit = async () => {
+    setBusy(true)
+    setStatus(null)
+    const n = (v: string) => (v.trim() === "" ? undefined : Number(v))
+    try {
+      const res = await fetch("/api/baby-gens/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file: from?.file,
+          positive: form.positive,
+          negative: form.negative,
+          seed: n(form.seed) ?? null,
+          count: n(form.count),
+          steps: n(form.steps),
+          cfg: n(form.cfg),
+          width: n(form.width),
+          height: n(form.height),
+          loraStrength: n(form.loraStrength),
+          prefix: form.prefix,
+        }),
+      })
+      const body = await res.json()
+      if (!body.ok) throw new Error(body.error || `HTTP ${res.status}`)
+      setStatus(`Queued ${body.queued.length}: seeds ${body.queued.map((q: { seed: number }) => q.seed).join(", ")}`)
+      wasBusy.current = true
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const field = (k: keyof Form, label: string, w = "w-20") => (
+    <label className="flex flex-col gap-0.5 text-xs">
+      <span className="text-neutral-500">{label}</span>
+      <input value={form[k]} onChange={set(k)} className={`${w} rounded border bg-transparent p-1`} />
+    </label>
+  )
+
+  return (
+    <section className="rounded border p-2 text-sm">
+      <button type="button" data-no95="" onClick={() => setOpen(!open)} aria-expanded={open} className="font-medium">
+        {open ? "▾" : "▸"} Try a prompt
+      </button>
+      {open ? (
+        <div className="mt-2 flex flex-col gap-2">
+          <p className="text-xs text-neutral-500">
+            {from ? (
+              <>
+                Starting from the exact graph of <code>{from.file}</code>; only the fields below change.{" "}
+                <button type="button" data-no95="" onClick={onClear} className="underline">
+                  Use the liked default instead
+                </button>
+              </>
+            ) : (
+              "Using the liked default (SDXL + pixel-art-xl, euler). Pick an image and press “Try this recipe…” to start from its graph."
+            )}
+            {queue ? ` · ComfyUI: ${queue.running} running, ${queue.pending} waiting` : " · ComfyUI not reachable"}
+          </p>
+          <label className="flex flex-col gap-0.5 text-xs">
+            <span className="text-neutral-500">Prompt</span>
+            <textarea value={form.positive} onChange={set("positive")} rows={3} className="rounded border bg-transparent p-1 text-sm" placeholder="pixel art, one single cute fluffy baby hedgehog, …" />
+          </label>
+          <label className="flex flex-col gap-0.5 text-xs">
+            <span className="text-neutral-500">Negative</span>
+            <textarea value={form.negative} onChange={set("negative")} rows={2} className="rounded border bg-transparent p-1 text-sm" />
+          </label>
+          <div className="flex flex-wrap items-end gap-2">
+            {field("seed", "Seed (blank = random)", "w-32")}
+            {field("count", "How many")}
+            {field("steps", "Steps")}
+            {field("cfg", "cfg")}
+            {field("width", "Width")}
+            {field("height", "Height")}
+            {field("loraStrength", "LoRA")}
+            {field("prefix", "File prefix", "w-28")}
+            <button type="button" data-no95="" disabled={busy || !form.positive.trim()} onClick={() => void submit()} className="rounded bg-neutral-900 px-3 py-1 text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900">
+              {busy ? "Queuing…" : "Queue"}
+            </button>
+          </div>
+          <p className="text-[11px] text-neutral-500">“How many” queues that many jobs on consecutive seeds. ComfyUI runs them one at a time; new images appear below when the queue empties.</p>
+          {status ? <p className="text-xs">{status}</p> : null}
+        </div>
+      ) : null}
+    </section>
   )
 }
 

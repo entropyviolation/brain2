@@ -33,17 +33,19 @@ describe("hyrax grids", () => {
       expect(low).toBe(29)
       expect(g[30]).toMatch(/k/)
     })
-    it(`${v}: baby size`, () => {
+    it(`${v}: tiny: a third of a capybara pup, no wider than tall`, () => {
       const b = box(g)
-      expect(b.w).toBeGreaterThanOrEqual(18)
-      expect(b.w).toBeLessThanOrEqual(26)
-      expect(b.h).toBeGreaterThanOrEqual(16)
-      expect(b.h).toBeLessThanOrEqual(20)
+      expect(b.w).toBeGreaterThanOrEqual(10)
+      expect(b.w).toBeLessThanOrEqual(14)
+      expect(b.h).toBeGreaterThanOrEqual(9)
+      expect(b.h).toBeLessThanOrEqual(12)
+      expect(b.w).toBeLessThanOrEqual(b.h + 3)
     })
   }
   it("front is mirror symmetric but for a few detail pixels", () => {
+    const rows = HYRAX_GRIDS.front.filter((r) => /[^.]/.test(r)).map((r) => r.replace(/^\.+|\.+$/g, ""))
     let diff = 0
-    for (const row of HYRAX_GRIDS.front) for (let x = 0; x < 16; x++) if (row[x] !== row[31 - x]) diff++
-    expect(diff).toBeLessThanOrEqual(16)
+    for (const row of rows) for (let x = 0; x < row.length / 2; x++) if (row[x] !== row[row.length - 1 - x]) diff++
+    expect(diff).toBeLessThanOrEqual(4)
   })
 })

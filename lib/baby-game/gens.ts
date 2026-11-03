@@ -29,11 +29,17 @@ export type Gen = { file: string; at: number; bytes: number; recipe: GenRecipe |
 
 export type GenVerdict = "like" | "nope"
 export type GenKind = "character" | "prop" | "tile" | "other"
-export type GenNote = { verdict: GenVerdict | null; kind: GenKind | null; text: string; tags: string[]; at: number }
+export type GenNote = { verdict: GenVerdict | null; kind: GenKind | null; text: string; tags: string[]; issues?: string[]; at: number }
 export type GenNotes = Record<string, GenNote>
-export type GenPatch = Partial<Pick<GenNote, "verdict" | "kind" | "text" | "tags">>
+export type GenPatch = Partial<Pick<GenNote, "verdict" | "kind" | "text" | "tags" | "issues">>
 
 export const GEN_KIND_LABEL: Record<GenKind, string> = { character: "Character", prop: "Prop", tile: "Tile", other: "Other" }
+
+/** One-click problems to flag on a generation; mirrors `GEN_ISSUES` in `comfy-png.mjs`. */
+export const GEN_ISSUES = ["not pixel art", "bad anatomy", "extra limbs", "background", "cropped", "text or marks", "wrong facing", "too busy", "wrong colors", "too blurry", "multiple subjects"]
+
+/** What the "Try it" panel sends to `POST /api/baby-gens/queue`. A field left out keeps the source image's value. */
+export type QueueRequest = { file?: string; positive?: string; negative?: string; seed?: number | null; count?: number; steps?: number; cfg?: number; width?: number; height?: number; loraStrength?: number; prefix?: string }
 
 export const stripExt = (name: string) => name.replace(/\.safetensors$|\.ckpt$|\.pt$/i, "")
 

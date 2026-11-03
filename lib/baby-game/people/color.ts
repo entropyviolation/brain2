@@ -17,7 +17,7 @@ const NAMED: Record<string, string> = {
   white: "#f4f1ee", grey: "#8d8a96", charcoal: "#4a4752", black: "#2f2b36", silver: "#bcc3cc",
   brown: "#8a5a3c", tan: "#c9a27a", khaki: "#b8a577", chocolate: "#5a3a2a", beige: "#dcc6a4",
   // hair
-  blonde: "#e8c76a", ginger: "#d2692f", auburn: "#a8492c", chestnut: "#7a4326", brunette: "#5a3825", jet: "#2c2631", platinum: "#e9e6d9",
+  blonde: "#e8c76a", strawberry: "#e8a27c", ginger: "#d2692f", auburn: "#a8492c", chestnut: "#7a4326", brunette: "#5a3825", jet: "#2c2631", platinum: "#e9e6d9",
 }
 
 export const COLOR_NAMES = Object.keys(NAMED)

@@ -14,11 +14,15 @@
  * Transport is the one BIM chat already uses (`lib/bim-flow/chat-models.ts`, `ollama.ts`).
  */
 
+import { characterBrief } from "./character"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall, type ModelCall } from "@/lib/bim-flow/ollama"
 import { CONDITION_TEXT, RESIDENTS, type Resident, temper } from "./cast"
 import { act as actOf, type ChatReply, hearts, isAsleep, type GameState, hour, scriptedDiary, tasteFact, type RealTask } from "./engine"
+import { isTeaching, pathBrief, PATHS } from "./dharma"
+import { isTheoryLine, THEORY, theoryBrief } from "./theory"
 import { ITEMS } from "./items"
+import { ECONOMY_SCHEMA, economySystem, inferEconomy, parseEconomy, type EconomySpec } from "./economy"
 import { lifeBrief, type LifeContext } from "./life"
 import { smallTalk } from "./lines"
 
@@ -75,13 +79,16 @@ const TONE_VOICE = {
 function chatSystem(r: Resident, s: GameState, h: number, life?: LifeContext): string {
   const t = temper(r.id)
   return [
-    `You are ${r.name}, a baby ${r.id} in Mossmere Hollow, a cozy hidden valley of forests, still lakes and farm fields. ${r.bio}`,
+    `You are ${r.name}, a baby ${r.id} in Valdivia, a cozy hidden valley of forests, still lakes and farm fields. ${r.bio}`,
     `Your voice is ${TONE_VOICE[t.tone]}. You are ${t.cadence === "quiet" ? "shy and say very little" : t.cadence === "eager" ? "eager and talkative" : "friendly"}.`,
-    `The Hush has silenced the Evening Song since the Hollow Lamp went dark. You miss it. You are talking to the Center of The World, the newcomer. You have ${h} of 10 hearts for them.`,
+    `The Hush has silenced the Evening Song since the Orb Lamp went dark. You miss it. You are talking to the Center of The World, the newcomer. You have ${h} of 10 hearts for them.`,
     `It is ${s.weather === "rain" ? "raining" : "dry"} and about ${hour(s)}:00.`,
     "Reply in character in at most two short sentences. Never say you are an AI. Never invent items, places, or promises.",
     `trust: 2 if the Center of The World was kind, specific, and spoke in a way you like; 1 if friendly; 0 if neutral; -1 only if rude.`,
     `reveal: "wants" only if they ask what you need; "likes" if they ask what you like; "clue" if they ask how to win your trust or when to visit; otherwise "none".`,
+    s.characters?.[r.id] ? characterBrief(s.characters[r.id]!) : "",
+    pathBrief(r.id),
+    theoryBrief(r.id),
     lifeBrief(life),
   ]
     .filter(Boolean)
@@ -136,6 +143,8 @@ export function lineKind(r: Resident, line: string): string {
   if (line === r.clue) return "hinting at when and how they could win your trust"
   if (line === r.thanks) return "thanking them for bringing what you asked for"
   if (line === r.give) return "handing over your keepsake"
+  if (isTheoryLine(r.id, line)) return "sharing a thought from your own politics about sharing and fairness; keep the named idea and any person or text it mentions"
+  if (isTeaching(r.id, line)) return "sharing a thought from your own outlook; keep the named idea and any person or text it mentions"
   return "a little everyday talk"
 }
 
@@ -195,7 +204,7 @@ export async function writeDiary(s: GameState, companion: string, tone: keyof ty
   try {
     const raw = (await call({
       system: [
-        `You are ${companion}, a baby animal who follows the Center of The World around Mossmere Hollow and keeps a tiny diary.`,
+        `You are ${companion}, a baby animal who follows the Center of The World around Valdivia and keeps a tiny diary.`,
         `Voice: ${TONE_VOICE[tone]}. Write one diary page of two or three short sentences about the day, using only the events listed. Do not invent events, names, or items.`,
         lifeBrief(life),
       ]
@@ -229,14 +238,16 @@ const COUNCIL_LINES: Record<keyof typeof TONE_VOICE, string[]> = {
   coach: ["You've done harder things. Start with two minutes and see.", "We're right here. Small steps, big day."],
 }
 
-export const SCRIPTED_PLAN = ["Open it and just look at it for two minutes.", "Do the smallest next piece of it.", "Tell someone, or tell us, when it's moving."]
+export const SCRIPTED_PLAN = ["Take three slow breaths, then open it and just look at it.", "Do one small piece with your whole attention, and nothing else.", "When it's moving, rest your hands and tell us."]
 
 /** The no-model council: the closest friends each say something in their tone, and a plain three-step plan. */
 export function scriptedCouncil(s: GameState, task: RealTask | null, pick: number): CouncilReply {
   const members = councilMembers(s).slice(0, 3)
   const lines = members.map((r, i) => {
     const pool = COUNCIL_LINES[temper(r.id).tone]
-    return { who: r.id, name: r.name, say: pool[(pick + i) % pool.length]!, by: "scripted" as const }
+    // The first friend speaks from their own outlook (`dharma.ts`); the others keep to their tone.
+    const say = i === 0 && PATHS[r.id] ? PATHS[r.id]!.counsel : i === 1 && THEORY[r.id] ? THEORY[r.id]!.counsel : pool[(pick + i) % pool.length]!
+    return { who: r.id, name: r.name, say, by: "scripted" as const }
   })
   if (task) lines.unshift({ who: members[0]?.id ?? "", name: members[0]?.name ?? "Everyone", say: `About "${task.text}": we're on it with you.`, by: "scripted" })
   return { lines: lines.slice(0, 4), plan: task ? SCRIPTED_PLAN : undefined }
@@ -265,9 +276,9 @@ export async function councilTalk(s: GameState, task: RealTask | null, line: str
   try {
     const raw = (await call({
       system: [
-        "You are a group of baby animal friends in Mossmere Hollow who care about the Center of The World, their person. They have told you about something real in their life.",
-        `The friends: ${members.map((r) => `${r.name} (a baby ${r.id}; voice: ${TONE_VOICE[temper(r.id).tone]})`).join("; ")}.`,
-        "Reply as up to three of the friends, each in their own voice, one or two short sentences, in plain text. Be kind, specific, and small: help them start, never lecture, never shame. You cannot do the task for them. Also give up to three tiny concrete steps (each under 110 characters) for the real task.",
+        "You are a group of baby animal friends in Valdivia who care about the Center of The World, their person. They have told you about something real in their life.",
+        `The friends: ${members.map((r) => `${r.name} (a baby ${r.id}; voice: ${TONE_VOICE[temper(r.id).tone]}${PATHS[r.id] ? `; outlook: ${PATHS[r.id]!.idea}, ${PATHS[r.id]!.school}` : ""})`).join("; ")}.`,
+        "Reply as up to three of the friends, each in their own voice, one or two short sentences, in plain text. Be kind, specific, and small: help them start, never lecture, never shame. You cannot do the task for them. Also give up to three tiny concrete steps (each under 110 characters) for the real task, shaped by calm attention: one thing at a time, a breath first. A friend may lightly draw on their own outlook, but never lecture or quote scripture you are unsure of.",
         lifeBrief(life),
       ]
         .filter(Boolean)
@@ -291,3 +302,20 @@ export async function councilTalk(s: GameState, task: RealTask | null, line: str
 }
 
 export { CONDITION_TEXT }
+
+/**
+ * A world's economy from the player's own words. The model fills the closed `EconomySpec` shape, leaning toward gift and
+ * socialist economies (`economySystem`); whatever it returns is clamped by `parseEconomy`. No model, or a bad answer:
+ * the keyword reading (`inferEconomy`). Never throws.
+ */
+export async function generateEconomy(prompt: string, call: ModelCall | null): Promise<{ spec: EconomySpec; by: "model" | "scripted" }> {
+  const guess = inferEconomy(prompt)
+  if (!call || !prompt.trim()) return { spec: guess, by: "scripted" }
+  try {
+    const raw = await call({ system: economySystem(), user: `The player describes their world: "${prompt.slice(0, 600)}"`, schema: ECONOMY_SCHEMA, maxTokens: 700 })
+    if (raw && typeof raw === "object" && "name" in raw) return { spec: parseEconomy({ ...(raw as object), id: `${guess.id.replace(/-custom$/, "")}-gen` }, guess), by: "model" }
+  } catch {
+    // fall through to the keyword reading
+  }
+  return { spec: guess, by: "scripted" }
+}

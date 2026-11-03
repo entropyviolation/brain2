@@ -11,12 +11,12 @@ import { COLOR_NAMES, isColor, SKIN_NAMES, type SkinName } from "./color"
 export const BUILDS = ["small", "slight", "average", "tall"] as const
 export const HAIR_STYLES = ["short", "bangs", "side", "bob", "long", "pigtails", "ponytail", "bun", "curly", "bald"] as const
 export const MOUTHS = ["smile", "grin", "neutral", "open", "smirk"] as const
-export const TOPS = ["tee", "longsleeve", "sweater", "hoodie", "shirt", "dress", "overalls", "jacket"] as const
+export const TOPS = ["tee", "longsleeve", "sweater", "hoodie", "shirt", "dress", "overalls", "jacket", "corset"] as const
 export const BOTTOMS = ["pants", "shorts", "skirt"] as const
-export const SHOES = ["boots", "sneakers", "sandals", "none"] as const
+export const SHOES = ["boots", "sneakers", "sandals", "gogo", "none"] as const
 export const HATS = ["none", "beanie", "cap", "straw", "bow", "headband"] as const
 export const PATTERNS = ["solid", "stripes", "dots"] as const
-export const EXTRAS = ["scarf", "satchel", "freckles", "glasses"] as const
+export const EXTRAS = ["scarf", "satchel", "freckles", "glasses", "chainbelt", "pointyears"] as const
 
 export type Build = (typeof BUILDS)[number]
 export type HairStyle = (typeof HAIR_STYLES)[number]
@@ -44,20 +44,23 @@ export type PersonSpec = {
   extraColor: string
 }
 
-/** The Center of The World: auburn tails and a pink bow, a cream and pink shirt under blue overalls, brown boots. */
+/**
+ * The Center of The World: a pixie. Pale skin, brown eyes, wavy strawberry blonde hair, small pointed ears; mostly black, a
+ * corset over sheer sleeves, a layered skirt, a grey scarf, a silver chain belt with O rings, white go-go boots.
+ */
 export const CENTER_SPEC: PersonSpec = {
   build: "slight",
-  skin: "fair",
-  hair: { style: "pigtails", color: "auburn" },
+  skin: "pale",
+  hair: { style: "long", color: "strawberry" },
   eyes: "brown",
   mouth: "smile",
   blush: true,
-  top: { kind: "overalls", color: "cream", accent: "pink", pattern: "solid" },
-  bottom: { kind: "pants", color: "cobalt" },
-  shoes: { kind: "boots", color: "chocolate" },
-  hat: { kind: "bow", color: "pink", accent: "rose" },
-  extras: [],
-  extraColor: "rose",
+  top: { kind: "corset", color: "black", accent: "charcoal", pattern: "solid" },
+  bottom: { kind: "skirt", color: "black" },
+  shoes: { kind: "gogo", color: "white" },
+  hat: { kind: "none", color: "pink", accent: "rose" },
+  extras: ["scarf", "chainbelt", "pointyears"],
+  extraColor: "grey",
 }
 
 export const EYE_COLORS = ["brown", "chestnut", "green", "blue", "teal", "grey", "plum", "black"] as const

@@ -6,10 +6,11 @@
  * animals), `fowl` (birds), and three custom shapes (hedgehog, seal, penguin, owl). The pipeline after drawing is the
  * same for all: `shade` lights the top-left rim and darkens every bottom rim, `fur` scatters flecks so nothing is flat,
  * `face` marks (eyes, stripes, spots) go on top, and `outline` wraps the figure in warm plum. The renderer flips a sprite
- * when its animal walks left. The palette extends `PIXEL_PALETTE`. No yellow, no gold.
+ * when its animal walks left. The palette extends `PIXEL_PALETTE`. Yellow only where a subject needs it; no gold.
  */
 
 import { PIXEL_PALETTE } from "@/components/friend-details/PixelIcon"
+import { GEN_GRIDS } from "./gen-sprites"
 import { HYRAX_GRIDS } from "./hyrax"
 import { paletteSink } from "./people/registry"
 import { playerGridOf } from "./people/player"
@@ -28,6 +29,9 @@ export const SPRITE_PALETTE: Record<string, string> = {
   F: "#a8683c", // brown
   j: "#5f3f31", // dark brown
   y: "#2e2933", // near black
+  i: "#fcefa8", // duckling down, light (generated sprites only, `gen-sprites.ts`)
+  I: "#f2cf5b", // duckling down
+  J: "#d39a3a", // duckling down, shade
 }
 
 // people bring their own colors (every shirt is one); the drawer adds them to this palette
@@ -43,6 +47,15 @@ const SHADE: Record<string, [string, string]> = {
 export const SPRITE_SIZE = 32
 /** The row an animal's feet end on, so the renderer can stand every sprite on the same line. */
 export const SPRITE_FOOT = 29
+
+/** How big each animal stands in the world, against the 32×32 grid (1 = the grid, the same height as the player). Small
+ * things are small: most babies come to the player's knee. Anything not listed (the player, the pixie) stays 1. */
+export const SPRITE_SCALE: Record<string, number> = {
+  chick: 0.4, mouse: 0.4, duckling: 0.4, blackduck: 0.4, gosling: 0.45, hedgehog: 0.45, bunny: 0.5, kitten: 0.5,
+  possum: 0.5, possum2: 0.5, possum3: 0.45, skunk: 0.55, crow: 0.55, owl: 0.6, otter: 0.6, fox: 0.65, puppy: 0.65,
+  penguin: 0.65, seal: 0.7, fawn: 0.8, cub: 0.8, wolf: 0.9, foal: 0.9, capybara: 0.85,
+}
+export const spriteScale = (id: string): number => SPRITE_SCALE[id] ?? 1
 const S = SPRITE_SIZE
 const G = SPRITE_FOOT
 
@@ -1399,10 +1412,18 @@ export const GAME_SPECIES = Object.keys(SPECIES)
 
 const grids = new Map<string, string[]>()
 
-export type SpriteView = "front" | "side"
+export type SpriteView = "front" | "side" | "back"
 
-/** The letter grid for an animal, seen front on (idle, walking toward you) or from the side (walking across). */
+/**
+ * The letter grid for an animal, seen front on (idle, walking toward you), from the side (walking across), or from behind (walking away).
+ * A friend snapped from a liked ComfyUI generation (`gen-sprites.ts`) wins over the hand drawing; `handGrid` still has that.
+ */
 export function spriteGrid(id: string, view: SpriteView = "front"): string[] {
+  return GEN_GRIDS[id]?.[view] ?? handGrid(id, view)
+}
+
+/** The hand-drawn grid, made by the builders below. */
+export function handGrid(id: string, view: SpriteView = "front"): string[] {
   if (id === "hyrax") return HYRAX_GRIDS[view]
   const key = `${id}:${view}`
   const hit = grids.get(key)
@@ -1427,7 +1448,8 @@ export function spriteGrid(id: string, view: SpriteView = "front"): string[] {
       shade(c)
       fur(c, spec.fur ?? "")
       c.next()
-      spec.face(f)
+      if (view === "front") spec.face(f)
+      else backOfHead(c, f, spec)
       trim(c)
       outline(c)
     }
@@ -1435,6 +1457,21 @@ export function spriteGrid(id: string, view: SpriteView = "front"): string[] {
   const rows = c.cells.map((row) => row.map((cell) => cell.ch).join(""))
   grids.set(key, rows)
   return rows
+}
+
+/**
+ * The back of a head is the front body with no face: the head ellipse stays plain fur, the pink inside the ears turns to fur, and
+ * a small darker whorl and a tuft of rump fur sit where the face would be. Birds and others whose "fur" is feathers get the same.
+ */
+function backOfHead(c: Canvas, f: Front, _spec: FrontSpecies) {
+  const count = new Map<string, number>()
+  for (const row of c.cells) for (const cell of row) if (!".kpPw".includes(cell.ch)) count.set(cell.ch, (count.get(cell.ch) ?? 0) + 1)
+  const ch = [...count.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] ?? "a"
+  // inner ears and cheeks were pink from the front; from behind they are the coat
+  for (const row of c.cells) for (const cell of row) if (cell.ch === "p" || cell.ch === "P") cell.ch = ch
+  const deep = SHADE[ch]?.[1] ?? ch
+  f.pts(deep, [[11, 8], [12, 8], [11, 7]])
+  f.pts(deep, [[10, 19], [11, 19], [12, 19], [13, 19]])
 }
 
 /**

@@ -1,21 +1,30 @@
 /**
- * components/BabyGame/render.ts — Paints Mossmere Hollow onto a 304×192 canvas
+ * components/BabyGame/render.ts — Paints Valdivia onto a 304×192 canvas
  *
  * The map is painted once into an offscreen canvas (`buildMapCanvas`); every frame copies the camera's slice, then
  * draws what moves: gather nodes, stations, friends and the player sorted by their feet, the day's light, and rain.
  * All colors are cool or earthy, no yellow. The canvas is shown at 3× with `image-rendering: pixelated`.
  */
 
-import { RESIDENTS } from "@/lib/baby-game/cast"
+import { RESIDENTS, inValley } from "@/lib/baby-game/cast"
 import { act as actOf, hearts, hour, nodeReady, type GameState } from "@/lib/baby-game/engine"
-import { paintGrid, playerGrid, spriteGrid, SPRITE_FOOT, SPRITE_SIZE } from "@/lib/baby-game/sprites"
+import { paintGrid, playerGrid, spriteGrid, spriteScale, SPRITE_FOOT, SPRITE_SIZE } from "@/lib/baby-game/sprites"
+import { cachedWalk, type WalkFrame } from "@/lib/baby-game/walk"
+import { cachedIdle, idlePose, type IdlePose } from "@/lib/baby-game/idle"
 import type { Sim } from "@/lib/baby-game/sim"
 import { center } from "@/lib/baby-game/sim"
 import { CROPS } from "@/lib/baby-game/farm"
 import { ZONES, zoneAt } from "@/lib/baby-game/world"
-import { drawCampfire, drawCrop, drawNodeArt, drawRain, HOUSE_TILES, paintHouse } from "./art"
-import { treeArt, treeAt } from "./trees"
-import { GATES, MAP_H, MAP_W, NODES, PLOTS, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
+import { drawCampfire, drawCrop, drawNodeArt, drawProp, drawRain, HOUSE_TILES, paintHouse } from "./art"
+import { drawCloudShadows, drawGlints, drawGrass, drawLeaf } from "./ambient"
+import { ditherRect, Veil, type Light } from "./dither"
+import type { Juice } from "./juice"
+import { drawSprout, treeArt, treeAt } from "./trees"
+import { stageOf } from "@/lib/baby-game/trees"
+import { drawHome } from "./homeart"
+import { drawHomeHi } from "./homeart-hi"
+import { HOMES, HOME_SCALE, homeDoor } from "@/lib/baby-game/homes"
+import { GATES, MAP_H, MAP_W, NODES, FLAT_PROPS, PLOTS, PROPS, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
 
 export const VIEW_W = 304
 export const VIEW_H = 192
@@ -305,8 +314,10 @@ export function buildMapCanvas(world: World): HTMLCanvasElement {
   const ctx = canvas.getContext("2d")!
   for (let ty = 0; ty < MAP_H; ty++) {
     for (let tx = 0; tx < MAP_W; tx++) {
-      const tile = world.tiles[tileIndex(tx, ty)]!
+      let tile = world.tiles[tileIndex(tx, ty)]!
       if (tile === T.WATER) continue
+      // the cottage is painted over the ground, so its tiles start as lawn
+      if ((tile === T.ROOF || tile === T.WALL || tile === T.DOOR) && tx >= HOUSE_TILES.x && tx < HOUSE_TILES.x + HOUSE_TILES.w && ty >= HOUSE_TILES.y && ty < HOUSE_TILES.y + HOUSE_TILES.h) tile = T.GRASS
       // a tree is drawn standing, later; the map only paints the ground beneath it
       const at = (x: number, y: number) => (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H ? T.TREE : world.tiles[tileIndex(x, y)]!)
       paintTile(ctx, tile === T.TREE ? (zoneAt(tx, ty) === "wood" ? T.DARK : T.GRASS) : tile, tx, ty, 0, { n: at(tx, ty - 1), e: at(tx + 1, ty), s: at(tx, ty + 1), w: at(tx - 1, ty) })
@@ -317,29 +328,42 @@ export function buildMapCanvas(world: World): HTMLCanvasElement {
 }
 
 const spriteCache = new Map<string, HTMLCanvasElement>()
-function spriteCanvas(id: string, view: "front" | "side" = "front"): HTMLCanvasElement {
-  const key = `${id}:${view}`
+export function spriteCanvas(id: string, view: "front" | "side" | "back" = "front", frame: WalkFrame | -1 = -1, pose: Exclude<IdlePose, "glance"> | null = null): HTMLCanvasElement {
+  const key = `${id}:${view}:${frame}:${pose ?? ""}`
   let c = spriteCache.get(key)
   if (!c) {
     c = document.createElement("canvas")
     c.width = c.height = SPRITE_SIZE
-    paintGrid(c.getContext("2d")!, id === "player" ? playerGrid(view) : spriteGrid(id, view), 0, 0, 1)
+    const base = id === "player" ? playerGrid(view) : spriteGrid(id, view)
+    const grid = frame !== -1 ? cachedWalk(id, base, view, frame) : pose ? cachedIdle(id, base, view, pose) : base
+    paintGrid(c.getContext("2d")!, grid, 0, 0, 1)
     spriteCache.set(key, c)
   }
   return c
 }
 
 /** Stand a sprite on a ground line, facing right, or mirrored to face left. */
-function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, ground: number, face: 1 | -1) {
-  const top = Math.round(ground - SPRITE_FOOT - 1)
-  if (face === 1) {
-    ctx.drawImage(img, Math.round(x - SPRITE_SIZE / 2), top)
+export function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, ground: number, face: 1 | -1, scale = 1) {
+  if (scale === 1) {
+    const top = Math.round(ground - SPRITE_FOOT - 1)
+    if (face === 1) {
+      ctx.drawImage(img, Math.round(x - SPRITE_SIZE / 2), top)
+      return
+    }
+    ctx.save()
+    ctx.translate(Math.round(x), 0)
+    ctx.scale(-1, 1)
+    ctx.drawImage(img, -SPRITE_SIZE / 2, top)
+    ctx.restore()
     return
   }
+  // a smaller animal: the feet stay on the ground line, and smoothing keeps its eyes and flecks when it shrinks
   ctx.save()
-  ctx.translate(Math.round(x), 0)
-  ctx.scale(-1, 1)
-  ctx.drawImage(img, -SPRITE_SIZE / 2, top)
+  ctx.translate(Math.round(x), Math.round(ground - 1))
+  ctx.scale(face * scale, scale)
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+  ctx.drawImage(img, -SPRITE_SIZE / 2, -(SPRITE_FOOT + 1) + 0)
   ctx.restore()
 }
 
@@ -439,6 +463,8 @@ function drawStation(ctx: CanvasRenderingContext2D, id: string, x: number, y: nu
 const CROP_COLOR: Record<string, [string, string]> = {
   glowbean: ["#4fd68a", "#b6f0a4"], puffroot: ["#9a72e0", "#e2ceff"], moonmelon: ["#30b8a8", "#a8f4e6"],
   spiralkale: ["#4fbf5a", "#b6f0a4"], twinklegourd: ["#f0609a", "#ffb3d1"], snowpearl: ["#b4e2ff", "#ffffff"],
+  shadowradish: ["#4b4456", "#9a92a6"], mandalichoke: ["#9a72e0", "#e2ceff"], schrodinberry: ["#7a56d8", "#f3eef6"], parallaxpepper: ["#e04848", "#ff9a8a"],
+  fadeleek: ["#e6eef0", "#ffffff"], quincidence: ["#e8915a", "#f6c9a0"], hypnagogicpea: ["#9a72e0", "#b4e2ff"], aurorasprout: ["#4fbf5a", "#b4e2ff"],
 }
 
 function drawPlot(ctx: CanvasRenderingContext2D, x: number, y: number, p: GameState["farm"][string] | undefined, t: number) {
@@ -499,6 +525,33 @@ function reflect(ctx: CanvasRenderingContext2D, map: HTMLCanvasElement, world: W
   if (Math.sin(t * 1.7 + tx * 2.3 + ty * 1.3) > 0.8) px(ctx, "#ffffff", tx * TILE + 4 + ((tx * 7 + ty * 3) % 8), ty * TILE + 5 + ((tx + ty) % 6), 2, 1)
 }
 
+/** A still body's idle moment: a blink, a breath, an ear flick, or a glance (the side view for a beat). */
+function idleLook(id: string, t: number, asleep = false): { view: "front" | "side"; pose: Exclude<IdlePose, "glance"> | null } {
+  if (asleep) return { view: "front", pose: Math.sin(t * 1.1 + id.length) > 0.2 ? "breathe" : null }
+  const p = idlePose(id, t)
+  return p === "glance" ? { view: "side", pose: null } : { view: "front", pose: p }
+}
+
+let veil: Veil | null = null
+
+/** Colour and strength of the day's veil by hour: dusk purple, a long blue night, a pink dawn. */
+function dayVeil(hr: number): { color: [number, number, number]; alpha: number } | null {
+  const mix = (a: [number, number, number], b: [number, number, number], k: number): [number, number, number] =>
+    [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]
+  const DUSK: [number, number, number] = [150, 90, 170]
+  const NIGHT: [number, number, number] = [20, 30, 80]
+  const DAWN: [number, number, number] = [240, 150, 170]
+  if (hr >= 17 && hr < 20) return { color: DUSK, alpha: ((hr - 17) / 3) * 0.28 }
+  if (hr >= 20 && hr < 22) return { color: mix(DUSK, NIGHT, (hr - 20) / 2), alpha: 0.28 + ((hr - 20) / 2) * 0.22 }
+  if (hr >= 22 || hr < 5) return { color: NIGHT, alpha: 0.5 }
+  if (hr < 6.5) return { color: mix(NIGHT, DAWN, (hr - 5) / 1.5), alpha: 0.5 - ((hr - 5) / 1.5) * 0.38 }
+  if (hr < 8) return { color: DAWN, alpha: 0.12 * (1 - (hr - 6.5) / 1.5) }
+  return null
+}
+
+/** Which of the four walk frames a moving body is on: about 8 steps a second walking, 13 running. */
+export const strideFrame = (t: number, running: boolean, phase = 0): WalkFrame => (Math.floor(t * (running ? 13 : 8) + phase) & 3) as WalkFrame
+
 export type Frame = {
   s: GameState
   sim: Sim
@@ -511,14 +564,30 @@ export type Frame = {
   petSprite: string
   focus: { kind: string; x: number; y: number } | null
   hearts?: typeof hearts
+  /** Step dust and hands-on bursts; owned by `BabyGame.tsx`. */
+  juice: Juice
+  /** Whole-pixel screen shake from `shake.ts`. */
+  shake?: { x: number; y: number }
+}
+
+/** Tiles a raindrop can land on and splash; water, trees, rocks, walls and roofs are left out. */
+const RAIN_GROUND = new Set<number>([T.GRASS, T.FLOWER, T.PATH, T.SAND, T.SNOW, T.DARK, T.SOIL, T.STONE, T.BRIDGE, T.HILL, T.STAIRS])
+
+/** The top-left world pixel the view shows, following the player and held inside the map. */
+export function cameraOf(sim: Sim, shake?: { x: number; y: number }): { camX: number; camY: number } {
+  return {
+    camX: Math.max(0, Math.min(MAP_W * TILE - VIEW_W, Math.round(sim.px - VIEW_W / 2) + (shake?.x ?? 0))),
+    camY: Math.max(0, Math.min(MAP_H * TILE - VIEW_H, Math.round(sim.py - VIEW_H / 2) + (shake?.y ?? 0))),
+  }
 }
 
 export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   const { s, sim, t } = f
   ctx.imageSmoothingEnabled = false
-  const camX = Math.max(0, Math.min(MAP_W * TILE - VIEW_W, Math.round(sim.px - VIEW_W / 2)))
-  const camY = Math.max(0, Math.min(MAP_H * TILE - VIEW_H, Math.round(sim.py - VIEW_H / 2)))
-  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  const { camX, camY } = cameraOf(sim, f.shake)
+  // the frame may be painted at more than one real pixel per game pixel (`DETAIL`); painters still work in game pixels
+  const D = ctx.canvas.width / VIEW_W
+  ctx.setTransform(D, 0, 0, D, 0, 0)
   ctx.clearRect(0, 0, VIEW_W, VIEW_H)
   ctx.drawImage(f.map, camX, camY, VIEW_W, VIEW_H, 0, 0, VIEW_W, VIEW_H)
   ctx.translate(-camX, -camY)
@@ -534,6 +603,11 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
       }
     }
   }
+
+  const movers = [{ x: sim.px, y: sim.py }, sim.pet, ...Object.values(sim.npcs).filter((n) => !n.asleep && Math.abs(n.x - sim.px) < VIEW_W)]
+  drawGrass(ctx, f.world, t, camX, camY, VIEW_W, VIEW_H, movers)
+  drawGlints(ctx, f.world, t, camX, camY, VIEW_W, VIEW_H)
+  const tileAt = (x: number, y: number) => f.world.tiles[tileIndex(Math.max(0, Math.min(MAP_W - 1, Math.floor(x / TILE))), Math.max(0, Math.min(MAP_H - 1, Math.floor(y / TILE))))]!
 
   const a = actOf(s)
   for (const g of GATES) {
@@ -574,23 +648,34 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   // everything that stands, sorted by its feet
   type Body = { y: number; draw: () => void }
   const bodies: Body[] = []
-  const shadow = (x: number, y: number, w: number) => {
-    ctx.fillStyle = "rgba(30,20,40,0.22)"
-    ctx.fillRect(Math.round(x - w / 2), Math.round(y - 1), w, 3)
+  /** A blob shadow that narrows and lightens as the body lifts on a step. */
+  const shadow = (x: number, y: number, w: number, lift = 0) => {
+    const sw = Math.max(6, w - lift * 2)
+    ctx.fillStyle = `rgba(40,30,90,${lift ? 0.16 : 0.24})`
+    ctx.fillRect(Math.round(x - sw / 2), Math.round(y - 1), sw, 3)
+    if (!lift) {
+      ctx.fillStyle = "rgba(40,30,90,0.1)"
+      ctx.fillRect(Math.round(x - sw / 2) + 1, Math.round(y + 2), sw - 2, 1)
+    }
   }
   const night = hour(s) >= 22 || hour(s) < 6
   for (const r of RESIDENTS) {
-    if (r.act > a) continue
+    if (!inValley(r, a)) continue
     const npc = sim.npcs[r.id]!
     bodies.push({
       y: npc.y,
       draw: () => {
-        const bob = npc.asleep ? 0 : Math.round(Math.abs(Math.sin(t * 5 + npc.x)) * (npc.path.length ? 1.5 : 0.5))
-        shadow(npc.x, npc.y + 5, 14)
+        const walking = !npc.asleep && npc.path.length > 0
+        const stride = strideFrame(t, false, npc.x * 0.013)
+        const bob = walking ? stride & 1 : npc.asleep ? 0 : Math.round(Math.abs(Math.sin(t * 5 + npc.x)) * 0.5)
+        shadow(npc.x, npc.y + 5, 14, bob)
+        f.juice.walk(r.id, t, npc.x, npc.y + 4, walking, false, tileAt(npc.x, npc.y + 4), npc.face)
         ctx.globalAlpha = npc.asleep ? 0.8 : 1
         const next = npc.path[0]
         const across = !!next && Math.abs(center(next[0]) - npc.x) >= Math.abs(center(next[1]) - npc.y)
-        drawSprite(ctx, spriteCanvas(r.id, across ? "side" : "front"), npc.x, npc.y + 4 - bob + (npc.asleep ? 2 : 0), npc.face)
+        const away = !!next && !across && center(next[1]) < npc.y
+        const look = walking ? null : idleLook(r.id, t, npc.asleep)
+        drawSprite(ctx, spriteCanvas(r.id, across ? "side" : away ? "back" : look?.view ?? "front", walking ? stride : -1, look?.pose ?? null), npc.x, npc.y + 4 + (npc.asleep ? 2 : walking ? 0 : -bob), npc.face, spriteScale(r.id))
         ctx.globalAlpha = 1
         if (npc.asleep) {
           px(ctx, "#b4e2ff", npc.x + 8, npc.y - 22 + Math.floor(Math.sin(t * 2) * 1), 3, 1)
@@ -608,19 +693,24 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
       },
     })
   }
-  const jump = sim.moving ? Math.round(Math.abs(Math.sin(t * (sim.running ? 14 : 9))) * 2) : 0
+  const pStride = strideFrame(t, sim.running)
+  const jump = sim.moving ? pStride & 1 : 0
   bodies.push({
     y: sim.py,
     draw: () => {
-      shadow(sim.px, sim.py + 4, 14)
-      drawSprite(ctx, spriteCanvas("player", sim.moving && sim.facing === "side" ? "side" : "front"), sim.px, sim.py + 4 - jump, sim.face)
+      shadow(sim.px, sim.py + 4, 14, jump)
+      f.juice.walk("player", t, sim.px, sim.py + 4, sim.moving, sim.running, tileAt(sim.px, sim.py + 4), sim.face)
+      const pLook = sim.moving ? null : idleLook("player", t)
+      drawSprite(ctx, spriteCanvas("player", sim.moving ? sim.facing : pLook!.view, sim.moving ? pStride : -1, pLook?.pose ?? null), sim.px, sim.py + 4, sim.face)
     },
   })
   bodies.push({
     y: sim.pet.y,
     draw: () => {
-      shadow(sim.pet.x, sim.pet.y + 4, 12)
-      drawSprite(ctx, spriteCanvas(f.petSprite, sim.moving && sim.facing === "side" ? "side" : "front"), sim.pet.x, sim.pet.y + 4 - (sim.moving ? Math.round(Math.abs(Math.sin(t * 9 + 1)) * 2) : 0), sim.px >= sim.pet.x ? 1 : -1)
+      shadow(sim.pet.x, sim.pet.y + 4, 12, sim.moving ? strideFrame(t, sim.running, 0.5) & 1 : 0)
+      f.juice.walk("pet", t, sim.pet.x, sim.pet.y + 4, sim.moving, sim.running, tileAt(sim.pet.x, sim.pet.y + 4), sim.px >= sim.pet.x ? 1 : -1)
+      const petLook = sim.moving ? null : idleLook(f.petSprite, t)
+      drawSprite(ctx, spriteCanvas(f.petSprite, sim.moving ? sim.facing : petLook!.view, sim.moving ? strideFrame(t, sim.running, 0.5) : -1, petLook?.pose ?? null), sim.pet.x, sim.pet.y + 4, sim.px >= sim.pet.x ? 1 : -1, spriteScale(f.petSprite))
     },
   })
   {
@@ -630,26 +720,58 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
     const y1 = Math.min(MAP_H - 1, Math.ceil((camY + VIEW_H) / TILE) + 5)
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
-        if (f.world.tiles[tileIndex(tx, ty)] !== T.TREE) continue
+        const rec = s.trees?.[tileIndex(tx, ty)]
+        const stage = rec ? stageOf(rec, s.day) : f.world.tiles[tileIndex(tx, ty)] === T.TREE ? "mature" : "bare"
+        if (stage === "bare") continue
         const { kind, variant } = treeAt(tx, ty, zoneAt(tx, ty))
-        const art = treeArt(kind, variant)
         const baseY = (ty + 1) * TILE
         const cx = tx * TILE + TILE / 2
+        if (stage !== "mature" && stage !== "young") {
+          bodies.push({ y: baseY - 1, draw: () => drawSprout(ctx, stage, kind, cx, baseY, h2(tx, ty, 5)) })
+          continue
+        }
+        const art = treeArt(kind, variant)
+        // a young tree is the same tree at about two thirds the size
+        const k = stage === "young" ? 0.62 : 1
         bodies.push({
           y: baseY - 1,
           draw: () => {
             // fade a tree you are standing behind, so you can always see yourself
-            const behind = Math.abs(sim.px - cx) < art.reach && sim.py < baseY - 4 && sim.py > baseY - art.rise
+            const behind = Math.abs(sim.px - cx) < art.reach * k && sim.py < baseY - 4 && sim.py > baseY - art.rise * k
             ctx.globalAlpha = behind ? 0.5 : 1
-            ctx.drawImage(art.img, Math.round(cx - art.w / 2), baseY - art.h + 2)
+            ctx.drawImage(art.img, Math.round(cx - (art.w * k) / 2), Math.round(baseY - art.h * k + 2), Math.round(art.w * k), Math.round(art.h * k))
             ctx.globalAlpha = 1
+            if (stage === "mature") drawLeaf(ctx, kind, tx, ty, t, cx, baseY - art.rise, baseY)
           },
         })
       }
     }
   }
+  for (const [i, p] of PROPS.entries()) {
+    if (p.x * TILE > camX + VIEW_W || (p.x + 1) * TILE < camX || p.y * TILE > camY + VIEW_H + 16 || (p.y + 2) * TILE < camY) continue
+    // the picnic blanket lies flat, so everything standing goes over it
+    bodies.push({ y: FLAT_PROPS.has(p.kind) ? -1 + i * 0.001 : (p.y + 1) * TILE - 1, draw: () => drawProp(ctx, p.kind, p.x * TILE, p.y * TILE, t, i, { rain: s.weather === "rain", night }) })
+  }
+  for (const [id, h] of Object.entries(HOMES)) {
+    if ((h.x - 2) * TILE > camX + VIEW_W || (h.x + 3) * TILE < camX || h.y * TILE > camY + VIEW_H + 16 || (h.y + 4) * TILE < camY) continue
+    const npc = sim.npcs[id]
+    const [dx, dy] = homeDoor(h)
+    // a window glows after dark while its friend is home and still up
+    const lit = (night || hour(s) >= 19) && !!npc && !npc.asleep && Math.hypot(npc.x - center(dx), npc.y - center(dy)) < TILE * 2
+    bodies.push({ y: (h.y + 1) * TILE - 1, draw: () => {
+        // at 2× detail the painted 96px home lands one canvas pixel per real pixel; at 1× the small painter is scaled up
+        if (D > 1) return drawHomeHi(ctx, h.kind, h.x * TILE + TILE / 2, (h.y + 1) * TILE, lit, D)
+        ctx.save()
+        ctx.translate(h.x * TILE + TILE / 2, (h.y + 1) * TILE)
+        ctx.scale(HOME_SCALE, HOME_SCALE)
+        drawHome(ctx, h.kind, -TILE / 2, -TILE, lit)
+        ctx.restore()
+      } })
+  }
   for (const fly of FLIES) bodies.push({ y: flyY(fly, t) + 40, draw: () => drawFly(ctx, fly, t) })
   bodies.sort((p, q) => p.y - q.y).forEach((b) => b.draw())
+  f.juice.draw(ctx, t)
+  if (s.weather === "clear" && hour(s) >= 7 && hour(s) < 18) drawCloudShadows(ctx, t, camX, camY, VIEW_W, VIEW_H)
 
   // sun shafts through the wood, and fireflies drifting over everything after dark
   {
@@ -711,20 +833,46 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
   }
 
   // light and weather over everything
-  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.setTransform(D, 0, 0, D, 0, 0)
   const hr = s.minutes / 60
+  const dv = dayVeil(hr)
   let tint = ""
-  if (hr >= 17 && hr < 20) tint = `rgba(150,90,170,${(hr - 17) / 3 * 0.28})`
-  else if (hr >= 20 || hr < 6) tint = `rgba(20,30,80,${night ? 0.5 : 0.4})`
-  else if (hr < 7) tint = "rgba(240,150,170,0.12)"
-  if (s.weather === "rain") tint = tint || "rgba(70,100,150,0.16)"
-  if (s.weather === "meteor") tint = tint || "rgba(60,40,140,0.12)"
-  if (s.weather === "fog") tint = tint || "rgba(225,210,248,0.2)"
-  if (tint) {
+  if (s.weather === "rain") tint = "rgba(70,100,150,0.16)"
+  if (s.weather === "meteor") tint = "rgba(60,40,140,0.12)"
+  if (tint && !(dv && dv.alpha > 0.12)) {
     ctx.fillStyle = tint
     ctx.fillRect(0, 0, VIEW_W, VIEW_H)
   }
-  if (s.weather === "rain") drawRain(ctx, VIEW_W, VIEW_H, t)
+  if (dv && dv.alpha > 0.005) {
+    // the veil is a dither with pools of light cut out of it: the fire, the lamp, the player's lantern, glowcaps
+    const lights: Light[] = []
+    if (dv.alpha > 0.15) {
+      const flick = 1 + Math.sin(t * 11) * 0.03 + Math.sin(t * 17.3) * 0.02
+      if (hr >= 18 && s.parts.length >= 1) {
+        for (const [id, radius, glow, color] of [["fire", 50, 0.5, [255, 160, 150]], ["lamp", 20 + s.parts.length * 8, 0.4, [255, 200, 235]]] as const) {
+          lights.push({ x: center(STATIONS[id].x) - camX, y: center(STATIONS[id].y) - camY, r: radius * (id === "fire" ? flick : 1), power: 0.9, glow, color })
+        }
+      }
+      lights.push({ x: sim.px - camX, y: sim.py - 4 - camY, r: 26, power: 0.38 })
+      for (const n of NODES) {
+        if (n.kind !== "mushroom") continue
+        const mx = n.x * TILE + 8 - camX
+        const my = n.y * TILE + 8 - camY
+        if (mx > -20 && mx < VIEW_W + 20 && my > -20 && my < VIEW_H + 20) lights.push({ x: mx, y: my, r: 16, power: 0.5, glow: 0.35, color: [255, 160, 220] })
+      }
+    }
+    veil ??= new Veil(VIEW_W, VIEW_H)
+    veil.draw(ctx, { color: dv.color, alpha: dv.alpha, lights })
+  }
+  if (s.weather === "rain") {
+    drawRain(ctx, VIEW_W, VIEW_H, t, (wx, wy) => {
+      const tx = Math.floor(wx / TILE)
+      const ty = Math.floor(wy / TILE)
+      if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return false
+      const i = tileIndex(tx, ty)
+      return RAIN_GROUND.has(f.world.tiles[i]!) && !f.world.stationSolid.has(i)
+    }, camX, camY)
+  }
   if (s.weather === "meteor") {
     for (let i = 0; i < 4; i++) {
       const life = (t * 0.45 + i * 0.27) % 1
@@ -736,12 +884,14 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
     }
   }
   if (s.weather === "fog") {
+    // fog is a veil of dither and banks drifting through it, in stepped layers
+    ditherRect(ctx, "#e1d2f8", 0, 0, VIEW_W, VIEW_H, 0.22)
     for (let i = 0; i < 7; i++) {
-      const fx = ((i * 71 + t * 6) % (VIEW_W + 80)) - 40
+      const fx = Math.round(((i * 71 + t * 6) % (VIEW_W + 80)) - 40)
       const fy = 20 + ((i * 53) % (VIEW_H - 30))
-      ctx.fillStyle = "rgba(245,238,255,0.22)"
-      ctx.fillRect(Math.round(fx), Math.round(fy), 60, 10)
-      ctx.fillRect(Math.round(fx) + 10, Math.round(fy) - 4, 40, 18)
+      ditherRect(ctx, "#f5eeff", fx - 6, fy - 2, 72, 14, 0.25)
+      ditherRect(ctx, "#f5eeff", fx, fy - 4, 60, 18, 0.35)
+      ditherRect(ctx, "#f5eeff", fx + 10, fy - 4, 40, 18, 0.5)
     }
   }
   // drifting pollen sparkles, always
@@ -760,17 +910,5 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
     px(ctx, "#d6cde8", mx - 3, 17, 3, 3)
     px(ctx, "#d6cde8", mx + 2, 22, 3, 2)
     for (let i = 0; i < 6; i++) if (Math.sin(t * 1.5 + i * 2) > -0.4) px(ctx, "#ffffff", VIEW_W - 70 + ((i * 23) % 60), 8 + ((i * 11) % 24))
-  }
-  if (hr >= 18 && s.parts.length >= 1) {
-    // the lit lamp and the fire glow through the evening
-    const toScreen = (tx: number, ty: number) => [center(tx) - camX, center(ty) - camY] as const
-    for (const [id, radius] of [["fire", 46], ["lamp", 18 + s.parts.length * 8]] as const) {
-      const [sx, sy] = toScreen(STATIONS[id].x, STATIONS[id].y)
-      const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, radius)
-      g.addColorStop(0, id === "fire" ? "rgba(255,170,150,0.35)" : "rgba(255,200,230,0.3)")
-      g.addColorStop(1, "rgba(255,200,200,0)")
-      ctx.fillStyle = g
-      ctx.fillRect(sx - radius, sy - radius, radius * 2, radius * 2)
-    }
   }
 }

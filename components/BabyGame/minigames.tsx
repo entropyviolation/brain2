@@ -1,13 +1,14 @@
 /**
  * components/BabyGame/minigames.tsx — The four mini games, each a small plate with its own loop
  *
- * Firefly Glade (a night canvas, pointer or arrows + space), Mossfall Hop (stones up a waterfall), Echo Flower
+ * Orb Light Glade (a night canvas, pointer or arrows + space), Sine Hop (stones up a waterfall), Echo Flower
  * (a memory tune), and Stair Weave (turn the stairs). Each one calls `onDone(grade)` once. The rules and grades are in
  * `lib/baby-game/minigames.ts`; what a grade pays is `engine.playMinigame`. Nothing here touches the save.
  */
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { Shake } from "./shake"
 import { FALLS, ECHO, GLADE, MINIGAMES, echoGrade, echoSequence, fallsGrade, gladeGrade, rotateStair, stairGrade, stairPuzzle, stairSolved, STAIR_N, type MinigameId } from "@/lib/baby-game/minigames"
 import { paintGrid, playerGrid } from "@/lib/baby-game/sprites"
 import { Plate } from "./panels"
@@ -72,7 +73,7 @@ const rnd = (a: number) => {
   return ((t ^ (t >>> 13)) >>> 0) / 4294967296
 }
 
-function useCanvasLoop(canvas: HTMLCanvasElement | null, running: boolean, frame: (ctx: CanvasRenderingContext2D, dt: number, t: number) => void) {
+function useCanvasLoop(canvas: HTMLCanvasElement | null, running: boolean, frame: (ctx: CanvasRenderingContext2D, dt: number, t: number) => void, shake?: Shake) {
   const ref = useRef(frame)
   ref.current = frame
   useEffect(() => {
@@ -82,14 +83,20 @@ function useCanvasLoop(canvas: HTMLCanvasElement | null, running: boolean, frame
     let raf = 0
     let last = performance.now()
     const loop = (now: number) => {
-      const dt = Math.min(0.1, (now - last) / 1000)
+      const sec = now / 1000
+      // hit-stop: the clock holds for a moment; a shake moves the whole picture by whole pixels
+      const dt = shake?.frozen(sec) ? 0 : Math.min(0.1, (now - last) / 1000)
       last = now
-      ref.current(ctx, dt, now / 1000)
+      const o = shake?.offset(sec)
+      ctx.save()
+      if (o) ctx.translate(o.x, o.y)
+      ref.current(ctx, dt, sec)
+      ctx.restore()
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [canvas, running])
+  }, [canvas, running, shake])
 }
 
 const fill = (ctx: CanvasRenderingContext2D, c: string, x: number, y: number, w: number, h: number) => {
@@ -97,7 +104,7 @@ const fill = (ctx: CanvasRenderingContext2D, c: string, x: number, y: number, w:
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h))
 }
 
-// ─── Firefly Glade ─────────────────────────────────────────────────────────
+// ─── Orb Light Glade ─────────────────────────────────────────────────────────
 
 export function FireflyGlade({ seed, onDone, onLeave }: Props) {
   const [phase, setPhase] = useState<"intro" | "play" | "end">("intro")
@@ -113,19 +120,24 @@ export function FireflyGlade({ seed, onDone, onLeave }: Props) {
   const pops = useRef<Array<{ x: number; y: number; born: number }>>([])
   const glowing = (f: { ph: number }, t: number) => Math.sin(t * 2.2 + f.ph) > 0.1
 
+  const shake = useRef(new Shake())
   const catchNow = () => {
     const j = jar.current
     j.shut = 0.25
     const t = performance.now() / 1000
+    let hit = false
     for (const f of flies.current) {
       if (!f.gone && glowing(f, t) && Math.hypot(f.x - j.x, f.y - j.y) < 20) {
         f.gone = true
         count.current += 1
         pops.current.push({ x: f.x, y: f.y, born: t })
         setCaught(count.current)
+        hit = true
         break
       }
     }
+    // a jar that closes on nothing gives a small bump
+    if (!hit) shake.current.kick(t, 1)
   }
 
   useEffect(() => {
@@ -208,18 +220,18 @@ export function FireflyGlade({ seed, onDone, onLeave }: Props) {
     ctx.font = "10px monospace"
     ctx.fillText(`${count.current} caught · ${Math.max(0, Math.ceil(left.current))}s`, 8, 12)
     if (left.current <= 0) setPhase("end")
-  })
+  }, shake.current)
 
   if (phase === "intro") return <Intro game="glade" onStart={() => setPhase("play")} onLeave={onLeave} />
-  if (phase === "end") return <Result title="Firefly Glade" line={`You caught ${caught} fireflies.`} grade={gladeGrade(caught)} onDone={() => onDone(gladeGrade(caught))} />
+  if (phase === "end") return <Result title="Orb Light Glade" line={`You caught ${caught} fireflies.`} grade={gladeGrade(caught)} onDone={() => onDone(gladeGrade(caught))} />
   return (
-    <Plate title="Firefly Glade" onClose={onLeave} wide>
+    <Plate title="Orb Light Glade" onClose={onLeave} wide>
       <canvas
         ref={setCanvas}
         width={W}
         height={H}
         className="bg-mini-canvas"
-        aria-label="Firefly Glade: move the jar with the pointer or arrow keys, catch with click or space"
+        aria-label="Orb Light Glade: move the jar with the pointer or arrow keys, catch with click or space"
         onPointerMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect()
           jar.current.x = ((e.clientX - r.left) / r.width) * W
@@ -232,7 +244,7 @@ export function FireflyGlade({ seed, onDone, onLeave }: Props) {
   )
 }
 
-// ─── Mossfall Hop ──────────────────────────────────────────────────────────
+// ─── Sine Hop ──────────────────────────────────────────────────────────
 
 const ROW_Y = (r: number) => H - 26 - r * 30
 const STONE_W = 40
@@ -250,6 +262,8 @@ export function MossfallHop({ seed, onDone, onLeave }: Props) {
   )
   const me = useRef({ row: 0, x: W / 2, on: -1, splash: 0, hop: 0, goal: false })
   const falls = useRef(0)
+  const shake = useRef(new Shake())
+  const splashed = () => shake.current.kick(performance.now() / 1000, 3, 2 / 60)
   const sprite = useMemo(() => {
     if (typeof document === "undefined") return null
     const c = document.createElement("canvas")
@@ -277,6 +291,7 @@ export function MossfallHop({ seed, onDone, onLeave }: Props) {
       p.on = idx
     } else {
       p.splash = 0.8
+      splashed()
     }
   }
 
@@ -354,7 +369,10 @@ export function MossfallHop({ seed, onDone, onLeave }: Props) {
       if (p.row >= 1 && p.row <= FALLS.rows) {
         const st = rows.current[p.row - 1]!
         p.x += st.speed * dt
-        if (p.x < 4 || p.x > W - 4) p.splash = 0.8
+        if (p.x < 4 || p.x > W - 4) {
+          p.splash = 0.8
+          splashed()
+        }
       }
       p.hop = Math.max(0, p.hop - dt)
       p.x = Math.max(4, Math.min(W - 4, p.x))
@@ -365,7 +383,7 @@ export function MossfallHop({ seed, onDone, onLeave }: Props) {
     ctx.fillStyle = "#1b2a3a"
     ctx.font = "10px monospace"
     ctx.fillText(`row ${p.row}/${FALLS.rows + 1} · falls ${falls.current}/${FALLS.lives}`, 46, 12)
-  })
+  }, shake.current)
 
   // hopping from the top stone to the ledge ends the game
   useEffect(() => {
@@ -381,15 +399,15 @@ export function MossfallHop({ seed, onDone, onLeave }: Props) {
   if (phase === "end")
     return (
       <Result
-        title="Mossfall Hop"
+        title="Sine Hop"
         line={status.reached ? `Across, with ${status.falls} splash${status.falls === 1 ? "" : "es"}.` : "Three splashes. The waterfall is very patient."}
         grade={fallsGrade(status.reached, status.falls)}
         onDone={() => onDone(fallsGrade(status.reached, status.falls))}
       />
     )
   return (
-    <Plate title="Mossfall Hop" onClose={onLeave} wide>
-      <canvas ref={setCanvas} width={W} height={H} className="bg-mini-canvas" aria-label="Mossfall Hop" onPointerDown={() => hop()} />
+    <Plate title="Sine Hop" onClose={onLeave} wide>
+      <canvas ref={setCanvas} width={W} height={H} className="bg-mini-canvas" aria-label="Sine Hop" onPointerDown={() => hop()} />
       <div className="bg-mini-row">
         {key("◀", () => (me.current.x -= 12))}
         {key("Hop", hop, true)}
@@ -415,6 +433,7 @@ export function EchoFlower({ seed, onDone, onLeave }: Props) {
   const [cleared, setCleared] = useState(0)
   const [lit, setLit] = useState<number | null>(null)
   const [at, setAt] = useState(0)
+  const [wrong, setWrong] = useState(false)
   const timers = useRef<number[]>([])
 
   const length = cleared + 2
@@ -437,10 +456,11 @@ export function EchoFlower({ seed, onDone, onLeave }: Props) {
   }, [phase, length, tune])
 
   const press = (petal: number) => {
-    if (phase !== "you") return
+    if (phase !== "you" || wrong) return
     flash(petal, 220)
     if (petal !== tune[at]) {
-      setPhase("end")
+      setWrong(true)
+      timers.current.push(window.setTimeout(() => setPhase("end"), 320))
       return
     }
     if (at + 1 === length) {
@@ -457,7 +477,7 @@ export function EchoFlower({ seed, onDone, onLeave }: Props) {
   if (phase === "end") return <Result title="Echo Flower" line={`You sang back ${cleared} tune${cleared === 1 ? "" : "s"}.`} grade={echoGrade(cleared)} onDone={() => onDone(echoGrade(cleared))} />
   return (
     <Plate title="Echo Flower" onClose={onLeave}>
-      <div className="bg-echo" aria-label="Echo Flower">
+      <div className={`bg-echo${wrong ? " is-wrong" : ""}`} aria-label="Echo Flower">
         <div className="bg-echo-beam" aria-hidden="true" />
         <div className="bg-echo-flower">
           {PETALS.map((p, i) => (

@@ -1,5 +1,5 @@
 /**
- * lib/baby-game/engine.ts — The rules of Mossmere Hollow (pure, no clock, no storage)
+ * lib/baby-game/engine.ts — The rules of Valdivia (pure, no clock, no storage)
  *
  * One serializable `GameState`. Every action takes a state and returns `{ s, msgs, line, ok }`; nothing here
  * touches the canvas, `Math.random`, or the real clock (a `rand` is passed in). The realtime part (walking,
@@ -8,16 +8,21 @@
  *   meet a friend → talk, gift, approach, favor to earn hearts → at two hearts they say what they want →
  *   turn the wanted items in → at their heart gate, and only when their secret condition holds, ask for
  *   the keepsake → the next friend wants that keepsake → the last friend of each act holds a Lamp part →
- *   place it in the Hollow Lamp, which opens the next gate.
+ *   place it in the Orb Lamp, which opens the next gate.
  *
  * Around that loop sits a farm: sixteen plots, six crops in four seven-day cycles, four skills that level with use,
  * a festival every seventh day, odd weather (meteor showers, morning mist), and a Starlog of everything you have found.
  */
 
+import { createCharacters, remember, type Character } from "./character"
 import { approachDistance, CONDITION_TEXT, isShy, RESIDENTS, resident, temper, type Condition, type Resident } from "./cast"
+import { LESSONS, pathTalk } from "./dharma"
+import { COMMONS_NOTES, offeringOf, theoryTalk } from "./theory"
+import { economyOf, lovesGems, type EconomySpec } from "./economy"
 import { approachLine, favorLine, giftLine, moodLabel, smallTalk, SPOOK_LINE, type Taste } from "./lines"
 import { item, ITEMS, LAMP_PARTS, RECIPES } from "./items"
 import { PLOTS, unlockedAct, type NodeKind } from "./world"
+import { stageOf, type TreeRec } from "./trees"
 import { QUESTS, type Quest } from "./quests"
 import { MINIGAMES, REWARDS, type MinigameId } from "./minigames"
 import { blankPlot, CROP_BY_SEED, CROPS, cycleName, festivalOn, inSeason, isRipe, levelOf, SKILLS, type Plot, type SkillId } from "./farm"
@@ -46,6 +51,14 @@ export type AnimalState = {
   cluedAt: number
 }
 
+/**
+ * The Commons: one shelf at the Stump that the whole village adds to and takes from. Friends stock it every morning
+ * ("from each according to ability"); you take what you need, up to a daily share ("to each according to need").
+ * `gave` and `took` are lifetime counts of things; `lastGave` is the last day you added something; `drawn` is
+ * what you took today. Reciprocity between neighbours is tit for tat (`reciprocate`).
+ */
+export type Commons = { stock: Record<string, number>; gave: number; took: number; lastGave: number; drawn: number }
+
 export type Errand = { id: string; who: string; item: string; qty: number; reward: number; done: boolean }
 
 export type GameState = {
@@ -55,10 +68,15 @@ export type GameState = {
   weather: Weather
   energy: number
   maxEnergy: number
+  /** Scrip for the Trade Corner. Only a world whose economy keeps a market remnant uses it; a gift economy never pays in it. */
   buttons: number
+  /** How this world shares (`economy.ts`). Missing means the default gift commons. */
+  economy?: EconomySpec
   inv: Record<string, number>
   animals: Record<string, AnimalState>
   nodes: Record<string, number>
+  /** Trees changed since the world was made, by tile index (`trees.ts`). Missing means every tree is as it was scattered. */
+  trees?: Record<number, TreeRec>
   parts: string[]
   errands: Errand[]
   today: string[]
@@ -75,6 +93,10 @@ export type GameState = {
   skills: Record<SkillId, number>
   /** Every item id you have ever held, for the Starlog. */
   found: Record<string, true>
+  /** The shared shelf and your standing with it. */
+  commons: Commons
+  /** The cast, created when the game starts (`character.ts`): looks, personality, role, goals, quests, likes, home, memory. */
+  characters: Record<string, Character>
 }
 
 export type RealTask = { id: string; text: string; urgent: boolean; done: boolean; added: number; plan?: string[] }
@@ -112,19 +134,23 @@ export function makeErrands(day: number, act: number): Errand[] {
   })
 }
 
+export const blankCommons = (): Commons => ({ stock: { berry: 3, clover: 3, acorn: 2, reed: 2 }, gave: 0, took: 0, lastGave: 0, drawn: 0 })
+
 export function newGame(): GameState {
   return {
-    v: 1, day: 1, minutes: DAY_START + 30, weather: "clear", energy: BASE_ENERGY, maxEnergy: BASE_ENERGY, buttons: 12,
-    inv: { berry: 2, clover: 2, "glowbean-seed": 4 }, animals: {}, nodes: {}, parts: [], errands: makeErrands(1, 1), today: [], diary: [],
+    v: 1, day: 1, minutes: DAY_START + 30, weather: "clear", energy: BASE_ENERGY, maxEnergy: BASE_ENERGY, buttons: 0,
+    inv: { berry: 2, clover: 2, "glowbean-seed": 4, gem: 3 }, animals: {}, nodes: {}, parts: [], errands: makeErrands(1, 1), today: [], diary: [],
     ended: false, seen: {}, stats: { gathered: 0, gifts: 0, favors: 0, keepsakes: 0, harvests: 0, ribbons: 0, festivals: 0, fished: 0, played: 0 },
     made: {}, questsDone: {}, real: [],
-    farm: {}, skills: { farming: 0, foraging: 0, fishing: 0, crafting: 0 }, found: { berry: true, clover: true, "glowbean-seed": true }, 
+    farm: {}, skills: { farming: 0, foraging: 0, fishing: 0, crafting: 0 }, found: { berry: true, clover: true, "glowbean-seed": true, gem: true },
+    commons: blankCommons(),
+    characters: createCharacters(),
   }
 }
 
-const clone = (s: GameState): GameState => structuredClone(s)
-const done = (s: GameState, msgs: Msg[], ok = true, line?: string): Result => ({ s, msgs, ok, line })
-const no = (s: GameState, text: string): Result => done(s, [{ text, tone: "bad" }], false)
+export const clone = (s: GameState): GameState => structuredClone(s)
+export const done = (s: GameState, msgs: Msg[], ok = true, line?: string): Result => ({ s, msgs, ok, line })
+export const no = (s: GameState, text: string): Result => done(s, [{ text, tone: "bad" }], false)
 
 export const hour = (s: GameState) => Math.floor(s.minutes / 60) % 24
 export const act = (s: GameState) => unlockedAct(s.parts.length)
@@ -156,10 +182,44 @@ const setMood = (a: AnimalState, delta: number) => {
   a.mood = Math.max(-2, Math.min(2, a.mood + delta))
 }
 
-function bag(s: GameState, id: string, qty: number) {
+export function bag(s: GameState, id: string, qty: number) {
   if (qty > 0) s.found[id] = true
   s.inv[id] = (s.inv[id] ?? 0) + qty
   if (s.inv[id]! <= 0) delete s.inv[id]
+}
+
+/**
+ * The village says thanks. `worth` is how big the thanks is. In a gift economy it comes as gems in kind, a thing most
+ * friends love to be given (`gemRate` of the worth, at least one). Only a world with a market remnant pays scrip (buttons).
+ * Returns the words for the toast ("2 gems", "12 buttons"), or "" for nothing.
+ */
+export function payOut(n: GameState, worth: number): string {
+  const t = thanksOf(n, worth)
+  if (t.scrip) n.buttons += t.qty
+  else if (t.qty) bag(n, "gem", t.qty)
+  return thanksLabel(n, worth)
+}
+
+function thanksOf(s: GameState, worth: number): { scrip: boolean; qty: number } {
+  if (worth <= 0) return { scrip: false, qty: 0 }
+  const e = economyOf(s)
+  if (e.rewards === "scrip" && e.market === "remnant") return { scrip: true, qty: worth }
+  return { scrip: false, qty: Math.max(1, Math.round(worth * e.gemRate)) }
+}
+
+/** What `payOut` would give, in words, without giving it. For panels that show a reward ahead of time. */
+export function thanksLabel(s: GameState, worth: number): string {
+  const t = thanksOf(s, worth)
+  if (!t.qty) return ""
+  return t.scrip ? `${t.qty} buttons` : `${t.qty} ${t.qty === 1 ? "gem" : "gems"}`
+}
+
+/** Give this world another economy. A market remnant starts with a little scrip so its Trade Corner is usable. */
+export function setEconomy(s: GameState, spec: EconomySpec): GameState {
+  const n = clone(s)
+  n.economy = spec
+  if (spec.market === "remnant" && n.buttons <= 0) n.buttons = 12
+  return n
 }
 
 export const have = (s: GameState, id: string) => s.inv[id] ?? 0
@@ -168,13 +228,12 @@ export const have = (s: GameState, id: string) => s.inv[id] ?? 0
 
 export const skillLevel = (s: GameState, id: SkillId) => levelOf(s.skills[id] ?? 0)
 
-function addXp(n: GameState, id: SkillId, amount: number, msgs: Msg[]) {
+export function addXp(n: GameState, id: SkillId, amount: number, msgs: Msg[]) {
   const before = levelOf(n.skills[id] ?? 0)
   n.skills[id] = (n.skills[id] ?? 0) + amount
   const after = levelOf(n.skills[id]!)
   if (after > before) {
-    n.buttons += 5
-    msgs.push({ text: `${SKILLS[id].name} level ${after}! ${SKILLS[id].perks[after - 2]}. (+5 buttons)`, tone: "good" })
+    msgs.push({ text: `${SKILLS[id].name} level ${after}! ${SKILLS[id].perks[after - 2]}. (+${payOut(n, 5)})`, tone: "good" })
   }
 }
 
@@ -183,12 +242,11 @@ export const starlogTotal = () => Object.keys(ITEMS).length
 export const starlogCount = (s: GameState) => Object.keys(s.found).length
 
 /** Every fifth thing you discover pays out once. Called wherever a new item can arrive. */
-function sweepLog(n: GameState, msgs: Msg[]) {
+export function sweepLog(n: GameState, msgs: Msg[]) {
   for (let k = STARLOG_STEP; k <= starlogCount(n); k += STARLOG_STEP) {
     if (n.seen[`log${k}`]) continue
     n.seen[`log${k}`] = true
-    n.buttons += 8
-    msgs.push({ text: `Starlog: ${k} things found! (+8 buttons)`, tone: "good" })
+    msgs.push({ text: `Starlog: ${k} things found! (+${payOut(n, 8)})`, tone: "good" })
   }
 }
 
@@ -199,7 +257,9 @@ export function isAsleep(r: Resident, minutes: number): boolean {
   return from > to ? h >= from || h < to : h >= from && h < to
 }
 
-export function tasteOf(r: Resident, itemId: string): Taste {
+/** How a friend takes a gift. Gems are loved by the share of friends `gemLove` picks (`economy.ts`); everything else goes by tags. */
+export function tasteOf(r: Resident, itemId: string, gemLove = economyOf({}).gemLove): Taste {
+  if (itemId === "gem" && lovesGems(r.id, gemLove) && r.hates !== "shiny") return "love"
   const tags = item(itemId).tags
   const loved = temper(r.id).love
   if (tags.includes(loved)) return "love"
@@ -248,6 +308,7 @@ export function talk(s: GameState, id: string, pick: number): Result {
   // First time speaking: the hello. At two hearts: the want. At four: the clue. At three, six, nine: a story.
   if (!n.seen[`${id}:hello`]) {
     n.seen[`${id}:hello`] = true
+    remember(n.characters, id, n.day, "met", "met the Center of The World")
     return done(n, msgs, true, r.hello)
   }
   const storyAt = [3, 6, 9]
@@ -263,8 +324,23 @@ export function talk(s: GameState, id: string, pick: number): Result {
   if (h >= 2 && a.stage === "new") return done(n, msgs, true, r.quest)
   if (a.stage === "turned" && h < r.gate) return done(n, msgs, true, `I'm grateful. Truly. Come back as we get closer. (${r.gate} hearts)`)
   if (a.stage === "turned") return done(n, msgs, true, "I think I'm ready. Ask me.")
-  if (a.stage === "gave") return done(n, msgs, true, smallTalk(t.tone, a.mood, n.weather, hour(n), pick + 1))
-  return done(n, msgs, true, smallTalk(t.tone, a.mood, n.weather, hour(n), pick))
+  // One everyday remark in three is the friend's own outlook (`dharma.ts`), once you know them and they are not cranky.
+  // They alternate between the Eastern idea (`dharma.ts`) and the commons idea (`theory.ts`).
+  const outlook = a.mood >= 0 && h >= 1 && pick % 3 === 2
+  const k = Math.floor(pick / 3)
+  const remark = () => (k % 2 === 0 ? pathTalk(id, k / 2) : theoryTalk(id, (k - 1) / 2))
+  if (a.stage === "gave") return done(n, msgs, true, outlook ? remark() : smallTalk(t.tone, a.mood, n.weather, hour(n), pick + 1))
+  return done(n, msgs, true, outlook ? remark() : smallTalk(t.tone, a.mood, n.weather, hour(n), pick))
+}
+
+/** Knocking at a friend's home. Changes no rule; the friend remembers the first knock each day. */
+export function knock(s: GameState, id: string): GameState {
+  const key = `knock:${id}:${s.day}`
+  if (s.seen[key] || !s.characters?.[id]) return s
+  const n = clone(s)
+  n.seen[key] = true
+  remember(n.characters, id, n.day, "visit", `heard the Center of The World knock at ${n.characters[id]!.home.name}`)
+  return n
 }
 
 export function gift(s: GameState, id: string, itemId: string): Result {
@@ -277,7 +353,7 @@ export function gift(s: GameState, id: string, itemId: string): Result {
   if (a0.gifted) return no(s, `${r.name} already got a gift today.`)
   const n = clone(s)
   const a = touch(n, id)
-  const taste = tasteOf(r, itemId)
+  const taste = tasteOf(r, itemId, economyOf(s).gemLove)
   const delta = { love: 8, like: 4, meh: 1, hate: -3 }[taste]
   addTrust(a, delta > 0 ? gain(delta, a.mood) : delta)
   setMood(a, taste === "love" ? 1 : taste === "hate" ? -1 : 0)
@@ -286,6 +362,7 @@ export function gift(s: GameState, id: string, itemId: string): Result {
   bag(n, itemId, -1)
   n.stats.gifts += 1
   noteToday(n, `Gave ${r.name} ${def.name} (${taste}).`)
+  remember(n.characters, id, n.day, "gift", `was given ${def.name} and ${taste === "meh" ? "accepted it" : `${taste}d it`}`)
   return done(n, [{ text: `${r.name} ${taste === "love" ? "loved" : taste === "like" ? "liked" : taste === "hate" ? "disliked" : "accepted"} ${def.name}.`, tone: taste === "hate" ? "bad" : "good" }], true, giftLine(taste, temper(id).tone))
 }
 
@@ -356,6 +433,7 @@ export function chat(s: GameState, id: string, reply: ChatReply): Result {
   const a = touch(n, id)
   const msgs: Msg[] = []
   a.chats += 1
+  remember(n.characters, id, n.day, "chat", `said "${reply.say.slice(0, 90)}"`)
   const delta = a.chats <= CHAT_TRUST_PER_DAY ? Math.max(-1, Math.min(2, Math.round(reply.trust))) : 0
   const before = Math.floor(a.trust / 10)
   addTrust(a, delta > 0 ? gain(delta, a.mood) : delta)
@@ -389,6 +467,7 @@ export function turnIn(s: GameState, id: string): Result {
   addTrust(a, 10)
   setMood(a, 1)
   noteToday(n, `Brought ${r.name} what they wanted.`)
+  remember(n.characters, id, n.day, "wish", `was brought ${r.wants.map((w) => item(w).name).join(" and ")}, what they wished for`)
   return done(n, [{ text: `${r.name} got ${r.wants.map((w) => item(w).name).join(" and ")}.`, tone: "good" }], true, r.thanks)
 }
 
@@ -431,6 +510,7 @@ export function ask(s: GameState, id: string, ctx: { crowd: number }): Result {
   bag(n, r.gives, 1)
   n.stats.keepsakes += 1
   noteToday(n, `${r.name} gave me ${item(r.gives).name}.`)
+  remember(n.characters, id, n.day, "keepsake", `trusted the Center of The World with ${item(r.gives).name}`)
   return done(n, [{ text: `Received: ${item(r.gives).name}!`, tone: "good" }], true, r.give)
 }
 
@@ -446,6 +526,39 @@ export const fishCost = (s: GameState) => [6, 5, 5, 4, 4][skillLevel(s, "fishing
 export const tillCost = (s: GameState) => (skillLevel(s, "farming") >= 4 ? 0 : 2)
 export const plantCost = (s: GameState) => (skillLevel(s, "farming") >= 4 ? 0 : 1)
 export const waterCost = (s: GameState) => (skillLevel(s, "farming") >= 2 ? 0 : 1)
+
+export const chopCost = () => 3
+
+/** Fell the mature tree on tile `idx`: 2 to 3 wood, now and then an acorn, and a stump that sprouts again in two nights. The caller checked a tree stands there. */
+export function chop(s: GameState, idx: number, rand: () => number): Result {
+  if (stageOf(s.trees?.[idx], s.day) !== "mature") return no(s, "That one is still growing.")
+  if (s.energy < chopCost()) return no(s, "Too tired to swing.")
+  const n = clone(s)
+  n.energy -= chopCost()
+  n.trees = { ...(n.trees ?? {}), [idx]: { k: "cut", t: n.day } }
+  const wood = 2 + (rand() < 0.5 ? 1 : 0)
+  bag(n, "wood", wood)
+  n.stats.gathered += wood
+  const msgs: Msg[] = [{ text: `+${wood} Wood`, tone: "good" }, { text: "Timber! A stump is left. It will sprout again.", tone: "info" }]
+  if (rand() < 0.3) {
+    bag(n, "acorn", 1)
+    msgs.push({ text: "+1 Acorn", tone: "good" })
+  }
+  addXp(n, "foraging", 1, msgs)
+  return done(n, msgs)
+}
+
+/** Dig out the stump on tile `idx`. The tile stays open ground until a seed from a neighbour lands. */
+export function clearStump(s: GameState, idx: number): Result {
+  if (stageOf(s.trees?.[idx], s.day) !== "stump") return no(s, "No stump here.")
+  if (s.energy < 1) return no(s, "Too tired to dig.")
+  const n = clone(s)
+  n.energy -= 1
+  n.trees = { ...(n.trees ?? {}), [idx]: { k: "bare", t: n.day } }
+  bag(n, "wood", 1)
+  n.stats.gathered += 1
+  return done(n, [{ text: "+1 Wood", tone: "good" }, { text: "The stump is out. Open ground.", tone: "info" }])
+}
 
 export function nodeReady(s: GameState, nodeId: string): boolean {
   return s.nodes[nodeId] !== s.day
@@ -538,16 +651,25 @@ export function eat(s: GameState, id: string): Result {
   return done(n, [{ text: `Ate ${item(id).name}. +${gives} energy.`, tone: "good" }])
 }
 
-/** The Trade Stump. Buy raw materials at twice their value, sell anything loose at a third. */
+/** The Stump only stocks seeds that can be planted today; everything else is always there. */
+export const stocked = (def: { kind: string; id: string }, day: number) => {
+  if (def.kind !== "seed") return def.kind === "material"
+  const crop = CROP_BY_SEED[def.id]
+  return !!crop && inSeason(crop, day)
+}
+
+/** The Trade Corner of the Stump: the small market that is left. Buy raw materials at twice their value. The Commons shelf is free. */
 export function buy(s: GameState, id: string): Result {
+  if (economyOf(s).market === "none") return no(s, "Nothing is for sale here. Take what you need from the shelf.")
   const def = ITEMS[id]
   if (!def || (def.kind !== "material" && def.kind !== "seed")) return no(s, "The Stump only sells raw things and seeds.")
+  if (!stocked(def, s.day)) return no(s, `${def.name} aren't on the Stump until their cycle.`)
   const price = def.value * 2
   if (s.buttons < price) return no(s, `Needs ${price} buttons.`)
   const n = clone(s)
   n.buttons -= price
   bag(n, id, 1)
-  return done(n, [{ text: `Bought ${def.name} (−${price}).`, tone: "info" }])
+  return done(n, [{ text: `Bought ${def.name} (−${price}). The shelf would have given it free.`, tone: "info" }])
 }
 
 /** A festival day pays half again. */
@@ -557,14 +679,149 @@ export const sellPrice = (id: string, day = 1) => {
 }
 
 export function sell(s: GameState, id: string): Result {
+  if (economyOf(s).market === "none") return no(s, "Nobody buys here. Leave it on the shelf and it is everyone's.")
   const def = ITEMS[id]
   if (!def || def.kind === "keepsake" || def.kind === "part") return no(s, "The Stump won't take that.")
   if (have(s, id) < 1) return no(s, "You don't have that.")
   const n = clone(s)
   bag(n, id, -1)
   n.buttons += sellPrice(id, s.day)
-  return done(n, [{ text: `Sold ${def.name} (+${sellPrice(id, s.day)}).`, tone: "info" }])
+  n.commons.stock[id] = (n.commons.stock[id] ?? 0) + 1
+  return done(n, [{ text: `Sold ${def.name} (+${sellPrice(id, s.day)}). It goes on the Commons shelf.`, tone: "info" }])
 }
+
+// ─── the Commons ──────────────────────────────────────────────────────────
+
+export const STANDINGS = [
+  { at: 0, name: "Newcomer" },
+  { at: 4, name: "Neighbor" },
+  { at: 12, name: "Comrade" },
+  { at: 25, name: "Elder of the Commons" },
+] as const
+/** If you have taken this many more things than you gave and have not given since yesterday, the friends mirror you. */
+export const FREE_RIDE_GAP = 8
+export const DRAW_BASE = 3
+
+export function standing(s: GameState): (typeof STANDINGS)[number] {
+  return [...STANDINGS].reverse().find((t) => s.commons.gave >= t.at)!
+}
+
+/** Tit for tat, with forgiveness: the friends mirror a long run of only taking until you give once. */
+export function freeRiding(s: GameState): boolean {
+  const gap = economyOf(s).shelf.mirrorGap
+  return gap !== null && s.commons.took - s.commons.gave > gap && s.commons.lastGave < s.day - 1
+}
+
+/** Things you may take today: a base share, more as you give, a little more when you are worn out; one if you only ever take. */
+export function drawLimit(s: GameState): number {
+  if (freeRiding(s)) return 1
+  const { shelf } = economyOf(s)
+  const rank = STANDINGS.indexOf(standing(s))
+  return shelf.share + (shelf.standing ? (rank >= 1 ? 1 : 0) + (rank >= 3 ? 1 : 0) : 0) + (s.energy < 30 ? shelf.need : 0)
+}
+
+export const shelfCount = (s: GameState) => Object.values(s.commons.stock).reduce((a, b) => a + b, 0)
+
+const commonable = (id: string) => {
+  const k = ITEMS[id]?.kind
+  return k === "material" || k === "seed" || k === "crop" || k === "trinket"
+}
+
+/** Put something on the shared shelf. Nobody pays you; the first gift of the day is heard around the village. */
+export function contribute(s: GameState, id: string): Result {
+  if (!commonable(id)) return no(s, "The shelf takes only things that can be shared.")
+  if (have(s, id) < 1) return no(s, "You don't have that.")
+  const n = clone(s)
+  bag(n, id, -1)
+  n.commons.stock[id] = (n.commons.stock[id] ?? 0) + 1
+  const first = n.commons.gave === 0
+  const before = standing(n).name
+  n.commons.gave += 1
+  n.commons.lastGave = n.day
+  const msgs: Msg[] = [{ text: `Left ${item(id).name} on the Commons shelf.`, tone: "good" }]
+  if (first) msgs.push({ text: `${COMMONS_NOTES.first_give.idea}: ${COMMONS_NOTES.first_give.note}`, tone: "info" })
+  if (!n.seen[`cg${n.day}`]) {
+    n.seen[`cg${n.day}`] = true
+    // a giveaway festival makes the day's first gift count twice
+    const lift = festivalOn(n.day) && economyOf(n).festival === "giveaway" ? 2 : 1
+    for (const [fid, a] of Object.entries(n.animals)) if (resident(fid) && a.trust >= 10) addTrust(a, lift)
+    msgs.push({ text: `The village noticed. +${lift} trust with everyone who knows you.`, tone: "good" })
+  }
+  const after = standing(n).name
+  if (after !== before) msgs.push({ text: `Your standing in the Commons: ${after}.`, tone: "good" })
+  noteToday(n, `Left ${item(id).name} on the Commons shelf.`)
+  return done(n, msgs)
+}
+
+/** Take what you need. Free, up to today's share; seeds only in their own cycle. */
+export function take(s: GameState, id: string): Result {
+  const def = ITEMS[id]
+  if (!def || !commonable(id)) return no(s, "That isn't on the shelf.")
+  if ((s.commons.stock[id] ?? 0) < 1) return no(s, `No ${def.name} left on the shelf.`)
+  if (def.kind === "seed" && !stocked(def, s.day)) return no(s, `${def.name} aren't ready until their cycle.`)
+  const limit = drawLimit(s)
+  if (s.commons.drawn >= limit) return no(s, freeRiding(s) ? "The shelf is mirroring you: leave something and it opens again." : `You've taken your share for today (${limit}). Leave some for tomorrow.`)
+  const n = clone(s)
+  n.commons.stock[id]! -= 1
+  if (n.commons.stock[id]! <= 0) delete n.commons.stock[id]
+  const first = n.commons.took === 0
+  n.commons.took += 1
+  n.commons.drawn += 1
+  bag(n, id, 1)
+  const msgs: Msg[] = [{ text: `Took ${def.name} from the Commons.`, tone: "good" }]
+  if (first) msgs.push({ text: `${COMMONS_NOTES.first_take.idea}: ${COMMONS_NOTES.first_take.note}`, tone: "info" })
+  sweepLog(n, msgs)
+  noteToday(n, `Took ${def.name} from the Commons.`)
+  return done(n, msgs)
+}
+
+/** Morning at the Commons: reciprocity first, then the friends stock the shelf. Returns the first lines of the new day's notes. */
+function commonsMorning(n: GameState): string[] {
+  const notes: string[] = []
+  const prev = n.day - 1
+  const mirror = freeRiding(n)
+  // Tit for tat: a gift you gave comes back in kind, unless you have been only taking, in which case they mirror it. Never grudging for long.
+  for (const [id, a] of Object.entries(n.animals)) {
+    const r = resident(id)
+    const back = offeringOf(id)
+    if (!r || !back || a.trust < 10) continue
+    if (a.gifted) {
+      if (mirror) {
+        notes.push(`${r.name} did not return your gift. You have taken a lot from the shelf and given little.`)
+        continue
+      }
+      bag(n, back, 1)
+      notes.push(`${r.name} returned the favor: ${item(back).name}.`)
+    }
+    if (mirror && a.trust >= 20) a.mood = Math.max(-2, a.mood - 1)
+  }
+  if (mirror) notes.push(COMMONS_NOTES.free_rider.note)
+  else if (notes.length) notes.push(COMMONS_NOTES.returned.note)
+  // From each according to ability: every friend you know adds their thing; deeper friends add two. A festival eve doubles it.
+  const econ = economyOf(n)
+  const feast = !!festivalOn(prev) && econ.festival === "feast"
+  let added = 0
+  for (const [id, a] of Object.entries(n.animals)) {
+    const give = offeringOf(id)
+    if (!resident(id) || !give || a.trust < 10) continue
+    const qty = econ.offerings * (a.trust >= 50 ? 2 : 1) * (feast ? 2 : 1)
+    if (qty <= 0) continue
+    n.commons.stock[give] = (n.commons.stock[give] ?? 0) + qty
+    added += qty
+  }
+  // The Seed Library: one seed that suits today's cycle, from nobody in particular.
+  const seeds = Object.values(CROPS).filter((c) => inSeason(c, n.day))
+  if (seeds.length) {
+    const sd = seeds[hash(n.day * 17) % seeds.length]!.seed
+    n.commons.stock[sd] = (n.commons.stock[sd] ?? 0) + 1
+  }
+  n.commons.drawn = 0
+  if (added) notes.push(feast ? `${COMMONS_NOTES.feast.note} (${added} things on the shelf.)` : `The friends stocked the Commons shelf (${added}).`)
+  return notes.slice(-12)
+}
+
+/** Mutual aid is not wages: half the errand's worth comes back as thanks (`payOut`), the rest in kind. */
+export const errandButtons = (e: Errand) => Math.ceil(e.reward / 2)
 
 export function deliverErrand(s: GameState, errandId: string): Result {
   const e = s.errands.find((x) => x.id === errandId)
@@ -573,11 +830,13 @@ export function deliverErrand(s: GameState, errandId: string): Result {
   const r = resident(e.who)!
   const n = clone(s)
   bag(n, e.item, -e.qty)
-  n.buttons += e.reward
+  const pay = payOut(n, errandButtons(e))
   n.errands = n.errands.map((x) => (x.id === errandId ? { ...x, done: true } : x))
   addTrust(touch(n, e.who), 4)
+  const back = offeringOf(e.who)
+  if (back) bag(n, back, 1)
   noteToday(n, `Ran an errand for ${r.name}.`)
-  return done(n, [{ text: `${r.name} says thanks. +${e.reward} buttons, +4 trust.`, tone: "good" }])
+  return done(n, [{ text: `${r.name} says thanks and gives back${back ? ` ${item(back).name}` : " a little"}. +${pay}, +4 trust.`, tone: "good" }])
 }
 
 export function placePart(s: GameState, partId: string): Result {
@@ -585,11 +844,11 @@ export function placePart(s: GameState, partId: string): Result {
   const n = clone(s)
   bag(n, partId, -1)
   n.parts.push(partId)
-  noteToday(n, `Set ${item(partId).name} in the Hollow Lamp.`)
+  noteToday(n, `Set ${item(partId).name} in the Orb Lamp.`)
   const msgs: Msg[] = [{ text: `${item(partId).name} fits. The lamp hums.`, tone: "good" }]
   if (n.parts.length >= LAMP_PARTS.length) {
     n.ended = true
-    msgs.push({ text: "The Hollow Lamp is whole.", tone: "good" })
+    msgs.push({ text: "The Orb Lamp is whole.", tone: "good" })
   } else {
     msgs.push({ text: `A gate opens: act ${unlockedAct(n.parts.length)}.`, tone: "info" })
   }
@@ -614,7 +873,9 @@ export function sleep(s: GameState, power: number, bond: { level: number; routin
   if (n.weather === "rain") for (const p of Object.values(n.farm)) if (p.crop) p.watered = true
   n.maxEnergy = BASE_ENERGY + Math.min(24, 4 * Math.max(0, bond.level - 1))
   n.energy = Math.min(n.maxEnergy, Math.round(n.maxEnergy * power) + (bond.routine ? 15 : 0))
-  n.buttons += bond.level
+  // the friend you came with leaves a little thanks by your pillow
+  payOut(n, bond.level)
+  const morning = commonsMorning(n)
   for (const id of Object.keys(n.animals)) {
     const a = n.animals[id]!
     const t = temper(id)
@@ -626,7 +887,7 @@ export function sleep(s: GameState, power: number, bond: { level: number; routin
     a.chats = 0
   }
   n.errands = makeErrands(n.day, unlockedAct(n.parts.length))
-  n.today = []
+  n.today = morning
   return n
 }
 
@@ -706,7 +967,7 @@ export function harvest(s: GameState, plotId: string, rand: () => number): Resul
   const crop = CROPS[p.crop]!
   const n = clone(s)
   const lvl = skillLevel(s, "farming")
-  const extra = rand() < (lvl >= 5 ? 0.5 : lvl >= 3 ? 0.25 : 0) ? 1 : 0
+  const extra = rand() < (lvl >= 5 ? 0.5 : lvl >= 3 ? 0.25 : 0) + (s.seen[`scarecrow${s.day}`] ? 0.25 : 0) ? 1 : 0
   const got = crop.yield + extra
   bag(n, crop.id, got)
   n.farm[plotId] = { ...blankPlot(), tilled: true }
@@ -732,12 +993,11 @@ export function enterFestival(s: GameState, itemId: string): Result {
   bag(n, itemId, -1)
   n.seen[`entry${s.day}`] = true
   const worth = sellPrice(itemId)
-  const reward = Math.max(8, worth * 3)
-  n.buttons += reward
+  const reward = payOut(n, Math.max(8, worth * 3))
   n.stats.ribbons += 1
   noteToday(n, `Entered ${def.name} in the ${fest.name}.`)
   const place = worth >= 14 ? "First place!" : worth >= 8 ? "Second place!" : "A ribbon for trying, and for the snack."
-  return done(n, [{ text: `${place} ${def.name} wins ${reward} buttons and a ribbon.`, tone: "good" }])
+  return done(n, [{ text: `${place} ${def.name} wins ${reward} and a ribbon.`, tone: "good" }])
 }
 
 // ─── mini games ───────────────────────────────────────────────────────────
@@ -763,11 +1023,11 @@ export function playMinigame(s: GameState, game: MinigameId, grade: 0 | 1 | 2, r
   if (n.seen[stamp]) return done(n, [{ text: `${def.name}: lovely, but today's prize is already yours.`, tone: "info" }])
   n.seen[stamp] = true
   const prize = REWARDS[game][grade]!
-  n.buttons += prize.buttons
+  const thanks = payOut(n, prize.buttons)
   const msgs: Msg[] = []
   if (prize.item) {
     bag(n, prize.item[0], prize.item[1])
-    msgs.push({ text: `${grade === 2 ? "Wonderful!" : "Nice!"} +${prize.item[1]} ${item(prize.item[0]).name}, +${prize.buttons} buttons.`, tone: "good" })
+    msgs.push({ text: `${grade === 2 ? "Wonderful!" : "Nice!"} +${prize.item[1]} ${item(prize.item[0]).name}${thanks ? `, +${thanks}` : ""}.`, tone: "good" })
   }
   if (grade === 2 && rand() < 0.3) {
     bag(n, "starshard", 1)
@@ -813,11 +1073,14 @@ export function claimQuest(s: GameState, id: string): Result {
   const n = clone(s)
   if (q.objective.kind === "bring") bag(n, q.objective.item, -q.objective.qty)
   n.questsDone[id] = true
-  n.buttons += q.reward.buttons
+  const thanks = payOut(n, q.reward.buttons)
   for (const [it, qty] of q.reward.items ?? []) bag(n, it, qty)
   if (q.trust) addTrust(touch(n, q.giver), q.trust)
   noteToday(n, `Finished "${q.title}" for ${resident(q.giver)?.name}.`)
-  const msgs: Msg[] = [{ text: `Quest done: ${q.title} (+${q.reward.buttons} buttons).`, tone: "good" }]
+  remember(n.characters, q.giver, n.day, "quest", `saw "${q.title}" finished`)
+  const msgs: Msg[] = [{ text: `Quest done: ${q.title} (+${thanks}).`, tone: "good" }]
+  const lesson = LESSONS[id]
+  if (lesson) msgs.push({ text: `${lesson.idea}: ${lesson.lesson}`, tone: "info" })
   sweepLog(n, msgs)
   return done(n, msgs, true, q.thanks)
 }
@@ -843,17 +1106,16 @@ export function setRealPlan(s: GameState, id: string, plan: string[]): GameState
   return n
 }
 
-/** Done in real life, marked here. Everyone who knows you cheers: a little trust, some buttons, a spot in the diary. */
+/** Done in real life, marked here. Everyone who knows you cheers: a little trust, some gems, a spot in the diary. */
 export function completeRealTask(s: GameState, id: string): Result {
   const t = s.real.find((x) => x.id === id)
   if (!t || t.done) return no(s, "Nothing to finish there.")
   const n = clone(s)
   n.real = n.real.map((x) => (x.id === id ? { ...x, done: true, urgent: false } : x))
-  const reward = t.urgent ? 18 : 10
-  n.buttons += reward
+  const reward = payOut(n, t.urgent ? 18 : 10)
   for (const [rid, a] of Object.entries(n.animals)) if (resident(rid)) addTrust(a, 2)
   noteToday(n, `The real thing got done: "${t.text}". Everyone cheered.`)
-  return done(n, [{ text: `Done in real life! The whole village cheers. (+${reward} buttons, +2 trust everywhere)`, tone: "good" }])
+  return done(n, [{ text: `Done in real life! The whole village cheers. (+${reward}, +2 trust everywhere)`, tone: "good" }])
 }
 
 export function dropRealTask(s: GameState, id: string): GameState {

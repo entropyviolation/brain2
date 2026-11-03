@@ -3,9 +3,9 @@
  *
  * Every item is an 8×8 shape (`SHAPES`) painted in three tones. `tags` are what animals love or hate:
  * a friend's favorite whim (`lib/friend-whims.ts`) picks the tag it loves (`WHIM_TAGS`).
- * Raw materials are gathered or bought at the Trade Stump; trinkets are crafted at the Workbench;
+ * Raw materials are gathered or bought at the Swap Stump; trinkets are crafted at the Workbench;
  * a keepsake is the one thing a friend gives you once they trust you; a Lamp part is a keepsake that
- * lights the Hollow Lamp. No yellow anywhere.
+ * lights the Orb Lamp. No yellow anywhere.
  */
 
 export type Tag = "sweet" | "crunchy" | "watery" | "green" | "shiny" | "cozy" | "musical" | "bookish" | "fishy" | "soft" | "earthy"
@@ -36,7 +36,7 @@ export type ItemDef = {
   /** Light, main, dark: letters from `SPRITE_PALETTE`. */
   tones: readonly [string, string, string]
   tags: readonly Tag[]
-  /** Buttons at the Trade Stump (sells for a third, rounded down, never under 1). */
+  /** Buttons at the Swap Stump (sells for a third, rounded down, never under 1). */
   value: number
   blurb: string
   /** What it takes to craft, for trinkets. */
@@ -83,6 +83,7 @@ add(
   mat("mushroom", "Moss Cap", "shroom", ["p", "P", "q"], ["cozy"], 4, "Soft on top, and it likes the dark."),
   mat("fish", "Silver Minnow", "fish", ["s", "S", "d"], ["fishy"], 4, "Quick, cold, and surprised to be here."),
   mat("shell", "Whorl Shell", "shell", ["v", "V", "x"], ["watery", "musical"], 4, "Hold it to an ear. It hums the pond."),
+  mat("gem", "Gem", "gem", ["v", "V", "x"], ["shiny"], 4, "Cut by nobody, owned by nobody. Not money: most baby animals just light up when you give them one."),
   mat("feather", "Soft Feather", "feather", ["w", "s", "S"], ["soft"], 3, "Dropped, not lost."),
 )
 
@@ -111,6 +112,7 @@ const seed = (crop: string, name: string, price: number, blurb: string): ItemDef
 add(
   mat("firefly", "Jarred Firefly", "bulb", ["c", "b", "B"], ["shiny", "cozy"], 6, "Caught, admired, and let out again. The glow stays on your hands."),
   mat("dewgem", "Dew Gem", "gem", ["c", "C", "m"], ["shiny", "watery"], 8, "A drop of the waterfall that decided to stay."),
+  mat("wood", "Wood", "log", ["t", "T", "u"], ["earthy", "cozy"], 3, "A good split log. It still smells like the tree it was."),
   mat("echopetal", "Echo Petal", "leaf", ["p", "P", "q"], ["musical", "soft"], 7, "It hums back whatever you hum at it."),
   mat("stairchip", "Stair Chip", "stone", ["v", "V", "x"], ["earthy", "shiny"], 7, "A step off a staircase that goes nowhere in particular."),
   mat("starshard", "Star Shard", "star", ["c", "b", "B"], ["shiny", "musical"], 9, "A little bit of the night, fallen on purpose."),
@@ -120,12 +122,28 @@ add(
   crop("spiralkale", "Spiralkale", "swirl", ["g", "G", "h"], ["green", "crunchy"], 12, "It curls in the direction of whoever is being kind."),
   crop("twinklegourd", "Twinklegourd", "gourd", ["p", "P", "q"], ["sweet", "shiny"], 18, "Blinks when nobody is looking, which is how you know."),
   crop("snowpearl", "Snowpearl", "round", ["w", "b", "B"], ["watery", "soft"], 20, "Grows in frost and tastes like the first cold morning."),
-  seed("glowbean", "Glowbean Seeds", 4, "Bloomtide and Gleamtide. Ready in 3 nights."),
-  seed("puffroot", "Puffroot Seeds", 6, "Bloomtide and Mosstide. Ready in 4 nights."),
-  seed("moonmelon", "Moonmelon Seeds", 14, "Gleamtide and Mosstide. Ready in 6 nights."),
-  seed("spiralkale", "Spiralkale Seeds", 7, "Mosstide and Frosttide. Ready in 4 nights."),
-  seed("twinklegourd", "Twinklegourd Seeds", 11, "Frosttide and Bloomtide. Ready in 5 nights."),
-  seed("snowpearl", "Snowpearl Seeds", 12, "Frosttide only. Ready in 5 nights."),
+  crop("shadowradish", "Shadow Radish", "split", ["A", "z", "y"], ["earthy", "soft"], 9, "Jung's favorite. Half of it grows underground, and that half is the one it won't talk about."),
+  crop("mandalichoke", "Mandalichoke", "mandala", ["v", "B", "n"], ["green", "musical"], 16, "Every leaf folds around a center, and the center is also a leaf."),
+  crop("schrodinberry", "Schrödinberry", "flicker", ["w", "V", "x"], ["sweet", "shiny"], 14, "Ripe and unripe until you look. You may only ever eat the one you didn't look at."),
+  crop("parallaxpepper", "Parallax Pepper", "pepper", ["r", "R", "q"], ["crunchy", "shiny"], 10, "Looks closer when you step back. Hot only from a certain angle."),
+  crop("fadeleek", "Fadeleek", "leek", ["w", "g", "S"], ["soft", "watery"], 12, "A little paler every day, and a little sweeter. Tastes like remembering."),
+  crop("quincidence", "Quincidence", "quince", ["o", "O", "Q"], ["sweet", "cozy"], 22, "Ripens the same night something else happens. Nobody has proved it's related."),
+  crop("hypnagogicpea", "Hypnagogic Pea", "bean", ["b", "V", "x"], ["soft", "cozy"], 9, "The pods pop just as you drift off, and you remember a stair that wasn't there."),
+  crop("aurorasprout", "Aurora Sprout", "sprout", ["c", "G", "B"], ["green", "shiny", "watery"], 18, "A tiny green sprout holding a tiny green sky. It ripples when it's pleased."),
+  seed("glowbean", "Glowbean Seeds", 4, "Lotus Bloom and High Yang. Ready in 3 nights."),
+  seed("puffroot", "Puffroot Seeds", 6, "Lotus Bloom and Anicca. Ready in 4 nights."),
+  seed("moonmelon", "Moonmelon Seeds", 14, "High Yang and Anicca. Ready in 6 nights."),
+  seed("spiralkale", "Spiralkale Seeds", 7, "Anicca and Deep Yin. Ready in 4 nights."),
+  seed("twinklegourd", "Twinklegourd Seeds", 11, "Deep Yin and Lotus Bloom. Ready in 5 nights."),
+  seed("snowpearl", "Snowpearl Seeds", 12, "Deep Yin only. Ready in 5 nights."),
+  seed("shadowradish", "Shadow Radish Seeds", 5, "Lotus Bloom only. Ready in 3 nights."),
+  seed("mandalichoke", "Mandalichoke Seeds", 10, "Lotus Bloom only. Ready in 5 nights."),
+  seed("schrodinberry", "Schrödinberry Seeds", 9, "High Yang only. Ready in 4 nights, probably."),
+  seed("parallaxpepper", "Parallax Pepper Seeds", 6, "High Yang only. Ready in 3 nights."),
+  seed("fadeleek", "Fadeleek Seeds", 7, "Anicca only. Ready in 4 nights."),
+  seed("quincidence", "Quincidence Seeds", 15, "Anicca only. Ready in 6 nights."),
+  seed("hypnagogicpea", "Hypnagogic Pea Seeds", 5, "Deep Yin only. Ready in 3 nights."),
+  seed("aurorasprout", "Aurora Sprout Seeds", 12, "Deep Yin only. Ready in 5 nights."),
 )
 
 add(
@@ -150,30 +168,42 @@ const keep = (id: string, name: string, shape: string, tones: ItemDef["tones"], 
 })
 
 add(
-  keep("hatchling-bell", "Hatchling Bell", "bell", ["e", "w", "E"], ["musical"], "The first bell Pippin ever rang. It rings in a small voice."),
-  keep("dewdrop-locket", "Dewdrop Locket", "drop", ["b", "B", "n"], ["watery", "shiny"], "A drop that never dries. Thimble wears it on holidays."),
+  keep("hatchling-bell", "Hatchling Bell", "bell", ["e", "w", "E"], ["musical"], "The first bell Ada ever rang. It rings in a small voice."),
+  keep("dewdrop-locket", "Dewdrop Locket", "drop", ["b", "B", "n"], ["watery", "shiny"], "A drop that never dries. Pilgrim wears it on holidays."),
   keep("tin-key", "Tiny Tin Key", "key", ["s", "S", "d"], ["shiny", "earthy"], "Opens one small lock, probably a diary's."),
-  keep("lamp-wick", "Lamp Wick", "stalk", ["p", "P", "q"], ["soft", "cozy"], "The lamp's braided wick. Willow used it as a ribbon.", "part"),
+  keep("lamp-wick", "Lamp Wick", "stalk", ["p", "P", "q"], ["soft", "cozy"], "The lamp's braided wick. Daria used it as a ribbon.", "part"),
   keep("puddle-charm", "Puddle Charm", "drop", ["c", "C", "m"], ["watery"], "A charm that smells like rain on warm dirt."),
-  keep("skipping-stone", "Skipping Stone", "stone", ["l", "s", "S"], ["watery", "earthy"], "Seven skips on a good day. Marlow keeps count."),
+  keep("skipping-stone", "Skipping Stone", "stone", ["l", "s", "S"], ["watery", "earthy"], "Seven skips on a good day. Euler keeps count."),
   keep("yuzu-charm", "Yuzu Charm", "round", ["o", "O", "Q"], ["sweet", "cozy"], "A warm little fruit that keeps its warmth."),
-  keep("frost-feather", "Frost Feather", "feather", ["b", "B", "n"], ["soft", "watery"], "Never melts. Fizz considers this showing off."),
-  keep("midnight-feather", "Midnight Feather", "feather", ["A", "z", "y"], ["soft", "watery"], "Inky's first feather. It came in like a small piece of the night."),
-  keep("lamp-glass", "Lamp Glass", "bulb", ["c", "b", "B"], ["shiny", "watery"], "The lamp's glass. Mochi thought it was a very nice piece of ice.", "part"),
-  keep("crumb-charm", "Crumb Charm", "heart", ["o", "O", "Q"], ["sweet"], "A crumb Nib saved, shaped, and fell in love with."),
+  keep("frost-feather", "Frost Feather", "feather", ["b", "B", "n"], ["soft", "watery"], "Never melts. Hofstadter considers this showing off."),
+  keep("midnight-feather", "Midnight Feather", "feather", ["A", "z", "y"], ["soft", "watery"], "Pynchon's first feather. It came in like a small piece of the night."),
+  keep("lamp-glass", "Lamp Glass", "bulb", ["c", "b", "B"], ["shiny", "watery"], "The lamp's glass. Conway thought it was a very nice piece of ice.", "part"),
+  keep("crumb-charm", "Crumb Charm", "heart", ["o", "O", "Q"], ["sweet"], "A crumb Hamilton saved, shaped, and fell in love with."),
   keep("leaf-mitten", "Leaf Mitten", "leaf", ["g", "G", "h"], ["green", "soft"], "One mitten, for a paw that only needs one."),
   keep("purr-pebble", "Purr Pebble", "heart", ["a", "A", "z"], ["cozy", "earthy"], "Warm in the hand. It buzzes when you are sad."),
-  keep("pouch-stone", "Pouch Stone", "stone", ["a", "A", "z"], ["cozy", "earthy"], "Tuck's warm sleeping stone. Heavier than it looks, and calmer."),
-  keep("pearl-button", "Pearl Button", "button", ["w", "l", "s"], ["shiny", "earthy"], "Mabel found it in the grass. It looked like a very small moon."),
-  keep("lullaby-twig", "Lullaby Twig", "stalk", ["t", "T", "u"], ["soft", "musical"], "Sprout's twig. It hums when it's windy, and it helps you sleep."),
-  keep("lamp-oil", "Lamp Oil Flask", "jar", ["c", "C", "m"], ["shiny", "cozy"], "The lamp's oil. Rue was keeping it somewhere safe and sly.", "part"),
+  keep("pouch-stone", "Pouch Stone", "stone", ["a", "A", "z"], ["cozy", "earthy"], "Ernst's warm sleeping stone. Heavier than it looks, and calmer."),
+  keep("pearl-button", "Pearl Button", "button", ["w", "l", "s"], ["shiny", "earthy"], "Tegmark found it in the grass. It looked like a very small moon."),
+  keep("lullaby-twig", "Lullaby Twig", "stalk", ["t", "T", "u"], ["soft", "musical"], "Kaufman's twig. It hums when it's windy, and it helps you sleep."),
+  keep("lamp-oil", "Lamp Oil Flask", "jar", ["c", "C", "m"], ["shiny", "cozy"], "The lamp's oil. Abagnale was keeping it somewhere safe and sly.", "part"),
   keep("wag-whistle", "Wag Whistle", "tube", ["o", "O", "Q"], ["musical"], "Only dogs and very good friends can hear it."),
-  keep("silver-horseshoe", "Silver Horseshoe", "ring", ["s", "w", "S"], ["shiny", "earthy"], "Juniper outgrew it. She says she did not."),
-  keep("lamp-frame", "Lamp Frame", "cog", ["s", "S", "d"], ["earthy", "shiny"], "The lamp's iron frame. Maple used it as a very sturdy chair.", "part"),
-  keep("moss-perfume", "Moss Perfume", "drop", ["g", "G", "h"], ["green", "cozy"], "Smells of the deep wood, but gently. Pepper insists."),
-  keep("black-pearl", "Black Pearl", "round", ["A", "z", "k"], ["shiny", "watery"], "The best of Sooty's collection. He says it is the second best."),
-  keep("song-page", "Song Page", "leaf", ["e", "E", "T"], ["bookish"], "One page of the Evening Song, in Sage's careful hand."),
-  keep("lamp-spark", "Lamp Spark", "gem", ["r", "R", "q"], ["shiny", "cozy"], "The last part: a small, stubborn glow. Fenn kept it warm.", "part"),
+  keep("silver-horseshoe", "Silver Horseshoe", "ring", ["s", "w", "S"], ["shiny", "earthy"], "Thompson outgrew it. She says she did not."),
+  keep("lamp-frame", "Lamp Frame", "cog", ["s", "S", "d"], ["earthy", "shiny"], "The lamp's iron frame. Lynch used it as a very sturdy chair.", "part"),
+  keep("moss-perfume", "Moss Perfume", "drop", ["g", "G", "h"], ["green", "cozy"], "Smells of the deep wood, but gently. Mugler insists."),
+  keep("black-pearl", "Black Pearl", "round", ["A", "z", "k"], ["shiny", "watery"], "The best of Gaultier's collection. He says it is the second best."),
+  keep("song-page", "Song Page", "leaf", ["e", "E", "T"], ["bookish"], "One page of the Evening Song, in Wallace's careful hand."),
+  keep("lamp-spark", "Lamp Spark", "gem", ["r", "R", "q"], ["shiny", "cozy"], "The last part: a small, stubborn glow. Vonnegut kept it warm.", "part"),
+)
+
+// things the world's props give out
+add(
+  mat("kindling", "Kindling", "stalk", ["t", "T", "u"], ["cozy", "earthy"], 3, "Split small so it catches. Smells like a good decision."),
+  mat("honey", "Wild Honey", "jar", ["b", "B", "n"], ["sweet", "cozy"], 8, "Slow, gold-ish, and worth the one sting."),
+  mat("postcard", "Postcard", "leaf", ["w", "s", "S"], ["bookish", "soft"], 6, "From somewhere with a better view than this one."),
+  mat("rainbit", "Rainbow Chip", "gem", ["c", "b", "B"], ["shiny", "musical"], 9, "A corner of a rainbow, split off a prism by someone patient."),
+  mat("fossil", "Spiral Fossil", "shell", ["s", "S", "d"], ["earthy", "bookish"], 10, "A shell that outlived its sea. It is still curling."),
+  mat("diatom", "Diatom", "star", ["c", "C", "m"], ["shiny", "watery"], 9, "A glass house a single cell built. Wow."),
+  mat("romanesco", "Romanesco", "swirl", ["g", "G", "h"], ["green", "crunchy"], 10, "Every spiral is made of smaller spirals made of smaller spirals."),
+  made("collage", "Scrap Collage", "heart", ["p", "P", "q"], ["bookish", "shiny", "soft"], 14, { feather: 1, button: 1, clover: 1 }, "A feather, a button and a clover, glued into something better than they were."),
 )
 
 export const LAMP_PARTS = ["lamp-wick", "lamp-glass", "lamp-oil", "lamp-frame", "lamp-spark"] as const
@@ -211,6 +241,14 @@ export const SHAPES: Record<string, readonly string[]> = {
   drop: ["...kk...", "..kMMk..", "..kLMk..", ".kLMMMk.", "kLwMMMDk", "kMMMMMDk", ".kMMMDk.", "..kkkk.."],
   leaf: ["......kk", "....kkMk", "..kkLMMk", ".kLLMMDk", "kLMMMDDk", "kMMDDkk.", "kDkk....", "kk......"],
   key: ["..kkk...", ".kLMMk..", ".kM.Mk..", ".kMMDk..", "..kMk...", "..kMkk..", "..kMMk..", "..kkk..."],
+  split: ["..GkkG..", "...kk...", ".kLMMDk.", "kLMMMMDk", ".kMMMDk.", "..kMDk..", "..kDDk..", "...kk..."],
+  mandala: ["..kkkk..", ".kLkMLk.", "kLkMMkDk", "kMMkkMMk", "kMMkkMDk", "kDkMMkDk", ".kDkMDk.", "..kkkk.."],
+  flicker: ["..kkkk..", ".kLwMMk.", "kLMwMwDk", "kwMMwMDk", "kMwMMwDk", "kMMwMMDk", ".kMDDDk.", "..kkkk.."],
+  pepper: ["....kG..", "...kGk..", "..kLMk..", ".kLMMDk.", ".kLMMDk.", "..kMMDk.", "..kMDk..", "...kk..."],
+  leek: ["...GG...", "..kGGk..", "..kLMk..", "..kLMk..", "..kLMDk.", "..kMMDk.", ".kMMMDk.", "..kkkk.."],
+  quince: ["...kG...", "..kGk...", "..kLMk..", ".kLMMDk.", "kLMMMMDk", "kMMMMMDk", ".kMMMDk.", "..kkkk.."],
+  sprout: ["..k..k..", ".kLkkLk.", ".kMLMLk.", "kLMMMMDk", "kMMLMMDk", ".kMMMDk.", "..kMDk..", "...kk..."],
+  log: ["........", "..kkkkk.", ".kLMMMDk", "kLMkkMDk", "kMMkMMDk", ".kMMMDDk", "..kkkkk.", "........"],
   seed: ["........", "...kk...", "..kLMk..", ".kLMMDk.", ".kMMMDk.", "..kMDk..", "...kk...", "........"],
   star: ["...kk...", "...kk...", "kkkLMkkk", "kLLMMMDk", ".kkMMDk.", ".kMMkDk.", "kMDkkMDk", ".kk..kk."],
   bean: ["........", "..kkkk..", ".kLMMMk.", "kLMwMMDk", "kMMMMDDk", ".kMDDDk.", "..kkkk..", "........"],

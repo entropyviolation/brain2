@@ -1,0 +1,12 @@
+{
+  "player": {
+    "from": "The Center of The World, the pixie: strawberry hair, brown eyes, black corset, silver chain belt with O rings, white go-go boots (ComfyUI generations liked 2026-11-03; refs/center-a.png front, refs/center-b.png side and back)",
+    "height": 28,
+    "eyes": "#6b4326",
+    "views": {
+      "front": { "file": "refs/center-a.png", "part": 0, "shadow": true },
+      "side": { "file": "refs/center-b.png", "part": 1, "flip": true, "shadow": true },
+      "back": { "file": "refs/center-b.png", "part": 2, "shadow": true }
+    }
+  }
+}

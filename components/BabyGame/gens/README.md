@@ -9,7 +9,12 @@ Every PNG in the ComfyUI output folder, newest first, beside the recipe it carri
 - **Like** (♥, key `L`) or **nope** (✕, key `X`). Key `0` clears. Keys `←` `→` move between images.
 - Say what it was **meant to be**: character, prop, tile or other.
 - Add **tags** and a **note**: what works and what is off.
+- Flag **what went wrong** with one-click issue chips (not pixel art, extra limbs, background, …), saved with the note.
+- Open the **exact ComfyUI graph** (the JSON the PNG carries) and see file, size and time beside the recipe.
+- **Try this recipe…**: opens the **Try a prompt** panel prefilled from that image.
 - **Copy recipe as JSON**.
+
+**Try a prompt** (top of the page) queues jobs in the local ComfyUI. Starting from an image, it sends that image's exact graph with only the changed fields (prompt, negative, seed, how many, steps, cfg, size, LoRA strength, file prefix). With no image it uses the liked default graph from `scripts/baby-gens-queue.mjs`. "How many" queues that many jobs on consecutive seeds. It shows ComfyUI's running and waiting counts and refreshes the grid when the queue empties. ComfyUI runs one job at a time, so jobs wait in line.
 
 Two boards sit above the grid. **Setups** groups images by checkpoint, LoRAs and strengths, cfg, sampler and steps. **LoRA at strength** groups by each LoRA at a strength. Both are ranked by `(likes + 1) / (rated + 2)`, so one lucky image cannot beat a long record. Click a setup to filter the grid to it. Note nodes on the ComfyUI canvas show under the recipe.
 
@@ -19,9 +24,9 @@ GensLog.tsx   the page: boards, filters, image grid, detail with recipe, note an
 
 ## Where things live
 
-- **Reading the PNGs:** `lib/baby-game/comfy-png.mjs` (plain `.mjs`, so the Node server and the tests share it).
+- **Reading the PNGs and editing graphs (`applyOverrides`):** `lib/baby-game/comfy-png.mjs` (plain `.mjs`, so the Node server and the tests share it).
 - **Boards and filters:** `lib/baby-game/gens.ts`.
-- **Server:** `scripts/baby-gens-api.mjs`, called by `cogs-dev-server.mjs` and `cogs-prod-server.mjs`. A dev server started before this file existed must be restarted.
+- **Server:** `scripts/baby-gens-api.mjs` (list, image, `raw/<path>` graph, `note`, `queue` GET and POST; ComfyUI at `COMFY_URL`, else `127.0.0.1:8188`), called by `cogs-dev-server.mjs` and `cogs-prod-server.mjs`. A dev server started before this file existed must be restarted.
 - **Folder read:** `BABY_GENS_DIR`, else `~/ComfyUI-Shared/output`, plus its first level of subfolders.
 - **Notes:** `data/baby-game-gens.json` (gitignored), keyed by file path in the output folder. They are on disk, not in browser storage, so Claude and, later, the game's generation BIMBY can read which recipes won.
 

@@ -4,8 +4,8 @@
  * Each game ends in a grade 0, 1 or 2, and the engine (`playMinigame`) turns the grade into a reward, once a day
  * per game. The settings here are the only place a game's difficulty lives, so a test can pin them.
  *
- *   glade  Firefly Glade   (night)  catch glowing fireflies in a jar before the timer runs out
- *   falls  Mossfall Hop            hop up a waterfall on moving stones; three falls end it
+ *   glade  Orb Light Glade   (night)  catch glowing fireflies in a jar before the timer runs out
+ *   falls  Sine Hop            hop up a waterfall on moving stones; three falls end it
  *   echo   Echo Flower              repeat the petals the flower lights, a note longer each round
  *   stairs Stair Weave              turn every stair until the way from the start reaches the door
  */
@@ -14,8 +14,8 @@ export type MinigameId = "glade" | "falls" | "echo" | "stairs"
 export const MINIGAME_IDS: readonly MinigameId[] = ["glade", "falls", "echo", "stairs"]
 
 export const MINIGAMES: Record<MinigameId, { name: string; blurb: string; zone: string; cost: number; nightOnly?: boolean }> = {
-  glade: { name: "Firefly Glade", blurb: "Fireflies only come out after dark. Catch the ones that are glowing.", zone: "orchard", cost: 4, nightOnly: true },
-  falls: { name: "Mossfall Hop", blurb: "Hop the stones up the waterfall. Time each jump to a stone passing under you.", zone: "pond", cost: 5 },
+  glade: { name: "Orb Light Glade", blurb: "Fireflies only come out after dark. Catch the ones that are glowing.", zone: "orchard", cost: 4, nightOnly: true },
+  falls: { name: "Sine Hop", blurb: "Hop the stones up the waterfall. Time each jump to a stone passing under you.", zone: "pond", cost: 5 },
   echo: { name: "Echo Flower", blurb: "The cave flower sings a little tune in light. Sing it back.", zone: "hill", cost: 3 },
   stairs: { name: "Stair Weave", blurb: "Each stair turns when tapped. Make a way from the first step to the door.", zone: "barn", cost: 4 },
 }

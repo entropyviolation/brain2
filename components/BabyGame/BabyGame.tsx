@@ -1,12 +1,13 @@
 /**
  * components/BabyGame/BabyGame.tsx — "Baby animal game": a small farm-sim village for your friend
  *
- * Opened from a friend's detail page. The friend follows you around Mossmere Hollow, a hidden valley (a Stardew-shaped meadow,
+ * Opened from a friend's detail page. The friend follows you around Valdivia, a hidden valley (a Stardew-shaped meadow,
  * farm, orchard, pond, cove, hill, yard, and wood, with a few impossible stairways) while you earn the trust of twenty baby
  * animals, trade them keepsakes, and light the
- * Hollow Lamp. The rules are `lib/baby-game/engine.ts`; this file is only the canvas loop, the keys, and the plates.
+ * Orb Lamp. The rules are `lib/baby-game/engine.ts`; this file is only the canvas loop, the keys, and the plates.
  * A friend can answer in their own words through the local model (`lib/baby-game/llm.ts`), with a script when none is there.
  * Nothing here writes to tasks, habits, or points. Progress is saved in this browser (`lib/baby-game/save.ts`).
+ * Development mode (Menu, then the ` key) swaps to a sandbox save with powers: `lib/baby-game/dev.ts`, `./devpanel.tsx`.
  */
 "use client"
 
@@ -16,33 +17,44 @@ import { speciesPersonality, type FriendTone } from "@/lib/baby-animal-personali
 import { RESIDENTS, resident, temper } from "@/lib/baby-game/cast"
 import { perkFor, spriteFor } from "@/lib/baby-game/companion"
 import {
-  act as actOf, addDiary, advance, ask, approach, chat, collapsed, craft, deliverErrand, eat, enterFestival, favor, fish, fishCost, gather, gift, harvest, hearts, hour, buy, sell,
-  placePart, plant, playMinigame, minigameBlock, till, addRealTask, claimQuest, completeRealTask, dropRealTask, setRealPlan, water, waterAll, readyToAsk, readyToTurnIn, sleep, spook, talk, turnIn, type GameState, type Msg, type Result, animal,
+  act as actOf, addDiary, advance, ask, approach, chat, collapsed, craft, deliverErrand, eat, enterFestival, favor, fish, fishCost, gather, gift, harvest, hearts, hour, buy, sell, take, contribute,
+  chop, clearStump, knock, placePart, plant, playMinigame, setEconomy, minigameBlock, till, addRealTask, claimQuest, completeRealTask, dropRealTask, setRealPlan, water, waterAll, readyToAsk, readyToTurnIn, sleep, spook, talk, turnIn, type GameState, type Msg, type Result, animal,
 } from "@/lib/baby-game/engine"
-import { askAnimal, councilTalk, gameModel, lineKind, llmEnabled, setLlmEnabled, voiceLine, writeDiary } from "@/lib/baby-game/llm"
+import { askAnimal, councilTalk, gameModel, generateEconomy, lineKind, llmEnabled, setLlmEnabled, voiceLine, writeDiary } from "@/lib/baby-game/llm"
 import type { LifeContext } from "@/lib/baby-game/life"
-import { crowdNear, center, nearest, newSim, stepSim, type Sim, type Target } from "@/lib/baby-game/sim"
-import { loadGame, resetGame, saveGame } from "@/lib/baby-game/save"
+import { PROP_SCREEN, tryProp } from "@/lib/baby-game/props"
+import { crowdNear, center, knockLine, nearest, newSim, stepSim, teleport as teleportSim, type Sim, type Target } from "@/lib/baby-game/sim"
+import { growTrees, syncTrees } from "@/lib/baby-game/trees"
+import { hasSave, loadGame, resetGame, saveGame, type SaveSlot } from "@/lib/baby-game/save"
+import { applyFlags, DEV_GEMS, devRefill, devSetWeather, loadFlags, nextSpeed, saveFlags, type DevFlags } from "@/lib/baby-game/dev"
+import { economyOf } from "@/lib/baby-game/economy"
 import { ACTS, ENDING, AFTER, farewell, GATE_OPENED, INTRO, PART_PLACED, companionBark } from "@/lib/baby-game/story"
 import { type MinigameId } from "@/lib/baby-game/minigames"
 import { cycleName, dayOfCycle, festivalOn } from "@/lib/baby-game/farm"
-import { buildWorld, FIRE_SLOTS, TILE, zoneAt, ZONES } from "@/lib/baby-game/world"
-import { item, SEEDS } from "@/lib/baby-game/items"
+import { buildWorld, FIRE_SLOTS, PLOTS, TILE, zoneAt, ZONES } from "@/lib/baby-game/world"
+import { item, LAMP_PARTS, SEEDS } from "@/lib/baby-game/items"
 import { CROP_BY_SEED, inSeason } from "@/lib/baby-game/farm"
 import { PixelSprite, ToolIcon, type ToolId } from "./pixel"
+import { Juice } from "./juice"
+import { Shake } from "./shake"
+import { DETAIL, HI, HiRes } from "./hires"
 import { buildMapCanvas, drawFrame, VIEW_H, VIEW_W, type Pop } from "./render"
 import { MapPanel } from "./map"
+import { DevPanel, DevQuickBar, DevReadout, type DevScene, drawDevOverlay, tileAtClick } from "./devpanel"
+import { Casa } from "./Casa"
 import { MINIGAME_VIEWS } from "./minigames"
 import {
   BagPanel, BenchPanel, BoardPanel, CouncilPanel, JournalPanel, LampPanel, MenuPanel, PlotPanel, StoryCard, StumpPanel, TalkPanel, TimingGame, type TalkView,
 } from "./panels"
 import "@/components/friend-details/friend-details.css"
 import "./BabyGame.css"
+import "./pixel-skin.css"
+import { DotGothic16 } from "next/font/google"
 
 export type GameFriend = {
   animalId: string
   name: string
-  /** Bond level from `lib/friend-stats.ts`; each level past the first is +4 energy and +1 button a morning. */
+  /** Bond level from `lib/friend-stats.ts`; each level past the first is +4 energy and +1 gem a morning. */
   level: number
   /** A real mission this friend has open, shown on the Notice Board. Read-only. */
   realMission?: string | null
@@ -55,6 +67,8 @@ type Mode =
   | { t: "talk"; id: string; line: string; by?: "model" | "scripted"; view: TalkView; busy: boolean; crowd: number }
   | { t: "bag" | "bench" | "stump" | "board" | "lamp" | "journal" | "menu" }
   | { t: "map" }
+  | { t: "dev" }
+  | { t: "inside" }
   | { t: "council" }
   | { t: "plot"; id: string }
   | { t: "mini"; game: MinigameId }
@@ -79,16 +93,32 @@ function nearPlot(sim: Sim | null, s: GameState): boolean {
   return !!sim && nearest(sim, s)?.kind === "plot"
 }
 
+// The game's own pixel face: DotGothic16, a clean one-weight pixel gothic. Hierarchy comes from size, colour and spacing, never fake bold.
+const pixelFont = DotGothic16({ subsets: ["latin"], weight: "400", variable: "--font-px-body", display: "swap" })
+
+/** Key hints in the footer, as keycaps: [key, what it does]. */
+const HINTS: Array<[string, string]> = [["WASD", "move"], ["Shift", "run"], ["E", "act"], ["I", "bag"], ["J", "journal"], ["M", "map"], ["1–5", "tools"], ["Q", "seed"]]
+const DEV_HINTS: Array<[string, string]> = [["`", "dev"], ["R", "speed"], ["N", "noclip"], ["V", "friends"], ["F", "freeze"], ["G", "grid"], ["Alt+click", "teleport"]]
+
 export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () => void }) {
-  const [g, setG] = useState<GameState>(() => loadGame())
+  const [dev, setDevState] = useState<DevFlags>(() => {
+    const f = loadFlags()
+    applyFlags(f)
+    return f
+  })
+  const devRef = useRef(dev)
+  const slot: SaveSlot = dev.on ? "dev" : "play"
+  const [g, setG] = useState<GameState>(() => loadGame(dev.on ? "dev" : "play"))
   const gRef = useRef(g)
-  const [mode, setModeState] = useState<Mode>(() => (g.seen.intro ? null : { t: "story", title: "Mossmere Hollow", paragraphs: INTRO, button: "Begin" }))
+  const [mode, setModeState] = useState<Mode>(() => (g.seen.intro || dev.on ? null : { t: "story", title: "Valdivia", paragraphs: INTRO, button: "Begin" }))
   const modeRef = useRef<Mode>(mode)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [prompt, setPrompt] = useState<string | null>(null)
   const [llmOn, setLlmOn] = useState(() => (typeof window === "undefined" ? true : llmEnabled()))
   const [hasModel, setHasModel] = useState<boolean | null>(null)
   const [zoneName, setZoneName] = useState("")
+  /** The player's tile as "x,y", for the dev readout; only set while dev mode is on. */
+  const [devTile, setDevTile] = useState("")
   const [tool, setToolState] = useState<ToolId>("hand")
   const toolRef = useRef<ToolId>("hand")
   const [seedPick, setSeedPick] = useState<string | null>(null)
@@ -100,6 +130,8 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
   const keys = useRef(new Set<string>())
   const pad = useRef({ dx: 0, dy: 0, run: false })
   const pops = useRef<Pop[]>([])
+  const juice = useRef(new Juice())
+  const shake = useRef(new Shake())
   const marked = useRef(new Set<string>())
   const focus = useRef<Target | null>(null)
   const pick = useRef(0)
@@ -109,7 +141,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
   const world = useMemo(() => buildWorld([...RESIDENTS.map((r) => r.day), ...FIRE_SLOTS]), [])
   const map = useMemo(() => (typeof document === "undefined" ? null : buildMapCanvas(world)), [world])
   const perk = useMemo(() => perkFor(friend.animalId), [friend.animalId])
-  const petSprite = useMemo(() => spriteFor(friend.animalId), [friend.animalId])
+  const petSprite = useMemo(() => spriteFor(friend.animalId, friend.name), [friend.animalId, friend.name])
   const tone = speciesPersonality(friend.animalId).tone as FriendTone
 
   const setMode = useCallback((next: Mode | ((m: Mode) => Mode)) => {
@@ -131,7 +163,16 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     window.setTimeout(() => setToasts((t) => t.filter((x) => !stamped.some((s) => s.id === x.id))), 3600)
   }, [])
 
-  useEffect(() => saveGame(g), [g])
+  useEffect(() => saveGame(g, slot), [g, slot])
+  // young and mature trees block the way; felled and fresh ones do not
+  useEffect(() => syncTrees(world, g), [world, g])
+
+  const setDev = useCallback((next: DevFlags) => {
+    devRef.current = next
+    applyFlags(next)
+    saveFlags(next)
+    setDevState(next)
+  }, [])
 
   useEffect(() => {
     let live = true
@@ -150,6 +191,8 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
 
   const pop = (x: number, y: number, kind: Pop["kind"]) => {
     pops.current.push({ x, y: y - 16, born: performance.now() / 1000, kind })
+    if (kind === "heart") juice.current.hearts(performance.now() / 1000, x, y, 4)
+    if (kind === "bad") shake.current.kick(performance.now() / 1000, 1)
   }
 
   /** Apply a result; if the friend's trust moved, show a heart or a drop over them. */
@@ -176,7 +219,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       const model = await gameModel()
       const page = await writeDiary(gRef.current, friend.name, tone, model, friend.life)
       const logged = addDiary(gRef.current, page.text, page.by)
-      const next = sleep(logged, power, { level: friend.level, routine: perk.id === "routine" })
+      const next = growTrees(world, sleep(logged, power, { level: friend.level, routine: perk.id === "routine" }))
       commit(next)
       const sim = simRef.current
       if (sim) {
@@ -195,7 +238,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
         then: () => setMode(null),
       })
     },
-    [commit, friend.level, friend.life, friend.name, perk.id, setMode, tone],
+    [commit, friend.level, friend.life, friend.name, perk.id, setMode, tone, world],
   )
 
   /** Re-voice a scripted line in the friend's own words when a model is up. The script shows first; the rewrite replaces it. */
@@ -249,16 +292,21 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     [apply, setMode, voice],
   )
 
+  /** The bed in the Loft: sleep if it is evening or you are worn out. */
+  const bedSleep = useCallback(() => {
+    const s = gRef.current
+    if (hour(s) < 18 && hour(s) >= 6 && s.energy > 30) {
+      toast([{ text: "Not tired yet. Evening, or when you're worn out.", tone: "info" }])
+      return
+    }
+    void goSleep(s.minutes < 24 * 60 ? 1 : 0.8)
+  }, [goSleep, toast])
+
   const visitStation = useCallback(
     (id: string) => {
       const s = gRef.current
-      if (id === "bed") {
-        if (hour(s) < 18 && hour(s) >= 6 && s.energy > 30) {
-          toast([{ text: "Not tired yet. Evening, or when you're worn out.", tone: "info" }])
-          return
-        }
-        void goSleep(s.minutes < 24 * 60 ? 1 : 0.8)
-      } else if (id === "glade" || id === "falls" || id === "echo" || id === "stairs") {
+      if (id === "bed") setMode({ t: "inside" })
+      else if (id === "glade" || id === "falls" || id === "echo" || id === "stairs") {
         const why = minigameBlock(s, id)
         if (why) toast([{ text: why, tone: "info" }])
         else setMode({ t: "mini", game: id })
@@ -268,7 +316,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       else if (id === "lamp") setMode({ t: "lamp" })
       else if (id === "fire") setMode({ t: "council" })
     },
-    [goSleep, setMode, toast],
+    [setMode],
   )
 
   /** The seed the Seeds tool plants: your pick if you still have it, else the first in-season kind you own. */
@@ -289,12 +337,22 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       if (t === "hoe") res = till(s, plotId)
       else if (t === "seeds") {
         const seed = currentSeed(s)
-        res = seed ? plant(s, plotId, seed) : { s, msgs: [{ text: "No seeds. The Trade Stump sells them.", tone: "bad" }], ok: false }
+        res = seed ? plant(s, plotId, seed) : { s, msgs: [{ text: "No seeds. The Swap Stump sells them.", tone: "bad" }], ok: false }
       } else if (t === "can") res = water(s, plotId)
       else if (t === "scythe") res = harvest(s, plotId, Math.random)
       if (!res) return
       apply(res)
-      if (res.ok && sim) pops.current.push({ x: sim.px, y: sim.py - 4, born: performance.now() / 1000, kind: "plus" })
+      if (res.ok && sim) {
+        const now = performance.now() / 1000
+        pops.current.push({ x: sim.px, y: sim.py - 4, born: now, kind: "plus" })
+        const plot = PLOTS.find((p) => p.id === plotId)
+        const fx = plot ? plot.x * TILE + TILE / 2 : sim.px
+        const fy = plot ? plot.y * TILE + TILE - 2 : sim.py
+        if (t === "hoe") juice.current.till(now, fx, fy)
+        else if (t === "can") juice.current.water(now, fx, fy)
+        else if (t === "scythe") juice.current.harvest(now, fx, fy)
+        else juice.current.gather(now, fx, fy)
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [apply],
@@ -339,24 +397,52 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
   const interact = useCallback(() => {
     const sim = simRef.current
     if (!sim || modeRef.current) return
-    const target = nearest(sim, gRef.current)
+    const target = nearest(sim, gRef.current, world)
     if (!target) return
     if (target.kind === "npc") openTalk(target.id)
+    else if (target.kind === "tree") {
+      const res = target.stage === "mature" ? chop(gRef.current, target.idx, Math.random) : clearStump(gRef.current, target.idx)
+      apply(res)
+      if (res.ok) {
+        pops.current.push({ x: target.x, y: target.y - 10, born: performance.now() / 1000, kind: "plus" })
+        juice.current.gather(performance.now() / 1000, target.x, target.y)
+      }
+    }
     else if (target.kind === "station") visitStation(target.id)
     else if (target.kind === "plot") {
       if (toolRef.current === "hand") setMode({ t: "plot", id: target.id })
       else applyTool(target.id)
     }
-    else if (target.node.kind === "fish") {
+    else if (target.kind === "home") {
+      toast([{ text: knockLine(sim, gRef.current, target.id), tone: "info" }])
+      commit(knock(gRef.current, target.id))
+    }
+    else if (target.kind === "prop") {
+      const screen = PROP_SCREEN[target.prop]
+      if (screen === "bench") setMode({ t: "bench" })
+      else if (screen === "fish") {
+        const nodeId = `prop-${target.index}`
+        if (gRef.current.nodes[nodeId] === gRef.current.day) toast([{ text: "You've already fished from the boat today.", tone: "info" }])
+        else if (gRef.current.energy < fishCost(gRef.current)) toast([{ text: "Too tired to row out.", tone: "bad" }])
+        else setMode({ t: "timing", kind: "fish", nodeId })
+      } else {
+        const res = tryProp(gRef.current, target.index, Math.random)
+        apply(res)
+        if (res.ok) pops.current.push({ x: target.x, y: target.y - 6, born: performance.now() / 1000, kind: "plus" })
+      }
+    } else if (target.node.kind === "fish") {
       if (gRef.current.nodes[target.node.id] === gRef.current.day) toast([{ text: "The fish have gone elsewhere today.", tone: "info" }])
       else if (gRef.current.energy < fishCost(gRef.current)) toast([{ text: "Too tired to fish.", tone: "bad" }])
       else setMode({ t: "timing", kind: "fish", nodeId: target.node.id })
     } else {
       const res = gather(gRef.current, target.node.id, target.node.kind, Math.random, perk.id === "fetch" ? 0.3 : 0)
       apply(res)
-      if (res.ok) pops.current.push({ x: target.x, y: target.y - 6, born: performance.now() / 1000, kind: "plus" })
+      if (res.ok) {
+        pops.current.push({ x: target.x, y: target.y - 6, born: performance.now() / 1000, kind: "plus" })
+        juice.current.gather(performance.now() / 1000, target.x, target.y)
+      }
     }
-  }, [apply, openTalk, perk.id, setMode, toast, applyTool, visitStation])
+  }, [apply, commit, openTalk, perk.id, setMode, toast, applyTool, visitStation, world])
 
   const interactRef = useRef(interact)
   interactRef.current = interact
@@ -364,6 +450,44 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
   pickToolRef.current = pickTool
   const cycleSeedRef = useRef(cycleSeed)
   cycleSeedRef.current = cycleSeed
+  const setDevRef = useRef(setDev)
+  setDevRef.current = setDev
+  const toastRef = useRef(toast)
+  toastRef.current = toast
+
+  /** Development mode's jump: put the player on a tile and say where. */
+  const teleport = useCallback(
+    (tile: [number, number]) => {
+      const sim = simRef.current
+      if (!sim) return
+      teleportSim(sim, tile)
+      const z = zoneAt(tile[0], tile[1])
+      toast([{ text: `Teleported to ${tile[0]}, ${tile[1]}${z ? ` · ${ZONES[z].name}` : ""}`, tone: "info" }])
+    },
+    [toast],
+  )
+
+  /** Swap between the real village and the dev sandbox. The first time in, the sandbox starts as a copy of the real save. */
+  const toggleDev = useCallback(() => {
+    const on = !devRef.current.on
+    const next = on ? loadGame(hasSave("dev") ? "dev" : "play") : loadGame("play")
+    setDev({ ...devRef.current, on })
+    commit(next)
+    simRef.current = newSim(SPAWN, next)
+    setMode(null)
+    toast([{ text: on ? "Development mode on: a sandbox village. Press ` for powers." : "Back in your real village.", tone: "info" }])
+  }, [commit, setDev, setMode, toast])
+
+  /** Replace the dev sandbox with a copy of the real village, or a fresh one. */
+  const reseedDev = useCallback(
+    (fresh: boolean) => {
+      const next = fresh ? { ...resetGame("dev"), seen: { intro: true } } : loadGame("play")
+      commit(next)
+      simRef.current = newSim(SPAWN, next)
+      toast([{ text: fresh ? "Fresh dev village." : "Dev village is now a copy of your real one.", tone: "info" }])
+    },
+    [commit, toast],
+  )
 
   // keyboard
   useEffect(() => {
@@ -374,6 +498,12 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault()
       if (k === "m" && !e.repeat && (!modeRef.current || modeRef.current.t === "map")) {
         setMode(modeRef.current ? null : { t: "map" })
+        return
+      }
+      if (k === "`" && devRef.current.on && !e.repeat && (!modeRef.current || modeRef.current.t === "dev")) {
+        // the plate focuses its search box at once; keep the backtick out of it
+        e.preventDefault()
+        setMode(modeRef.current ? null : { t: "dev" })
         return
       }
       if (modeRef.current) {
@@ -387,6 +517,19 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       const slot = ["1", "2", "3", "4", "5"].indexOf(k)
       if (slot >= 0) return pickToolRef.current((["hand", "hoe", "seeds", "can", "scythe"] as const)[slot]!)
       if (k === "q") return cycleSeedRef.current()
+      if (devRef.current.on && !e.repeat && k === "r") {
+        const speed = nextSpeed(devRef.current.speed)
+        setDevRef.current({ ...devRef.current, speed })
+        toastRef.current([{ text: `Dev: walk speed ${speed}×`, tone: "info" }])
+        return
+      }
+      if (devRef.current.on && !e.repeat && (k === "n" || k === "f" || k === "g" || k === "v")) {
+        const flag = ({ n: "noclip", f: "freeze", g: "overlay", v: "reveal" } as const)[k]
+        const next = { ...devRef.current, [flag]: !devRef.current[flag] }
+        setDevRef.current(next)
+        toastRef.current([{ text: `Dev: ${{ noclip: "walk through anything", freeze: "clock frozen", overlay: "debug overlay", reveal: "unmet friends shown" }[flag]} ${next[flag] ? "on" : "off"}`, tone: "info" }])
+        return
+      }
       if (k === "i") return setMode({ t: "bag" })
       if (k === "j") return setMode({ t: "journal" })
       if (k === "escape") return setMode({ t: "menu" })
@@ -403,8 +546,10 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
 
   // the loop
   useEffect(() => {
-    const ctx = canvas?.getContext("2d")
-    if (!canvas || !ctx || !map) return
+    const display = canvas?.getContext("2d")
+    if (!canvas || !display || !map) return
+    const hi = new HiRes(VIEW_W, VIEW_H, DETAIL)
+    const ctx = hi.lowCtx
     let raf = 0
     let last = performance.now()
     let acc = 0
@@ -418,10 +563,13 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
         const k = keys.current
         const dx = (k.has("arrowright") || k.has("d") ? 1 : 0) - (k.has("arrowleft") || k.has("a") ? 1 : 0) + pad.current.dx
         const dy = (k.has("arrowdown") || k.has("s") ? 1 : 0) - (k.has("arrowup") || k.has("w") ? 1 : 0) + pad.current.dy
-        // a slow frame is walked in small steps, so collisions and the clock agree at any frame rate
-        for (let left = Math.min(0.5, real); left > 0; left -= 0.05) {
-          const dt = Math.min(0.05, left)
-          const startled = stepSim(sim, world, gRef.current, { dx: Math.sign(dx), dy: Math.sign(dy), run: k.has("shift") || pad.current.run }, dt, Math.random)
+        const d = devRef.current
+        const powers = d.on ? { noclip: d.noclip, speed: d.speed } : {}
+        // a slow frame is walked in small steps, so collisions and the clock agree at any frame rate (and at dev speeds)
+        const stepLen = 0.05 / (d.on ? d.speed : 1)
+        for (let left = Math.min(0.5, real); left > 0; left -= stepLen) {
+          const dt = Math.min(stepLen, left)
+          const startled = stepSim(sim, world, gRef.current, { dx: Math.sign(dx), dy: Math.sign(dy), run: k.has("shift") || pad.current.run, ...powers }, dt, Math.random)
           for (const id of startled) {
             const res = spook(gRef.current, id)
             if (res.ok) {
@@ -436,30 +584,39 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
         if (acc >= 1) {
           const secs = Math.floor(acc)
           acc -= secs
-          let next = advance(gRef.current, secs * SECONDS_TO_MINUTES)
+          let next = d.on && d.freeze ? gRef.current : advance(gRef.current, secs * SECONDS_TO_MINUTES)
           if (runAcc >= 1) {
             next = { ...next, energy: Math.max(0, next.energy - Math.floor(runAcc)) }
             runAcc -= Math.floor(runAcc)
           }
+          if (d.on && d.energy && next.energy < next.maxEnergy) next = { ...next, energy: next.maxEnergy }
+          if (d.on && d.gems && (next.inv.gem ?? 0) < DEV_GEMS) next = { ...next, inv: { ...next.inv, gem: DEV_GEMS }, found: { ...next.found, gem: true } }
+          if (d.on && d.lockWeather && next.weather !== d.lockWeather) next = devSetWeather(next, d.lockWeather)
           commit(next)
           if (perk.id === "nose") marked.current = new Set([...readyToAsk(next, { crowd: 0 }), ...readyToTurnIn(next)])
           if (collapsed(next)) void goSleep(0.6)
         }
       }
-      const target = paused ? null : nearest(sim, gRef.current)
+      const target = paused ? null : nearest(sim, gRef.current, world)
       focus.current = target
       const here = zoneAt(Math.floor(sim.px / TILE), Math.floor(sim.py / TILE))
       const hereName = here ? ZONES[here].name : "The wild wood"
       setZoneName((z) => (z === hereName ? z : hereName))
+      if (devRef.current.on) {
+        const tileKey = `${Math.floor(sim.px / TILE)},${Math.floor(sim.py / TILE)}`
+        setDevTile((v) => (v === tileKey ? v : tileKey))
+      }
       const toolVerb = target?.kind === "plot" && toolRef.current !== "hand" ? { hoe: "Till the soil", seeds: "Plant seeds", can: "Water", scythe: "Harvest" }[toolRef.current] : null
       const label = toolVerb ?? (target ? (target.kind === "node" && gRef.current.nodes[target.node.id] === gRef.current.day ? `${target.label} (picked clean)` : target.label) : null)
       setPrompt((p) => (p === label ? p : label))
       const t = now / 1000
       pops.current = pops.current.filter((p) => t - p.born < 1.4)
       drawFrame(ctx, {
-        s: gRef.current, sim, world, map, t, pops: pops.current, marked: marked.current, petSprite,
+        s: gRef.current, sim, world, map, t, pops: pops.current, marked: marked.current, petSprite, juice: juice.current, shake: shake.current.offset(t),
         focus: target && target.kind !== "station" ? { kind: target.kind, x: target.x, y: target.y } : null,
       })
+      if (devRef.current.on && devRef.current.overlay) drawDevOverlay(ctx, world, sim, actOf(gRef.current), shake.current.offset(t))
+      hi.present(display)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -493,28 +650,46 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     const res = placePart(gRef.current, id)
     apply(res)
     if (!res.ok) return
+    shake.current.kick(performance.now() / 1000, 3, 2 / 60)
     const paragraphs = [PART_PLACED[id] ?? `${item(id).name} fits.`]
     const next = actOf(res.s)
     if (res.s.ended) {
       const close = [...RESIDENTS].sort((a, b) => hearts(res.s, b.id) - hearts(res.s, a.id)).slice(0, 5)
       paragraphs.push(...ENDING, ...close.map((r) => farewell(r, hearts(res.s, r.id))), AFTER)
-      setMode({ t: "story", title: "The Festival of Small Lights", paragraphs, button: "Stay in the Hollow", then: () => setMode(null) })
+      setMode({ t: "story", title: "The Festival of Orb Lights", paragraphs, button: "Stay in Valdivia", then: () => setMode(null) })
     } else {
       if (GATE_OPENED[next]) paragraphs.push(GATE_OPENED[next]!)
       paragraphs.push(`${ACTS[next - 1]!.title}: ${ACTS[next - 1]!.blurb}`)
-      setMode({ t: "story", title: "The Hollow Lamp", paragraphs, button: "Onward", then: () => setMode(null) })
+      setMode({ t: "story", title: "The Orb Lamp", paragraphs, button: "Onward", then: () => setMode(null) })
     }
   }
 
+  /** Development mode: play any story scene or mini game now. */
+  const playScene = (scene: DevScene) => {
+    if (scene.t === "intro") return setMode({ t: "story", title: "Valdivia", paragraphs: INTRO, button: "Begin", then: () => setMode(null) })
+    if (scene.t === "act") {
+      const a = ACTS[scene.act - 1]!
+      const part = ACTS[scene.act - 2] ? PART_PLACED[LAMP_PARTS[scene.act - 2]!] : undefined
+      const paragraphs = [...(part ? [part] : []), ...(GATE_OPENED[scene.act] ? [GATE_OPENED[scene.act]!] : []), `${a.title}: ${a.blurb}`]
+      return setMode({ t: "story", title: "The Orb Lamp", paragraphs, button: "Onward", then: () => setMode(null) })
+    }
+    if (scene.t === "ending") {
+      const s = gRef.current
+      const close = [...RESIDENTS].sort((a, b) => hearts(s, b.id) - hearts(s, a.id)).slice(0, 5)
+      return setMode({ t: "story", title: "The Festival of Orb Lights", paragraphs: [...ENDING, ...close.map((r) => farewell(r, hearts(s, r.id))), AFTER], button: "Back", then: () => setMode(null) })
+    }
+    setMode(scene)
+  }
+
   const startOver = () => {
-    const fresh = resetGame()
+    const fresh = resetGame(slot)
     commit(fresh)
     const sim = simRef.current
     if (sim) {
       sim.px = center(SPAWN[0])
       sim.py = center(SPAWN[1])
     }
-    setMode({ t: "story", title: "Mossmere Hollow", paragraphs: INTRO, button: "Begin" })
+    setMode({ t: "story", title: "Valdivia", paragraphs: INTRO, button: "Begin" })
   }
 
   const finishStory = (m: Extract<NonNullable<Mode>, { t: "story" }>) => {
@@ -538,7 +713,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       >
         <DialogTitle className="sr-only">Baby animal game</DialogTitle>
         <DialogDescription className="sr-only">A small village to explore with your friend. Arrow keys or WASD to move, E to act.</DialogDescription>
-        <div className="bg-root" data-ui-name="Baby animal game" data-ui-docs="components/BabyGame/README.md">
+        <div className={`bg-root ${pixelFont.variable}`} data-ui-name="Baby animal game" data-ui-docs="components/BabyGame/README.md">
           <header className="bg-hud">
             <div className="bg-buddy" title={perk.blurb}>
               <PixelSprite id={petSprite} scale={3} label={friend.name} />
@@ -557,19 +732,42 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
                 <i style={{ width: `${energyPct}%` }} className={energyPct < 25 ? "is-low" : ""} />
                 <em>{g.energy}/{g.maxEnergy}</em>
               </span>
-              <span className="bg-lcd">{g.buttons} buttons</span>
+              <span className="bg-lcd" title={economyOf(g).blurb}>{economyOf(g).market === "remnant" ? `${g.buttons} buttons` : economyOf(g).name}</span>
             </div>
             <div className="bg-menu-keys">
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "bag" })}>Bag</button>
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "journal" })}>Journal</button>
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "map" })}>Map</button>
+              {dev.on ? <button type="button" className="friend-key bg-key bg-dev-key" data-no95="" title="Development mode powers (`)" onClick={() => setMode({ t: "dev" })}>Dev</button> : null}
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "menu" })}>Menu</button>
             </div>
           </header>
 
           <div className="bg-stage">
-            <canvas ref={setCanvas} width={VIEW_W} height={VIEW_H} className="bg-canvas" aria-label="Mossmere Hollow" />
-            {zoneName ? <div className="bg-zone">{zoneName}</div> : null}
+            <canvas
+              ref={setCanvas}
+              width={VIEW_W * HI * DETAIL}
+              height={VIEW_H * HI * DETAIL}
+              className="bg-canvas"
+              aria-label="Valdivia"
+              onClick={(e) => {
+                const sim = simRef.current
+                if (dev.on && e.altKey && !mode && sim) teleport(tileAtClick(sim, e.currentTarget, e.clientX, e.clientY))
+              }}
+            />
+            {dev.on ? <DevReadout tile={devTile} g={g} flags={dev} onOpen={() => setMode({ t: "dev" })} /> : null}
+            {dev.on && !mode ? <DevQuickBar flags={dev} setFlags={setDev} onRefill={() => commit(devRefill(gRef.current))} /> : null}
+            {mode?.t === "inside" ? (
+              <Casa
+                night={hour(g) >= 19 || hour(g) < 6}
+                petSprite={petSprite}
+                onExit={() => setMode(null)}
+                onBed={bedSleep}
+                onLook={(text) => toast([{ text, tone: "info" }])}
+              />
+            ) : zoneName ? (
+              <div className="bg-zone">{zoneName}</div>
+            ) : null}
             <div className="bg-act">{festivalOn(g.day)?.name ?? (g.ended ? "The lamp is lit" : ACTS[act - 1]!.title)}</div>
             <ul className="bg-toasts" aria-live="polite">
               {toasts.map((t) => (
@@ -631,7 +829,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
               </div>
             ) : null}
 
-            {mode ? (
+            {mode && mode.t !== "inside" ? (
               <div className="bg-overlay">
                 {mode.t === "talk" ? (
                   <TalkPanel
@@ -656,7 +854,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
                 ) : null}
                 {mode.t === "bag" ? <BagPanel g={g} onEat={(id) => apply(eat(gRef.current, id))} onClose={() => setMode(null)} /> : null}
                 {mode.t === "bench" ? <BenchPanel g={g} onCraft={(id) => apply(craft(gRef.current, id, Math.random))} onClose={() => setMode(null)} /> : null}
-                {mode.t === "stump" ? <StumpPanel g={g} onBuy={(id) => apply(buy(gRef.current, id))} onSell={(id) => apply(sell(gRef.current, id))} onClose={() => setMode(null)} /> : null}
+                {mode.t === "stump" ? <StumpPanel g={g} onBuy={(id) => apply(buy(gRef.current, id))} onSell={(id) => apply(sell(gRef.current, id))} onTake={(id) => apply(take(gRef.current, id))} onLeave={(id) => apply(contribute(gRef.current, id))} onClose={() => setMode(null)} /> : null}
                 {mode.t === "board" ? (
                   <BoardPanel g={g} name={friend.name} realMission={friend.realMission} onDeliver={(id) => apply(deliverErrand(gRef.current, id))} onEnter={(id) => apply(enterFestival(gRef.current, id))} onClose={() => setMode(null)} />
                 ) : null}
@@ -678,7 +876,34 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
                     onClose={() => setMode(null)}
                   />
                 ) : null}
-                {mode.t === "map" ? <MapPanel world={world} act={act} getSim={() => simRef.current} onClose={() => setMode(null)} /> : null}
+                {mode.t === "map" ? (
+                  <MapPanel
+                    world={world}
+                    act={act}
+                    getSim={() => simRef.current}
+                    onClose={() => setMode(null)}
+                    onPick={dev.on ? (tile) => (teleport(tile), setMode(null)) : undefined}
+                  />
+                ) : null}
+                {mode.t === "dev" ? (
+                  <DevPanel
+                    g={g}
+                    world={world}
+                    flags={dev}
+                    setFlags={setDev}
+                    edit={(fn) => commit(fn(gRef.current))}
+                    teleport={teleport}
+                    onScene={playScene}
+                    onCopyReal={() => reseedDev(false)}
+                    onFresh={() => reseedDev(true)}
+                    onEconomy={(spec) => {
+                      commit(setEconomy(gRef.current, spec))
+                      toast([{ text: `This world now shares as: ${spec.name}.`, tone: "info" }])
+                    }}
+                    generate={async (prompt) => generateEconomy(prompt, llmOn ? await gameModel() : null)}
+                    onClose={() => setMode(null)}
+                  />
+                ) : null}
                 {mode.t === "plot" ? (
                   <PlotPanel
                     g={g}
@@ -713,6 +938,8 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
                     llmOn={llmOn}
                     hasModel={hasModel}
                     canSleep={hour(g) >= 18 || hour(g) < 6 || g.energy <= 30}
+                    dev={dev.on}
+                    onToggleDev={toggleDev}
                     onSleep={() => void goSleep(g.minutes < 24 * 60 ? 1 : 0.8)}
                     onToggleLlm={() => {
                       setLlmEnabled(!llmOn)
@@ -738,7 +965,13 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
 
           <footer className="bg-foot">
             <span>{companionBark(g.ended ? "night" : rainy ? "rain" : "found", friend.name)}</span>
-            <span className="bg-faint">Arrows / WASD move · Shift runs (shy friends jump!) · E acts · I bag · J journal · M map · 1–5 tools · Q seed</span>
+            <span className="bg-hints" aria-label="Keys">
+              {[...HINTS, ...(dev.on ? DEV_HINTS : [])].map(([k, what]) => (
+                <span key={k}>
+                  <kbd>{k}</kbd> {what}
+                </span>
+              ))}
+            </span>
             <button type="button" className="friend-key bg-key" data-no95="" onClick={onClose}>Back to {friend.name}</button>
           </footer>
         </div>

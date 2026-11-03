@@ -6,16 +6,20 @@
  */
 "use client"
 
+import { LESSONS, PATHS } from "@/lib/baby-game/dharma"
+import { THEORY } from "@/lib/baby-game/theory"
+import { economyOf } from "@/lib/baby-game/economy"
 import { useEffect, useRef, useState } from "react"
-import { approachDistance, APPROACHES, CONDITION_TEXT, RESIDENTS, resident, temper, type Resident } from "@/lib/baby-game/cast"
+import { approachDistance, APPROACHES, CONDITION_TEXT, inValley, RESIDENTS, resident, temper, type Resident } from "@/lib/baby-game/cast"
 import {
-  animal, askBlocks, canCraft, have, hearts, isAsleep, moodLabel, questProgress, REAL_MAX, RESTORE, sellPrice, skillLevel, starlogCount, starlogTotal, STARLOG_STEP, tasteFact, visibleQuests, wantsMet, type GameState,
+  animal, askBlocks, canCraft, drawLimit, errandButtons, freeRiding, shelfCount, standing, have, hearts, isAsleep, moodLabel, questProgress, REAL_MAX, RESTORE, sellPrice, skillLevel, stocked, starlogCount, starlogTotal, STARLOG_STEP, tasteFact, thanksLabel, visibleQuests, wantsMet, type GameState,
 } from "@/lib/baby-game/engine"
 import { CROPS, CYCLE_LEN, cycleName, dayOfCycle, festivalOn, inSeason, isRipe, levelProgress, SKILLS, SKILL_IDS } from "@/lib/baby-game/farm"
 import { item, ITEMS, LAMP_PARTS, RECIPES, SEEDS } from "@/lib/baby-game/items"
 import type { CouncilLine } from "@/lib/baby-game/llm"
 import { ACTS } from "@/lib/baby-game/story"
 import type { FriendTone } from "@/lib/baby-animal-personality"
+import { DesignPanel } from "./designpanel"
 import { ItemIcon, PixelSprite } from "./pixel"
 
 const key = (label: string, onClick: () => void, opts: { primary?: boolean; disabled?: boolean; title?: string; k?: string } = {}) => (
@@ -110,6 +114,8 @@ export function TalkPanel(p: {
           <Hearts n={h} />
           <small>{moodLabel(a.mood)} · {t.cadence} · {t.tone}</small>
           <small className="bg-faint">favor: {t.whim.toLowerCase()}</small>
+          {h >= 3 && PATHS[p.id] ? <small className="bg-faint" title={PATHS[p.id]!.belief}>{PATHS[p.id]!.school} · {PATHS[p.id]!.idea}</small> : null}
+          {h >= 3 && THEORY[p.id] ? <small className="bg-faint" title={THEORY[p.id]!.belief}>{THEORY[p.id]!.school} · {THEORY[p.id]!.idea}</small> : null}
         </div>
         <div className="bg-talk-main">
           <Typewriter text={p.busy ? "…" : p.line || r.hello} effect={t.effect} />
@@ -236,11 +242,57 @@ export function BenchPanel({ g, onCraft, onClose }: { g: GameState; onCraft: (id
   )
 }
 
-export function StumpPanel({ g, onBuy, onSell, onClose }: { g: GameState; onBuy: (id: string) => void; onSell: (id: string) => void; onClose: () => void }) {
-  const wares = Object.values(ITEMS).filter((d) => d.kind === "material" || d.kind === "seed")
+export function StumpPanel({ g, onBuy, onSell, onTake, onLeave, onClose }: { g: GameState; onBuy: (id: string) => void; onSell: (id: string) => void; onTake: (id: string) => void; onLeave: (id: string) => void; onClose: () => void }) {
+  const wares = Object.values(ITEMS).filter((d) => stocked(d, g.day))
   const loose = Object.keys(g.inv).filter((id) => ITEMS[id] && ITEMS[id]!.kind !== "keepsake" && ITEMS[id]!.kind !== "part")
+  const shelf = Object.entries(g.commons.stock).filter(([id]) => ITEMS[id])
+  const share = drawLimit(g)
+  const left = Math.max(0, share - g.commons.drawn)
+  const leaveable = loose.filter((id) => ITEMS[id]!.kind !== "keepsake")
   return (
-    <Plate title={`Trade Stump · ${g.buttons} buttons${festivalOn(g.day) ? " · festival prices" : ""}`} onClose={onClose} wide>
+    <Plate title={`Commons Stump · ${standing(g).name}${festivalOn(g.day) && economyOf(g).festival === "fair" ? " · festival prices" : ""}`} onClose={onClose} wide>
+      <h4>The Commons shelf <small className="bg-faint">({shelfCount(g)} things · your share today: {left} of {share})</small></h4>
+      <p className="bg-faint">
+        From each according to ability, to each according to need. The friends stock the shelf every morning. Take what you need, leave what you can spare. A gift you give a friend comes back to you in kind.
+        {freeRiding(g) ? " The shelf is mirroring you right now: leave something and it opens again." : ""}
+      </p>
+      <div className="bg-two">
+        <div>
+          <h4>Take</h4>
+          <div className="bg-grid" role="list">
+            {shelf.length ? (
+              shelf.map(([id, qty]) => (
+                <button key={id} type="button" role="listitem" className="bg-cell" disabled={left < 1 || (ITEMS[id]!.kind === "seed" && !stocked(ITEMS[id]!, g.day))} onClick={() => onTake(id)} title={ITEMS[id]!.blurb}>
+                  <ItemIcon id={id} />
+                  <span>{item(id).name}</span>
+                  <b>×{qty}</b>
+                </button>
+              ))
+            ) : (
+              <p className="bg-faint">The shelf is bare. The friends restock it at dawn.</p>
+            )}
+          </div>
+        </div>
+        <div>
+          <h4>Leave</h4>
+          <div className="bg-grid" role="list">
+            {leaveable.length ? (
+              leaveable.map((id) => (
+                <button key={id} type="button" role="listitem" className="bg-cell" onClick={() => onLeave(id)}>
+                  <ItemIcon id={id} />
+                  <span>{item(id).name}</span>
+                  <b>give</b>
+                </button>
+              ))
+            ) : (
+              <p className="bg-faint">Nothing to spare.</p>
+            )}
+          </div>
+        </div>
+      </div>
+      {economyOf(g).market === "remnant" ? (
+      <>
+      <h4>Trade corner <small className="bg-faint">({g.buttons} buttons · a small market, for when the shelf lacks something)</small></h4>
       <div className="bg-two">
         <div>
           <h4>Buy</h4>
@@ -253,6 +305,7 @@ export function StumpPanel({ g, onBuy, onSell, onClose }: { g: GameState; onBuy:
               </button>
             ))}
           </div>
+          <p className="bg-faint">Seeds are stocked only in their own cycle. Today is {cycleName(g.day)}.</p>
         </div>
         <div>
           <h4>Sell</h4>
@@ -271,7 +324,32 @@ export function StumpPanel({ g, onBuy, onSell, onClose }: { g: GameState; onBuy:
           </div>
         </div>
       </div>
+      </>
+      ) : (
+        <p className="bg-faint">
+          There is no market in {economyOf(g).name}. Nothing here has a price; gems are a gift friends love, not money. Seeds come to the shelf in their own cycle (today is {cycleName(g.day)}).
+        </p>
+      )}
     </Plate>
+  )
+}
+
+/** How this world shares, in plain words, with its sources. The Journal's Story tab and the dev plate show it. */
+export function EconomyNote({ g }: { g: GameState }) {
+  const e = economyOf(g)
+  return (
+    <div className="bg-econ">
+      <b>How Valdivia shares: {e.name}</b>
+      <p>{e.blurb}</p>
+      <small className="bg-faint">
+        Shelf share {e.shelf.share}{e.shelf.need ? `, +${e.shelf.need} when you are worn out` : ""} · friends bring {e.offerings} each a morning · festival: {e.festival} ·{" "}
+        {e.shelf.mirrorGap === null ? "nobody keeps score" : "friends gently mirror a long run of only taking"}
+        <br />
+        {e.population.size} residents · work {e.population.labor} · decided by {e.population.decisions} · care first for {e.population.care}
+        <br />
+        After: {e.sources.join("; ")}
+      </small>
+    </div>
   )
 }
 
@@ -303,7 +381,7 @@ export function BoardPanel({ g, realMission, name, onDeliver, onEnter, onClose }
       ) : (
         <p className="bg-faint">The festival is on day {CYCLE_LEN} of each cycle ({CYCLE_LEN - dayOfCycle(g.day)} more day{CYCLE_LEN - dayOfCycle(g.day) === 1 ? "" : "s"}).</p>
       )}
-      <h4>Today&apos;s errands</h4>
+      <h4>Mutual aid today</h4>
       {g.errands.map((e) => {
         const r = resident(e.who)!
         const ok = have(g, e.item) >= e.qty
@@ -312,7 +390,7 @@ export function BoardPanel({ g, realMission, name, onDeliver, onEnter, onClose }
             <PixelSprite id={e.who} scale={3} />
             <p>
               <b>{r.name}</b> would like {e.qty} × <ItemIcon id={e.item} scale={2} /> {item(e.item).name}.
-              <small> {e.reward} buttons and a little trust.</small>
+              <small> {thanksLabel(g, errandButtons(e))} in thanks, a gift back in kind, and a little trust.</small>
             </p>
             {e.done ? <small>Delivered</small> : key("Deliver", () => onDeliver(e.id), { primary: true, disabled: !ok })}
           </div>
@@ -329,7 +407,7 @@ export function BoardPanel({ g, realMission, name, onDeliver, onEnter, onClose }
 export function LampPanel({ g, onPlace, onClose }: { g: GameState; onPlace: (id: string) => void; onClose: () => void }) {
   const carrying = LAMP_PARTS.filter((id) => have(g, id) > 0)
   return (
-    <Plate title="The Hollow Lamp" onClose={onClose}>
+    <Plate title="The Orb Lamp" onClose={onClose}>
       <div className="bg-lamp">
         {LAMP_PARTS.map((id, i) => (
           <div key={id} className={`bg-lamp-slot${g.parts.includes(id) ? " is-set" : ""}`}>
@@ -345,7 +423,8 @@ export function LampPanel({ g, onPlace, onClose }: { g: GameState; onPlace: (id:
 }
 
 export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { g: GameState; companion: string; perk: string; level: number; onClaim: (id: string) => void; onClose: () => void }) {
-  const [tab, setTab] = useState<"story" | "quests" | "friends" | "skills" | "log" | "diary">("story")
+  const [tab, setTab] = useState<"story" | "quests" | "friends" | "design" | "skills" | "log" | "diary">("story")
+  const [designId, setDesignId] = useState<string | undefined>()
   const act = Math.min(5, g.parts.length + 1)
   return (
     <Plate title="Journal" onClose={onClose} wide>
@@ -368,6 +447,7 @@ export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { 
           <p className="bg-faint">
             {companion} · bond level {level} · {perk}
           </p>
+          <EconomyNote g={g} />
         </div>
       ) : null}
       {tab === "quests" ? (
@@ -383,10 +463,11 @@ export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { 
                     <b>{q.title}</b> · {resident(q.giver)?.name}
                     <br />
                     <small>{done ? q.thanks : q.text}</small>
+                    {LESSONS[q.id] ? <small className="bg-faint"> Lesson, {LESSONS[q.id]!.idea}: {LESSONS[q.id]!.lesson}</small> : null}
                     {!done ? (
                       <small>
                         {" "}
-                        {p.have}/{p.need} {p.label}. Reward: {q.reward.buttons} buttons{q.reward.items?.length ? ` + ${q.reward.items.map(([id, n]) => `${n} ${item(id).name}`).join(", ")}` : ""}.
+                        {p.have}/{p.need} {p.label}. Thanks: {thanksLabel(g, q.reward.buttons)}{q.reward.items?.length ? ` + ${q.reward.items.map(([id, n]) => `${n} ${item(id).name}`).join(", ")}` : ""}.
                       </small>
                     ) : null}
                   </p>
@@ -402,14 +483,15 @@ export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { 
       ) : null}
       {tab === "friends" ? (
         <div className="bg-friends">
-          {RESIDENTS.filter((r) => r.act <= act).map((r) => {
+          {RESIDENTS.filter((r) => inValley(r, act)).map((r) => {
             const a = animal(g, r.id)
             const h = hearts(g, r.id)
             return (
               <div key={r.id} className="bg-friend">
                 <PixelSprite id={r.id} scale={3} />
                 <div>
-                  <b>{r.name}</b> <Hearts n={h} />
+                  <b>{r.name}</b> <Hearts n={h} />{" "}
+                  {key("Design", () => { setDesignId(r.id); setTab("design") }, { title: "See every view and write redesign notes" })}
                   <small>
                     {a.stage === "gave" ? `Gave ${item(r.gives).name}` : a.stage === "turned" ? `Needs ${r.gate} hearts${a.cluedAt ? ` · ${CONDITION_TEXT[r.condition]}` : ""}` : h >= 2 ? `Wants ${r.wants.map((w) => item(w).name).join(" + ")}` : "Still getting to know you"}
                   </small>
@@ -420,6 +502,7 @@ export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { 
           })}
         </div>
       ) : null}
+      {tab === "design" ? <DesignPanel initial={designId} onBack={() => setTab("friends")} /> : null}
       {tab === "skills" ? (
         <div>
           {SKILL_IDS.map((id) => {
@@ -438,7 +521,7 @@ export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { 
       {tab === "log" ? (
         <div>
           <p>
-            <b>{starlogCount(g)}</b> of {starlogTotal()} things found. Every {STARLOG_STEP}th discovery pays 8 buttons.
+            <b>{starlogCount(g)}</b> of {starlogTotal()} things found. Every {STARLOG_STEP}th discovery brings {thanksLabel(g, 8)}.
           </p>
           <div className="bg-grid" role="list">
             {Object.keys(ITEMS).map((id) => (
@@ -531,7 +614,7 @@ export function TimingGame({ title, hint, speed, onDone }: { title: string; hint
   )
 }
 
-export function MenuPanel({ llmOn, hasModel, canSleep, onSleep, onToggleLlm, onReset, onExit, onClose }: { llmOn: boolean; hasModel: boolean | null; canSleep: boolean; onSleep: () => void; onToggleLlm: () => void; onReset: () => void; onExit: () => void; onClose: () => void }) {
+export function MenuPanel({ llmOn, hasModel, canSleep, dev, onToggleDev, onSleep, onToggleLlm, onReset, onExit, onClose }: { llmOn: boolean; hasModel: boolean | null; canSleep: boolean; dev: boolean; onToggleDev: () => void; onSleep: () => void; onToggleLlm: () => void; onReset: () => void; onExit: () => void; onClose: () => void }) {
   const [sure, setSure] = useState(false)
   return (
     <Plate title="Menu" onClose={onClose}>
@@ -540,6 +623,13 @@ export function MenuPanel({ llmOn, hasModel, canSleep, onSleep, onToggleLlm, onR
         <span>
           Friends may answer in their own words
           <small>{hasModel === null ? "Looking for a local model…" : hasModel ? "Local model found." : "No local model found. Short scripted answers instead."}</small>
+        </span>
+      </label>
+      <label className="bg-check">
+        <input type="checkbox" checked={dev} onChange={onToggleDev} />
+        <span>
+          Development mode
+          <small>{dev ? "On: a sandbox village with powers. ` opens them. Your real village is set aside." : "A sandbox village for building the game: teleport, walk through walls, set time, give items. Your real save is kept apart."}</small>
         </span>
       </label>
       <div className="bg-keys">
@@ -553,7 +643,7 @@ export function MenuPanel({ llmOn, hasModel, canSleep, onSleep, onToggleLlm, onR
   )
 }
 
-export { approachDistance }
+export { approachDistance, key as plateKey }
 export type { Resident }
 
 export function PlotPanel(p: {
@@ -597,7 +687,7 @@ export function PlotPanel(p: {
               })}
             </div>
           ) : (
-            <p className="bg-faint">No seeds. The Trade Stump sells them.</p>
+            <p className="bg-faint">No seeds. The Swap Stump sells them.</p>
           )}
         </>
       ) : (
@@ -649,7 +739,7 @@ export function CouncilPanel(p: {
   }
 
   return (
-    <Plate title="The Campfire Council" onClose={p.onClose} wide>
+    <Plate title="The Macy Council" onClose={p.onClose} wide>
       <p className="bg-faint">
         Tell the friends what is weighing on you in real life. Anything urgent pulls them to the fire. They can talk it over in plain text and help you find the first small step. Nothing here changes your real lists: you mark it done yourself.
       </p>
