@@ -531,7 +531,13 @@ export function TodoMobile(props: TodoMobileProps) {
             <button type="button" className="todo-ios-key todo-ios-navbtn" data-no95 aria-label={prevLabel} onClick={() => shift(-1)}>
               ‹
             </button>
-            <div className="todo-ios-date-label">{navLabel}</div>
+            <div className="todo-ios-date-label">
+              <span>{navLabel}</span>
+              <small data-ui-name="Status bar">
+                {viewingPast ? `${undoneCount} undone · ` : ""}
+                {openCount} open
+              </small>
+            </div>
             <button type="button" className="todo-ios-key todo-ios-navbtn" data-no95 aria-label={nextLabel} onClick={() => shift(1)}>
               ›
             </button>
@@ -561,14 +567,17 @@ export function TodoMobile(props: TodoMobileProps) {
             </button>
           ))}
         </div>
-        <p className="todo-ios-load" data-ui-name="Status bar">
-          <span>
-            {periodLabel}
-            {viewingPast ? ` · ${undoneCount} undone` : ""}
-            {" · "}
-            <strong>{openCount} open</strong>
-          </span>
-        </p>
+        {/* With the nameplate showing, the status line lives under its date. */}
+        {activeTab === "other" || compact ? (
+          <p className="todo-ios-load" data-ui-name="Status bar">
+            <span>
+              {periodLabel}
+              {viewingPast ? ` · ${undoneCount} undone` : ""}
+              {" · "}
+              <strong>{openCount} open</strong>
+            </span>
+          </p>
+        ) : null}
       </header>
 
       <div
