@@ -61,7 +61,8 @@ export type CharacterGoal = {
 
 export type CharacterLikes = { tags: Tag[]; hates: Tag; loves: Tag }
 
-export type MemoryKind = "met" | "gift" | "wish" | "keepsake" | "quest" | "chat" | "visit"
+/** `neighbor` is a talk with another friend (`chatter.ts`); `read` is a sitting at their bookshelf (`shelf.ts`). */
+export type MemoryKind = "met" | "gift" | "wish" | "keepsake" | "quest" | "chat" | "visit" | "neighbor" | "read"
 
 export type Memory = { day: number; kind: MemoryKind; text: string }
 
@@ -76,7 +77,7 @@ export type Character = {
   quests: string[]
   likes: CharacterLikes
   home: Home
-  /** What happened between them and the player, oldest first, capped at `MEMORY_MAX`. */
+  /** What happened to them, oldest first, capped at `MEMORY_MAX`: with the player, with other friends, and in what they read. */
   memory: Memory[]
 }
 

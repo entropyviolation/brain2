@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { RESIDENTS } from "./cast"
 import { ITEMS } from "./items"
-import { buildWorld, GATES, PLOTS, isSolidTile, MAP_H, MAP_W, NODES, reachable, STATIONS, tileIndex, zoneAt, ZONE_ACT } from "./world"
+import { REGIONS } from "./regions"
+import { buildWorld, EXTENT_H, EXTENT_W, GATES, PLOTS, PROPS, isSolidTile, MAP_H, MAP_W, NODES, reachable, STATIONS, tileIndex, zoneAt, ZONE_ACT } from "./world"
 
 const SPAWN: [number, number] = [24, 22]
 const world = buildWorld(RESIDENTS.map((r) => r.day))
@@ -97,5 +98,66 @@ describe("the chain", () => {
       expect(r.gate).toBeLessThanOrEqual(10)
       expect(r.clue.length).toBeGreaterThan(20)
     }
+  })
+})
+
+describe("the regions table", () => {
+  it("fits the grid, with the built world inside the extent", () => {
+    expect(EXTENT_W).toBeLessThanOrEqual(MAP_W)
+    expect(EXTENT_H).toBeLessThanOrEqual(MAP_H)
+    for (const r of REGIONS) {
+      expect(r.rect.x0, r.id).toBeGreaterThanOrEqual(0)
+      expect(r.rect.x1, r.id).toBeLessThan(EXTENT_W)
+      expect(r.rect.y1, r.id).toBeLessThan(EXTENT_H)
+    }
+  })
+  it("has unique ids and no two zones overlapping", () => {
+    expect(new Set(REGIONS.map((r) => r.id)).size).toBe(REGIONS.length)
+    for (const a of REGIONS) {
+      for (const b of REGIONS) {
+        if (a.id >= b.id) continue
+        const apart = a.rect.x1 < b.rect.x0 || b.rect.x1 < a.rect.x0 || a.rect.y1 < b.rect.y0 || b.rect.y1 < a.rect.y0
+        expect(apart, `${a.id} and ${b.id}`).toBe(true)
+      }
+    }
+  })
+  it("leaves the unbuilt grid as solid forest nobody can enter", () => {
+    const open = reachable(world, SPAWN, 99)
+    for (const i of open) {
+      expect(i % MAP_W, "x").toBeLessThan(EXTENT_W)
+      expect(Math.floor(i / MAP_W), "y").toBeLessThan(EXTENT_H)
+    }
+  })
+  it("opens every zone", () => {
+    const open = reachable(world, SPAWN, 99)
+    for (const r of REGIONS) {
+      let any = false
+      for (let y = r.rect.y0; y <= r.rect.y1 && !any; y++) for (let x = r.rect.x0; x <= r.rect.x1; x++) if (open.has(tileIndex(x, y))) { any = true; break }
+      expect(any, r.id).toBe(true)
+    }
+  })
+})
+
+describe("Rhizome", () => {
+  const rz = REGIONS.find((r) => r.id === "rhizome")!.rect
+  const inside = (x: number, y: number) => x >= rz.x0 && x <= rz.x1 && y >= rz.y0 && y <= rz.y1
+  it("is shut until act 5 and open after", () => {
+    expect(zoneAt(90, 40)).toBe("rhizome")
+    expect(ZONE_ACT.rhizome).toBe(5)
+    expect(reachable(world, SPAWN, 4).has(tileIndex(90, 40))).toBe(false)
+    expect(reachable(world, SPAWN, 5).has(tileIndex(90, 40))).toBe(true)
+  })
+  it("has every node and prop of the town within reach, and every door on a walkable sidewalk", () => {
+    const open = reachable(world, SPAWN, 5)
+    for (const n of NODES.filter((n) => inside(n.x, n.y))) expect(near(open, n.x, n.y), `${n.id} at ${n.x},${n.y}`).toBe(true)
+    for (const p of PROPS.filter((p) => inside(p.x, p.y))) expect(near(open, p.x, p.y), `${p.kind} at ${p.x},${p.y}`).toBe(true)
+    // the doors are at the bottom of the plan's buildings: (88,38) (104,38) (87,45) (104,45), each with path in front
+    for (const [x, y] of [[88, 38], [104, 38], [87, 45], [104, 45]] as const) {
+      expect(world.tiles[tileIndex(x, y)], `door ${x},${y}`).toBe(16)
+      expect(open.has(tileIndex(x, y + 1)), `in front of ${x},${y}`).toBe(true)
+    }
+  })
+  it("adds nothing to the built extent except the town", () => {
+    expect(EXTENT_W).toBe(rz.x1 + 3)
   })
 })

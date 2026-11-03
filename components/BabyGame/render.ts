@@ -21,13 +21,18 @@ import { ditherRect, Veil, type Light } from "./dither"
 import type { Juice } from "./juice"
 import { drawSprout, treeArt, treeAt } from "./trees"
 import { stageOf } from "@/lib/baby-game/trees"
+import { upscaleGrid } from "@/lib/baby-game/upscale"
 import { drawHome } from "./homeart"
 import { drawHomeHi } from "./homeart-hi"
 import { HOMES, HOME_SCALE, homeDoor } from "@/lib/baby-game/homes"
-import { GATES, MAP_H, MAP_W, NODES, FLAT_PROPS, PLOTS, PROPS, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
+import { EXTENT_H, EXTENT_W, GATES, MAP_H, MAP_W, NODES, FLAT_PROPS, PLOTS, PROPS, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
 
-export const VIEW_W = 304
-export const VIEW_H = 192
+/** What the village shows: 240×152 game pixels, about 15×9.5 tiles. Zoomed in from the old 304×192, so everything is bigger. */
+export const VIEW_W = 240
+export const VIEW_H = 152
+/** The casa keeps its own 304×192 view. */
+export const CASA_W = 304
+export const CASA_H = 192
 
 const h2 = (x: number, y: number, k = 0) => {
   let t = (x * 374761393 + y * 668265263 + k * 2147483647) >>> 0
@@ -309,11 +314,11 @@ function paintTile(ctx: CanvasRenderingContext2D, tile: number, tx: number, ty: 
 /** The whole map once. Gate tiles are painted as path; closed gates are drawn on top each frame. */
 export function buildMapCanvas(world: World): HTMLCanvasElement {
   const canvas = document.createElement("canvas")
-  canvas.width = MAP_W * TILE
-  canvas.height = MAP_H * TILE
+  canvas.width = EXTENT_W * TILE
+  canvas.height = EXTENT_H * TILE
   const ctx = canvas.getContext("2d")!
-  for (let ty = 0; ty < MAP_H; ty++) {
-    for (let tx = 0; tx < MAP_W; tx++) {
+  for (let ty = 0; ty < EXTENT_H; ty++) {
+    for (let tx = 0; tx < EXTENT_W; tx++) {
       let tile = world.tiles[tileIndex(tx, ty)]!
       if (tile === T.WATER) continue
       // the cottage is painted over the ground, so its tiles start as lawn
@@ -333,18 +338,22 @@ export function spriteCanvas(id: string, view: "front" | "side" | "back" = "fron
   let c = spriteCache.get(key)
   if (!c) {
     c = document.createElement("canvas")
-    c.width = c.height = SPRITE_SIZE
     const base = id === "player" ? playerGrid(view) : spriteGrid(id, view)
-    const grid = frame !== -1 ? cachedWalk(id, base, view, frame) : pose ? cachedIdle(id, base, view, pose) : base
+    const still = frame !== -1 ? cachedWalk(id, base, view, frame) : pose ? cachedIdle(id, base, view, pose) : base
+    // animals drawn smaller than the grid get a 64 grid, made from the 32 frame, so the shrink has smooth edges to work from
+    const grid = id !== "player" && spriteScale(id) !== 1 ? upscaleGrid(still) : still
+    c.width = c.height = grid.length
     paintGrid(c.getContext("2d")!, grid, 0, 0, 1)
     spriteCache.set(key, c)
   }
   return c
 }
 
-/** Stand a sprite on a ground line, facing right, or mirrored to face left. */
+/** Stand a sprite on a ground line, facing right, or mirrored to face left. `scale` is how big it stands against the 32 grid;
+ * the picture may be a 32 or a 64 grid. */
 export function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, ground: number, face: 1 | -1, scale = 1) {
-  if (scale === 1) {
+  const cells = img.width / SPRITE_SIZE
+  if (scale === 1 && cells === 1) {
     const top = Math.round(ground - SPRITE_FOOT - 1)
     if (face === 1) {
       ctx.drawImage(img, Math.round(x - SPRITE_SIZE / 2), top)
@@ -358,12 +367,13 @@ export function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement
     return
   }
   // a smaller animal: the feet stay on the ground line, and smoothing keeps its eyes and flecks when it shrinks
+  const k = scale / cells
   ctx.save()
   ctx.translate(Math.round(x), Math.round(ground - 1))
-  ctx.scale(face * scale, scale)
+  ctx.scale(face * k, k)
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = "high"
-  ctx.drawImage(img, -SPRITE_SIZE / 2, -(SPRITE_FOOT + 1) + 0)
+  ctx.drawImage(img, -img.width / 2, -(SPRITE_FOOT + 1) * cells)
   ctx.restore()
 }
 
@@ -576,8 +586,8 @@ const RAIN_GROUND = new Set<number>([T.GRASS, T.FLOWER, T.PATH, T.SAND, T.SNOW, 
 /** The top-left world pixel the view shows, following the player and held inside the map. */
 export function cameraOf(sim: Sim, shake?: { x: number; y: number }): { camX: number; camY: number } {
   return {
-    camX: Math.max(0, Math.min(MAP_W * TILE - VIEW_W, Math.round(sim.px - VIEW_W / 2) + (shake?.x ?? 0))),
-    camY: Math.max(0, Math.min(MAP_H * TILE - VIEW_H, Math.round(sim.py - VIEW_H / 2) + (shake?.y ?? 0))),
+    camX: Math.max(0, Math.min(EXTENT_W * TILE - VIEW_W, Math.round(sim.px - VIEW_W / 2) + (shake?.x ?? 0))),
+    camY: Math.max(0, Math.min(EXTENT_H * TILE - VIEW_H, Math.round(sim.py - VIEW_H / 2) + (shake?.y ?? 0))),
   }
 }
 

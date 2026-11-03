@@ -13,7 +13,7 @@ import { PLACEMENTS } from "@/lib/baby-game/casa-furniture"
 import { floorOf, newWalker, spotNear, stepWalker, takeStairs, type Walker } from "@/lib/baby-game/casa"
 import { drawCasa } from "./casa-paint"
 import { HI, HiRes } from "./hires"
-import { VIEW_H, VIEW_W } from "./render"
+import { CASA_H as VIEW_H, CASA_W as VIEW_W } from "./render"
 
 type Props = {
   night: boolean

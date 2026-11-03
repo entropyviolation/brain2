@@ -6,6 +6,8 @@
  * bone-shaped pillars, oval stained-glass windows and wrought-iron balconies.
  */
 
+import { drawPropHi } from "./proparthi"
+import { drawCropHi, drawNodeHi } from "./nodeart-hi"
 import { ditherRect } from "./dither"
 import { drawTasteProp, type PropEnv } from "./propart"
 
@@ -256,6 +258,7 @@ export const HOUSE_TILES = { x: 16, y: 11, w: 7, h: 7 }
 // ─── plants and ground things ──────────────────────────────────────────────
 
 export function drawNodeArt(ctx: Ctx, kind: string, x: number, y: number, ready: boolean, t: number) {
+  if (drawNodeHi(ctx, kind, x, y, ready, t)) return
   const dim = !ready
   const sway = Math.round(Math.sin(t * 1.6 + x * 0.3) * 0.8)
   switch (kind) {
@@ -432,7 +435,7 @@ export function drawCampfire(ctx: Ctx, x: number, y: number, t: number) {
 
 // ─── crops ────────────────────────────────────────────────────────────────
 
-const CROP_ART: Record<string, { leaf: string; leaf2: string; fruit: string; fruit2: string; shape: "pod" | "round" | "tall" | "leafy" | "pearl" | "split" | "mandala" | "flicker" | "leek" | "quince" }> = {
+export const CROP_ART: Record<string, { leaf: string; leaf2: string; fruit: string; fruit2: string; shape: "pod" | "round" | "tall" | "leafy" | "pearl" | "split" | "mandala" | "flicker" | "leek" | "quince" }> = {
   glowbean: { leaf: "#2a9a4a", leaf2: "#6fd27a", fruit: "#7fe09a", fruit2: "#d6ffd6", shape: "pod" },
   puffroot: { leaf: "#3d9a58", leaf2: "#8fdc92", fruit: "#9a72e0", fruit2: "#e2ceff", shape: "round" },
   moonmelon: { leaf: "#2f8248", leaf2: "#62bd78", fruit: "#30b8a8", fruit2: "#a8f4e6", shape: "round" },
@@ -451,6 +454,7 @@ const CROP_ART: Record<string, { leaf: string; leaf2: string; fruit: string; fru
 
 /** One plot: tilled soil with furrows, then the crop at its stage. `frac` is growth 0..1; ripe at 1. */
 export function drawCrop(ctx: Ctx, id: string, x: number, y: number, frac: number, t: number) {
+  if (drawCropHi(ctx, id, x, y, frac, t)) return
   const a = CROP_ART[id] ?? CROP_ART.glowbean!
   const sway = Math.round(Math.sin(t * 1.8 + x * 0.4) * 0.7)
   if (frac < 0.25) {
@@ -632,6 +636,7 @@ const STRAW = { hi: "#ecd6a0", mid: "#d9b87a", deep: "#b8965a" }
 
 /** A prop on one tile whose top-left is (x, y). Tall props rise above the tile; `variant` picks a small variation. */
 export function drawProp(ctx: Ctx, kind: string, x: number, y: number, t: number, variant = 0, env: PropEnv = { rain: false, night: false }) {
+  if (drawPropHi(ctx, kind, x, y, t, variant, env)) return
   if (drawTasteProp(ctx, kind, x, y, t, env)) return
   const shadow = (sx = 1, sw = 14) => px(ctx, "rgba(20,30,20,0.25)", x + sx, y + 13, sw, 3)
   switch (kind) {

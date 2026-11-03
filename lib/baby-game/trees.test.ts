@@ -68,5 +68,18 @@ describe("spreading", () => {
       const ty = Math.floor(i / MAP_W)
       for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) if ((x || y) && tx + x < MAP_W && ty + y < MAP_H) expect(w.tiles[tileIndex(tx + x, ty + y)]).not.toBe(T.TREE)
     }
+  }, 20000)
+})
+
+describe("rekeyTrees", () => {
+  it("keeps each felled tree at the same tile when the grid gets wider", async () => {
+    const { rekeyTrees } = await import("./trees")
+    const old = { [5 * 80 + 12]: { k: "cut" as const, t: 3 }, [60 * 80 + 79]: { k: "bare" as const, t: 4 } }
+    const out = rekeyTrees(old, 80, 160)!
+    expect(out[5 * 160 + 12]).toEqual({ k: "cut", t: 3 })
+    expect(out[60 * 160 + 79]).toEqual({ k: "bare", t: 4 })
+    expect(Object.keys(out)).toHaveLength(2)
+    expect(rekeyTrees(old, 80, 80)).toBe(old)
+    expect(rekeyTrees(undefined)).toBeUndefined()
   })
 })

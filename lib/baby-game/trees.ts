@@ -8,7 +8,8 @@
  * `growTrees` runs each night and lets mature trees seed a free tile nearby.
  */
 
-import { MAP_H, MAP_W, T, tileIndex, zoneAt, type World } from "./world"
+import { EXTENT_H, EXTENT_W, MAP_H, MAP_W, T, tileIndex, zoneAt, type World } from "./world"
+import { OLD_MAP_W } from "./regions"
 import type { GameState } from "./engine"
 
 /** `cut`: felled on day `t`. `seed`: a seedling that sprouted on day `t`. `bare`: a cleared stump, open ground until a seed lands. */
@@ -87,8 +88,9 @@ function roomFor(world: World, s: GameState, sprouted: Record<number, TreeRec>, 
  */
 export function growTrees(world: World, s: GameState): GameState {
   const sprouted: Record<number, TreeRec> = {}
-  for (let ty = 0; ty < MAP_H; ty++) {
-    for (let tx = 0; tx < MAP_W; tx++) {
+  // only the built world: the unbuilt grid is solid wood and nothing there is free to sprout
+  for (let ty = 0; ty < EXTENT_H; ty++) {
+    for (let tx = 0; tx < EXTENT_W; tx++) {
       const i = tileIndex(tx, ty)
       if (world.tiles[i] !== T.TREE || stageOf(s.trees?.[i], s.day) !== "mature") continue
       if (hash(i, s.day, 1) >= SPREAD_CHANCE) continue
@@ -112,4 +114,17 @@ export function growTrees(world: World, s: GameState): GameState {
   }
   if (!Object.keys(sprouted).length) return s
   return { ...s, trees: { ...(s.trees ?? {}), ...sprouted } }
+}
+
+/** Re-key saved tree records when the grid got wider: the same (x, y), a new index. Pure; returns the input when nothing changes. */
+export function rekeyTrees(trees: Record<number, TreeRec> | undefined, fromW = OLD_MAP_W, toW = MAP_W): Record<number, TreeRec> | undefined {
+  if (!trees || fromW === toW) return trees
+  const out: Record<number, TreeRec> = {}
+  for (const [k, rec] of Object.entries(trees)) {
+    const i = Number(k)
+    const x = i % fromW
+    const y = Math.floor(i / fromW)
+    if (x < toW) out[y * toW + x] = rec
+  }
+  return out
 }

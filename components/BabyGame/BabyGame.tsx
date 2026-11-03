@@ -23,7 +23,10 @@ import {
 import { askAnimal, councilTalk, gameModel, generateEconomy, lineKind, llmEnabled, setLlmEnabled, voiceLine, writeDiary } from "@/lib/baby-game/llm"
 import type { LifeContext } from "@/lib/baby-game/life"
 import { PROP_SCREEN, tryProp } from "@/lib/baby-game/props"
-import { crowdNear, center, knockLine, nearest, newSim, stepSim, teleport as teleportSim, type Sim, type Target } from "@/lib/baby-game/sim"
+import { crowdNear, center, holdTalk, knockLine, nearest, newSim, stepSim, teleport as teleportSim, type Sim, type Target } from "@/lib/baby-game/sim"
+import { blockAt, type Mind } from "@/lib/baby-game/mind"
+import { applyTalk, mindWithModel, readWithModel, talkWithModel, whereOf } from "@/lib/baby-game/chatter"
+import { applyReading, nextBook, rereadBook, shelveBook, unshelveBook, type Book } from "@/lib/baby-game/shelf"
 import { growTrees, syncTrees } from "@/lib/baby-game/trees"
 import { hasSave, loadGame, resetGame, saveGame, type SaveSlot } from "@/lib/baby-game/save"
 import { applyFlags, DEV_GEMS, devRefill, devSetWeather, loadFlags, nextSpeed, saveFlags, type DevFlags } from "@/lib/baby-game/dev"
@@ -40,6 +43,8 @@ import { Shake } from "./shake"
 import { DETAIL, HI, HiRes } from "./hires"
 import { buildMapCanvas, drawFrame, VIEW_H, VIEW_W, type Pop } from "./render"
 import { MapPanel } from "./map"
+import { HomePanel, LINE_SECS, TalkBubbles, VillagePanel, type HomeActions, type LiveTalk } from "./village"
+import { bookFromFile, bookText, dropBookFiles, openBookFile } from "./shelf-io"
 import { DevPanel, DevQuickBar, DevReadout, type DevScene, drawDevOverlay, tileAtClick } from "./devpanel"
 import { Casa } from "./Casa"
 import { MINIGAME_VIEWS } from "./minigames"
@@ -70,6 +75,8 @@ type Mode =
   | { t: "dev" }
   | { t: "inside" }
   | { t: "council" }
+  | { t: "home"; id: string }
+  | { t: "village"; tab?: "now" | "talks" | "minds"; id?: string }
   | { t: "plot"; id: string }
   | { t: "mini"; game: MinigameId }
   | { t: "timing"; kind: "favor"; id: string }
@@ -187,7 +194,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     }
   }, [llmOn])
 
-  if (!simRef.current && typeof window !== "undefined") simRef.current = newSim(SPAWN, g)
+  if (!simRef.current && typeof window !== "undefined") simRef.current = newSim(SPAWN, g, world)
 
   const pop = (x: number, y: number, kind: Pop["kind"]) => {
     pops.current.push({ x, y: y - 16, born: performance.now() / 1000, kind })
@@ -416,6 +423,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     else if (target.kind === "home") {
       toast([{ text: knockLine(sim, gRef.current, target.id), tone: "info" }])
       commit(knock(gRef.current, target.id))
+      setMode({ t: "home", id: target.id })
     }
     else if (target.kind === "prop") {
       const screen = PROP_SCREEN[target.prop]
@@ -455,6 +463,134 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
   const toastRef = useRef(toast)
   toastRef.current = toast
 
+  // ——— village life: friends talking to each other, reading from their shelves (`village.tsx`, `chatter.ts`, `shelf.ts`) ———
+  const [liveTalks, setLiveTalks] = useState<LiveTalk[]>([])
+  /** Model jobs running for talks; more than one at a time and the rest are scripted, so a slow model never piles up. */
+  const talkJobs = useRef(0)
+  /** `id:day:hour` of reading sittings already started, so each scheduled hour reads once. */
+  const readKeys = useRef(new Set<string>())
+
+  /** Two friends met on the map: write their talk (model or script), show it over their heads if in view, and save it. */
+  const startTalk = useCallback(
+    (a: string, b: string) => {
+      const sim = simRef.current
+      const pa = sim?.npcs[a]
+      if (!sim || !pa) return
+      const s = gRef.current
+      const where = whereOf(pa.x, pa.y)
+      const inView = Math.abs(pa.x - sim.px) < VIEW_W * 0.7 && Math.abs(pa.y - sim.py) < VIEW_H * 0.7
+      const key = `${a}|${b}|${Math.round(sim.clock * 10)}`
+      const useModel = llmOn && hasModel !== false && talkJobs.current < 1
+      if (inView) setLiveTalks((t) => [...t.filter((x) => x.a !== a && x.b !== a && x.a !== b && x.b !== b), { key, a, b, lines: null, started: 0 }].slice(-4))
+      const finish = (t: Awaited<ReturnType<typeof talkWithModel>>) => {
+        commit(applyTalk(gRef.current, t))
+        const secs = t.lines.length * LINE_SECS + 0.6
+        holdTalk(sim, a, b, secs)
+        if (!inView) return
+        setLiveTalks((x) => x.map((v) => (v.key === key ? { ...v, lines: t.lines, started: performance.now() / 1000 } : v)))
+        window.setTimeout(() => setLiveTalks((x) => x.filter((v) => v.key !== key)), secs * 1000 + 400)
+      }
+      if (!useModel) {
+        void talkWithModel(s, a, b, where, null, pick.current++).then(finish)
+        return
+      }
+      talkJobs.current += 1
+      holdTalk(sim, a, b, 30)
+      void gameModel()
+        .then((call) => talkWithModel(gRef.current, a, b, where, call, pick.current++))
+        .then(finish)
+        .finally(() => (talkJobs.current -= 1))
+    },
+    [commit, hasModel, llmOn],
+  )
+
+  /** One sitting at the bookshelf: the friend stays home with a book until the model (or the script) has written it. */
+  const runReading = useCallback(
+    async (id: string, bookId: string, manual = false) => {
+      const sim = simRef.current
+      const npc = sim?.npcs[id]
+      const book = gRef.current.shelves?.[id]?.find((b) => b.id === bookId)
+      const r = resident(id)
+      if (!npc || !book || !r || npc.reading) return
+      npc.reading = true
+      try {
+        const text = await bookText(book)
+        if (!text) {
+          toast([{ text: `${r.name} can't find the pages of "${book.title}". Shelve it again?`, tone: "bad" }])
+          return
+        }
+        const call = llmOn ? await gameModel() : null
+        const [sitting] = await Promise.all([readWithModel(gRef.current, id, book, text, actOf(gRef.current), call), new Promise((ok) => window.setTimeout(ok, manual ? 900 : 5000))])
+        commit(applyReading(gRef.current, id, bookId, sitting))
+        const near = Math.hypot(npc.x - sim!.px, npc.y - sim!.py) < VIEW_W
+        if (manual || near) toast([{ text: `${r.name} read p. ${sitting.pageFrom}${sitting.pageTo !== sitting.pageFrom ? `–${sitting.pageTo}` : ""} of "${book.title}".`, tone: "info" }])
+      } finally {
+        npc.reading = false
+      }
+    },
+    [commit, llmOn, toast],
+  )
+
+  /** Every game tick: a friend whose schedule says "at the bookshelf", who is home and has an unread book, sits down to read. */
+  const readOnSchedule = useCallback(
+    (s: GameState) => {
+      const sim = simRef.current
+      if (!sim) return
+      const h = hour(s)
+      for (const r of RESIDENTS) {
+        const npc = sim.npcs[r.id]
+        if (!npc || npc.asleep || npc.reading || npc.goal !== "read" || npc.path.length) continue
+        if (blockAt(s.minds?.[r.id], s.day, h)?.place !== "read") continue
+        const key = `${r.id}:${s.day}:${h}`
+        if (readKeys.current.has(key)) continue
+        const book = nextBook(s, r.id)
+        if (!book) continue
+        readKeys.current.add(key)
+        void runReading(r.id, book.id)
+      }
+    },
+    [runReading],
+  )
+
+  const lifeRef = useRef({ startTalk, readOnSchedule })
+  lifeRef.current = { startTalk, readOnSchedule }
+
+  const homeActions: HomeActions = useMemo(
+    () => ({
+      saveMind: (id: string, m: Mind) => {
+        commit({ ...gRef.current, minds: { ...gRef.current.minds, [id]: m } })
+        toast([{ text: `${resident(id)?.name ?? id}'s mind is saved.`, tone: "good" }])
+      },
+      rebuildMind: async (id: string, description: string) => {
+        const c = gRef.current.characters[id]
+        const prev = gRef.current.minds[id]
+        if (!c || !prev) return
+        const call = llmOn ? await gameModel() : null
+        const m = await mindWithModel(c, prev, description, call)
+        commit({ ...gRef.current, minds: { ...gRef.current.minds, [id]: m } })
+        toast([{ text: `${c.name}'s mind was rewritten ${m.by === "model" ? "by the model" : "from keywords"}.`, tone: "good" }])
+      },
+      shelve: async (id: string, file: File) => {
+        try {
+          const book = await bookFromFile(file)
+          commit(shelveBook(gRef.current, id, book))
+          return null
+        } catch (e) {
+          return e instanceof Error ? e.message : "That file could not be read."
+        }
+      },
+      unshelve: (id: string, book: Book) => {
+        commit(unshelveBook(gRef.current, id, book.id))
+        void dropBookFiles(book)
+      },
+      reread: (id: string, bookId: string) => commit(rereadBook(gRef.current, id, bookId)),
+      readNow: (id: string, bookId: string) => void runReading(id, bookId, true),
+      openFile: (book: Book) => void openBookFile(book),
+    }),
+    [commit, llmOn, runReading, toast],
+  )
+  const getSim = useCallback(() => simRef.current, [])
+
   /** Development mode's jump: put the player on a tile and say where. */
   const teleport = useCallback(
     (tile: [number, number]) => {
@@ -473,7 +609,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     const next = on ? loadGame(hasSave("dev") ? "dev" : "play") : loadGame("play")
     setDev({ ...devRef.current, on })
     commit(next)
-    simRef.current = newSim(SPAWN, next)
+    simRef.current = newSim(SPAWN, next, world)
     setMode(null)
     toast([{ text: on ? "Development mode on: a sandbox village. Press ` for powers." : "Back in your real village.", tone: "info" }])
   }, [commit, setDev, setMode, toast])
@@ -483,7 +619,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     (fresh: boolean) => {
       const next = fresh ? { ...resetGame("dev"), seen: { intro: true } } : loadGame("play")
       commit(next)
-      simRef.current = newSim(SPAWN, next)
+      simRef.current = newSim(SPAWN, next, world)
       toast([{ text: fresh ? "Fresh dev village." : "Dev village is now a copy of your real one.", tone: "info" }])
     },
     [commit, toast],
@@ -532,6 +668,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       }
       if (k === "i") return setMode({ t: "bag" })
       if (k === "j") return setMode({ t: "journal" })
+      if (k === "v") return setMode({ t: "village" })
       if (k === "escape") return setMode({ t: "menu" })
       keys.current.add(k)
     }
@@ -579,6 +716,10 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
             }
           }
         }
+        while (sim.met.length) {
+          const [a, b] = sim.met.shift()!
+          lifeRef.current.startTalk(a, b)
+        }
         acc += real
         if (sim.running) runAcc += real
         if (acc >= 1) {
@@ -595,6 +736,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
           commit(next)
           if (perk.id === "nose") marked.current = new Set([...readyToAsk(next, { crowd: 0 }), ...readyToTurnIn(next)])
           if (collapsed(next)) void goSleep(0.6)
+          lifeRef.current.readOnSchedule(next)
         }
       }
       const target = paused ? null : nearest(sim, gRef.current, world)
@@ -737,6 +879,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
             <div className="bg-menu-keys">
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "bag" })}>Bag</button>
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "journal" })}>Journal</button>
+              <button type="button" className="friend-key bg-key" data-no95="" title="What everyone is doing, every talk between friends, and their minds (V)" onClick={() => setMode({ t: "village" })}>Village</button>
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "map" })}>Map</button>
               {dev.on ? <button type="button" className="friend-key bg-key bg-dev-key" data-no95="" title="Development mode powers (`)" onClick={() => setMode({ t: "dev" })}>Dev</button> : null}
               <button type="button" className="friend-key bg-key" data-no95="" onClick={() => setMode({ t: "menu" })}>Menu</button>
@@ -769,6 +912,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
               <div className="bg-zone">{zoneName}</div>
             ) : null}
             <div className="bg-act">{festivalOn(g.day)?.name ?? (g.ended ? "The lamp is lit" : ACTS[act - 1]!.title)}</div>
+            {!mode && liveTalks.length ? <TalkBubbles live={liveTalks} getSim={getSim} canvas={canvas} /> : null}
             <ul className="bg-toasts" aria-live="polite">
               {toasts.map((t) => (
                 <li key={t.id} className={`is-${t.tone}`}>{t.text}</li>
@@ -932,6 +1076,8 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
                     })()
                   : null}
                 {mode.t === "lamp" ? <LampPanel g={g} onPlace={placeIt} onClose={() => setMode(null)} /> : null}
+                {mode.t === "home" ? <HomePanel g={g} id={mode.id} getSim={getSim} hasModel={!!hasModel && llmOn} actions={homeActions} onClose={() => setMode(null)} /> : null}
+                {mode.t === "village" ? <VillagePanel g={g} getSim={getSim} hasModel={!!hasModel && llmOn} actions={homeActions} initial={{ tab: mode.tab, id: mode.id }} onClose={() => setMode(null)} /> : null}
                 {mode.t === "journal" ? <JournalPanel g={g} companion={friend.name} perk={perk.name} level={friend.level} onClaim={(id) => apply(claimQuest(gRef.current, id))} onClose={() => setMode(null)} /> : null}
                 {mode.t === "menu" ? (
                   <MenuPanel

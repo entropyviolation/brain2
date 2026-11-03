@@ -1,5 +1,5 @@
 /**
- * lib/baby-game/world.ts — Valdivia: an 80×64 tile map built from rectangles
+ * lib/baby-game/world.ts — Valdivia: a tile map built from the zone rectangles in `regions.ts`
  *
  * The whole map starts as forest. Each zone and corridor is carved out, so nothing is reachable except
  * through a corridor, and the four gates sit in those corridors. A gate opens when its act is unlocked
@@ -9,10 +9,12 @@
  */
 
 import { HOMES, homeDoor } from "./homes"
+import { RHIZOME_ORIGIN, RHIZOME_PLAN } from "./rhizome"
+import { EXTENT_H, EXTENT_W, MAP_H, MAP_W, REGIONS, type Ground, type GroundName, type Rect as RegionRect, type Region, type ZoneId } from "./regions"
 
 export const TILE = 16
-export const MAP_W = 80
-export const MAP_H = 64
+export { EXTENT_H, EXTENT_W, MAP_H, MAP_W }
+export type { ZoneId }
 
 export const T = {
   GRASS: 0,
@@ -40,29 +42,12 @@ export const T = {
 
 const SOLID = new Set<number>([T.WATER, T.TREE, T.ROCK, T.FENCE, T.WALL, T.ROOF, T.GATE, T.STONE, T.ARCH])
 
-export type ZoneId = "meadow" | "farm" | "highlands" | "lake" | "orchard" | "pond" | "cove" | "hill" | "barn" | "wood" | "marsh" | "stacks" | "dunes"
+type Rect = RegionRect
 
-type Rect = { x0: number; y0: number; x1: number; y1: number }
-
-export const ZONES: Record<ZoneId, Rect & { name: string }> = {
-  meadow: { name: "Balboa Meadow", x0: 17, y0: 14, x1: 30, y1: 25 },
-  farm: { name: "Permaculture Patch", x0: 17, y0: 27, x1: 22, y1: 33 },
-  orchard: { name: "Refraction Orchard", x0: 3, y0: 4, x1: 15, y1: 16 },
-  pond: { name: "Moiré Pond", x0: 33, y0: 11, x1: 45, y1: 24 },
-  cove: { name: "Ice Halo Cove", x0: 36, y0: 3, x1: 45, y1: 10 },
-  hill: { name: "Fossil Hill", x0: 3, y0: 26, x1: 15, y1: 37 },
-  barn: { name: "Swap Meet Yard", x0: 32, y0: 27, x1: 44, y1: 37 },
-  wood: { name: "Thistle Wood", x0: 17, y0: 3, x1: 30, y1: 12 },
-  highlands: { name: "Kauai Highlands", x0: 50, y0: 4, x1: 62, y1: 22 },
-  lake: { name: "Sparkle Lake", x0: 46, y0: 26, x1: 62, y1: 48 },
-  // the far reaches, added when the map grew from 64×52 to 80×64
-  marsh: { name: "Cobalt Glow Marsh", x0: 3, y0: 41, x1: 29, y1: 60 },
-  stacks: { name: "The Index Stacks", x0: 66, y0: 4, x1: 77, y1: 40 },
-  dunes: { name: "Firework Dunes", x0: 35, y0: 51, x1: 76, y1: 61 },
-}
+export const ZONES = Object.fromEntries(REGIONS.map((r) => [r.id, { name: r.name, ...r.rect }])) as Record<ZoneId, Rect & { name: string }>
 
 /** The act that unlocks each zone. The meadow and orchard are open from the start. */
-export const ZONE_ACT: Record<ZoneId, number> = { meadow: 1, farm: 1, highlands: 3, lake: 4, orchard: 1, pond: 2, cove: 2, hill: 3, barn: 4, wood: 5, marsh: 1, stacks: 3, dunes: 4 }
+export const ZONE_ACT = Object.fromEntries(REGIONS.map((r) => [r.id, r.act])) as Record<ZoneId, number>
 
 const CORRIDORS: Rect[] = [
   { x0: 9, y0: 18, x1: 16, y1: 19 },
@@ -78,6 +63,8 @@ const CORRIDORS: Rect[] = [
   { x0: 63, y0: 19, x1: 65, y1: 20 },
   { x0: 50, y0: 49, x1: 51, y1: 50 },
   { x0: 30, y0: 55, x1: 34, y1: 56 },
+  // the Index Stacks → Rhizome (behind its own gate)
+  { x0: 73, y0: 40, x1: 83, y1: 41 },
 ]
 
 export type Gate = { x: number; y: number; act: number }
@@ -97,6 +84,8 @@ export const GATES: Gate[] = [
   { x: 57, y: 24, act: 4 },
   { x: 32, y: 55, act: 4 },
   { x: 32, y: 56, act: 4 },
+  { x: 79, y: 40, act: 5 },
+  { x: 79, y: 41, act: 5 },
 ]
 
 /** Sixteen patches of soil, four by four, south of the meadow. */
@@ -168,6 +157,9 @@ const nodeList: Array<[NodeKind, number, number]> = [
   // firework dunes
   ["shell", 38, 53], ["shell", 47, 60], ["shell", 66, 59], ["pebble", 42, 58], ["pebble", 58, 52], ["pebble", 73, 56],
   ["dig", 44, 53], ["dig", 55, 59], ["dig", 69, 53], ["dig", 75, 60], ["feather", 61, 56], ["fish", 52, 57], ["fish", 50, 54],
+  // rhizome: the gardens between the alley and the shore
+  ["clover", 86, 48], ["clover", 105, 48], ["berry", 90, 49], ["dig", 100, 50], ["pebble", 91, 47], ["feather", 107, 47], ["mushroom", 87, 50],
+  ["shell", 92, 51], ["shell", 100, 51], ["fish", 89, 52], ["fish", 103, 52],
 ]
 
 export const NODES: GameNode[] = nodeList.map(([kind, x, y], i) => ({ id: `${kind}-${i}`, kind, x, y }))
@@ -215,6 +207,16 @@ export const PROPS: Array<{ kind: PropKind; x: number; y: number }> = [
   { kind: "prism", x: 74, y: 29 },
   { kind: "fireworks", x: 63, y: 54 },
   { kind: "puddle", x: 41, y: 55 },
+  // rhizome
+  { kind: "well", x: 96, y: 38 },
+  { kind: "signpost", x: 93, y: 38 },
+  { kind: "birdbath", x: 99, y: 38 },
+  { kind: "mailbox", x: 102, y: 39 },
+  { kind: "firewood", x: 91, y: 39 },
+  { kind: "library", x: 94, y: 47 },
+  { kind: "thrift", x: 98, y: 47 },
+  { kind: "orb", x: 97, y: 49 },
+  { kind: "rowboat", x: 95, y: 55 },
 ]
 
 /** Props you can walk over: they lie on the ground or are small enough to step around. */
@@ -255,26 +257,22 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   }
   const flowers = (rate: number) => () => (rand() < rate ? T.FLOWER : T.GRASS)
 
-  carve(ZONES.meadow, flowers(0.12))
-  carve(ZONES.orchard, flowers(0.16))
-  carve(ZONES.farm, T.GRASS)
+  const GROUND: Record<GroundName, number> = { grass: T.GRASS, dark: T.DARK, snow: T.SNOW, hill: T.HILL, hay: T.HAY, sand: T.SAND }
+  for (const r of REGIONS) {
+    const g: Ground = r.ground
+    if (g.kind === "tile") carve(r.rect, GROUND[g.tile])
+    else if (g.kind === "flowers") carve(r.rect, flowers(g.rate))
+    else
+      carve(r.rect, (x, y) => {
+        // the Moiré Pond: still water with a sandy rim
+        const d = ((x - 39.5) / 4.8) ** 2 + ((y - 17.5) / 4.2) ** 2
+        if (d <= 1) return T.WATER
+        if (d <= 1.7) return T.SAND
+        return rand() < 0.1 ? T.FLOWER : T.GRASS
+      })
+  }
   carve({ x0: 19, y0: 26, x1: 20, y1: 26 }, T.PATH)
   for (const p of PLOTS) tiles[tileIndex(p.x, p.y)] = T.SOIL
-  carve(ZONES.wood, T.DARK)
-  carve(ZONES.cove, T.SNOW)
-  carve(ZONES.hill, T.HILL)
-  carve(ZONES.barn, T.HAY)
-  carve(ZONES.pond, (x, y) => {
-    const d = ((x - 39.5) / 4.8) ** 2 + ((y - 17.5) / 4.2) ** 2
-    if (d <= 1) return T.WATER
-    if (d <= 1.7) return T.SAND
-    return rand() < 0.1 ? T.FLOWER : T.GRASS
-  })
-  carve(ZONES.highlands, flowers(0.14))
-  carve(ZONES.lake, flowers(0.1))
-  carve(ZONES.marsh, flowers(0.08))
-  carve(ZONES.stacks, T.HILL)
-  carve(ZONES.dunes, T.SAND)
   // the highlands' own still pond, and a great lake with a sandy rim
   for (let y = 6; y <= 18; y++) {
     for (let x = 51; x <= 63; x++) {
@@ -329,6 +327,15 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   // a boardwalk across the marsh's middle pool
   for (let x = 13; x <= 21; x++) tiles[tileIndex(x, 51)] = T.BRIDGE
 
+  // Rhizome: the town plan laid over its ground
+  const STAMP: Record<string, number> = { "=": T.PATH, W: T.WALL, R: T.ROOF, D: T.DOOR, s: T.SAND, "~": T.WATER, B: T.BRIDGE }
+  RHIZOME_PLAN.forEach((row, dy) => {
+    for (let dx = 0; dx < row.length; dx++) {
+      const t = STAMP[row[dx]!]
+      if (t !== undefined) tiles[tileIndex(RHIZOME_ORIGIN.x + dx, RHIZOME_ORIGIN.y + dy)] = t
+    }
+  })
+
   // the cottage: a tall Gaudí house, seven tiles wide and seven tall (painted by `art.ts`); its door opens into `casa.ts`
   for (let x = 16; x <= 22; x++) {
     for (let y = 11; y <= 17; y++) tiles[tileIndex(x, y)] = y <= 13 ? T.ROOF : T.WALL
@@ -381,14 +388,14 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   for (const [x, y] of FIRE_SLOTS) hold(x, y, 0)
 
   // scatter trees and rocks inside open ground, never on paths, water, or anything held
-  const scatter = (zone: Rect, tile: number, density: number, base: number[]) => {
+  const scatter = (id: string, zone: Rect, tile: number, density: number, base: number[]) => {
     for (let y = zone.y0; y <= zone.y1; y++) {
       for (let x = zone.x0; x <= zone.x1; x++) {
         const i = tileIndex(x, y)
         // one roll per tile whether or not it is held, so moving a prop never reshuffles the trees
         const roll = rand()
         if (!base.includes(tiles[i]!) || keep.has(i)) continue
-        if (tile === T.TREE && zone !== ZONES.wood) {
+        if (tile === T.TREE && id !== "wood") {
           // groves and clearings: a smooth noise mask scales the chance, and no two trees touch
           if (roll >= density * (0.25 + 1.5 * groveNoise(x, y))) continue
           if ([tiles[i - 1], tiles[i - MAP_W - 1], tiles[i - MAP_W], tiles[i - MAP_W + 1]].includes(T.TREE)) continue
@@ -397,18 +404,11 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
       }
     }
   }
-  scatter(ZONES.orchard, T.TREE, 0.13, [T.GRASS, T.FLOWER])
-  scatter(ZONES.wood, T.TREE, 0.22, [T.DARK])
-  scatter(ZONES.hill, T.ROCK, 0.1, [T.HILL, T.GRASS])
-  scatter(ZONES.meadow, T.TREE, 0.025, [T.GRASS])
-  scatter(ZONES.barn, T.ROCK, 0.025, [T.HAY, T.GRASS])
-  scatter(ZONES.cove, T.ROCK, 0.06, [T.SNOW])
-  scatter(ZONES.pond, T.TREE, 0.05, [T.GRASS])
-  scatter(ZONES.highlands, T.TREE, 0.12, [T.GRASS, T.FLOWER])
-  scatter(ZONES.lake, T.TREE, 0.08, [T.GRASS, T.FLOWER])
-  scatter(ZONES.marsh, T.TREE, 0.07, [T.GRASS, T.FLOWER])
-  scatter(ZONES.stacks, T.TREE, 0.04, [T.HILL])
-  scatter(ZONES.dunes, T.ROCK, 0.04, [T.SAND])
+  const passes = REGIONS.flatMap((r) => ((r as Region).scatter ?? []).map((sc) => ({ r, sc }))).sort((a, b) => a.sc.order - b.sc.order)
+  for (const { r, sc } of passes) {
+    const base = sc.base === "grassy" ? [T.GRASS, T.FLOWER] : sc.base.map((n) => GROUND[n])
+    scatter(r.id, r.rect, sc.tile === "tree" ? T.TREE : T.ROCK, sc.density, base)
+  }
 
   return { tiles, stationSolid, held: keep }
 }

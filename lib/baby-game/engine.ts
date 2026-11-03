@@ -15,13 +15,16 @@
  */
 
 import { createCharacters, remember, type Character } from "./character"
+import { createMinds, type Mind } from "./mind"
+import type { Talk } from "./chatter"
+import type { Book } from "./shelf"
 import { approachDistance, CONDITION_TEXT, isShy, RESIDENTS, resident, temper, type Condition, type Resident } from "./cast"
 import { LESSONS, pathTalk } from "./dharma"
 import { COMMONS_NOTES, offeringOf, theoryTalk } from "./theory"
 import { economyOf, lovesGems, type EconomySpec } from "./economy"
 import { approachLine, favorLine, giftLine, moodLabel, smallTalk, SPOOK_LINE, type Taste } from "./lines"
 import { item, ITEMS, LAMP_PARTS, RECIPES } from "./items"
-import { PLOTS, unlockedAct, type NodeKind } from "./world"
+import { MAP_W, PLOTS, unlockedAct, type NodeKind } from "./world"
 import { stageOf, type TreeRec } from "./trees"
 import { QUESTS, type Quest } from "./quests"
 import { MINIGAMES, REWARDS, type MinigameId } from "./minigames"
@@ -77,6 +80,8 @@ export type GameState = {
   nodes: Record<string, number>
   /** Trees changed since the world was made, by tile index (`trees.ts`). Missing means every tree is as it was scattered. */
   trees?: Record<number, TreeRec>
+  /** Width of the map grid the tile indices above were made on. Missing means the 80 wide map before 2026-11-03 (`save.ts` re-keys them). */
+  mapW?: number
   parts: string[]
   errands: Errand[]
   today: string[]
@@ -97,6 +102,12 @@ export type GameState = {
   commons: Commons
   /** The cast, created when the game starts (`character.ts`): looks, personality, role, goals, quests, likes, home, memory. */
   characters: Record<string, Character>
+  /** Each friend's inner life (`mind.ts`): description, beliefs, motivations, likes, goals, schedule, bonds, plans. Editable. */
+  minds: Record<string, Mind>
+  /** Talks between friends, oldest first (`chatter.ts`). */
+  chatter: Talk[]
+  /** Books on each friend's shelf, by friend id (`shelf.ts`). Only metadata; the words are in the attachment store. */
+  shelves: Record<string, Book[]>
 }
 
 export type RealTask = { id: string; text: string; urgent: boolean; done: boolean; added: number; plan?: string[] }
@@ -137,15 +148,20 @@ export function makeErrands(day: number, act: number): Errand[] {
 export const blankCommons = (): Commons => ({ stock: { berry: 3, clover: 3, acorn: 2, reed: 2 }, gave: 0, took: 0, lastGave: 0, drawn: 0 })
 
 export function newGame(): GameState {
-  return {
-    v: 1, day: 1, minutes: DAY_START + 30, weather: "clear", energy: BASE_ENERGY, maxEnergy: BASE_ENERGY, buttons: 0,
+  const s: GameState = {
+    v: 1, mapW: MAP_W, day: 1, minutes: DAY_START + 30, weather: "clear", energy: BASE_ENERGY, maxEnergy: BASE_ENERGY, buttons: 0,
     inv: { berry: 2, clover: 2, "glowbean-seed": 4, gem: 3 }, animals: {}, nodes: {}, parts: [], errands: makeErrands(1, 1), today: [], diary: [],
     ended: false, seen: {}, stats: { gathered: 0, gifts: 0, favors: 0, keepsakes: 0, harvests: 0, ribbons: 0, festivals: 0, fished: 0, played: 0 },
     made: {}, questsDone: {}, real: [],
     farm: {}, skills: { farming: 0, foraging: 0, fishing: 0, crafting: 0 }, found: { berry: true, clover: true, "glowbean-seed": true, gem: true },
     commons: blankCommons(),
     characters: createCharacters(),
+    minds: {},
+    chatter: [],
+    shelves: {},
   }
+  s.minds = createMinds(s.characters)
+  return s
 }
 
 export const clone = (s: GameState): GameState => structuredClone(s)

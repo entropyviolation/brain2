@@ -10,7 +10,7 @@ import { HI, HiRes } from "@/components/BabyGame/hires"
 import { buildMapCanvas } from "@/components/BabyGame/render"
 import { RESIDENTS } from "@/lib/baby-game/cast"
 import { HOMES } from "@/lib/baby-game/homes"
-import { buildWorld, FIRE_SLOTS, MAP_H, MAP_W, NODES, PROPS, STATIONS, TILE, ZONES } from "@/lib/baby-game/world"
+import { buildWorld, EXTENT_H, EXTENT_W, FIRE_SLOTS, NODES, PROPS, STATIONS, TILE, ZONES } from "@/lib/baby-game/world"
 
 export default function BabyWorldPage() {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -61,7 +61,7 @@ export default function BabyWorldPage() {
   return (
     <>
       <canvas id="cmp" width={304 * 6 + 10} height={192 * 3} className="relative z-50 block bg-black" />
-      <canvas ref={ref} width={MAP_W * TILE} height={MAP_H * TILE} className="relative z-50 block bg-black" />
+      <canvas ref={ref} width={EXTENT_W * TILE} height={EXTENT_H * TILE} className="relative z-50 block bg-black" />
     </>
   )
 }

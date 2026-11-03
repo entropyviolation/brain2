@@ -19,7 +19,7 @@ import { decorate, drawAmbient } from "./casa-deco"
 import { gradeCanvas } from "./casa-grade"
 import { madeCanvas } from "./casa-made"
 import { paintBoudoir, paintGlasshouse, paintLounge } from "./casa-rooms"
-import { drawSprite, spriteCanvas, strideFrame, VIEW_H, VIEW_W } from "./render"
+import { drawSprite, spriteCanvas, strideFrame, CASA_H as VIEW_H, CASA_W as VIEW_W } from "./render"
 
 // ─── the three floors ───────────────────────────────────────────────────────
 

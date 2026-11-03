@@ -5,7 +5,7 @@
  * walks through it. All functions take world coordinates (the caller has already translated by the camera).
  */
 
-import { MAP_H, MAP_W, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
+import { EXTENT_H, EXTENT_W, MAP_H, MAP_W, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
 
 const h = (a: number, b = 0) => {
   let v = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263)) | 0
@@ -82,11 +82,11 @@ export function drawGlints(ctx: CanvasRenderingContext2D, world: World, t: numbe
 
 /** A few slow cloud shadows, dithered, in daylight only. */
 export function drawCloudShadows(ctx: CanvasRenderingContext2D, t: number, camX: number, camY: number, viewW: number, viewH: number) {
-  const span = MAP_W * TILE + 400
+  const span = EXTENT_W * TILE + 400
   ctx.fillStyle = "rgba(20,50,60,0.13)"
   for (let i = 0; i < 3; i++) {
     const cx = ((t * 4 + i * 520) % span) - 200
-    const cy = 120 + h(i, 9) * (MAP_H * TILE - 240)
+    const cy = 120 + h(i, 9) * (EXTENT_H * TILE - 240)
     const rx = 70 + h(i, 3) * 30
     const ry = 30 + h(i, 4) * 14
     if (cx + rx < camX || cx - rx > camX + viewW || cy + ry < camY || cy - ry > camY + viewH) continue

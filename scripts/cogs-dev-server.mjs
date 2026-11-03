@@ -32,6 +32,7 @@ import { handleChromeHistoryApi } from "./chrome-history-api.mjs"
 import { handleInstagramApi } from "./instagram-api.mjs"
 import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
 import { handleCodeDocsApi } from "./code-docs-api.mjs"
+import { handleBabyGensApi } from "./baby-gens-api.mjs"
 import { brain2Env } from "../lib/brain2-env.mjs"
 
 const hostname = "0.0.0.0"
@@ -182,6 +183,7 @@ const server = createServer(async (req, res) => {
     if (await handleInstagramApi(req, res, pathname)) return
     if (await handlePhoneSyncApi(req, res, pathname)) return
     if (await handleCodeDocsApi(req, res, pathname)) return
+    if (await handleBabyGensApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
   } catch (err) {
     console.error("[brain2-dev] request error", err)

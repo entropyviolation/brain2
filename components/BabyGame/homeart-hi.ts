@@ -2,8 +2,8 @@
  * components/BabyGame/homeart-hi.ts — Friends' homes at twice the detail
  *
  * Each kind is painted once onto a 96×96 canvas (three game tiles wide and tall, bottom-centre on the home tile) and kept,
- * one per kind and per lit window. `drawHomeHi` stamps it at one real pixel per canvas pixel, so the village must be
- * painting at `DETAIL` (2) real pixels per game pixel. Same palette family as `homeart.ts`; the small painters there stay
+ * one per kind, lit state and frame density. `drawHomeHi` stamps it three tiles wide; the painters draw on a 96 grid and
+ * `scaled` snaps each rectangle to whole pixels for the frame's `DETAIL` (3) real pixels per game pixel. Same palette family as `homeart.ts`; the small painters there stay
  * as the fallback for a frame at 1×.
  */
 
@@ -380,25 +380,39 @@ const PAINT: Record<HomeKind, Painter> = {
   },
 }
 
+/** Painters draw on a 96 grid; a taller frame gets the same picture with each rectangle snapped to whole pixels, so edges stay hard. */
+function scaled(ctx: Ctx, k: number): Ctx {
+  return {
+    set fillStyle(v: string) {
+      ctx.fillStyle = v
+    },
+    fillRect(x: number, y: number, w: number, h: number) {
+      const x0 = Math.round(x * k)
+      const y0 = Math.round(y * k)
+      ctx.fillRect(x0, y0, Math.max(1, Math.round((x + w) * k) - x0), Math.max(1, Math.round((y + h) * k) - y0))
+    },
+  } as unknown as Ctx
+}
+
 const cache = new Map<string, HTMLCanvasElement>()
 
-/** The painted home for a kind, once per lit state. */
-export function homeCanvas(kind: HomeKind, lit: boolean): HTMLCanvasElement {
-  const key = `${kind}:${lit ? 1 : 0}`
+/** The painted home for a kind, once per lit state and per frame density (`detail` real pixels per game pixel). */
+export function homeCanvas(kind: HomeKind, lit: boolean, detail = 2): HTMLCanvasElement {
+  const key = `${kind}:${lit ? 1 : 0}:${detail}`
   let c = cache.get(key)
   if (!c) {
     c = document.createElement("canvas")
-    c.width = c.height = HOME_PX
-    PAINT[kind](c.getContext("2d")!, lit)
+    c.width = c.height = Math.round(HOME_PX * (detail / 2))
+    PAINT[kind](scaled(c.getContext("2d")!, detail / 2), lit)
     cache.set(key, c)
   }
   return c
 }
 
-/** Stand a home on its tile: bottom-centre of the 96px picture on `(baseX, baseY)`, in game pixels, at 1 canvas pixel per
- * real pixel. The context is already scaled by `DETAIL`, so the picture is drawn at `1/DETAIL` and lands 1:1. */
+/** Stand a home on its tile: bottom-centre of the picture on `(baseX, baseY)`, in game pixels. It is three tiles wide, so
+ * its width is 48 game pixels at any `detail`. */
 export function drawHomeHi(ctx: Ctx, kind: HomeKind, baseX: number, baseY: number, lit: boolean, detail: number) {
-  const img = homeCanvas(kind, lit)
-  const size = HOME_PX / detail
+  const img = homeCanvas(kind, lit, detail)
+  const size = HOME_PX / 2
   ctx.drawImage(img, Math.round(baseX - size / 2), Math.round(baseY - size), size, size)
 }

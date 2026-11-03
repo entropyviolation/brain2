@@ -54,6 +54,7 @@ export const SPRITE_SCALE: Record<string, number> = {
   chick: 0.4, mouse: 0.4, duckling: 0.4, blackduck: 0.4, gosling: 0.45, hedgehog: 0.45, bunny: 0.5, kitten: 0.5,
   possum: 0.5, possum2: 0.5, possum3: 0.45, skunk: 0.55, crow: 0.55, owl: 0.6, otter: 0.6, fox: 0.65, puppy: 0.65,
   penguin: 0.65, seal: 0.7, fawn: 0.8, cub: 0.8, wolf: 0.9, foal: 0.9, capybara: 0.85,
+  meerkat: 0.55, raccoon: 0.6, lamb: 0.55, goat: 0.6, piglet: 0.5, shipcat: 0.5,
 }
 export const spriteScale = (id: string): number => SPRITE_SCALE[id] ?? 1
 const S = SPRITE_SIZE
@@ -566,6 +567,72 @@ const SPECIES: Record<string, Species> = {
   possum: { fur: "a", draw: (c) => possum(c, "a", "l", "z") },
   possum2: { fur: "A", draw: (c) => possum(c, "A", "e", "y") },
   possum3: { fur: "e", draw: (c) => possum(c, "e", "w", "A") },
+  // Rhizome's six: built from the same quad parameters as the rest (the meerkat is a snapped ComfyUI drawing in `gen-sprites.ts`)
+  raccoon: {
+    fur: "a",
+    draw: (c) => {
+      quad(c, {
+        fur: "a", belly: "e", far: "A", sock: "z", size: 0.9, cx: 14, body: [7, 4.8], leg: [5, 3], head: [5, 4.4], snout: [3.2, 2.4, "e"], ear: { kind: "round", size: 2.4, inner: "z" },
+        tail: { kind: "bush", size: 5, ch: "a", tip: "z" }, nose: "k",
+        mark: (c2, g) => {
+          // the mask runs from the eye back across the cheek
+          c2.line([g.hx - 2, g.hy - 1], [g.hx + g.hrx * 0.28 - 1, g.hy - g.hry * 0.25 + 1], "z", 1)
+          c2.pts("z", [[g.hx - 1, g.hy], [g.hx, g.hy + 1]])
+          c2.pts("z", [[g.bx - g.brx - 3, g.by - 3], [g.bx - g.brx - 4, g.by - 2], [g.bx - g.brx - 5, g.by - 1]])
+        },
+      })
+    },
+  },
+  lamb: {
+    fur: "e",
+    draw: (c) => {
+      quad(c, {
+        fur: "e", belly: "E", far: "E", sock: "z", size: 0.9, cx: 14, body: [7.8, 5.6], leg: [4.6, 2.6], head: [4.4, 4.4], ear: { kind: "floppy", size: 3, ch: "z" },
+        tail: { kind: "short", size: 2, ch: "e" }, nose: "P",
+        mark: (c2, g) => {
+          for (let i = 0; i < 14; i++) c2.pts("E", [[g.bx - g.brx * 0.8 + (i * 5) % (g.brx * 1.6), g.by - g.bry * 0.7 + ((i * 3) % g.bry)]])
+          c2.pts("e", [[g.hx - 1, g.hy - g.hry - 1], [g.hx, g.hy - g.hry - 1], [g.hx + 1, g.hy - g.hry]])
+        },
+      })
+    },
+  },
+  goat: {
+    fur: "f",
+    draw: (c) => {
+      quad(c, {
+        fur: "f", belly: "e", far: "F", sock: "j", size: 0.95, cx: 14, body: [7, 4.6], leg: [6, 2.8], head: [4.6, 4.2], snout: [3, 2.6, "e"], ear: { kind: "leaf", size: 3, inner: "o" },
+        tail: { kind: "short", size: 1.6, ch: "f" }, nose: "k",
+        mark: (c2, g) => {
+          c2.pts("E", [[g.hx - 1, g.hy - g.hry - 1], [g.hx, g.hy - g.hry - 2], [g.hx + 1, g.hy - g.hry - 1]])
+          c2.pts("e", [[g.snoutX, g.snoutY + 2], [g.snoutX, g.snoutY + 3]])
+        },
+      })
+    },
+  },
+  piglet: {
+    fur: "p",
+    draw: (c) => {
+      quad(c, {
+        fur: "p", belly: "o", far: "P", sock: "P", size: 0.85, cx: 14, body: [7, 5], leg: [4, 2.6], head: [5, 4.6], snout: [2.6, 3.2, "P"], ear: { kind: "floppy", size: 3.6, ch: "P" },
+        tail: { kind: "curl", size: 3, ch: "p" }, nose: "k",
+        mark: (c2, g) => c2.pts("k", [[g.snoutX + 1, g.snoutY], [g.snoutX + 1, g.snoutY + 1]]),
+      })
+    },
+  },
+  shipcat: {
+    fur: "z",
+    draw: (c) => {
+      quad(c, {
+        fur: "z", belly: "e", far: "y", sock: "e", size: 0.9, cx: 14, body: [7.4, 4.8], leg: [5.4, 3], head: [5, 4.6], ear: { kind: "point", size: 4, inner: "p" },
+        tail: { kind: "curl", size: 6, ch: "z" }, nose: "P",
+        mark: (c2, g) => {
+          c2.pts("e", [[g.hx + g.hrx - 2, g.hy + 2], [g.hx + g.hrx - 3, g.hy + 3], [g.hx + g.hrx - 4, g.hy + 3]])
+          c2.pts("e", [[g.bx + g.brx - 2, g.by], [g.bx + g.brx - 3, g.by + 1], [g.bx + g.brx - 3, g.by + 2]])
+          c2.pts("w", [[g.hx + g.hrx + 2, g.hy + 1], [g.hx + g.hrx + 3, g.hy + 2]])
+        },
+      })
+    },
+  },
   hedgehog: {
     fur: "o",
     draw: (c) => {
@@ -1365,6 +1432,117 @@ const FRONT: Record<string, FrontSpecies> = {
   possum: { fur: "a", body: (c) => possumBody(c, "a", "l", "z"), face: (c) => possumFace(c, "l", "A") },
   possum2: { fur: "A", body: (c) => possumBody(c, "A", "e", "y"), face: (c) => possumFace(c, "e", "z") },
   possum3: { fur: "e", body: (c) => possumBody(c, "e", "w", "A"), face: (c) => possumFace(c, "w", "a") },
+  raccoon: {
+    fur: "a",
+    body(c) {
+      c.ell(19.6, 14, 3.2, 6.4, "a")
+      c.pts("z", [[19, 10], [20, 10], [19, 13], [20, 13], [19, 16], [20, 16]])
+      c.next()
+      c.ell(5, 5.6, 2.4, 2.4, "a", true)
+      c.next()
+      sitting(c, "a", { head: [10.6, 7.6, 6], body: [17.6, 5.6, 4.6] })
+      c.next()
+      feet(c, "A", "z")
+    },
+    face(c) {
+      c.rect(4, 9, 19, 11, "z")
+      c.pts("z", [[5, 12], [18, 12], [4, 8], [19, 8]])
+      c.eyes(6, 9)
+      c.ell(11.5, 14, 3, 2.4, "e")
+      c.pts("k", [[11, 13], [12, 13]])
+      c.pts("p", [[11, 15], [12, 15]])
+      c.pts("z", [[5, 5], [18, 5]])
+      c.pts("e", [[10, 3], [13, 3]])
+    },
+  },
+  lamb: {
+    fur: "e",
+    body(c) {
+      c.ell(11.5, 17.6, 6.4, 5, "e")
+      c.next()
+      c.ell(4.2, 10.4, 2.8, 1.5, "z", true)
+      c.next()
+      c.ell(11.5, 9, 7, 5.6, "e")
+      c.pts("E", [[7, 4], [10, 3], [13, 3], [16, 4], [6, 7], [17, 7]])
+      c.next()
+      c.ell(11.5, 11.4, 4.6, 4.2, "z")
+      c.next()
+      feet(c, "z", "z")
+    },
+    face(c) {
+      c.eyes(7, 10, "w")
+      c.pts("P", [[11, 14], [12, 14]])
+      c.pts("p", [[11, 16], [12, 16]])
+      c.pts("e", [[10, 4], [13, 4], [11, 3], [12, 3]])
+      blush(c, 5, 13)
+    },
+  },
+  goat: {
+    fur: "f",
+    body(c) {
+      c.pts("f", [[19, 19], [20, 18]])
+      c.next()
+      c.ell(3.8, 8.4, 3, 1.4, "f", true)
+      c.next()
+      c.pts("E", [[7, 3], [8, 2], [15, 3], [14, 2]])
+      c.next()
+      sitting(c, "f", { head: [10.4, 6.6, 6], body: [17.6, 5.6, 4.6] })
+      c.next()
+      c.ell(11.5, 20.5, 3.4, 2, "e")
+      c.next()
+      feet(c, "j", "j")
+    },
+    face(c) {
+      c.ell(11.5, 14, 3.4, 2.8, "e")
+      c.eyes(6, 9, "y")
+      c.pts("k", [[11, 12], [12, 12], [10, 14], [13, 14]])
+      c.pts("e", [[11, 18], [12, 18], [11, 19], [12, 19]])
+      c.pts("o", [[3, 9], [20, 9]])
+    },
+  },
+  piglet: {
+    fur: "p",
+    body(c) {
+      c.pts("P", [[18, 19], [19, 18], [19, 17], [18, 16]])
+      c.next()
+      c.ell(4, 6.6, 2.8, 3.4, "P", true)
+      c.next()
+      sitting(c, "p", { head: [10.8, 7.6, 6.2], body: [17.6, 5.8, 4.8] })
+      c.next()
+      c.ell(11.5, 14, 3.8, 3, "P")
+      c.next()
+      feet(c, "P", "k")
+    },
+    face(c) {
+      c.eyes(6, 9)
+      c.pts("k", [[10, 13], [13, 13], [10, 14], [13, 14]])
+      c.pts("o", [[4, 12], [19, 12]])
+      blush(c, 4, 12)
+    },
+  },
+  shipcat: {
+    fur: "z",
+    body(c) {
+      c.pts("z", [[18, 21], [19, 21], [20, 20], [21, 19], [21, 18], [21, 17], [20, 16], [19, 16]])
+      c.next()
+      c.tri([3, 11], [4, 2], [10, 7], "z", true)
+      c.next()
+      c.tri([4, 9], [5, 4], [8, 7], "p", true)
+      c.next()
+      sitting(c, "z", { head: [11.5, 8.4, 6.2], body: [18, 5.6, 4.2] })
+      c.next()
+      c.ell(11.5, 18.6, 3, 3.4, "e")
+      c.next()
+      feet(c, "e")
+    },
+    face(c) {
+      c.eyes(5, 10, "G")
+      c.ell(11.5, 14.6, 3.2, 2, "e")
+      c.pts("P", [[11, 13], [12, 13]])
+      c.pts("k", [[10, 15], [13, 15], [11, 16], [12, 16]])
+      c.pts("w", [[1, 14], [22, 14]])
+    },
+  },
 }
 
 function possumBody(c: Front, coat: string, face: string, ear: string) {
@@ -1405,6 +1583,7 @@ const FRONT_SIZE: Record<string, number> = {
   capybara: 1.22, foal: 1.2, fawn: 1.1, wolf: 1.1, cub: 1.02, otter: 0.96, seal: 1.0, fox: 0.92, puppy: 0.92, penguin: 0.92,
   owl: 0.86, skunk: 0.82, kitten: 0.8, bunny: 0.82, crow: 0.82, possum: 0.78, possum2: 0.78, possum3: 0.74, hedgehog: 0.72,
   gosling: 0.74, blackduck: 0.64, duckling: 0.66, mouse: 0.58, chick: 0.54,
+  raccoon: 0.84, lamb: 0.8, goat: 0.86, piglet: 0.78, shipcat: 0.8,
 }
 
 export const GAME_SPECIES = Object.keys(SPECIES)

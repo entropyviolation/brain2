@@ -8,8 +8,11 @@
 
 import { persistKey } from "@/lib/storage-keys"
 import { refreshCharacters } from "./character"
+import { refreshMinds } from "./mind"
 import { blankCommons, newGame, type GameState } from "./engine"
 import { DEFAULT_ECONOMY, ECONOMIES } from "./economy"
+import { rekeyTrees } from "./trees"
+import { MAP_W } from "./world"
 
 export type SaveSlot = "play" | "dev"
 
@@ -31,6 +34,11 @@ export function loadGame(slot: SaveSlot = "play"): GameState {
     const saved = JSON.parse(raw) as Partial<GameState>
     if (saved?.v !== 1) return newGame()
     const base = newGame()
+    // The map grid got wider (80 to 160) on 2026-11-03, so saved tree tiles are re-keyed to the same places.
+    if ((saved.mapW ?? 80) !== MAP_W) {
+      saved.trees = rekeyTrees(saved.trees, saved.mapW ?? 80, MAP_W)
+      saved.mapW = MAP_W
+    }
     // A save from before economies (2026-11-02) held buttons as money. The world is a gift commons now, so they come back as gems.
     if (!saved.economy && (saved.buttons ?? 0) > 0) {
       const inv = { ...(saved.inv ?? base.inv) }
@@ -39,7 +47,8 @@ export function loadGame(slot: SaveSlot = "play"): GameState {
       saved.buttons = 0
       saved.found = { ...(saved.found ?? {}), gem: true }
     }
-    return { ...base, ...saved, stats: { ...base.stats, ...saved.stats }, real: saved.real ?? [], made: saved.made ?? {}, questsDone: saved.questsDone ?? {}, inv: saved.inv ?? base.inv, animals: saved.animals ?? {}, commons: { ...blankCommons(), ...saved.commons }, characters: refreshCharacters(saved.characters) } as GameState
+    const characters = refreshCharacters(saved.characters)
+    return { ...base, ...saved, stats: { ...base.stats, ...saved.stats }, real: saved.real ?? [], made: saved.made ?? {}, questsDone: saved.questsDone ?? {}, inv: saved.inv ?? base.inv, animals: saved.animals ?? {}, commons: { ...blankCommons(), ...saved.commons }, characters, minds: refreshMinds(saved.minds, characters), chatter: Array.isArray(saved.chatter) ? saved.chatter : [], shelves: saved.shelves ?? {} } as GameState
   } catch {
     return newGame()
   }

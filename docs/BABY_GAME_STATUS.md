@@ -29,6 +29,7 @@ Fixing these is the first job in any of the projects below.
 - Story from the owner's likes list: quests for orbs, prisms, diatoms, collage, fireworks, index, and so on.
 
 **Planned**
+- The big expansion: a map about four times larger, new zones, cast, activities and acts 6 to 9 (`docs/BABY_GAME_EXPANSION.md`).
 - Walk cycles wired fully into the renderer for every body (player, companion, friends).
 - Five left-out species as festival visitors (raccoon peddler, lamb wool seller).
 - Friends talk to each other (model-written gossip from `GameState.today`).

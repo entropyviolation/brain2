@@ -34,8 +34,8 @@ const submitKey = (label: string, opts: { primary?: boolean; disabled?: boolean 
   </button>
 )
 
-export const Plate = ({ title, onClose, children, wide }: { title: string; onClose?: () => void; children: React.ReactNode; wide?: boolean }) => (
-  <section className={`bg-plate${wide ? " is-wide" : ""}`} role="dialog" aria-label={title}>
+export const Plate = ({ title, onClose, children, wide, full }: { title: string; onClose?: () => void; children: React.ReactNode; wide?: boolean; full?: boolean }) => (
+  <section className={`bg-plate${wide ? " is-wide" : ""}${full ? " is-full" : ""}`} role="dialog" aria-label={title}>
     <header className="bg-plate-head">
       <h3>{title}</h3>
       {onClose ? key("Close", onClose) : null}

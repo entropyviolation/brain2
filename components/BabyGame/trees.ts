@@ -31,10 +31,15 @@ type Blob = { x: number; y: number; r: number }
 
 const cache = new Map<string, TreeArt>()
 
+/** Canvas pixels per game pixel: a tree is painted this much finer than it is shown, so the leaves have grain. */
+const Q = 3
+
 function paint(kind: TreeKind, seed: number): TreeArt {
   const rand = rng(seed * 977 + kind.length * 13)
-  const w = kind === "pine" ? 36 : 48
-  const h = kind === "pine" ? 66 : 62
+  const gw = kind === "pine" ? 36 : 48
+  const gh = kind === "pine" ? 66 : 62
+  const w = gw * Q
+  const h = gh * Q
   const canvas = document.createElement("canvas")
   canvas.width = w
   canvas.height = h
@@ -49,32 +54,33 @@ function paint(kind: TreeKind, seed: number): TreeArt {
   // ground shadow
   ctx.fillStyle = "rgba(20,30,20,0.28)"
   ctx.beginPath()
-  ctx.ellipse(cx, h - 3, kind === "pine" ? 10 : 15, 3.4, 0, 0, Math.PI * 2)
+  ctx.ellipse(cx, h - 3 * Q, (kind === "pine" ? 10 : 15) * Q, 3.4 * Q, 0, 0, Math.PI * 2)
   ctx.fill()
 
-  // trunk
-  const trunkW = kind === "pine" ? 5 : kind === "birch" ? 5 : 8
-  const trunkTop = kind === "pine" ? h - 16 : h - 24
+  // trunk: lit left edge, shaded right edge, cracks, and roots that flare at the foot
+  const trunkW = (kind === "pine" ? 5 : kind === "birch" ? 5 : 8) * Q
+  const trunkTop = h - (kind === "pine" ? 16 : 24) * Q
   const bark = kind === "birch" ? ["#f0ece4", "#d6d0c4", "#2b1d2e"] : ["#8a5a44", "#6b4630", "#4e3224"]
-  for (let y = trunkTop; y < h - 2; y++) {
-    const flare = y > h - 7 ? Math.round((y - (h - 7)) * 0.7) : 0
+  for (let y = trunkTop; y < h - 2 * Q; y++) {
+    const flare = y > h - 7 * Q ? Math.round((y - (h - 7 * Q)) * 0.7) : 0
     const left = Math.round(cx - trunkW / 2) - flare
     const wide = trunkW + flare * 2
     px(bark[1]!, left, y, wide, 1)
     px(bark[0]!, left, y, Math.max(1, Math.floor(wide / 3)), 1)
-    px(bark[2]!, left + wide - 1, y, 1, 1)
-    if (kind === "birch" && rand() < 0.25) px(bark[2]!, left + 1 + Math.floor(rand() * (wide - 2)), y, 2, 1)
-    else if (kind !== "birch" && rand() < 0.2) px(bark[2]!, left + 1 + Math.floor(rand() * (wide - 2)), y, 1, 2)
+    px(bark[0]!, left + Math.floor(wide / 3), y, 1, 1)
+    px(bark[2]!, left + wide - Math.max(1, Math.round(Q / 2)), y, Math.max(1, Math.round(Q / 2)), 1)
+    if (kind === "birch" && rand() < 0.08) px(bark[2]!, left + 1 + Math.floor(rand() * (wide - 2)), y, 2 + Math.floor(rand() * 3), 1)
+    else if (kind !== "birch" && rand() < 0.07) px(bark[2]!, left + 1 + Math.floor(rand() * (wide - 2)), y, 1, 2 + Math.floor(rand() * 4))
   }
 
-  // canopy as a mask of blobs (or stacked tiers for a pine)
+  // canopy as a mask of blobs (or stacked tiers for a pine), each with small clumps round its rim so the edge is scalloped
   const blobs: Blob[] = []
   if (kind === "pine") {
     const tiers = 5
     for (let i = 0; i < tiers; i++) {
       const ty = 6 + i * 8
       const tw = 5 + i * 3.4
-      for (let k = -2; k <= 2; k++) blobs.push({ x: cx + k * (tw / 4.2), y: ty + 6 + Math.abs(k) * 1.6, r: tw / 3.2 + 2 })
+      for (let k = -2; k <= 2; k++) blobs.push({ x: cx + k * (tw / 4.2) * Q, y: (ty + 6 + Math.abs(k) * 1.6) * Q, r: (tw / 3.2 + 2) * Q })
     }
   } else {
     const count = kind === "birch" ? 8 : 11
@@ -82,13 +88,20 @@ function paint(kind: TreeKind, seed: number): TreeArt {
     for (let i = 0; i < count; i++) {
       const a = rand() * Math.PI * 2
       const d = rand() * spread
-      blobs.push({ x: cx + Math.cos(a) * d * 1.05, y: 22 + Math.sin(a) * d * 0.78, r: 7 + rand() * 4.4 })
+      blobs.push({ x: cx + Math.cos(a) * d * 1.05 * Q, y: (22 + Math.sin(a) * d * 0.78) * Q, r: (7 + rand() * 4.4) * Q })
     }
-    blobs.push({ x: cx, y: 22, r: 11 })
+    blobs.push({ x: cx, y: 22 * Q, r: 11 * Q })
+  }
+  const clumps: Blob[] = []
+  for (const b of blobs) {
+    for (let n = 0; n < 5; n++) {
+      const a = rand() * Math.PI * 2
+      clumps.push({ x: b.x + Math.cos(a) * b.r * 0.82, y: b.y + Math.sin(a) * b.r * 0.82, r: b.r * (0.26 + rand() * 0.14) })
+    }
   }
   const inMask = new Uint8Array(w * h)
   const light = new Float32Array(w * h)
-  for (const b of blobs) {
+  for (const b of [...blobs, ...clumps]) {
     for (let y = Math.max(0, Math.floor(b.y - b.r)); y <= Math.min(h - 1, Math.ceil(b.y + b.r)); y++) {
       for (let x = Math.max(0, Math.floor(b.x - b.r)); x <= Math.min(w - 1, Math.ceil(b.x + b.r)); x++) {
         const dx = x - b.x
@@ -103,39 +116,59 @@ function paint(kind: TreeKind, seed: number): TreeArt {
       }
     }
   }
+  // leaf grain: noise in 2×2 blocks, so the texture reads as leaves and not static
+  const grain = new Float32Array(Math.ceil(w / 2) * Math.ceil(h / 2))
+  for (let i = 0; i < grain.length; i++) grain[i] = rand() - 0.5
+  const gstride = Math.ceil(w / 2)
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x
       if (!inMask[i]) continue
       const edge = [inMask[i - 1], inMask[i + 1], inMask[i - w], inMask[i + w]].some((n) => !n)
-      let v = light[i]! * (ramp.length - 1) + (rand() - 0.5) * 1.2
-      if (kind === "pine") v += y % 8 < 2 ? -0.6 : 0
+      let v = light[i]! * (ramp.length - 1) + grain[(y >> 1) * gstride + (x >> 1)]! * 1.5
+      if (kind === "pine") v += y % (8 * Q) < 2 * Q ? -0.6 : 0
       const tone = Math.max(0, Math.min(ramp.length - 1, Math.round(v)))
       px(edge && inMask[i + w] === 0 ? ramp[0]! : ramp[tone]!, x, y)
     }
   }
-  // outline the whole canopy in the darkest leaf
+  // outline the whole canopy in the darkest leaf, two canvas pixels thick
+  const ring = (src: Uint8Array) => {
+    const next = new Uint8Array(src)
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        if (src[y * w + x]) continue
+        if ([src[y * w + x - 1], src[y * w + x + 1], src[(y - 1) * w + x], src[(y + 1) * w + x]].some(Boolean)) next[y * w + x] = 1
+      }
+    }
+    return next
+  }
+  const ring1 = ring(inMask)
+  const ring2 = ring(ring1)
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (inMask[y * w + x]) continue
-      if ([inMask[y * w + x - 1], inMask[y * w + x + 1], inMask[(y - 1) * w + x], inMask[(y + 1) * w + x]].some(Boolean)) px("#0e2a1e", x, y)
+      if (ring2[y * w + x]) px("#0e2a1e", x, y)
     }
   }
   // leaf glints and a few fruit or blossoms
-  for (let n = 0; n < 26; n++) {
+  for (let n = 0; n < 26 * Q; n++) {
     const x = Math.floor(rand() * w)
-    const y = Math.floor(rand() * 40)
+    const y = Math.floor(rand() * 40 * Q)
     if (!inMask[y * w + x]) continue
-    px(ramp[ramp.length - 1]!, x, y, 2, 1)
-    px(ramp[ramp.length - 2]!, x + 1, y + 1)
+    px(ramp[ramp.length - 1]!, x, y, Q + 1, Math.max(1, Q - 1))
+    px(ramp[ramp.length - 2]!, x + 1, y + Math.max(1, Q - 1), Q, 1)
   }
   if (kind === "oak") for (let n = 0; n < 4; n++) {
-    const x = 8 + Math.floor(rand() * (w - 16))
-    const y = 14 + Math.floor(rand() * 18)
-    if (inMask[y * w + x]) px("#e8506a", x, y, 2, 2)
+    const x = 8 * Q + Math.floor(rand() * (w - 16 * Q))
+    const y = 14 * Q + Math.floor(rand() * 18 * Q)
+    if (inMask[y * w + x]) {
+      px("#b8344e", x, y, Q + 1, Q + 1)
+      px("#e8506a", x, y, Q, Q)
+      px("#ffb0bc", x, y, 1, 1)
+    }
   }
-  if (kind === "pine") px(ramp[0]!, cx, 1, 1, 3)
-  return { img: canvas, w, h, reach: kind === "pine" ? 14 : 20, rise: kind === "pine" ? 58 : 44 }
+  if (kind === "pine") px(ramp[0]!, cx, Q, Q, 3 * Q)
+  return { img: canvas, w: gw, h: gh, reach: kind === "pine" ? 14 : 20, rise: kind === "pine" ? 58 : 44 }
 }
 
 /** A stump, seedling or sapling, drawn straight to the canvas (a few pixels each, so nothing to cache). `seed` is 0..1 and picks the lean. */
@@ -191,6 +224,7 @@ export function treeAt(tx: number, ty: number, zone: string | null): { kind: Tre
   if (zone === "wood") return { kind: pick("pine", "oak", 0.62), variant }
   if (zone === "orchard") return { kind: pick("blossom", "oak", 0.34), variant }
   if (zone === "hill" || zone === "cove" || zone === "barn") return { kind: pick("pine", "birch", 0.6), variant }
+  if (zone === "rhizome") return { kind: pick("oak", "birch", 0.55), variant }
   if (zone === "marsh") return { kind: pick("birch", "oak", 0.7), variant }
   if (zone === "stacks") return { kind: pick("oak", "pine", 0.5), variant }
   if (zone === "meadow" || zone === "pond" || zone === "farm") return { kind: pick("birch", "oak", 0.4), variant }

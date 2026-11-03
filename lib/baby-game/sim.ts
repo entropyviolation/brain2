@@ -5,6 +5,9 @@
  * decides a rule; it only moves bodies. A friend's day is a spot and a wander radius; at dusk the social
  * ones walk to the campfire (BFS through open tiles, so gates matter); in the hour before bed everyone walks home
  * (`homes.ts`) and sleeps on their doorstep; in rain the ones who do not love it stop wandering and hold a leaf over their head.
+ * The rest of the day follows each friend's schedule (`mind.ts` `blockAt`): their spot, home, the bookshelf, the fire, a zone,
+ * or another friend's spot. Two awake friends who come within reach stop and face each other; `stepSim` queues the pair in
+ * `sim.met` and the UI has them talk (`chatter.ts`). A friend `reading` stays at their bookshelf until the UI lets them go.
  */
 
 import { RESIDENTS, inValley, isShy, type Resident } from "./cast"
@@ -13,13 +16,18 @@ import { act as actOf, isAsleep, type GameState } from "./engine"
 import { homeDoor, homeOf, HOME_NOUN, HOMES } from "./homes"
 import { propLabel } from "./props"
 import { stageOf } from "./trees"
-import { FIRE_SLOTS, isSolidTile, MAP_H, MAP_W, NODES, PLOTS, PROPS, STATIONS, T, TILE, tileIndex, type GameNode, type PropKind, type StationId, type World } from "./world"
+import { blockAt, ZONE_ACT, type Place } from "./mind"
+import { EXTENT_H, EXTENT_W, FIRE_SLOTS, isSolidTile, MAP_H, MAP_W, NODES, PLOTS, PROPS, STATIONS, T, TILE, tileIndex, ZONES, type GameNode, type PropKind, type StationId, type World } from "./world"
 
 export const WALK = 54
 export const RUN = 92
 const NPC_SPEED = 15
 const TALK_REACH = 22
 const SPOOK_REACH = 44
+/** How close two friends must come to stop and talk, and how long before the same pair, or either of them, talks again (sim seconds). */
+const MEET_REACH = TILE * 1.4
+const PAIR_COOLDOWN = 150
+const SOLO_COOLDOWN = 35
 
 export type Npc = {
   id: string
@@ -31,6 +39,14 @@ export type Npc = {
   face: 1 | -1
   asleep: boolean
   gathering: boolean
+  /** What their schedule says they are doing, for the Village panel. */
+  doing: string
+  /** Stopped to talk until this `sim.clock`. */
+  talkUntil: number
+  /** Who they are talking to. */
+  with: string
+  /** At the bookshelf; set and cleared by the UI. */
+  reading: boolean
 }
 
 export type Sim = {
@@ -44,22 +60,29 @@ export type Sim = {
   clock: number
   npcs: Record<string, Npc>
   pet: { x: number; y: number }
+  /** Pairs who just met and should talk; the UI drains it. */
+  met: Array<[string, string]>
+  /** `sim.clock` when a pair (`a|b`) or a friend last started a talk. */
+  lastTalk: Record<string, number>
 }
 
 export const center = (t: number) => t * TILE + TILE / 2
 
-export function newSim(spawn: [number, number], s: GameState): Sim {
+export function newSim(spawn: [number, number], s: GameState, world?: World): Sim {
   const npcs: Record<string, Npc> = {}
   let gather = 0
   // Friends start where they would be right now, so a saved evening opens with everyone at the fire.
   for (const r of RESIDENTS) {
     const asleep = isAsleep(r, s.minutes)
-    const anchor = anchorFor(r, s, gather)
+    const anchor = anchorFor(r, s, gather, world)
     if (anchor.gathering && !asleep) gather += 1
     const tile = asleep ? bedOf(r) : anchor.tile
-    npcs[r.id] = { id: r.id, x: center(tile[0]), y: center(tile[1]), goal: asleep ? "day" : anchor.goal, path: [], wait: Math.random() * 2, face: 1, asleep, gathering: anchor.gathering && !asleep }
+    npcs[r.id] = {
+      id: r.id, x: center(tile[0]), y: center(tile[1]), goal: asleep ? "day" : anchor.goal, path: [], wait: Math.random() * 2, face: 1, asleep,
+      gathering: anchor.gathering && !asleep, doing: asleep ? "asleep" : anchor.doing, talkUntil: 0, with: "", reading: false,
+    }
   }
-  return { px: center(spawn[0]), py: center(spawn[1]), face: 1, facing: "front", moving: false, running: false, clock: 0, npcs, pet: { x: center(spawn[0]) - 12, y: center(spawn[1]) } }
+  return { px: center(spawn[0]), py: center(spawn[1]), face: 1, facing: "front", moving: false, running: false, clock: 0, npcs, pet: { x: center(spawn[0]) - 12, y: center(spawn[1]) }, met: [], lastTalk: {} }
 }
 
 function walkable(world: World, x: number, y: number, a: number) {
@@ -67,7 +90,7 @@ function walkable(world: World, x: number, y: number, a: number) {
 }
 
 function blocked(world: World, x: number, y: number, a: number, noclip = false) {
-  if (noclip) return x < 4 || y < 4 || x > MAP_W * TILE - 4 || y > MAP_H * TILE - 4
+  if (noclip) return x < 4 || y < 4 || x > EXTENT_W * TILE - 4 || y > EXTENT_H * TILE - 4
   return [[-4, 1], [4, 1], [-4, 4], [4, 4]].some(([dx, dy]) => !walkable(world, x + dx!, y + dy!, a))
 }
 
@@ -104,18 +127,75 @@ export function bedtime(r: Resident, minutes: number): boolean {
   return Math.floor(minutes / 60) % 24 === (from + 23) % 24
 }
 
-/** Where a friend wants to be right now, as a tile, with a label for the goal and a wander radius. */
-export function anchorFor(r: Resident, s: GameState, gatherIndex: number): { tile: [number, number]; goal: string; radius: number; gathering: boolean } {
-  if (bedtime(r, s.minutes)) return { tile: bedOf(r), goal: "home", radius: 0, gathering: false }
-  // dusk draws the social ones to the fire; so does an urgent real-life worry, any hour they are awake
-  const council = (s.real ?? []).some((t) => !t.done && t.urgent)
-  const evening = (s.minutes >= 18 * 60 || council) && !isAsleep(r, s.minutes)
-  if (evening && r.social && r.act <= actOf(s)) {
-    const slot = FIRE_SLOTS[gatherIndex % FIRE_SLOTS.length]!
-    return { tile: slot, goal: `fire${gatherIndex}`, radius: 0, gathering: true }
+export type Anchor = { tile: [number, number]; goal: string; radius: number; gathering: boolean; doing: string }
+
+const zoneTiles = new WeakMap<World, Map<string, [number, number]>>()
+
+/** An open tile near the middle of a zone (gates ignored; the walk there still has to get through them). */
+export function zoneTile(zone: string, world?: World): [number, number] | null {
+  const z = ZONES[zone as keyof typeof ZONES]
+  if (!z) return null
+  const mid: [number, number] = [Math.round((z.x0 + z.x1) / 2), Math.round((z.y0 + z.y1) / 2)]
+  if (!world) return mid
+  let cache = zoneTiles.get(world)
+  if (!cache) zoneTiles.set(world, (cache = new Map()))
+  const hit = cache.get(zone)
+  if (hit) return hit
+  let found = mid
+  search: for (let r = 0; r < 8; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue
+        if (!isSolidTile(world, mid[0] + dx, mid[1] + dy, 9)) {
+          found = [mid[0] + dx, mid[1] + dy]
+          break search
+        }
+      }
+    }
   }
+  cache.set(zone, found)
+  return found
+}
+
+/** Where a schedule place is, as a tile and a wander radius; null when it is out of reach this act. */
+function placeAnchor(place: Place, r: Resident, a: number, world?: World): { tile: [number, number]; radius: number } | null {
+  if (place === "spot") return { tile: r.day, radius: 2 }
+  if (place === "home" || place === "read") return { tile: bedOf(r), radius: 0 }
+  if (place.startsWith("zone:")) {
+    const zone = place.slice(5)
+    if ((ZONE_ACT[zone as keyof typeof ZONE_ACT] ?? 9) > a) return null
+    const tile = zoneTile(zone, world)
+    return tile ? { tile, radius: 3 } : null
+  }
+  if (place.startsWith("friend:")) {
+    const pal = RESIDENTS.find((x) => x.id === place.slice(7))
+    if (!pal || !inValley(pal, a)) return null
+    const beside: [number, number] = [pal.day[0] + 1, pal.day[1]]
+    return { tile: world && isSolidTile(world, beside[0], beside[1], a) ? pal.day : beside, radius: 1 }
+  }
+  return null
+}
+
+/** Where a friend wants to be right now, as a tile, with a label for the goal, a wander radius, and what they are doing. */
+export function anchorFor(r: Resident, s: GameState, gatherIndex: number, world?: World): Anchor {
+  if (bedtime(r, s.minutes)) return { tile: bedOf(r), goal: "home", radius: 0, gathering: false, doing: "heading home to bed" }
+  const a = actOf(s)
+  const fire = (doing: string): Anchor => ({ tile: FIRE_SLOTS[gatherIndex % FIRE_SLOTS.length]!, goal: `fire${gatherIndex}`, radius: 0, gathering: true, doing })
+  // an urgent real-life worry draws the social ones to the fire, any hour they are awake
+  const awake = !isAsleep(r, s.minutes)
+  const council = (s.real ?? []).some((t) => !t.done && t.urgent)
+  if (council && awake && r.social && r.act <= a) return fire("at the council fire")
   const sheltering = s.weather === "rain" && !r.rainLover
-  return { tile: r.day, goal: "day", radius: sheltering ? 0 : 2, gathering: false }
+  const block = blockAt(s.minds?.[r.id], s.day, Math.floor(s.minutes / 60) % 24)
+  if (!block) {
+    // no mind (an old test state): the original day, dusk at the fire for the social ones
+    if (s.minutes >= 18 * 60 && awake && r.social && r.act <= a) return fire("sitting by the fire")
+    return { tile: r.day, goal: "day", radius: sheltering ? 0 : 2, gathering: false, doing: "about" }
+  }
+  if (block.place === "fire" && r.act <= a) return fire(block.doing)
+  const at = block.place === "fire" ? null : placeAnchor(block.place, r, a, world)
+  if (!at || block.place === "spot") return { tile: r.day, goal: "day", radius: sheltering ? 0 : 2, gathering: false, doing: block.doing }
+  return { tile: at.tile, goal: block.place, radius: sheltering ? 0 : at.radius, gathering: false, doing: block.doing }
 }
 
 function pickWander(world: World, tile: [number, number], radius: number, a: number, rand: () => number): [number, number] {
@@ -172,9 +252,12 @@ export function stepSim(sim: Sim, world: World, s: GameState, input: StepInput, 
       npc.y = center(by)
       continue
     }
-    const anchor = anchorFor(r, s, gatherIndex)
+    const anchor = anchorFor(r, s, gatherIndex, world)
     if (anchor.gathering) gatherIndex += 1
     npc.gathering = anchor.gathering
+    npc.doing = npc.reading ? "reading at the bookshelf" : npc.talkUntil > sim.clock ? `talking with ${RESIDENTS.find((x) => x.id === npc.with)?.name ?? "a friend"}` : anchor.doing
+    // talking or reading: stand still until it is over
+    if (npc.talkUntil > sim.clock || npc.reading) continue
     if (npc.goal !== anchor.goal) {
       npc.goal = anchor.goal
       npc.path = bfs(world, [Math.floor(npc.x / TILE), Math.floor(npc.y / TILE)], anchor.tile, a)
@@ -204,7 +287,47 @@ export function stepSim(sim: Sim, world: World, s: GameState, input: StepInput, 
       }
     }
   }
+  meet(sim, a)
   return startled
+}
+
+/** Is this friend free to start a talk: awake, out, not heading to bed, not busy, not just talked? */
+function free(sim: Sim, npc: Npc): boolean {
+  return !npc.asleep && !npc.reading && npc.goal !== "home" && npc.talkUntil <= sim.clock && sim.clock - (sim.lastTalk[npc.id] ?? -1e9) > SOLO_COOLDOWN
+}
+
+/** Pairs of free friends within reach of each other stop, face each other, and are queued in `sim.met`. */
+function meet(sim: Sim, a: number) {
+  const here = RESIDENTS.filter((r) => inValley(r, a) && free(sim, sim.npcs[r.id]!))
+  for (let i = 0; i < here.length; i++) {
+    const p = sim.npcs[here[i]!.id]!
+    if (!free(sim, p)) continue
+    for (let j = i + 1; j < here.length; j++) {
+      const q = sim.npcs[here[j]!.id]!
+      if (!free(sim, q) || Math.hypot(p.x - q.x, p.y - q.y) > MEET_REACH) continue
+      const pair = [p.id, q.id].sort().join("|")
+      if (sim.clock - (sim.lastTalk[pair] ?? -1e9) < PAIR_COOLDOWN) continue
+      sim.lastTalk[pair] = sim.lastTalk[p.id] = sim.lastTalk[q.id] = sim.clock
+      // a first guess at how long; the UI stretches it to fit what they actually say
+      p.talkUntil = q.talkUntil = sim.clock + 8
+      p.with = q.id
+      q.with = p.id
+      p.path = []
+      q.path = []
+      p.face = q.x >= p.x ? 1 : -1
+      q.face = p.x >= q.x ? 1 : -1
+      sim.met.push([p.id, q.id])
+      break
+    }
+  }
+}
+
+/** Keep a pair standing together a while longer (the talk is longer than the first guess). */
+export function holdTalk(sim: Sim, a: string, b: string, seconds: number) {
+  for (const id of [a, b]) {
+    const npc = sim.npcs[id]
+    if (npc) npc.talkUntil = Math.max(npc.talkUntil, sim.clock + seconds)
+  }
 }
 
 export type Target =

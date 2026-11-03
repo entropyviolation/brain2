@@ -12,7 +12,7 @@ import { useEffect, useRef } from "react"
 import { RESIDENTS, inValley } from "@/lib/baby-game/cast"
 import type { Sim } from "@/lib/baby-game/sim"
 import { HOMES } from "@/lib/baby-game/homes"
-import { MAP_H, MAP_W, STATIONS, T, TILE, tileIndex, ZONE_ACT, ZONES, type World, type ZoneId } from "@/lib/baby-game/world"
+import { EXTENT_H, EXTENT_W, STATIONS, T, TILE, tileIndex, ZONE_ACT, ZONES, type World, type ZoneId } from "@/lib/baby-game/world"
 import { Plate } from "./panels"
 
 const PX = 6
@@ -34,11 +34,11 @@ export function MapPanel({ world, act, getSim, onClose, onPick }: { world: World
     if (!canvas || !ctx) return
     if (!base.current) {
       const b = document.createElement("canvas")
-      b.width = MAP_W * PX
-      b.height = MAP_H * PX
+      b.width = EXTENT_W * PX
+      b.height = EXTENT_H * PX
       const bc = b.getContext("2d")!
-      for (let y = 0; y < MAP_H; y++) {
-        for (let x = 0; x < MAP_W; x++) {
+      for (let y = 0; y < EXTENT_H; y++) {
+        for (let x = 0; x < EXTENT_W; x++) {
           const tile = world.tiles[tileIndex(x, y)]!
           bc.fillStyle = COLOR[tile] ?? "#7cc46e"
           bc.fillRect(x * PX, y * PX, PX, PX)
@@ -110,17 +110,17 @@ export function MapPanel({ world, act, getSim, onClose, onPick }: { world: World
     <Plate title="Map of Valdivia" onClose={onClose} wide>
       <canvas
         ref={ref}
-        width={MAP_W * PX}
-        height={MAP_H * PX}
+        width={EXTENT_W * PX}
+        height={EXTENT_H * PX}
         className={`bg-map${onPick ? " is-pick" : ""}`}
         aria-label="World map"
         onClick={
           onPick
             ? (e) => {
                 const r = e.currentTarget.getBoundingClientRect()
-                const tx = Math.floor(((e.clientX - r.left) / r.width) * MAP_W)
-                const ty = Math.floor(((e.clientY - r.top) / r.height) * MAP_H)
-                onPick([Math.max(0, Math.min(MAP_W - 1, tx)), Math.max(0, Math.min(MAP_H - 1, ty))])
+                const tx = Math.floor(((e.clientX - r.left) / r.width) * EXTENT_W)
+                const ty = Math.floor(((e.clientY - r.top) / r.height) * EXTENT_H)
+                onPick([Math.max(0, Math.min(EXTENT_W - 1, tx)), Math.max(0, Math.min(EXTENT_H - 1, ty))])
               }
             : undefined
         }
