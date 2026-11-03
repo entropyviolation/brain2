@@ -19,7 +19,7 @@ Shipped now (keep these; extend them):
 - Removed friends stay gone (union-only dismiss by **card id** / catalog species + confirm delete; pack names do not dismiss other species)
 - Click the **photograph** → this friend’s **instrument** (same page as Gallery
   Details: portrait, bond, mission, voice keys, equalizer, journal).
-- **Chat** sits beside Gallery, under the name → Stardew bubble (habits / today's To Do /
+- **Chat** (a speech-bubble icon key) sits beside Gallery, under the name → Stardew bubble (habits / today's To Do /
   Next Actions, species bias, title-loves, optional “I love you” / whims).
   A second click asks for another line and logs the previous offer as
   “Asked for another” (an accepted mission stays accepted).

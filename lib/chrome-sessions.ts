@@ -1,18 +1,18 @@
 /**
  * lib/chrome-sessions.ts — Chrome history as Screen Time blocks
  *
- * Analytics → Sources → Browser turns the merged history into runs (`runsOf`
+ * Data → Sources → Browser turns the merged history into runs (`runsOf`
  * in `lib/browser-history.ts`) and paints each on the Screen Time scope: pen =
  * site name, notes = `logged from chrome browser data` plus pages, full URLs,
  * searches and, for YouTube, minutes per video. Local servers use the page
  * title for their host:port, else `Local dev server`. Sites seen fewer than
  * 3 times share the `Other sites` pen. Rows carry a `phone-sync` stamp
  * (`chrome:<start>`) and are merged, never replaced: re-running adds only what
- * is new, and deleted ids stay deleted. Estimated (hatched).
+ * is new, and deleted ids stay deleted. Estimated (hatched). Midnight cuts
+ * use `localMidnightSlices` from the Instagram session module.
  */
-import { formatLocalDateKey } from "@/lib/date-utils"
 import { cleanYouTubeTitle, categoryOf, devTitles, runsOf, siteName, videoWatch, type Run, type Visit } from "@/lib/browser-history"
-import { mergeSessionEntries } from "@/lib/instagram-sessions"
+import { localMidnightSlices, mergeSessionEntries } from "@/lib/instagram-sessions"
 import { SCREENTIME_CATEGORY_IDS, slugApp } from "@/lib/screentime/app-categories"
 import { ensureScreenTimeScope } from "@/lib/screentime/sync"
 import type { TimeEntry } from "@/lib/time-entries"
@@ -21,7 +21,6 @@ import { PEN_PALETTE, useTimeTrackingStore, type TrackPen } from "@/lib/time-tra
 export const CHROME_NOTE = "logged from chrome browser data"
 export const OTHER_SITES = "Other sites"
 const MIN_SITE_VISITS = 3
-const DAY = 1440
 
 const PARENT: Record<string, string> = {
   "Local dev": SCREENTIME_CATEGORY_IDS.work,
@@ -69,37 +68,20 @@ export function runNotes(run: Run): string {
 
 /** One run as entries, sliced at local midnight (slices share a `spanId`). */
 export function runEntries(run: Run, scopeId: string, penId: string, notes: string): TimeEntry[] {
-  const first = new Date(run.start)
-  let dayStart = new Date(first.getFullYear(), first.getMonth(), first.getDate())
-  let startMin = first.getHours() * 60 + first.getMinutes()
   const key = Math.floor(run.start / 1000)
   const stamp = { kind: "phone-sync", id: `chrome:${key}` } as NonNullable<TimeEntry["generatedBy"]>
-  const out: TimeEntry[] = []
-  for (let part = 0; part < 400; part++) {
-    const nextDay = new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate() + 1)
-    const last = run.end <= nextDay.getTime()
-    let endMin = DAY
-    if (last) {
-      const d = new Date(run.end)
-      endMin = d.getHours() * 60 + d.getMinutes() + (d.getSeconds() || d.getMilliseconds() ? 1 : 0)
-    }
-    endMin = Math.min(DAY, Math.max(startMin + 1, endMin))
-    out.push({
-      id: `chrome-${key}${part ? `-${part}` : ""}`,
-      date: formatLocalDateKey(dayStart),
-      scopeId,
-      penId,
-      startMin,
-      endMin,
-      notes,
-      precision: "estimated",
-      clockCertainty: "estimated",
-      generatedBy: stamp,
-    })
-    if (last) break
-    dayStart = nextDay
-    startMin = 0
-  }
+  const out: TimeEntry[] = localMidnightSlices(run.start, run.end).map((slice, part) => ({
+    id: `chrome-${key}${part ? `-${part}` : ""}`,
+    date: slice.date,
+    scopeId,
+    penId,
+    startMin: slice.startMin,
+    endMin: slice.endMin,
+    notes,
+    precision: "estimated",
+    clockCertainty: "estimated",
+    generatedBy: stamp,
+  }))
   if (out.length > 1) for (const e of out) e.spanId = `chrome-span-${key}`
   return out
 }

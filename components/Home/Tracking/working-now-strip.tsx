@@ -16,6 +16,7 @@
 
 import { useEffect, useId, useMemo, useState } from "react"
 import { Wand2 } from "lucide-react"
+import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -28,7 +29,12 @@ import {
   attachWorkNowObjective,
   editWorkNowObjectiveText,
   formatElapsedClock,
+  isSessionPaused,
+  pauseWorkingOnOperation,
+  moveWorkNowObjectiveToNext,
+  moveWorkNowObjectiveToNow,
   removeWorkNowObjective,
+  resumeWorkingOnOperation,
   saveWorkObjectiveForLater,
   sessionElapsedMs,
   toggleWorkNowObjectiveComplete,
@@ -39,6 +45,7 @@ import { formatUsualDuration, usualDurationMinutes } from "@/lib/estimated-value
 import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { usePauseReason } from "@/components/Home/Tracking/pause-reason-dialog"
 import { reviewWorkStop } from "@/lib/session-debrief"
 import { activeNowObjectives } from "@/lib/now-objective"
 import { attachChoicesForOperation } from "@/lib/unfinished-objectives"
@@ -79,6 +86,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
   const unfinished = useUnfinishedStop(activeNowObjectives(session?.nowObjectives).length, (park) =>
     reviewWorkStop(park),
   )
+  const pauseAsk = usePauseReason()
   const needle = query.trim().toLowerCase()
   const draft = query.trim()
   const rows = useMemo(() => {
@@ -229,7 +237,9 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
         <NowObjectivesList
           objectives={session.nowObjectives}
           contextName={selected?.description}
-          onAdd={(text) => addWorkNowObjective(text)}
+          onAdd={(text, lane) => addWorkNowObjective(text, new Date(), lane)}
+          onMoveToNow={(id) => moveWorkNowObjectiveToNow(id)}
+          onMoveToNext={(id) => moveWorkNowObjectiveToNext(id)}
           onAddCompleted={(text) => addWorkCompletedObjective(text)}
           onEditText={(id, text) => editWorkNowObjectiveText(id, text)}
           onToggleComplete={(id) => toggleWorkNowObjectiveComplete(id)}
@@ -248,6 +258,19 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
           {formatUsualDuration(usual)}
         </span>
       )}
+      {live && session && selected ? (
+        <DvdTransportKey
+          className="trk-pen-now-icon"
+          mark={isSessionPaused(session) ? "play" : "pause"}
+          label={isSessionPaused(session) ? `Resume ${selected.description}` : `Pause ${selected.description}`}
+          onClick={() => {
+            if (isSessionPaused(session)) resumeWorkingOnOperation()
+            else void pauseAsk.ask().then((reason) => {
+              if (reason) pauseWorkingOnOperation(new Date(), reason)
+            })
+          }}
+        />
+      ) : null}
       <button
         type="button"
         className={`todo-cap${live ? "" : " is-primary"}`}
@@ -268,6 +291,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
             : "Working on this now"}
       </button>
       {unfinished.dialog}
+      {pauseAsk.dialog}
       {compact ? null : (
       <span
         className="ops-now-meta"

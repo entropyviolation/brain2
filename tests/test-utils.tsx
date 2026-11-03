@@ -15,12 +15,14 @@ import { DEFAULT_CORNER_DRIFT, DEFAULT_THEME, DEFAULT_WARMTH_DRIFT, useThemeStor
 import { DEFAULT_PCB_MODE } from "@/lib/pcb-backdrop"
 import { defaultScopes, defaultTags, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSleepStore } from "@/lib/sleep-store"
+import { useHealthImportStore } from "@/lib/phone-sync/health-store"
 import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { DEFAULT_GOAL_FOCUS_MULTIPLIER } from "@/lib/goal-focus"
 import { DEFAULT_RITUAL_COMPLETION_BONUS, DEFAULT_RITUAL_SECTION_POINTS } from "@/lib/ritual-points"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
@@ -39,6 +41,8 @@ import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useCountStatusesStore } from "@/lib/count-statuses"
+import { useDayPhotosStore } from "@/lib/day-photos-store"
+import { useWardrobeStore } from "@/lib/wardrobe"
 import { resetPersistStatus } from "@/lib/persist-storage"
 import { resetDayNotesPersist } from "@/lib/day-notes-persist"
 import { resetActionHistory } from "@/lib/action-history"
@@ -153,12 +157,14 @@ export function resetAllStores() {
     penSort: "recent",
   })
   useSleepStore.setState({ nights: {} })
+  useHealthImportStore.setState({ days: {}, nights: {} })
   useCycleMarksStore.setState({ marks: {} })
   useSunTimesStore.getState().resetSunTimes()
   useWorkSessionStore.setState({ session: null })
   usePenColorSessionStore.setState({ session: null })
   useUnfinishedObjectivesStore.setState({ rows: [] })
   useSessionDebriefStore.setState({ pending: null, handoffs: [], reviews: [] })
+  useTelegramFeedStore.setState({ rows: [] })
   useIngestStore.setState({
     enabled: true,
     allowGroups: false,
@@ -185,7 +191,12 @@ export function resetAllStores() {
   useHomeWeatherStore.getState().resetPlace()
   useUiNamesStore.setState({ mode: "off" })
   useLogKeywordsStore.setState({ keywords: [] })
-  useCountStatusesStore.setState({ counts: [] })
+  useCountStatusesStore.setState({
+    counts: [{ id: "count-shower", name: "Shower", keyword: "shower", ticks: [] }],
+    builtins: { shower: "on", showerBackfill: "done" },
+  })
+  useWardrobeStore.setState({ pieces: [], outfits: [] })
+  useDayPhotosStore.setState({ byDay: {} })
 }
 
 export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {

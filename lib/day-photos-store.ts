@@ -11,6 +11,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const DAY_PHOTOS_STORAGE_KEY = persistKey("day-photos")
 
@@ -52,3 +53,5 @@ export function photoIdsForDay(
   for (const p of photos) if (p.takenDayKey === dayKey) ids.add(p.id)
   return [...ids]
 }
+
+registerPhoneWindowStore(useDayPhotosStore)

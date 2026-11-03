@@ -13,20 +13,20 @@
  */
 export { OperationsView, default as OperationsViewDefault } from "./OperationsView"
 export { OperationWorkspace, default as OperationWorkspaceDefault } from "./OperationWorkspace"
-export { OperationHome } from "./OperationHome"
-export { OperationTasksPanel } from "./OperationTasksPanel"
-export { PhasesPanel } from "./PhasesPanel"
+export { OperationHome } from "./panels/OperationHome"
+export { OperationTasksPanel } from "./panels/OperationTasksPanel"
+export { PhasesPanel } from "./panels/PhasesPanel"
 export { ToDoNextRail } from "./ToDoNextRail"
-export { ResourcesPanel } from "./ResourcesPanel"
-export { OperationLogFeed } from "./OperationLogFeed"
-export { OperationPostMortemDialog } from "./OperationPostMortemDialog"
-export { OperationSettingsDialog } from "./OperationSettingsDialog"
+export { ResourcesPanel } from "./panels/ResourcesPanel"
+export { OperationLogFeed } from "./panels/OperationLogFeed"
+export { OperationPostMortemDialog } from "./dialogs/OperationPostMortemDialog"
+export { OperationSettingsDialog } from "./dialogs/OperationSettingsDialog"
 export { WorkingNowControl } from "./WorkingNowControl"
 export {
   OperationTimelinePanel,
   OperationLocationsPanel,
   OperationPlanDocPanel,
-} from "./OperationFieldPlanPanels"
+} from "./panels/OperationFieldPlanPanels"
 export {
   upgradeTaskToOperation,
   createOperation,

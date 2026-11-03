@@ -25,7 +25,7 @@ vocabulary); the rich Links tab for every item (Phases 5–8.1); Company pen
 double-click. **Next:** steps 1.1 → 2.1 → 3.1 (one rewrite of
 `person-detail.tsx`), which also finishes 3.2–3.5 and 7.1. Pieces for that
 rewrite are already in the tree and unwired: `components/ui/address-suggest-input.tsx`,
-`components/People/person-nicknames.tsx`, `components/People/person-log.tsx`
+`components/People/detail/person-nicknames.tsx`, `components/People/detail/person-log.tsx`
 (a copy of `Log` from `person-detail.tsx`; delete the original when wiring).
 
 ## How to use this file (agents read first)
@@ -41,7 +41,7 @@ rewrite are already in the tree and unwired: `components/ui/address-suggest-inpu
    few lines. Future steps read handoffs, not your diff.
 4. Run the step's checks before marking it Done. Never mark a step Done with
    a red test.
-5. Update the room README the step names (CLAUDE.md rule: `_Last mapped_`
+5. Update the room README the step names (`AGENTS.md` rule: `_Last mapped_`
    line, house voice). Phase 9 is the final sweep, not the only one.
 
 Checks used everywhere:
@@ -126,7 +126,7 @@ Line numbers are approximate (`~`). Fix them in a handoff when they move.
   `openItem`. Person block ~606 (same as popup). "Related"
   card ~885 with `LinkPicker` (only when editing) + `RelatedItemsPanel`.
   Notes ~1317.
-- **Draft hook** `components/ItemDetail/useItemDetailDraft.ts`: `task`,
+- **Draft hook** `components/ItemDetail/draft/useItemDetailDraft.ts`: `task`,
   `setTask` (state + ref + listeners), `getDraft()` (ref), `touchDraft(patch)`
   (ref only, no render, notifies `subscribeDraft` listeners — the save lamp
   `ItemSaveFlag` listens), `originalTask` (**state only, no ref**),
@@ -178,7 +178,7 @@ Line numbers are approximate (`~`). Fix them in a handoff when they move.
   `person | pen | entry | list`. Row renderer ~60–110: swatch
   `.person-pipelines-swatch` (pen color) + label "Company pen · {who} —
   {pen name}" + Remove. `useCompanyTracking()` ~112.
-- `components/People/person-time-together.tsx`: `React.memo` on name +
+- `components/People/detail/person-time-together.tsx`: `React.memo` on name +
   `personPipelines` (1.2); inner memo on store entries.
 - `lib/person-profile.ts`: `PersonProfile` ~90 (`fullName, nicknames,
   relation, dateMet, dateMetEstimated, instagram, address{precision, text,
@@ -237,12 +237,12 @@ Line numbers are approximate (`~`). Fix them in a handoff when they move.
 | Need | Use |
 |------|-----|
 | Orb image for an item | `iconFor(id, task.icon)` from `@/components/Icons/Icon` (`orbFor` hashes a default). `Task.icon` is in the save allowlist. |
-| Orb picker popup (pick existing / upload new, bg removal) | `OrbPickerDialog({ open, current, onClose, onSelect(icon \| undefined) })` from `@/components/Icons/OrbPicker`. Example caller: `components/Lists/enhanced-list-view.tsx` ~1182 `applyIcon`, ~2087. |
-| Address search with parts | `searchAddresses(q, near?)`, `withParts(s)`, `reverseGeocode`, type `AddressSuggestion {id,name,label,lat,lng,parts,source}` in `lib/geo-address.ts`; `AddressParts` in `lib/pen-place.ts` ~20. Photon keyless; Google first when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set. Fails soft. Debounce pattern: `components/Home/Tracking/pen-place-editor.tsx` ~50–75. Place UI with keyboard nav: `components/Modules/workspace/itinerary/PlaceSuggestInput.tsx`. |
+| Orb picker popup (pick existing / upload new, bg removal) | `OrbPickerDialog({ open, current, onClose, onSelect(icon \| undefined) })` from `@/components/Icons/OrbPicker`. Example caller: `applyIcon` in `components/Lists/hooks/useListsIconChrome.ts`, mounted from `components/Lists/board/lists-dialog-host.tsx`. |
+| Address search with parts | `searchAddresses(q, near?)`, `withParts(s)`, `reverseGeocode`, type `AddressSuggestion {id,name,label,lat,lng,parts,source}` in `lib/geo-address.ts`; `AddressParts` in `lib/pen-place.ts` ~20. Photon keyless; Google first when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set. Fails soft. Debounce pattern: `components/Home/Tracking/pen-settings/pen-place-editor.tsx` ~50–75. Place UI with keyboard nav: `components/Modules/workspace/itinerary/PlaceSuggestInput.tsx`. |
 | Open pen settings from a color | `penColorDoubleClick(scopeId, penId)` + `PEN_COLOR_OPEN_TITLE` from `components/Home/Tracking/open-pen-settings.ts`. Host `PenSettingsHost` is mounted once in `app/page.tsx` ~309. |
 | Gravity physics | `components/Lists/lib/list-icon-gravity.ts`: `makeGravityBodies`, `stepGravity(bodies, edges, dt, bounds, opts)`, `settleGravityField`, `prefersGravityReducedMotion`, `nodeGlowLevel`, `edgeCordOpacity`. Cord paint: `list-icon-force-links.ts` + `ListIconForceLinksOverlay`. |
 | List summary | `ListSummary` in `components/Modules/module-bodies.tsx` ~184 (count / done bar). |
-| Notes log UI | `ItemNotesLog` (`components/ItemDetail/ItemNotesLog.tsx`), helpers `lib/item-notes.ts` (`makeNoteEntry`, `notesNewestFirst`). |
+| Notes log UI | `ItemNotesLog` (`components/ItemDetail/tabs/notes/ItemNotesLog.tsx`), helpers `lib/item-notes.ts` (`makeNoteEntry`, `notesNewestFirst`). |
 | Item type of an item | `assignedItemTypes(...)` (`lib/item-types.ts`, used in page ~362) and `task.type`. |
 | Relation vocabulary home | `lib/item-type-store.ts` `relations` + `addRelations` / `updateRelation` / `archiveRelation` (5.1; persist `brain2-item-types-store`, still v2, in Settings full backup `lib/data/backup.ts` ~174). `migrateItemTypeState` returns only `types` — carry `relations` if you bump the version. Read through `lib/relation-registry.ts`. |
 
@@ -334,7 +334,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 
 #### 0.1 Guard core: `guardAction` + live dirty check
 - **Files**: `components/ui/unsaved-changes-guard.tsx`,
-  `components/ItemDetail/useItemDetailDraft.ts`, new test
+  `components/ItemDetail/draft/useItemDetailDraft.ts`, new test
   `components/ui/unsaved-changes-guard.test.tsx` (check if one exists first:
   `ls components/ui | grep unsaved`).
 - **Do**:
@@ -388,7 +388,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 
 #### 0.3 Page shell + window close guard
 - **Files**: `components/ItemDetail/ItemDetailPage.tsx`, maybe
-  `components/ItemDetail/useItemDetailUnloadGuard.ts` (new, tiny).
+  `components/ItemDetail/draft/useItemDetailUnloadGuard.ts` (new, tiny).
 - **Do**:
   1. Page: `useUnsavedGuard({ open: true, onOpenChange: (o) => !o && onBack(),
      isDirty: isDraftDirty, onSave: handleSave, onDiscard })`. Back button,
@@ -463,7 +463,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 #### 1.2 Popup render diet
 - **Files**: `components/ItemDetail/ItemDetailPopup.tsx`,
   `components/Lists/attributes/AttributeValueField.tsx` (read first ~60
-  lines + grep `onChange=`), `components/ItemDetail/ItemAttributesSection.tsx`.
+  lines + grep `onChange=`), `components/ItemDetail/attributes/ItemAttributesSection.tsx`.
 - **Do**:
   1. `detailView` memo deps: what `resolveDetailView` actually reads (open
      `lib/item-types.ts`, `grep -n "export function resolveDetailView" -A40`).
@@ -496,7 +496,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 
 #### 2.1 Field padding + person field kit (CSS)
 - **Files**: `components/People/person-detail.css`,
-  `components/ItemDetail/item-detail-chrome.css` (~600 "Sunken white
+  `components/ItemDetail/chrome/item-detail-chrome.css` (~600 "Sunken white
   fields").
 - **Do**:
   1. Person fields (~68 rule): `height: 32px; padding: 0 10px;
@@ -663,7 +663,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
   still reads it); do it in 9.1.
 
 #### 3.4 Gift ideas key + popup; rename-safe list
-- **Files**: new `components/People/person-gift-ideas.tsx` (key + dialog),
+- **Files**: new `components/People/detail/person-gift-ideas.tsx` (key + dialog),
   `lib/gift-ideas.ts` (+ test), `lib/types.ts` (`List.giftIdeasAutoName?`).
 - **Do**:
   1. **Rename-safe**: when writing the auto title, also write
@@ -816,7 +816,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 > (vocabulary v2, rules, densify, inbox). It also renames the Constellation
 > to the radial plate in UI copy and drops the amber hues (§13 there).
 
-New folder `components/ItemDetail/links/` with its own `rich-links.css`.
+New folder `components/ItemDetail/tabs/links/` with its own `rich-links.css`.
 Everything here is used by people first (6.5) and by every item in 8.1, so
 nothing in it may import from `components/People/`.
 
@@ -860,7 +860,7 @@ nothing in it may import from `components/People/`.
   second key gets `#linkId`). Tests: `lib/link-graph.test.ts` (9).
 
 #### 6.2 Link composer
-- **Files**: `components/ItemDetail/links/LinkComposer.tsx`,
+- **Files**: `components/ItemDetail/tabs/links/LinkComposer.tsx`,
   `RelationCombobox.tsx`, `LinkTargetSearch.tsx`, `NewRelationForm.tsx`.
 - **Do**: the sentence row from §2. `RelationCombobox`: popover with search;
   sections "For {type}" (`relationsFor(fromType, targetType)`), "Any",
@@ -879,7 +879,7 @@ nothing in it may import from `components/People/`.
 - **Handoff**: `LinkComposer.tsx` holds the relation combobox and `NewRelationForm`; `LinkTargetSearch.tsx` matches title, full name, nicknames, description, and offers "New person" when the relation points at people. Type of an item: `itemLinkTypeId(item, lists)` in `lib/item-types.ts`.
 
 #### 6.3 Link ledger
-- **Files**: `components/ItemDetail/links/LinkLedger.tsx`.
+- **Files**: `components/ItemDetail/tabs/links/LinkLedger.tsx`.
 - **Do**: groups by `edge.relation` label; rows per §2. Actions:
   out/mutual → Remove (`removeLink(outLinkId)`, draft). In-only →
   **Confirm** (`addLink(edge.relation, otherId)` → becomes mutual on Save) and
@@ -892,7 +892,7 @@ nothing in it may import from `components/People/`.
 - **Handoff**: `Task.dismissedLinkSuggestions` added to `lib/types.ts` and `TASK_FIELDS`.
 
 #### 6.4 Constellation view
-- **Files**: `components/ItemDetail/links/LinkConstellation.tsx`,
+- **Files**: `components/ItemDetail/tabs/links/LinkConstellation.tsx`,
   `lib/link-constellation-layout.ts` (+ test).
 - **Layout** (pure, testable): center at (W/2, H/2). Families get angular
   sectors sized by edge count, in a fixed family order so the picture is
@@ -922,7 +922,7 @@ nothing in it may import from `components/People/`.
 - **Handoff**: Changed from the plan: incoming cords use the family color, dashed and flowing toward the center (not amber). Motion is a small spring integrator in the component (entrance, stir, grab-and-fling), not the Lists gravity stepper, because the slots are fixed. Layout: `lib/link-constellation-layout.ts` (tests).
 
 #### 6.5 `RichLinksPanel` wired into popup for people
-- **Files**: `components/ItemDetail/links/RichLinksPanel.tsx`,
+- **Files**: `components/ItemDetail/tabs/links/RichLinksPanel.tsx`,
   `components/ItemDetail/ItemDetailPopup.tsx` (Links tab ~961, tab key ~502),
   new `usesRichLinks(task, lists, itemTypes)` in `lib/item-types.ts` (true
   for `itemShowsPersonPipelines` or a list whose `itemTypeId` is person; 8.1
@@ -936,7 +936,7 @@ nothing in it may import from `components/People/`.
 - **Tests**: popup for a person shows the rich panel; a task still shows the
   old one; adding a link then Save writes `task.links`; open linked item
   with a dirty draft prompts.
-- **Handoff**: `useItemEdges(task)` is exported for the tab count. Styles: `components/ItemDetail/links/rich-links.css` (container query narrows the composer in the page rail).
+- **Handoff**: `useItemEdges(task)` is exported for the tab count. Styles: `components/ItemDetail/tabs/links/rich-links.css` (container query narrows the composer in the page rail).
 
 ### Phase 7 — Self knows everyone
 
@@ -986,9 +986,9 @@ nothing in it may import from `components/People/`.
   `relations` on item-type-store, persist v19, `person-notes-fold`,
   `people-self`, `link-graph`). Each changed section gets `_Last mapped:
   YYYY-MM-DD_`. Mark this plan **Shipped** at the top, keep the reasoning.
-- Screenshots of Details and Links for a person and a task in
-  `docs/screenshots/` (`npm run capture-screenshots` if it covers item
-  detail; otherwise Playwright by hand).
+- Screenshots of Details and Links for a person and a task are a gallery
+  sync, not a full recapture. `BRAIN2_ONLY` for the item-detail shots the
+  manifest lists (`.cursor/rules/doc-sync.mdc`).
 - Run DESIGN_STYLE "Checklist before shipping UI".
 
 ---

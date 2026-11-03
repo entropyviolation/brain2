@@ -28,7 +28,7 @@ beforeEach(() => {
 
 describe("linkSessionAndPen", () => {
   it("pausing and resuming the pen does the same to the session", () => {
-    pausePenColorSession()
+    pausePenColorSession(new Date(), "coffee")
     expect(plan().clock?.running).toBe(false)
     resumePenColorSession()
     expect(plan().clock?.running).toBe(true)

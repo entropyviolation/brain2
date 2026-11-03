@@ -12,6 +12,7 @@
 import { applyDiscreteLog, applyLogCategories, applyThoughtProcess } from "@/lib/ingest/apply-discrete-event"
 import { parseMessage } from "@/lib/ingest/parse-message"
 import type { ApplyResult, IngestIntent } from "@/lib/ingest/types"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
 /** Leading log command, same door as the bot. `logic:` and `folder: log:` do not match. */
 const LOG_START = /^log(?:\s*[:：\-]\s*|\s+)/i
@@ -31,7 +32,15 @@ export function quickAddLogIntent(text: string, plain = false): IngestIntent | n
 
 /** Write the line the way the bot would. Does not create an Inbox task. */
 export function applyQuickAddLog(intent: IngestIntent, now = new Date()): ApplyResult {
-  if (intent.kind === "thought-process") return applyThoughtProcess(intent.payload, now)
-  if (intent.kind === "log-categories") return applyLogCategories()
-  return applyDiscreteLog(intent.payload, now)
+  const result =
+    intent.kind === "thought-process"
+      ? applyThoughtProcess(intent.payload, now)
+      : intent.kind === "log-categories"
+        ? applyLogCategories()
+        : applyDiscreteLog(intent.payload, now)
+  if (result.status === "ok") {
+    const store = useTimeTrackingStore.getState()
+    for (const id of result.itemIds ?? []) store.updateEntry(id, { logSource: "quick-add" })
+  }
+  return result
 }

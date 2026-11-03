@@ -1,10 +1,10 @@
 # Time context — analyze only certain kinds of time
 
-**Not built.** Analytics can search blocks and redraw Tracking on the words that matched. It cannot yet show “only time at home” or “alone vs with Elijah”. This file is the design for that, so a later change does not invent a second clock.
+**Not built.** Data can search blocks and redraw Tracking on the words that matched. It cannot yet show “only time at home” or “alone vs with Elijah”. This file is the design for that, so a later change does not invent a second clock.
 
-A **slice** is a predicate over blocks that already exist (`TimeEntry` in `lib/time-entries.ts`). Every measure that already runs on a list of entries — `totalsFor` / `penTotalsAtDepth` / `tagTotals` / `tagWeekTrend` in `lib/tracking-summary.ts`, the period filmstrip (`components/Analytics/period-filmstrip.ts`), day and week color strips (`components/Analytics/grain-strips.ts`), hour × day (`components/Analytics/hour-day.ts`), circadian, diversity, places, up/down (`components/Analytics/period-delta.ts`) — runs again on `entries.filter(predicate)`. The stores stay as they are.
+A **slice** is a predicate over blocks that already exist (`TimeEntry` in `lib/time-entries.ts`). Every measure that already runs on a list of entries — `totalsFor` / `penTotalsAtDepth` / `tagTotals` / `tagWeekTrend` in `lib/tracking-summary.ts`, the period filmstrip (`components/Analytics/time/period-filmstrip.ts`), day and week color strips (`components/Analytics/time/grain-strips.ts`), hour × day (`components/Analytics/hour-day.ts`), circadian, diversity, places, up/down (`components/Analytics/time/period-delta.ts`) — runs again on `entries.filter(predicate)`. The stores stay as they are.
 
-Find blocks (`components/Analytics/block-search.ts`, matcher `lib/tracking-search.ts`) is the first predicate in the product, and it is a word match, not a life-context slice. “Show matches in this view” is the pattern to copy: pass the filtered entries into the existing board, omit the rest, and do not call the rest untracked.
+Find blocks (`components/Analytics/time/block-search.ts`, matcher `lib/tracking-search.ts`) is the first predicate in the product, and it is a word match, not a life-context slice. “Show matches in this view” is the pattern to copy: pass the filtered entries into the existing board, omit the rest, and do not call the rest untracked.
 
 ## What the record already is
 
@@ -40,7 +40,7 @@ Seeded scopes in `defaultScopes()`:
 | `iphone-calls` | iPhone Calls | Empty until people are added. Depth: Who / Exact. |
 | `iphone-texts` | iPhone Texts | Empty until people are added. |
 
-Scopes are independent. Four hours can be Work in Activity, Home in Location, and Alone in Company. None of those rows owns the others. `attachCompanion` paints an ordinary block in the other scope over the same minutes, and only into minutes that scope left blank (`lib/entry-links.ts`). The block editor already offers that as Attach / Annotate / Always (`components/Home/Tracking/companion-section.tsx`).
+Scopes are independent. Four hours can be Work in Activity, Home in Location, and Alone in Company. None of those rows owns the others. `attachCompanion` paints an ordinary block in the other scope over the same minutes, and only into minutes that scope left blank (`lib/entry-links.ts`). The block editor already offers that as Attach / Annotate / Always (`components/Home/Tracking/block-editor/companion-section.tsx`).
 
 ## Rules for every slice
 
@@ -52,7 +52,7 @@ Scopes are independent. Four hours can be Work in Activity, Home in Location, an
 6. **A match includes the whole block.** If the predicate is true, the block’s minutes enter the slice once. Do not emit one copy per secondary pen or per ancestor. Display-depth rollup (`penTotalsAtDepth`) is a separate question and already splits a multi-parent block so the shares sum to the block.
 7. **Instants stay off occupancy.** They may appear in a list. They do not color a strip or fill an hour.
 8. **Say which record you read.** “With Elijah” might be a Company variant, an Activity “Who with?” variant, or both. The slice names its source. It does not add the two.
-9. **The shared Analytics window stays the window.** A slice narrows blocks inside it. It does not invent a new range. Prev / Next (`previousAnalyticsWindow`) applies the same predicate to the previous window when the comparison is “did this kind of time go up”.
+9. **The shared Data window stays the window.** A slice narrows blocks inside it. It does not invent a new range. Prev / Next (`previousAnalyticsWindow`) applies the same predicate to the previous window when the comparison is “did this kind of time go up”.
 
 Suggested shape, next to the search helper, not inside the tracker:
 
@@ -69,7 +69,7 @@ Showing two slices side by side (home vs away, alone vs with Elijah) is two filt
 
 **Question.** Where did the week happen? What does Activity look like on days that were mostly home, versus days that were not?
 
-**Collect.** A Location block on those minutes: primary pen (`loc-home`, or a nested place such as a park that counts as a city). Depth labels are already Country / Area / Place / Exact. No coordinates exist. `PlacesView` (`components/Analytics/PlacesView.tsx`) is time-at-pen for the Location scope. It is not a map, and it is not “activity while at home”.
+**Collect.** A Location block on those minutes: primary pen (`loc-home`, or a nested place such as a park that counts as a city). Depth labels are already Country / Area / Place / Exact. No coordinates exist. `PlacesView` (`components/Analytics/time/PlacesView.tsx`) is time-at-pen for the Location scope. It is not a map, and it is not “activity while at home”.
 
 **Invite.** The companion row on the block already open: one click fills Location for the minutes Activity left blank in that scope. A standing pen link (“this place always means Social”) is the Always gesture, offered after a pairing exists, not before. A hatched estimate — last place, drawn `precision: "estimated"` — can sit on the gap until the person confirms it. Do not prompt on every stroke.
 
@@ -105,8 +105,8 @@ These are not extra columns. They are scopes and pens, or they are absent.
 | Tool | Which app or instrument? | Screen Time category pens and apps (`screentime`, `iphone-screentime`). Not a field on an Activity block. | ActivityWatch sync (`generatedBy.kind === "screentime"`) or a pen the person adds. | Screen Time view already. A slice would be “Activity during minutes a given app owned”, joined on the clock. | Screen Time and Activity both describe the same hour. Union before any cross total. AFK stays untracked in that scope. | Apps can be painted by sync. Joining them to Activity is future. |
 | Body state | Sick, pain, hungry, substance? | A mood stretch can hold a sensation for that hour. It is not a body-state scope. | A scope the person adds, or a tag, for a body that outlasts one stretch. | Same strip language, once paint exists. | Unknown body is blank, not “fine”. | Sensation on a mood stretch is ready. A body scope is **future collection.** |
 | Media | What was on? | `books` / `pages` on the block. Screen Time “Media” category. No show/album id. | Type the book on the block, or let Screen Time name the app. | A list of blocks with `books` set, and the Media pen’s minutes. | A book title does not duplicate the block’s duration. | Pages and the Media pen are ready to list. A media library is future. |
-| Obligation | What was required? | Not on `TimeEntry`. Tasks, `timeLogs`, and Plan vs Reality (`components/Analytics/PlanVsReality.tsx`). | The plan and the to-do, which already exist. | Planned minutes beside painted minutes — that view is already there. | Do not add task estimates on top of painted minutes and call it the day. | The comparison view is ready. A slice of “blocks that were obligations” needs a link the block does not have yet. |
-| Sleep | When was the night? | Sleep pen, `tag-sleep`, and `generatedBy.kind === "sleep"`. Nights also live in `lib/sleep-log.ts`. Sleep Analytics reads both. | Sleep log sync. Hand paint remains. | The 6pm→noon strip in `SleepAnalytics.tsx`. A slice is “days whose night was short”, which needs the sleep record, then a filter on other entries that share `date`. | Sleep-derived paint sitting on hand paint counts once in occupancy. Sleep sync skips action-format Done rows because the night already has one (`lib/pen-action-sync.ts`). | Nights are ready. “Everything else on short-sleep days” is future. |
+| Obligation | What was required? | Not on `TimeEntry`. Tasks, `timeLogs`, and Plan vs Reality (`components/Analytics/accuracy/PlanVsReality.tsx`). | The plan and the to-do, which already exist. | Planned minutes beside painted minutes — that view is already there. | Do not add task estimates on top of painted minutes and call it the day. | The comparison view is ready. A slice of “blocks that were obligations” needs a link the block does not have yet. |
+| Sleep | When was the night? | Sleep pen, `tag-sleep`, and `generatedBy.kind === "sleep"`. Nights also live in `lib/sleep-log.ts`. Sleep Data reads both. | Sleep log sync. Hand paint remains. | The 6pm→noon strip in `SleepAnalytics.tsx`. A slice is “days whose night was short”, which needs the sleep record, then a filter on other entries that share `date`. | Sleep-derived paint sitting on hand paint counts once in occupancy. Sleep sync skips action-format Done rows because the night already has one (`lib/pen-action-sync.ts`). | Nights are ready. “Everything else on short-sleep days” is future. |
 | Travel | In transit, or a trip? | Seed pen `loc-transit` (“Transit”). No trip id, no from/to. | Paint Transit, or a nested place. | Transit’s minutes on the Location board, or a slice of Activity that overlaps Transit. | Transit is a place pen, not a third timeline. | The pen is ready. Trip structure is **future collection**. |
 | Indoors / outdoors | Inside or out? | No boolean. Seed pen `loc-out` (“Outside”). A person can nest places under it. | Use that pen, or add Indoor / Outdoor as parents and nest. | Two strips, outside vs not, with an unknown band for minutes that have neither. | “Not outside” is not “indoors” unless an indoors pen was painted. | **Future** as a pair. Outside-as-a-pen is ready to total. |
 
@@ -116,7 +116,7 @@ These are not extra columns. They are scopes and pens, or they are absent.
 
 **Collect.** `secondaryPenIds` on the block. Older vaults omit it. The primary stays `penId`.
 
-**Invite.** The block editor already edits secondaries. Do not ask again in Analytics.
+**Invite.** The block editor already edits secondaries. Do not ask again in Data.
 
 **Show.** Search already matches secondary names (`match: "also"`). A slice “counts as studying” includes blocks where studying is primary or secondary, and still counts the minutes once. The filmstrip keeps the primary color; a second caption or a hatch can name the secondary so the strip does not become two clocks.
 
@@ -142,7 +142,7 @@ These are not extra columns. They are scopes and pens, or they are absent.
 
 **Question.** What did the person assert, and what did the app assume?
 
-**Collect.** `precision: "estimated"` on the assumed block. Certain blocks omit `precision`. `entryFill` hatches estimated color on the grid. Analytics already has Include assumed (`withPrecision` drops estimated blocks when the box is off).
+**Collect.** `precision: "estimated"` on the assumed block. Certain blocks omit `precision`. `entryFill` hatches estimated color on the grid. Data already has Include assumed (`withPrecision` drops estimated blocks when the box is off).
 
 **Invite.** Write the guess as estimated — last place, last company, a Done item’s clock — and let a review confirm it. Confirming deletes `precision` and keeps `estimateOf` so the same source is not proposed again. Do not nag each hatch; the review ritual is the moment.
 
@@ -158,7 +158,7 @@ These are not extra columns. They are scopes and pens, or they are absent.
 
 **Collect.** Plans are tasks and calendar events, not fields on `TimeEntry`. `confirmedEventIds` on the tracking store records which calendar events the Day Log has already turned into blocks. `PlanVsReality.tsx` compares planned minutes to painted minutes. Capacity vs the waking window is labeled `~` when sleep is inferred.
 
-**Invite.** The Day Log confirm gesture, which already exists. Analytics should not grow a second planner.
+**Invite.** The Day Log confirm gesture, which already exists. Data should not grow a second planner.
 
 **Show.** The plan view is the comparison. A later slice can be “painted blocks that came from a confirmed event” only if the block stores the event id. It does not, today — the id list is separate — so that slice waits on a stamp, or on a join through `confirmedEventIds` that a person can audit.
 
@@ -186,7 +186,7 @@ These are not extra columns. They are scopes and pens, or they are absent.
 
 **Collect.** `actionFormats` on the pen. `lib/pen-action-sync.ts` writes a `loggedAction` task keyed by `trackingEntryId` when a primary or secondary pen has a template (`docs/PEN_ACTION_FORMATS.md`). `estimateOf.kind === "done"` is the other direction: a Done item proposed a hatched block. Habit links are tags, not this (`lib/habit-tracking.ts`).
 
-**Invite.** The template lives on the pen. Painting is enough. A title the person edited in To-Do is left alone. Do not ask Analytics to create the Done row.
+**Invite.** The template lives on the pen. Painting is enough. A title the person edited in To-Do is left alone. Do not ask Data to create the Done row.
 
 **Show.** On a block list, a mark when a `pen-action-` row exists. A slice “blocks that logged a Done row” joins on `trackingEntryId`. The reverse list — Done rows with no block — belongs next to it so the gap is visible.
 
@@ -202,7 +202,7 @@ These are not extra columns. They are scopes and pens, or they are absent.
 
 **Invite.** None. The paint is the collection.
 
-**Show.** Already shipping, on the full set: hour × day and the Cleveland weekday cycle (`CircadianView`, `hour-day.ts`), weekday vs weekend (`signal-stats.ts`), the minute filmstrip, the day and week color strips, up/down against `previousAnalyticsWindow`. A slice reuses them unchanged. “Evenings at home” is the location predicate, then the hour grid. Season is the Analytics window set to that quarter, then the same board — or a small multiple of four quarters. Do not add a season property to `TimeEntry`.
+**Show.** Already shipping, on the full set: hour × day and the Cleveland weekday cycle (`CircadianView`, `hour-day.ts`), weekday vs weekend (`signal-stats.ts`), the minute filmstrip, the day and week color strips, up/down against `previousAnalyticsWindow`. A slice reuses them unchanged. “Evenings at home” is the location predicate, then the hour grid. Season is the Data window set to that quarter, then the same board — or a small multiple of four quarters. Do not add a season property to `TimeEntry`.
 
 **Honesty.** Missing hours are 0 only inside a grid that means “no paint”, and the caption must say so (Circadian already treats empty as missing, not as work). A weekday average includes blank weekdays in the denominator, matching `weekdayWeekendCut`. Instants do not fill hours.
 
@@ -258,7 +258,7 @@ These are not extra columns. They are scopes and pens, or they are absent.
 
 **Invite.** Tag the pen once. The habit link is a setting, not a question at paint time. A block can take an extra tag (the zoo counting as exercise for one afternoon) without retagging the pen.
 
-**Show.** Tag rows and the week/month bars (`TagTrendBoard`, `tagWeekTrend`, `tagMonthTrend`) are the current picture, across scopes, minute-unioned. A slice “only minutes that feed this habit” is `effectiveTagIds` intersecting the habit’s tags, then the filmstrip. The habit grade stays in Habits; Analytics shows the minutes, with `trackedValue` vs `manualValue` named so a typed bonus is not drawn as paint.
+**Show.** Tag rows and the week/month bars (`TagTrendBoard`, `tagWeekTrend`, `tagMonthTrend`) are the current picture, across scopes, minute-unioned. A slice “only minutes that feed this habit” is `effectiveTagIds` intersecting the habit’s tags, then the filmstrip. The habit grade stays in Habits; Data shows the minutes, with `trackedValue` vs `manualValue` named so a typed bonus is not drawn as paint.
 
 **Honesty.** Two scopes sharing a tag on the same minute count once toward the tag (`tagTotals`). The habit sync uses that. A slice must too. A habit with no tracking link has no painted slice — say so, do not show zero paint as a failed day.
 

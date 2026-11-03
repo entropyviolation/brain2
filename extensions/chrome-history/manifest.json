@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Brain2 Chrome History",
+  "version": "1.0.1",
+  "description": "After local midnight, sends yesterday's Chrome history to Brain2 and saves a JSON file.",
+  "permissions": ["history", "alarms", "storage", "downloads"],
+  "host_permissions": ["http://127.0.0.1:3000/*", "http://localhost:3000/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Brain2 Chrome History",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*", "http://127.0.0.1:3000/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

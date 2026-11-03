@@ -33,6 +33,8 @@ import {
   getWeekString,
 } from "./date-utils"
 import { precedingQuarterStarts, quarterKey } from "./seasons"
+import { isPausedPeriod } from "./habit-exemption"
+import { pausedOverlaps } from "./habit-pause"
 import type {
   HabitFrequency,
   HabitPriorityEvent,
@@ -76,7 +78,7 @@ function dailyWeekDates(weekStart: Date): Date[] {
   return getWeekDates(getWeekStartDate(weekStart))
 }
 
-/** Consecutive fully empty periods immediately before the current one. */
+/** Consecutive fully empty periods immediately before the current one. A paused period ends the run. */
 export function autoPriorityWeight(
   task: WeeklyTask,
   data: WeeklyData,
@@ -91,6 +93,7 @@ export function autoPriorityWeight(
     let n = 0
     for (const start of prior) {
       const key = getWeekString(start)
+      if (isPausedPeriod(task, key, "weekly")) break
       if (habitCellRatio(task, data[key]?.[task.id], data, start) > 0) break
       n++
     }
@@ -103,6 +106,7 @@ export function autoPriorityWeight(
     let n = 0
     for (const start of prior) {
       const key = formatLocalMonthKey(start)
+      if (isPausedPeriod(task, key, "monthly")) break
       if (habitCellRatio(task, data[key]?.[task.id], data, start) > 0) break
       n++
     }
@@ -115,6 +119,7 @@ export function autoPriorityWeight(
     let n = 0
     for (const start of prior) {
       const key = quarterKey(start)
+      if (isPausedPeriod(task, key, "quarterly")) break
       if (habitCellRatio(task, data[key]?.[task.id], data, start) > 0) break
       n++
     }
@@ -127,7 +132,9 @@ export function autoPriorityWeight(
     const start = new Date(current)
     start.setDate(current.getDate() - 7 * i)
     start.setHours(0, 0, 0, 0)
-    if (periodHasAnyProgress(task, data, dailyWeekDates(start))) break
+    const days = dailyWeekDates(start)
+    if (pausedOverlaps(task, formatLocalDateKey(days[0]), formatLocalDateKey(days[days.length - 1]))) break
+    if (periodHasAnyProgress(task, data, days)) break
     n++
   }
   return n

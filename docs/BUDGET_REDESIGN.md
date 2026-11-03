@@ -1,13 +1,6 @@
 # Budget redesign plan — money in and out, expected and received
 
-_Last mapped: 2026-10-20_ Status: **Partly built** (2026-10-20). Built: Phase 0, plus from Phase 1 the
-`notes`, `account`, and `itemId` fields, and from Phase 3 `status: "expected"` with
-`certainty`, the Past / Ahead / Both switch, the sure-vs-maybes forecast line,
-and a one-tap confirm (✓) to received. Also built: `category`, a six-month strip, spend/earn breakdowns (`lib/budget-math.ts`), and the **Budget widget** (`components/Home/home-budget-tile.tsx`, kind `budget` in `lib/widgets/kinds.ts`, off by default, install from the gallery). Still **Planned**: accounts as a pick-list
-and account filter, account on log-spend rows, `importId` dedupe, `pays` link
-relation, schedules, shared editing. Today: `lib/budget-store.ts` (earnings and hand-added lines),
-spending on the Tracking log, `components/Home/Tracking/budget-panel.tsx`
-(month view), statement import in `spending-dialog.tsx` + `lib/bank-statement.ts`.
+_Last mapped: 2026-10-28_ Status: **Partly built**. The Money widget (kind id `budget`, face in `home-budget-tile.tsx`) opens the money book, and Tracking log → Spent opens that same book (`tracking-log/money-book.tsx`). Built on top of the earlier month view: accounts (cash, bank, card) and debts as separate lists, bills, a monthly budget envelope, future spend as `expected` lines, prospective gigs, a natural-language line (`lib/money-parse.ts`), and statement text kept in `brain2-budget`. Still **Planned**: account filter, account on each log-spend row, `importId` dedupe, `pays` link relation, bill lines generated ahead on a horizon, shared editing. Today: `lib/budget-store.ts`, spending on the Tracking log, `budget-panel.tsx` for the month, statement import in the book + `lib/bank-statement.ts`.
 
 Ideas borrowed from [Actual Budget](https://github.com/actualbudget/actual)
 (from memory of its model, not a code read): **accounts** hold money, **payees**

@@ -30,6 +30,7 @@ import { isStepAvailable } from "@/lib/prereqs"
 import { hasUnmetDependencies } from "@/lib/available-tasks"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { HOFSTADTER_PADDING } from "@/lib/todo-commitment"
+import { formatLocalDateKey, formatLocalHhmm } from "@/lib/date-utils"
 
 export type SessionTier = "min" | "goal" | "exceptional"
 
@@ -915,14 +916,6 @@ export function renameTier<T extends string>(tier: T): T | "exceptional" {
   return (tier as string) === "excellent" ? "exceptional" : tier
 }
 
-function hhmm(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-}
-
-function dateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-}
-
 /**
  * The `timeLogs` a closed session writes, one per line that ran a minute or
  * more. The pen clock already logs what it painted, so minutes logged on the
@@ -933,8 +926,8 @@ export function sessionTimeLogs(plan: SessionPlan, tasks: readonly Task[]): { ta
   if (!plan.startedAt) return []
   const start = new Date(plan.startedAt)
   const end = plan.endedAt ? new Date(plan.endedAt) : new Date()
-  const from = dateKey(start)
-  const to = dateKey(end)
+  const from = formatLocalDateKey(start)
+  const to = formatLocalDateKey(end)
   const out: { taskId: string; entry: TimeLogEntry }[] = []
   for (const { line } of allLines(plan)) {
     const task = tasks.find((t) => t.id === line.taskId)
@@ -944,7 +937,7 @@ export function sessionTimeLogs(plan: SessionPlan, tasks: readonly Task[]): { ta
     if (logs.some((log) => log.id === id)) continue
     const covered = logs
       .filter((log) => log.date >= from && log.date <= to && (log.stepId ?? undefined) === line.stepId && !log.id.startsWith("session-log-"))
-      .filter((log) => !log.startTime || (log.startTime >= hhmm(start) || log.date > from))
+      .filter((log) => !log.startTime || (log.startTime >= formatLocalHhmm(start) || log.date > from))
       .reduce((sum, log) => sum + log.durationMinutes, 0)
     const minutes = Math.round((line.actualSec ?? 0) / 60) - covered
     if (minutes < 1) continue

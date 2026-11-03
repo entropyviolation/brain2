@@ -1,0 +1,247 @@
+/* components/PeriodSummary/period-summary.css — plates and fields for the period summary.
+   Neutral on purpose: Data and the ritual step each keep their own room chrome around it. */
+
+.ps-plates,
+.ps-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.ps-plate,
+.ps-field {
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  padding: 10px 12px;
+  margin: 0;
+  min-width: 0;
+}
+
+.ps-plate-title,
+.ps-field > legend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  padding: 0 4px;
+}
+
+.ps-rows,
+.ps-songs,
+.ps-song-edit,
+.ps-symbols {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.ps-rows li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.ps-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ps-row-value,
+.ps-song-artist {
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-swatch {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 2px;
+}
+
+.ps-embed {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.ps-link {
+  display: inline-block;
+  margin-bottom: 8px;
+  text-decoration: underline;
+}
+
+.ps-songs li {
+  font-size: 0.92rem;
+}
+
+.ps-song-title {
+  font-weight: 600;
+}
+
+.ps-song-note {
+  margin: 2px 0 6px;
+  font-size: 0.86rem;
+  opacity: 0.85;
+  white-space: pre-wrap;
+}
+
+.ps-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ps-photo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 0.7rem;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.ps-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ps-photo[data-cover] {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.ps-palette {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.ps-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  padding: 0;
+}
+
+.ps-symbols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ps-symbols li {
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: 0.86rem;
+}
+
+.ps-label {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+
+.ps-fields input[type="text"],
+.ps-fields input[type="url"],
+.ps-fields textarea,
+.ps-fields select {
+  width: 100%;
+  font: inherit;
+  font-size: max(16px, 0.9rem);
+  box-sizing: border-box;
+}
+
+.ps-song-edit {
+  margin-top: 10px;
+  gap: 8px;
+}
+
+.ps-song-head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.ps-x {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  font-size: 1rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.ps-key {
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ps-empty {
+  font-size: 0.9rem;
+  opacity: 0.75;
+  margin: 0;
+}
+
+.ps-written {
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.ps-archive {
+  max-height: 360px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ps-archive button {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  padding: 6px 2px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ps-archive button[aria-pressed="true"] {
+  font-weight: 600;
+}
+
+.ps-archive-kind {
+  width: 4.5em;
+  flex: none;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.ps-archive-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}

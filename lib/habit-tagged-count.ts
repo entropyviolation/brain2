@@ -26,13 +26,14 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { habitWriteIsQuiet, useHabitsStore } from "@/lib/habits-store"
 import { LOGGED_ACTION_TYPE_ID } from "@/lib/item-types"
 import { addTag, normalizeTag } from "@/lib/links"
+import { bucketFor, writePeriod } from "@/lib/habit-period-write"
 import { periodWindowsForFrequency } from "@/lib/habit-period-windows"
 import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
 import { effectiveTagIds, findPen } from "@/lib/tracked-time"
 import { entryDisplayName, entryMinutes, MINUTES_PER_DAY, type TimeEntry } from "@/lib/time-entries"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore, type TrackScope, type TrackTag } from "@/lib/time-tracking-store"
-import type { Task, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
+import type { Task, TaskCompletion, WeeklyTask } from "@/lib/types"
 
 const PREFIX = "tagged-task-"
 const ATTR_TITLE = "taggedTaskTitle"
@@ -213,23 +214,6 @@ function reconcileTrackedDoneLines(
     if (generated && (task.description || "") !== generated) continue
     taskRepository.remove(task.id)
   }
-}
-
-function bucketFor(task: WeeklyTask, state: ReturnType<typeof useHabitsStore.getState>): WeeklyData {
-  const frequency = task.frequency || "daily"
-  if (frequency === "monthly") return state.monthlyHabitData
-  if (frequency === "quarterly") return state.quarterlyHabitData
-  if (frequency === "weekly") return state.weeklyHabitData
-  return state.weeklyData
-}
-
-function writePeriod(task: WeeklyTask, anchor: Date, next: TaskCompletion): void {
-  const habits = useHabitsStore.getState()
-  const frequency = task.frequency || "daily"
-  if (frequency === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next)
-  else if (frequency === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next)
-  else if (frequency === "weekly") habits.updateWeeklyHabitCompletion(task.id, anchor, next)
-  else habits.updateCompletion(task.id, anchor, next)
 }
 
 let syncing = false

@@ -83,7 +83,7 @@ Hub `data/shared-persist.json` matches this explorer (same id, title, list, pick
 
 ## b. Layout, UI, design, and style
 
-The catalog well is already milled. `.mod-widget` in `components/Modules/modules-chrome.css` is a raised gadget (radius 0, `--mod-raised`), a caption bar, and a sunken field (`--mod-field`). That is the depth stack in `docs/DESIGN_STYLE.md`. Analytics Stat is the only widget that then gets the dark scope and `#3dff8a`. The style doc keeps that green for Analytics traces, and it still lists the Modules catalog as the flatter room. List Explorer should stay on the gray field. It should not borrow the CRT.
+The catalog well is already milled. `.mod-widget` in `components/Modules/modules-chrome.css` is a raised gadget (radius 0, `--mod-raised`), a caption bar, and a sunken field (`--mod-field`). That is the depth stack in `docs/DESIGN_STYLE.md`. Analytics Stat is the only widget that then gets the dark scope and `#3dff8a`. The style doc keeps that green for Data traces, and it still lists the Modules catalog as the flatter room. List Explorer should stay on the gray field. It should not borrow the CRT.
 
 What breaks the well is the interior: shadcn `Badge variant="secondary"` at 10px, and an outline **Surprise me** button, with no clamp and no scroll. Failure 2 is a pile of floating chips where one instrument should be. The Rules widget already limits itself (`max-h-72 overflow-auto`). This one does not.
 

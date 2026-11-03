@@ -1,5 +1,5 @@
 /**
- * electron/texts-report.js — Analytics → Texts: the local texts report server
+ * electron/texts-report.js — Data → Texts: the local texts report server
  *
  * The texts analysis is a Python pipeline in `scripts/texts-analysis/`. It
  * reads a copy of `~/Library/Messages/chat.db`, writes aggregates and the
@@ -13,9 +13,10 @@
  * CommonJS (matches electron/main.js).
  */
 const path = require("path")
+const { brain2Env } = require("../lib/brain2-env.cjs")
 const os = require("os")
 const fs = require("fs")
-const { spawn } = require("child_process")
+const { execFileSync, spawn } = require("child_process")
 
 const DEFAULT_PORT = 8765
 const STATUS_TIMEOUT_MS = 2500
@@ -24,15 +25,15 @@ const START_WAIT_MS = 15000
 const DAY_CLOSE_HOUR = 4
 const SCHEDULE_TICK_MS = 60 * 60 * 1000
 
-/** Home folder for data, venv and output. `COGS_TEXTS_HOME` overrides. */
+/** Home folder for data, venv and output. `BRAIN2_TEXTS_HOME` overrides. */
 function textsHome(env = process.env) {
-  const raw = env.COGS_TEXTS_HOME
+  const raw = brain2Env("TEXTS_HOME", env)
   if (raw && raw.trim()) return raw.trim().replace(/^~(?=$|\/)/, os.homedir())
   return path.join(os.homedir(), "texts-analysis")
 }
 
 function textsPort(env = process.env) {
-  const n = Number(env.COGS_TEXTS_PORT)
+  const n = Number(brain2Env("TEXTS_PORT", env))
   return Number.isInteger(n) && n > 1024 && n < 65536 ? n : DEFAULT_PORT
 }
 
@@ -105,7 +106,7 @@ async function ensureTextsServer(env = process.env) {
       stdio: "ignore",
       env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
     })
-    child.on("error", (err) => console.error("[cogs] texts server failed to start:", err))
+    child.on("error", (err) => console.error("[brain2] texts server failed to start:", err))
   }
 
   const deadline = Date.now() + START_WAIT_MS
@@ -122,8 +123,47 @@ async function textsStatus(env = process.env) {
   return res.ok ? { ok: true, status: res.body } : res
 }
 
-/** Ask the server to run the pipeline (new texts → analysis → report). */
+/** Pids listening on the texts port whose command is serve.py. Empty when none or lsof fails. */
+function serverPidsOnPort(port) {
+  try {
+    const out = execFileSync("lsof", ["-nP", "-t", `-iTCP:${port}`, "-sTCP:LISTEN"], { encoding: "utf8" })
+    return out
+      .split("\n")
+      .map(Number)
+      .filter((pid) => pid > 0 && pid !== process.pid)
+      .filter((pid) => execFileSync("ps", ["-o", "command=", "-p", String(pid)], { encoding: "utf8" }).includes("serve.py"))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Stop a texts server this app did not start. The refresh copies chat.db,
+ * which needs Full Disk Access, and macOS judges that by the app that started
+ * the server. One left over from a terminal or an old session was refused on
+ * every refresh while the report kept its old data (2026-10-22 to 2026-11-02).
+ * A server mid-run is left alone.
+ */
+async function replaceForeignServer(env = process.env) {
+  if (child && child.exitCode === null) return
+  const status = await getJson(`${textsBaseUrl(env)}/api/status`)
+  if (!status.ok || status.body?.running) return
+  const pids = serverPidsOnPort(textsPort(env))
+  for (const pid of pids) {
+    try {
+      process.kill(pid, "SIGTERM")
+    } catch {}
+  }
+  const deadline = Date.now() + 5000
+  while (pids.length && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 200))
+    if (!(await getJson(`${textsBaseUrl(env)}/api/status`, {}, 500)).ok) return
+  }
+}
+
+/** Ask the server to run the pipeline (new texts → analysis → report), in a server this app started. */
 async function refreshTexts(env = process.env) {
+  await replaceForeignServer(env)
   const started = await ensureTextsServer(env)
   if (!started.ok) return started
   const res = await getJson(`${started.url}/api/refresh`, { method: "POST" }, 10000)

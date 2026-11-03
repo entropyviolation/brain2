@@ -8,25 +8,12 @@
 "use client"
 
 import { useMemo } from "react"
-import { format } from "date-fns"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useTaskStore } from "@/lib/task-store"
-import { parseLocalDate } from "@/lib/date-utils"
 import type { Task } from "@/lib/types"
 import { directionReport, type ActionRecord } from "@/lib/objectives"
+import { formatDriftDay, taskCompletionDate } from "./direction-dates"
 import { GolDial } from "./goals-ornaments"
-
-function taskCompletionDate(task: Task): Date | undefined {
-  if (task.completedDate) return new Date(task.completedDate)
-  if (task.completionReview?.completedAt) return new Date(task.completionReview.completedAt)
-  const chunks = task.completedChunks ?? []
-  if (chunks.length) {
-    const last = chunks[chunks.length - 1]
-    if (last?.date) return new Date(last.date)
-  }
-  if (task.scheduledDate) return new Date(task.scheduledDate)
-  return task.createdAt ? new Date(task.createdAt) : undefined
-}
 
 function toActionRecords(tasks: Task[]): ActionRecord[] {
   return tasks.map((t) => {
@@ -41,11 +28,6 @@ function toActionRecords(tasks: Task[]): ActionRecord[] {
       links: [...(t.links ?? []), ...contributed],
     }
   })
-}
-
-function formatDriftDay(key: string): string {
-  const date = parseLocalDate(key)
-  return date ? format(date, "MMM d") : key
 }
 
 const WINDOW_DAYS = 30

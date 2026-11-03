@@ -8,8 +8,9 @@
  */
 import type { CyclePhase } from "@/lib/cycle-phase"
 
+/** Shown with the clinical lens. Education from marks, not a clinical act. */
 export const CLINICAL_EDUCATION_LINE: string =
-  "This is education from your own bleed and ovulation marks, not a diagnosis or a fertility guarantee. Where ovulation was not marked, this calendar does not know it, and a day labeled estimated elsewhere is a guess, not a mark."
+  "This is education from your own bleed and ovulation marks, not a diagnosis or a fertility guarantee."
 
 export type LensSectionId = "physiology" | "typical" | "worth-doing" | "worth-not-doing"
 

@@ -10,13 +10,7 @@
 import type { ReviewPeriod, SchedulePlacement, Task } from "@/lib/types"
 import { pushCardWorkingQueue } from "@/components/Scheduler/schedule-card-detail"
 import { recordPushedPlacement, taskWasScheduledForPeriod } from "@/lib/scheduling"
-
-function monthsInQuarter(key: string): string[] {
-  const [year, quarter] = key.split("-Q")
-  const start = (Number(quarter) - 1) * 3 + 1
-  if (!year || !Number.isFinite(start) || start < 1) return []
-  return [0, 1, 2].map((i) => `${year}-${String(start + i).padStart(2, "0")}`)
-}
+import { monthsInQuarter } from "@/lib/seasons"
 
 export function ritualPushPatch(task: Task, period: ReviewPeriod, periodKey: string, now: Date = new Date()): Partial<Task> {
   if (period === "quarter") {

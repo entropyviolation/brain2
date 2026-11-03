@@ -1,0 +1,213 @@
+/*
+ * components/Home/Habits/settings/settings-pager.css — Habits settings pages
+ *
+ * The page strip is the latching keycap switcher (`.b2-keycap-tab`): silver
+ * cap at rest, the open page a CRT with the green on-light. ‹ › are the short
+ * keycap (same skirt as `.trk-keycap`). Every page stays mounted; the inactive
+ * ones are display: none. The page well holds the tallest page so the sheet
+ * does not jump while you flip.
+ */
+
+.hab-settings-pager {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hab-settings-tabs[role="tablist"] {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border-radius: var(--r-3, 3px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
+    var(--chrome-nickel, #b8bcc2);
+  box-shadow:
+    0 0 0 1px var(--chrome-ring, #6e7378),
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+.hab-settings-tabs [role="tab"] {
+  position: relative;
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 3px 4px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.hab-settings-tabs [role="tab"][data-state="active"] {
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4;
+  border: 1px solid #141816;
+  border-radius: 4px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow: inset 0 8px 10px rgba(0, 0, 0, 0.4);
+}
+
+.hab-settings-tabs [role="tab"][data-state="active"]::before {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    0 0 4px #7dffc4;
+}
+
+.hab-settings-tabs [role="tab"]:active {
+  transform: translateY(2px);
+}
+
+.hab-settings-tabs [role="tab"]:focus-visible {
+  outline: 1px dotted #111;
+  outline-offset: 2px;
+}
+
+.hab-settings-pager-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hab-settings-pager-readout {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 10px;
+  border-radius: var(--r-2, 2px);
+  background: var(--hab-grade-metal-mid, #c8ccd0);
+  box-shadow: var(--hab-grade-sunken, inset 0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.hab-settings-page-name {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hab-grade-ink, #111);
+}
+
+.hab-settings-page-hint {
+  margin: -4px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hab-grade-ink, #111);
+}
+
+.hab-settings-page-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--hab-grade-ink, #111);
+}
+
+body.win95-app .hab-settings-sheet button.hab-settings-flip[data-no95],
+.hab-settings-sheet button.hab-settings-flip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 26px;
+  padding: 0 0 3px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1f2226;
+  text-shadow: none;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -3px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+body.win95-app .hab-settings-sheet button.hab-settings-flip[data-no95]:not(:disabled):active,
+.hab-settings-sheet button.hab-settings-flip:not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -1px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.18);
+}
+
+.hab-settings-sheet button.hab-settings-flip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hab-settings-page[data-state="active"] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: var(--hab-settings-page-height, 33.5rem);
+}
+
+.hab-settings-page[data-state="inactive"] {
+  display: none;
+}
+
+.hab-settings-page .hab-settings-theme-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.hab-settings-points-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+}
+
+.hab-settings-points-grid > .is-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .hab-settings-page .hab-settings-theme-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.hab-settings-points-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hab-settings-tabs [role="tab"] {
+    letter-spacing: 0.02em;
+    font-size: 9px;
+  }
+}

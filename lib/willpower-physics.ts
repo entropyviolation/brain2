@@ -17,7 +17,10 @@
  * Held gems are kinematic (pointer). Crowded plate: glassy on a real hit,
  * quiet position-only rest, dish lets go of a gem already leaning inward.
  * Crystal is a solid in XY and a Y-sort occluder. Gems may paint past the
- * rim (~1.32×). Persist v18 resets leftover scatter-bomb knobs.
+ * rim (~1.32×). A world with `contain` (the phone shell only) uses that same
+ * rim law on the visible oval and a lower height cap so a hop stays in the dish.
+ * A gem restored outside that oval is parked on the rim without a step.
+ * Persist v18 resets leftover scatter-bomb knobs.
  */
 
 export type WillpowerBody = {
@@ -51,6 +54,12 @@ export type WillpowerWorld = {
   seed: number
   stirAge: number
   bounces: number
+  /**
+   * Phone shell only. Fence is the visible oval (not the 1.32× / airborne leash)
+   * and height stops at PHONE_DISH_Z so sprites stay in the dish. Desktop worlds
+   * leave this unset.
+   */
+  contain?: boolean
 }
 
 export type WillpowerPhysicsParams = {
@@ -203,6 +212,12 @@ const PERSPECTIVE = 0.26
 export const WILLPOWER_PERSPECTIVE = PERSPECTIVE
 /** Peak height a grabbed gem may be lifted (px). Stir hops stay well below. */
 export const WILLPOWER_MAX_Z = 900
+/**
+ * Phone visible-dish ceiling (px). Same reflect-at-the-top idea as WILLPOWER_MAX_Z,
+ * low enough that a hop’s painted peak stays inside the phone oval. Desktop steps
+ * never read it.
+ */
+export const PHONE_DISH_Z = 300
 /** Hover height while a gem is held on the dish. */
 export const WILLPOWER_HELD_Z = 12
 
@@ -580,8 +595,8 @@ function clampOval(b: WillpowerBody, world: WillpowerWorld, params: WillpowerPhy
   if (b.pinned || b.held) return
   // Held gems follow the pointer with no fence. Airborne throws may leave the
   // dish (the 1.32× rim is the grounded wall); a wider leash keeps stir hops
-  // from escaping to infinity.
-  const fence = b.z > 22 ? 2.8 : 1.32
+  // from escaping to infinity. Phone `contain` uses the visible oval as that rim.
+  const fence = world.contain ? 1 : b.z > 22 ? 2.8 : 1.32
   const dx = b.x - world.cx
   const dy = b.y - world.cy
   const rx = Math.max(world.rx * fence - b.r, 8)
@@ -606,6 +621,22 @@ function clampOval(b: WillpowerBody, world: WillpowerWorld, params: WillpowerPhy
     b.vx -= vn * ux
     b.vy -= vn * uy
   }
+}
+
+/**
+ * Park gems that were restored outside a phone dish. Same rim projection as
+ * the step, and no integration. Desktop worlds leave `contain` unset and
+ * come back unchanged.
+ */
+export function containWillpowerBodies(
+  bodies: WillpowerBody[],
+  world: WillpowerWorld,
+  params: WillpowerPhysicsParams = DEFAULT_WILLPOWER_PHYSICS,
+): WillpowerBody[] {
+  if (!world.contain) return bodies
+  const next = bodies.map((b) => ({ ...b }))
+  for (const b of next) clampOval(b, world, params)
+  return next
 }
 
 function addRepulsion(fx: number[], fy: number[], bodies: WillpowerBody[], params: WillpowerPhysicsParams) {
@@ -711,6 +742,10 @@ function integrate(b: WillpowerBody, accelX: number, accelY: number, t: number, 
   b.z += b.vz * t
   if (b.z > WILLPOWER_MAX_Z) {
     b.z = WILLPOWER_MAX_Z
+    if (b.vz > 0) b.vz *= -0.2
+  }
+  if (world.contain && b.z > PHONE_DISH_Z) {
+    b.z = PHONE_DISH_Z
     if (b.vz > 0) b.vz *= -0.2
   }
   bounceFloor(b, params, world)
@@ -923,12 +958,18 @@ export function viewWillpowerBody(body: WillpowerBody, sim: WillpowerWorld, view
   }
 }
 
-export function hitWillpowerGem(bodies: WillpowerBody[], x: number, y: number): WillpowerBody | null {
+export function hitWillpowerGem(
+  bodies: WillpowerBody[],
+  x: number,
+  y: number,
+  reachScale = 1,
+): WillpowerBody | null {
+  const scale = Number.isFinite(reachScale) && reachScale > 0 ? reachScale : 1
   const gems = bodies.filter((b) => !b.pinned).sort((a, b) => drawY(b) - drawY(a) || b.x - a.x)
   for (const b of gems) {
     const dx = x - b.x
     const dy = y - drawY(b)
-    const reach = b.r * 1.45
+    const reach = b.r * 1.45 * scale
     if (dx * dx + dy * dy <= reach * reach) return b
   }
   return null

@@ -140,7 +140,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface) 70%, var(--chrome-key-shade) 100%);
@@ -221,7 +221,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: linear-gradient(180deg, var(--chrome-mist), #c8cccf);
 }
 
@@ -441,7 +441,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"] {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
     linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
@@ -473,7 +473,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
 }
 
 .todo95 .todo-load {
@@ -509,7 +509,7 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  text-shadow: none;
 }
 
 .todo95 .todo-casio {
@@ -637,7 +637,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
   line-height: 1.25;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface) 70%, var(--chrome-key-shade) 100%);
@@ -769,7 +769,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
 .todo95 .todo-band.is-required .todo-list-title,
 .todo95 .todo-band.is-required .todo-empty-inline {
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  text-shadow: none;
 }
 
 .todo95 .todo-band.is-assigned {
@@ -924,7 +924,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #3a3e42;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
 }
 
 .todo95 .todo-table-head-push {
@@ -1302,7 +1302,7 @@ body.win95-app .todo95 button.todo-row-name,
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
 }
 
 .todo95 .todo-lid {
@@ -1352,7 +1352,7 @@ body.win95-app .todo95 button.todo-row-name,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   cursor: pointer;
 }
 
@@ -1461,7 +1461,7 @@ body.win95-app .todo95 button.todo-verb {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background-color: var(--td-surface, var(--chrome-face, #c0c0c0));
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
@@ -1692,7 +1692,7 @@ body.win95-app .todo95 button.todo-chiclet {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--td-surface) 70%, var(--chrome-key-shade) 100%);
@@ -2186,7 +2186,7 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background-color: var(--td-surface, var(--chrome-face));
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
@@ -2567,6 +2567,13 @@ body.win95-app .todo95 .todo-segment[role="group"] button.todo-chiclet[type="but
   flex: 0 0 20px;
   width: 20px;
   height: 20px;
+}
+
+.todo95 .subclock-elapsed {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: #2a4036;
 }
 
 /* On the clock: a phosphor rule down the left edge, same green as the active lamp. */
@@ -3760,6 +3767,8 @@ body.win95-app .todo95 .todo-actions-pair button.todo-btn[type="button"]:not([hi
 .todo95 .todo-ldi-ghost .todo-casio {
   all: unset;
   font: inherit;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
   color: inherit;
 }
 
@@ -4238,7 +4247,7 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"] {
 
 /* ==== Polish 2026-10-22: screen type, period row, sort arrow, Show tray, formula bay, Done keys ==== */
 
-/* Screen title, open count, and load readout share Silkscreen (loaded in `app/layout.tsx`). */
+/* Screen title, open count, and load readout share Silkscreen (loaded with Home, `lib/fonts/home-pixel-faces.ts`). */
 .todo95 .todo-screen .todo-mark-count,
 .todo95 .todo-load-readout {
   font-family: var(--font-silkscreen), Silkscreen, monospace;
@@ -4335,7 +4344,7 @@ body.win95-app .todo95 .todo-formula button.todo-btn[type="button"]:not([hidden]
   letter-spacing: 0.02em;
   text-transform: none;
   color: #25282b;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
   border: 1px solid var(--cap-edge);
   border-radius: 4px;
@@ -4443,7 +4452,7 @@ body.win95-app .todo95 .todo-formula button.todo-btn[type="button"][aria-pressed
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+    text-shadow: none;
   }
 
   .todo95 .todo-filters .todo-filters-row > .todo-label {
@@ -4555,7 +4564,7 @@ body.win95-app .todo95 .todo-formula button.todo-btn[type="button"][aria-pressed
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-shadow: none;
 }
 
 .todo95 .todo-formula .todo-hint {

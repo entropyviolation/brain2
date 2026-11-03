@@ -214,7 +214,8 @@ export function descriptionSnippet(task: Pick<Task, "title" | "description" | "t
   const title = (typeof task.title === "string" && task.title.trim()) || (typeof task.description === "string" ? task.description.trim() : "")
   const candidates = [task.taskDescription, task.notes, task.body]
   for (const raw of candidates) {
-    const text = (raw ?? "").replace(/\s+/g, " ").trim()
+    // A reading row shows ~48 characters. Do not walk a huge note to find them.
+    const text = String(raw ?? "").slice(0, 512).replace(/\s+/g, " ").trim()
     if (!text || text === title) continue
     return text.length > 48 ? `${text.slice(0, 47)}…` : text
   }

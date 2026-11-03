@@ -1,8 +1,8 @@
 # Behavior → Reviews
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
-Files: `components/Analytics/ReviewsView.tsx`, `PeriodArcReading.tsx` (not edited). Shared plates live in `components/Analytics/behavior-kit.tsx` (skin: `behavior-views.css`). Smoke test: `components/Analytics/behavior-views.test.tsx`. Ideas: `docs/analytics/viz-inspiration.md` → Behavior.
+Files: `components/Analytics/behavior/ReviewsView.tsx`, `behavior/PeriodArcReading.tsx` (not edited). Shared plates live in `components/Analytics/behavior/behavior-kit.tsx` (skin: `behavior/behavior-views.css`). Smoke test: `components/Analytics/behavior/behavior-views.test.tsx`. Ideas: `docs/analytics/viz-inspiration.md` → Behavior.
 
 ## What it shows
 

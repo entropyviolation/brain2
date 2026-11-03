@@ -72,3 +72,23 @@ export function seasonsOfYear(year: number): { anchor: Date; label: string; stor
     }
   })
 }
+
+/** The tracking-summary key for a ritual's period (`PeriodReview.periodKey` shapes). */
+export function summaryKeyForRitual(
+  period: "day" | "week" | "month" | "quarter" | "year",
+  anchor: Date,
+  dayKey: string,
+): string {
+  switch (period) {
+    case "day":
+      return dayKey
+    case "week":
+      return weekSummaryKey(anchor)
+    case "month":
+      return monthSummaryKeyFromDate(anchor)
+    case "quarter":
+      return seasonSummaryKey(anchor)
+    case "year":
+      return yearSummaryKey(anchor.getFullYear())
+  }
+}

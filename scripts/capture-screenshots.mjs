@@ -6,10 +6,10 @@
  *   node scripts/capture-screenshots.mjs
  *
  * Options (env):
- *   COGS_URL=http://localhost:3000
+ *   BRAIN2_URL=http://localhost:3000
  *   PW_CHANNEL=chrome
- *   COGS_FRESH=1   — clear localStorage before load (consistent seed data)
- *   COGS_ONLY=01-home-daily-habits.png  — capture + rewrite sidecar for listed files only (comma-separated)
+ *   BRAIN2_FRESH=1   — clear localStorage before load (consistent seed data)
+ *   BRAIN2_ONLY=01-home-daily-habits.png  — capture + rewrite sidecar for listed files only (comma-separated)
  *
  * Before the app boots, init scripts write throwaway Zustand blobs (tracking,
  * sleep, tasks/operations, modules, goals, habit completions, plan logs).
@@ -22,12 +22,13 @@ import path from "path"
 import { fileURLToPath } from "url"
 import { SHOTS, GLOBAL_HEADER } from "./screenshot-manifest.mjs"
 import { archiveShot, writeReelIndex } from "./screenshot-archive.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUT = path.join(__dirname, "..", "docs", "screenshots")
-const BASE = process.env.COGS_URL ?? "http://localhost:3000"
-const FRESH = process.env.COGS_FRESH !== "0"
-const ONLY = (process.env.COGS_ONLY ?? "")
+const BASE = brain2Env("URL") ?? "http://localhost:3000"
+const FRESH = brain2Env("FRESH") !== "0"
+const ONLY = (brain2Env("ONLY") ?? "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean)
@@ -437,7 +438,7 @@ async function captureModules(page) {
 }
 
 async function captureAnalytics(page) {
-  await clickTopTab(page, "Analytics")
+  await clickTopTab(page, "Data")
   await wait(600)
 
   const tabs = [
@@ -477,15 +478,15 @@ async function captureAnalytics(page) {
   ]
 
   for (const [group, tab, file] of tabs) {
-    await page.getByRole("tablist", { name: "Analytics groups" }).getByRole("tab", { name: group, exact: true }).click()
-    await page.getByRole("tablist", { name: "Analytics views" }).getByRole("tab", { name: tab, exact: true }).click()
+    await page.getByRole("tablist", { name: "Data groups" }).getByRole("tab", { name: group, exact: true }).click()
+    await page.getByRole("tablist", { name: "Data views" }).getByRole("tab", { name: tab, exact: true }).click()
     await wait(600)
     await screenshot(page, file)
   }
 
   // The variant drill-down is the point of the Tracking tab, so document it open.
-  await page.getByRole("tablist", { name: "Analytics groups" }).getByRole("tab", { name: "Time", exact: true }).click()
-  await page.getByRole("tablist", { name: "Analytics views" }).getByRole("tab", { name: "Tracking", exact: true }).click()
+  await page.getByRole("tablist", { name: "Data groups" }).getByRole("tab", { name: "Time", exact: true }).click()
+  await page.getByRole("tablist", { name: "Data views" }).getByRole("tab", { name: "Tracking", exact: true }).click()
   await wait(600)
   // A pen and a tag can share a name. The pen card renders before the tag card,
   // so first/last picks the right one without guessing at the card markup.
@@ -657,7 +658,7 @@ async function writeDescriptions() {
 /**
  * Runs in the page before the app boots. An empty tracker makes every Tracking
  * screenshot an empty-state, so paint a plausible fortnight — including a pen
- * broken down by variants, which is what the Analytics drill-down documents.
+ * broken down by variants, which is what the Data drill-down documents.
  */
 function seedTracking() {
   const pad = (n) => String(n).padStart(2, "0")
@@ -783,7 +784,7 @@ function seedTracking() {
   }
 
   // Location scope, including the zoo trip that also counted as exercise. The
-  // Exercise tag sits on the block, not on the pen, so Analytics → By tag shows
+  // Exercise tag sits on the block, not on the pen, so Data → By tag shows
   // Location minutes feeding a tag no Location pen carries.
   const zooDay = dateKey(3)
   entries.push(
@@ -1469,7 +1470,7 @@ async function main() {
   await mkdir(OUT, { recursive: true })
 
   // Rewrite sidecars and the reel from the manifest without opening a browser.
-  if (process.env.COGS_TEXT_ONLY === "1") {
+  if (brain2Env("TEXT_ONLY") === "1") {
     await writeDescriptions()
     try {
       const reel = writeReelIndex(OUT)
@@ -1543,7 +1544,7 @@ async function main() {
     ["Scheduler", captureScheduler],
     ["Operations", captureOperations],
     ["Modules", captureModules],
-    ["Analytics", captureAnalytics],
+    ["Data", captureAnalytics],
     ["Dialogs", captureDialogs],
   ]
   const skipped = []
@@ -1554,7 +1555,7 @@ async function main() {
     Scheduler: ["06-"],
     Operations: ["10-"],
     Modules: ["09-"],
-    Analytics: ["07-"],
+    Data: ["07-"],
     Dialogs: ["20-"],
   }
   for (const [name, capture] of sections) {
