@@ -11,7 +11,7 @@
 import type { ModelCall } from "./ollama"
 import type { ModelPlan } from "./types"
 
-export type CrewRole = "route" | "gate" | "pick" | "extract" | "prose" | "check"
+export type CrewRole = "route" | "gate" | "pick" | "extract" | "prose" | "check" | "critic"
 
 /** Smallest first. Only installed names are used; a role with none falls back to the main model. */
 export const CREW_LADDERS: Record<CrewRole, string[]> = {
@@ -21,6 +21,8 @@ export const CREW_LADDERS: Record<CrewRole, string[]> = {
   extract: ["qwen2.5:14b-instruct", "qwen3:30b-a3b"],
   prose: ["qwen3:30b-a3b", "qwen2.5:14b-instruct"],
   check: ["qwen2.5:14b-instruct", "qwen3:30b-a3b"],
+  /** The second look (`lib/critic-bimby/`). Starts on a different model from the planners' first rung, so it does not share their blind spots. */
+  critic: ["qwen3:30b-a3b", "qwen2.5:14b-instruct"],
 }
 
 export type Crew = Record<CrewRole, string[]> & { main: string }
@@ -38,6 +40,7 @@ export function crewFor(installed: string[], main?: string): Crew | null {
     extract,
     prose: cut("prose"),
     check: cut("check"),
+    critic: cut("critic"),
     main: main && has.has(main) ? main : extract[0] ?? installed[0]!,
   }
   return crew

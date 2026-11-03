@@ -16,7 +16,7 @@
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) minmax(220px, 38vh);
+  grid-template-rows: auto auto minmax(0, 1fr) minmax(200px, 32vh);
   gap: 8px;
   padding: 10px 12px;
   color: var(--crt-fg);
@@ -1100,3 +1100,59 @@
 }
 
 .bf-lab textarea.bf-run-note { width: 100%; resize: vertical; }
+
+/* ---- + Node menu ---- */
+
+.bf-pal {
+  position: relative;
+}
+
+.bf-pal-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(88px, auto));
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--bf-ring);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #e6e8ea, #cfd2d6);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.bf-pal-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bf-pal-k {
+  font: 700 10px/1 Karla, system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #55595d;
+  padding-bottom: 2px;
+}
+
+.bf-lab button.bf-pal-item {
+  min-height: 24px;
+  padding: 2px 8px;
+  text-align: left;
+  font: 700 12px/1.1 Karla, system-ui, sans-serif;
+  color: #1f2226;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  border: 1px solid #6e7378;
+  border-radius: 3px;
+}
+
+.bf-lab button.bf-pal-item:hover:not(:disabled) {
+  background: var(--bf-seafoam);
+}
+
+@media (max-width: 900px) {
+  .bf-pal-menu {
+    grid-template-columns: repeat(2, minmax(88px, auto));
+  }
+}

@@ -66,6 +66,7 @@ import { bulkReadyCount, writeBulkCapture } from "@/components/enhanced-bulk-add
 import { applyQuickAddLog, quickAddLogIntent } from "@/lib/quick-add-log"
 import { FOLDER_ALL_PREFIX, GLOBAL_ALL_ITEMS_KEY, isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import type { Folder as FolderRecord, List, Task } from "@/lib/types"
+import { QUICK_ADD_DRAFT_KEY, readDraft, writeTextDraft } from "@/lib/draft-store"
 import { QUICK_ADD_LOG_WROTE, QUICK_ADD_THOUGHT_WROTE, raiseQuickAddWrote } from "@/components/quick-add-wrote"
 
 export {
@@ -253,6 +254,19 @@ export function QuickAdd({
   const addTask = useTaskStore((state) => state.addTask)
   const seeded = useRef<string | null>(null)
 
+  // Unsent text comes back on the next open, whether the dialog closed by a
+  // dropped keyboard, a stray tap, or a reload. Only a successful add clears it.
+  const saveDraft = (text: string, nextBulk = bulk, nextPlain = plain) =>
+    writeTextDraft(QUICK_ADD_DRAFT_KEY, text, { bulk: nextBulk, plain: nextPlain })
+  useEffect(() => {
+    if (!open) return
+    const saved = readDraft<{ text?: string; bulk?: boolean; plain?: boolean }>(QUICK_ADD_DRAFT_KEY)
+    if (!saved?.text) return
+    setIdeaText((now) => now || saved.text || "")
+    if (saved.bulk) setBulk(true)
+    if (saved.plain) setPlain(true)
+  }, [open])
+
   useEffect(() => {
     if (!open) {
       seeded.current = null
@@ -261,6 +275,7 @@ export function QuickAdd({
     if (!seed || seeded.current === seed) return
     seeded.current = seed
     setIdeaText(seed)
+    saveDraft(seed, seed.includes("\n") || bulk)
     if (seed.includes("\n")) setBulk(true)
   }, [open, seed])
 
@@ -304,6 +319,7 @@ export function QuickAdd({
   const readyCount = bulk ? bulkReadyCount(previewText, plain) : 0
 
   const closeFresh = () => {
+    writeTextDraft(QUICK_ADD_DRAFT_KEY, "")
     setIdeaText("")
     setBulk(false)
     setPlain(false)
@@ -390,7 +406,13 @@ export function QuickAdd({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="hpp95 hpp95-dialog qa-dialog sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col" data-ui-name="Quick Add" data-ui-docs="components/README.md">
+      <DialogContent
+        hideClose
+        // iOS moves focus as the keyboard slides in and out. Radix reads that as
+        // a focus-outside and closes the dialog. Taps on the overlay and Escape still close it.
+        onFocusOutside={(event) => event.preventDefault()}
+        className="hpp95 hpp95-dialog qa-dialog sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        data-ui-name="Quick Add" data-ui-docs="components/README.md">
         <DialogHeader className="hpp-caption">
           <div className="hpp-caption-mark">
             <span className="hpp-power-lamp" aria-hidden />
@@ -436,7 +458,10 @@ export function QuickAdd({
                 rows={bigBox ? 8 : 2}
                 placeholder={bulk ? "Writing:\nDraft chapter 1\nEdit outline\n\nNext Actions: Eventually:\nGo through old pages" : "next actions: eventually: write the memoir"}
                 value={ideaText}
-                onChange={(e) => setIdeaText(e.target.value)}
+                onChange={(e) => {
+                  setIdeaText(e.target.value)
+                  saveDraft(e.target.value)
+                }}
                 onKeyDown={(e) => {
                   // One item: Enter still adds it, Shift-Enter breaks the line.
                   if (!bulk && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -467,7 +492,10 @@ export function QuickAdd({
                   id="quick-add-bulk"
                   type="checkbox"
                   checked={bulk}
-                  onChange={(e) => setBulk(e.target.checked)}
+                  onChange={(e) => {
+                    setBulk(e.target.checked)
+                    saveDraft(ideaText, e.target.checked)
+                  }}
                 />
                 Bulk
               </Label>
@@ -476,7 +504,10 @@ export function QuickAdd({
                   id="quick-add-plain"
                   type="checkbox"
                   checked={plain}
-                  onChange={(e) => setPlain(e.target.checked)}
+                  onChange={(e) => {
+                    setPlain(e.target.checked)
+                    saveDraft(ideaText, bulk, e.target.checked)
+                  }}
                 />
                 Plain
               </Label>

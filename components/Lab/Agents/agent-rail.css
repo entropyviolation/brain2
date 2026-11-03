@@ -74,3 +74,17 @@
   text-transform: uppercase;
   color: #666b70;
 }
+
+/* Clipboard key in the upper right of a Try it well */
+.th-try {
+  position: relative;
+}
+
+.ag-copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

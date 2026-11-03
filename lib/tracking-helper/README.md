@@ -1,6 +1,8 @@
-# `lib/tracking-helper/` — the Tracking Helper's flow
+# `lib/tracking-helper/` — the Tracking BIMBY's pipelines
 
-_Last mapped: 2026-11-01_
+_Last mapped: 2026-11-02_
+
+The Tracking BIMBY (formerly the Tracking Helper; file, route and id names stay `tracking-helper`) has two built pipelines, each also a tool of the whole agent: **description to timeblock** (`## The flow` below) and **generate gap questions** (`gaps.ts`). Planned: gap readings (`docs/BIMBY_IDEAS.md` §10.4) and account to other kinds (intake, mood, company).
 
 The second place a model meets Brain2, after BIM chat. A chat bot for one job: turn an
 account of a day ("on Friday I walked Ocean Beach from about 4:30 …") into proposed
@@ -21,7 +23,7 @@ Activity and Location blocks. Pure code except one model call. Plan and reasonin
    "exactly") near a clock set its `cue`. A time restated with a strong word makes every mention of that
    time firm.
 3. **WIRE** (`wire.ts`). One schema-bound call. The model says, per thing done, which tag starts it, which
-   ends it, its activity, a stated place, short notes, and whether an edge is vague. Every tag field is an
+   ends it, its activity, a stated place, who was `with` them, their `mood`, short notes, and whether an edge is vague. Every tag field is an
    enum of the tags that exist plus `""`, so it cannot name a time that was not written. With no model,
    `wireByRules` reads the same tags with plain rules.
 4. **PLACE** (`assemble.ts`, `clock.ts`). All the arithmetic, in code:
@@ -34,10 +36,21 @@ Activity and Location blocks. Pure code except one model call. Plan and reasonin
      certainty;
    - **orphan clocks** (`adoptOrphans`): a clock the model left unused, between its neighbours' clocks, is
      given to the entry that lacks a start or end ("by 6:22 the trash stuff was done");
+   - **untimed entries**: an entry with only a length ("walked for 5 hours") takes the neighbour's edge and counts back or forward by the length; one with no time at all ("then I got ice cream") starts where the one before ended. Both edges are estimated. Only an entry with no neighbour to lean on is `unplaced`;
+   - **overnight**: an end that reads earlier than its start ("from 9 until about 6am") ends the next day (`endMin` past 1440, written as one entry per day), when the block is 16 hours or less; before, it was dropped and became a 30 minute stand-in;
    - **stand-ins**: a start with no end gets `openMin` (30) minutes, estimated, flagged `openEnd`.
 5. **WHERE** (`places.ts`). A stated place is matched to a Location pen. A missing place is **learned from the
    person's own history** (the place that overlapped this activity on past days, at least 2 sightings and 60%),
    else Home for a chore (`assumed`). Each place carries its `source` so the card says how sure it is.
+
+## Generate gap questions pipeline (`gaps.ts`)
+
+`WINDOW → MEASURE → FIND → ASK`, all code, no model, writes nothing. `runGapQuestions(entries, now, dates)`; `dates` default to the past 7 days ending today (`pastDates`), not the days since Monday.
+
+1. **WINDOW.** Each day's awake time: the day minus its Sleep blocks, else 07:00–23:00. Today stops at now; future days have none.
+2. **MEASURE.** The share of awake time covered by Activity, Location and Company, per day and for the week, plus food entries (intake instants with `intakeClass: "food"`).
+3. **FIND.** Gaps: an Activity hole of 60 minutes or more; a Location or Company hole of 60 minutes or more inside time where Activity is tracked (at least 2 h that day); a stretch of 6 hours awake with no food entry on a day Activity is tracked. Thresholds are `GAP_DEFAULTS`.
+4. **ASK.** One question per gap, largest first, up to 8. Each has a `reason` and, for Activity, Location and Company, a `seed` (“On Tuesday from 1:10 pm to 4:40 pm I ”) to finish and send to the timeblock pipeline. Food has no seed yet: that pipeline files no food.
 
 ## Why it is cheap
 
@@ -55,6 +68,7 @@ empty answer. Questions, corrections' routing, clocks, days, certainty, chaining
 | `places.ts` | `matchPen`, `learnedPlace`, `resolvePlace` |
 | `wire.ts` | `wireSchema`, `systemText(flow, skills?)`, `wire` (ladder via `escalate`), `wireByRules`, `cleanWiring` |
 | `assemble.ts` | `assemble`, `adoptOrphans`: wiring → `ProposedBlock[]` |
+| `gaps.ts` | `runGapQuestions`, `pastDates`, `windowFor`, `GAP_DEFAULTS`: the gap questions pipeline |
 | `flow.ts` | `HelperFlow` (editable prompts, routes, ladder, defaults), `starterFlow`, `loadFlow`/`saveFlow` (`trackinghelper-flow-v1`), `TRACKING_HELPER_REV` |
 | `run.ts` | `runHelper`: route, stages, trace. Takes an optional skill `bank`; the skills that fit ride in the WIRE prompt and come back as `skillsUsed` |
 | `learn.ts` | What a reaction teaches: `reactionsOfAdd` (block as proposed vs as added), `reactionOfDismiss`, `reactionOfCorrection`. Pure. |

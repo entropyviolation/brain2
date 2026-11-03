@@ -1,5 +1,5 @@
 /**
- * lib/lists-helper/tools.ts — The Lists helper's tool set (pure: read a World, return an answer or a Plan)
+ * lib/lists-helper/tools.ts — The Lists BIMBY's tool set (pure: read a World, return an answer or a Plan)
  *
  * Each tool is one small, closed job over lists and items. A tool never writes and never calls a model. It
  * resolves its scope, works out every edit, and returns a `Plan` that says how many items it touches and in what
@@ -83,10 +83,16 @@ function findItems(w: World, c: Extract<ToolCall, { tool: "find-items" }>): Tool
     rows = rows.filter((t) => normalizeTitle(itemTitle(t) ?? "").includes(q))
   }
   if (c.lacksAttribute) {
-    const want = c.lacksAttribute.toLowerCase()
+    const want = c.lacksAttribute.trim().toLowerCase()
+    const defsOf = (t: Task) => [...resolveItemSchema(t, w.lists, w.types), ...(t.itemAttributeDefinitions ?? [])]
+    const match = (d: AttributeDefinition) => d.id.toLowerCase() === want || d.name.toLowerCase() === want
+    // An attribute nothing in scope has is a misread, not "everything lacks it": say what exists instead.
+    if (rows.length && !rows.some((t) => defsOf(t).some(match))) {
+      const known = [...new Set(rows.slice(0, 500).flatMap((t) => defsOf(t).map((d) => d.name)))].slice(0, 12)
+      return { kind: "error", text: `No ${scopeLabel(w, c)} have an attribute called "${c.lacksAttribute}".${known.length ? ` Attributes I see: ${known.join(", ")}.` : ""}` }
+    }
     rows = rows.filter((t) => {
-      const defs = [...resolveItemSchema(t, w.lists, w.types), ...(t.itemAttributeDefinitions ?? [])]
-      const def = defs.find((d) => d.id.toLowerCase() === want || d.name.toLowerCase() === want)
+      const def = defsOf(t).find(match)
       return !def || !isHeldValue(t.attributes?.[def.id])
     })
   }
@@ -350,7 +356,7 @@ function retypeItems(w: World, c: Extract<ToolCall, { tool: "retype-items" }>): 
 function newType(w: World, name: string): ItemTypeDefinition {
   const label = name.trim()
   const id = uniqueId(new Set(w.types.map((t) => String(t.id))), slug(label))
-  return { id, name: label, pluralName: label.endsWith("s") ? label : `${label}s`, itemLabel: label.toLowerCase(), description: "Made by the Lists helper.", detailPanels: ["details"], attributes: [], capabilities: {} }
+  return { id, name: label, pluralName: label.endsWith("s") ? label : `${label}s`, itemLabel: label.toLowerCase(), description: "Made by the Lists BIMBY.", detailPanels: ["details"], attributes: [], capabilities: {} }
 }
 
 // ---------------------------------------------------------------- add-items

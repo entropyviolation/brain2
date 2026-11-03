@@ -147,6 +147,7 @@ export type LogSource =
   | "nfc"
   | "phone-sync"
   | "statement-import"
+  | "plan-bimby"
 
 /**
  * Who made a block, stamped once at creation. `surface` is an item-write
@@ -253,9 +254,9 @@ export interface TimeEntry {
    */
   title?: string
   notes?: string
-  /**
   /** Private. Left out of every search and LLM context unless secrets are shown (`lib/secrets.ts`). */
   secret?: boolean
+  /**
    * Objectives for right now nested in this exact activity block (live timer or
    * stopped paint). Not Home Goals, not the Tracking Objective pen.
    */

@@ -44,12 +44,17 @@ const BimPanel = lazy(() =>
   import("@/components/Bim/phone/bim-phone").then((mod) => ({ default: mod.BimPhoneScreen })),
 )
 
-type MobileTab = "home" | "lists" | "inventory" | "bim"
+const PlanBimbyPanel = lazy(() =>
+  import("@/components/Lab/PlanBimby/PlanBimbyPanel").then((mod) => ({ default: mod.PlanBimbyPanel })),
+)
+
+type MobileTab = "home" | "lists" | "inventory" | "bim" | "plan"
 
 function sectionName(tab: MobileTab): string {
   if (tab === "home") return "Home"
   if (tab === "lists") return "Lists"
   if (tab === "bim") return "BIM Chat"
+  if (tab === "plan") return "Plan now"
   return "Inventory"
 }
 
@@ -144,7 +149,7 @@ export function MobileApp() {
           {windowLine}
         </p>
 
-        <nav className="cogs-mobile-main-tabs" aria-label="Mobile sections" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
+        <nav className="cogs-mobile-main-tabs" aria-label="Mobile sections" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
           <button type="button" className={tab === "home" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("home")}>
             Home
           </button>
@@ -156,6 +161,9 @@ export function MobileApp() {
           </button>
           <button type="button" className={tab === "bim" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("bim")}>
             BIM
+          </button>
+          <button type="button" className={tab === "plan" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("plan")}>
+            Plan
           </button>
           <a className="m-keycap" href="/mobile/nfc/">NFC</a>
           <a className="m-keycap" href="/mobile/hub/">Hub</a>
@@ -175,6 +183,10 @@ export function MobileApp() {
         {tab === "bim" ? (
           <Suspense fallback={<div className="cogs-mobile-loading">Loading BIM…</div>}>
             <BimPanel />
+          </Suspense>
+        ) : tab === "plan" ? (
+          <Suspense fallback={<div className="cogs-mobile-loading">Loading Plan…</div>}>
+            <PlanBimbyPanel />
           </Suspense>
         ) : tab === "home" ? (
           <HomeDashboard />

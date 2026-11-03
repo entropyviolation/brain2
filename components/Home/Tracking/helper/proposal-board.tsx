@@ -143,6 +143,8 @@ function Card({ line, block }: { line: HelperLine; block: ProposedBlock }) {
         {block.startMin !== null && block.endMin !== null && !bad ? <span className="th-len">{block.endMin - block.startMin} min</span> : null}
       </div>
       {bad ? <p className="th-warn">End is not after start.</p> : null}
+      <Inline label="with" value={block.with ?? ""} onCommit={(v) => patch({ with: v.trim() })} />
+      <Inline label="mood" value={block.mood ?? ""} onCommit={(v) => patch({ mood: v.trim() })} />
       <Inline label="note" value={block.notes} onCommit={(v) => patch({ notes: v })} />
       <p className="th-from">“{block.from}”</p>
       {!decided ? (

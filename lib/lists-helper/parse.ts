@@ -88,6 +88,23 @@ function failed(text: string, words: string, r: Extract<Resolved, { ok: false }>
 const typeOr = (w: World, words: string): Resolved => resolveType(w, unquote(words))
 const err = (text: string): Intent => ({ kind: "error", text })
 
+const LEAD_WORDS = /^(?:all|every|the|my|duplicate|any|some|are|is|there|do|i|have|of|many|much|how|items?)$/i
+
+/**
+ * The item type named at the end of some words: "how many Book" → Book. Tries the longest run of words first and
+ * drops one word from the front each time, so the question words never hide the type.
+ */
+function typeEndingIn(w: World, phrase: string): string | undefined {
+  const parts = unquote(phrase).trim().replace(/\s+(?:are|is|do|does|have|has|that|which)$/i, "").split(/\s+/).filter(Boolean)
+  for (let i = 0; i < parts.length; i++) {
+    const words = parts.slice(i)
+    if (words.length === 1 && LEAD_WORDS.test(words[0]!)) continue
+    const r = resolveType(w, words.join(" "))
+    if (r.ok) return r.id
+  }
+  return undefined
+}
+
 function scopeOf(w: World, t: string, orig = t): { typeId?: string; listId?: string; fail?: Intent } {
   const out: { typeId?: string; listId?: string; fail?: Intent } = {}
   let rest = t
@@ -104,8 +121,14 @@ function scopeOf(w: World, t: string, orig = t): { typeId?: string; listId?: str
   }
   const typed = new RegExp(`\\b${Q}([\\w][\\w ]*?)${Q}\\s+(?:type\\s+)?items\\b`, "i").exec(rest)
   if (typed && !out.typeId) {
-    const r = resolveType(w, typed[1]!.replace(/^(all|every|the|my|duplicate|any|some)\s+/i, ""))
-    if (r.ok) out.typeId = r.id
+    const id = typeEndingIn(w, typed[1]!)
+    if (id) out.typeId = id
+  }
+  // "how many books lack an author": a type named right before the lack words, no "items" at all.
+  const beforeLack = /^(?:how many|count|find|show|list|which|what)\b(.+?)\s+(?:that\s+|which\s+|who\s+)?(?:lack|lacks|lacking|missing|without|with no|have no|has no|don'?t have|doesn'?t have)\b/i.exec(rest)
+  if (beforeLack && !out.typeId) {
+    const id = typeEndingIn(w, beforeLack[1]!)
+    if (id) out.typeId = id
   }
   // "duplicates of Books", "duplicates among Book".
   const bare = /\bduplicates?\s+(?:of|among|for)\s+(?:the\s+|all\s+|my\s+)?([\w ]+?)\s*[?.!]*$/i.exec(rest)
@@ -250,10 +273,13 @@ export function parseIntent(w: World, text: string, ctx: Context = {}): Intent {
   }
 
   // Find / count.
-  if (/^(how many|count|find|show|list|which|what)\b/i.test(t) && /\bitems?\b/i.test(t)) {
+  const askLack = /^(how many|count|find|show|list|which|what)\b/i.test(t) && /\b(?:lack|lacks|lacking|missing|without|with no|have no|has no|don'?t have|doesn'?t have)\b/i.test(t)
+  if (/^(how many|count|find|show|list|which|what)\b/i.test(t) && (/\bitems?\b/i.test(t) || askLack)) {
     const sc = scopeOf(w, t)
     if (sc.fail) return sc.fail
-    const lacks = new RegExp(`\\b(?:lack|lacking|missing|without|with no)\\s+(?:an?\\s+|the\\s+)?${Q}([\\w ]+?)${Q}\\s*(?:attribute|value)?\\s*[?.!]*$`, "i").exec(t.replace(/\s+in\s+(?:the\s+)?(?:list\s+)?.*$/i, ""))
+    // Without the word "items", only a recognised type makes this a find; otherwise let the other readings try.
+    if (!/\bitems?\b/i.test(t) && !sc.typeId) return suggestWording(w, t) ?? { kind: "none" }
+    const lacks = new RegExp(`\\b(?:lack|lacks|lacking|missing|without|with no|have no|has no|don'?t have|doesn'?t have)\\s+(?:an?\\s+|the\\s+)?${Q}([\\w ]+?)${Q}\\s*(?:attribute|value)?\\s*[?.!]*$`, "i").exec(t.replace(/\s+in\s+(?:the\s+)?(?:list\s+)?.*$/i, ""))
     const named = /\b(?:named|called|containing|with the word)\s+["“]?([^"”?]+?)["”]?\s*[?.!]*$/i.exec(t)
     return {
       kind: "tool",

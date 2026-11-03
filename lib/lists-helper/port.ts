@@ -1,8 +1,8 @@
 /**
- * lib/lists-helper/port.ts — The Lists helper's doors into the real stores
+ * lib/lists-helper/port.ts — The Lists BIMBY's doors into the real stores
  *
  * `browserPort()` reads the task, list, and item-type stores and writes the way the Lists UI does: an edit through
- * `commitItemEdit` (History shows "agent · Lists helper"), many edits through `commitMany` (one store write, one
+ * `commitItemEdit` (History shows "agent · Lists BIMBY"), many edits through `commitMany` (one store write, one
  * History save), a merge through `setTasks` with tombstones, new rows through `addTask`, and a list, folder, or item type made by `collect-items` through the store's own add functions. "Not duplicates" answers are kept on this device only (`listshelper-dismissed`).
  */
 
@@ -15,7 +15,7 @@ import { noteClearedTaskTombstones, useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 import type { Port } from "./types"
 
-export const LISTS_HELPER_ATTRIBUTION = { surface: "agent", name: "Lists helper" } as const
+export const LISTS_HELPER_ATTRIBUTION = { surface: "agent", name: "Lists BIMBY" } as const
 
 export const useDismissedDuplicates = create<{ keys: string[]; add: (key: string) => void }>()(
   persist((set) => ({ keys: [], add: (key) => set((s) => (s.keys.includes(key) ? s : { keys: [...s.keys, key].slice(-2000) })) }), {

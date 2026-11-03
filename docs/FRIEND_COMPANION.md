@@ -176,7 +176,7 @@ always say “I love you”.
 | `lib/friend-suggestion-clock.ts` | Unsolicited ticks | later |
 | `lib/friend-quests.ts` | Multi-step item quests | later |
 | `lib/friend-mood.ts` | Hunger / sleep / weather / tracking | later |
-| `lib/friend-trinkets.ts` | Nest furniture cosmetics | later |
+| `lib/friend-trinkets.ts` | Nest furniture cosmetics | later (the in-game trinkets and keepsakes of the Baby animal game live in `lib/baby-game/items.ts` and are not nest cosmetics) |
 
 ### Candidate pool (phased)
 

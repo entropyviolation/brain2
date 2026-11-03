@@ -15,7 +15,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { CalendarEvent } from "./types"
 import { toLocalCalendarDate } from "./date-utils"
-import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 
 // Date-typed fields on persisted CalendarEvent objects. The persist reviver
@@ -137,3 +137,5 @@ export const useEventStore = create<EventState>()(
     },
   ),
 )
+
+registerPersistRehydrator(persistKey("event-storage"), () => useEventStore.persist.rehydrate())

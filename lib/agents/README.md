@@ -11,13 +11,14 @@ Blueprint is the same object the old runtime reads.
 
 ## BIMBIES
 
-A **BIMBY** (BIM + baby) is a small sub-agent that does one specific job: the Tracking Helper, the Lists helper (the "Lists BIMBY"). Every BIMBY is an agent here with a Blueprint, usually a `pipeline` mind. A BIM is the big routed flow; a BIMBY is not. New ones are named BIMBY in docs and UI copy.
+A **BIMBY** (BIM + baby) is a small sub-agent that does one specific job: the Tracking Helper, the Lists BIMBY. Every BIMBY is an agent here with a Blueprint, usually a `pipeline` mind. A BIM is the big routed flow; a BIMBY is not. New ones are named BIMBY in docs and UI copy.
 
 ### Rules every BIMBY keeps
 
 - **Never destroy.** A bulk write has a hard cap, may only touch fields its tool is allowed to, is verified after it runs, and is put back if the check fails. Only a merge removes items. The Lists BIMBY's version is `lib/lists-helper/guard.ts`.
 - **Doubt becomes keys.** Where the line is unclear, show the choices on screen and in the chat (the exact sentence, one key per candidate). No dead ends.
-- **Planned.** The swarm vote and confidence-driven escalation: [`docs/BIMBY_IDEAS.md`](../../docs/BIMBY_IDEAS.md).
+- **Swarm vote.** Built as `lib/swarm-vote/` and `/lab/swarm-vote` (tally, runner, reword keys, replay bench).
+- **Planned.** Confidence-driven escalation: [`docs/BIMBY_IDEAS.md`](../../docs/BIMBY_IDEAS.md).
 
 ## The Blueprint
 
@@ -79,6 +80,10 @@ Nothing here reads storage; to show a person's saved copy, pass it to
   helper adapters tell their flows apart by shape (`wire` or `match`), so `helperOfBlueprint` and
   `habitsBimbyOfBlueprint` each return null for the other.
 - `registry.ts`.
+- `bench.ts` (_2026-11-02_): `Case`, `Variant`, `runSuite` → `Scorecard`, `compareCards` (gained / lost / stuck / held on shared lines), `confusions`, `trimHistory`. Pure, no model inside. A decline is never a pass; a thrown call is a named miss. Slice `EV-1` to `EV-4`, `EV-8` of the plan.
+- `bench-variants.ts`: `keywordBaseline` (free; declines on no overlap or a tie), `swarmVariant` (with `declineOnSplit`), `singleModelVariant`. A new idea from `docs/BIMBY_IDEAS.md` is one more `Variant`.
+- `bench-cases.ts`: `LISTS_CASES`, hand-labelled lines tagged by what makes them hard. The swarm lab's replay bench reads the same set.
+- `bench.test.ts`.
 - `blueprint.test.ts`: every shipped flow validates and survives a JSON round
   trip; both agents share one envelope; the registry refuses bad and duplicate
   Blueprints.
@@ -88,4 +93,4 @@ Nothing here reads storage; to show a person's saved copy, pass it to
 The common Trace (slice 2), the Theater and Blueprint form (3), the tool
 contracts (4), evals and compare (5). A `policy` adapter for the friend and
 Budget. The rail (`components/Lab/Agents/AgentRail.tsx`) and the
-`/lab/tracking-helper` and `/lab/habit-helper` routes have landed; they read Blueprints from here.
+`/lab/tracking-helper` and `/lab/habit-helper` routes have landed; they read Blueprints from here. The Tracking helper is now the **Tracking BIMBY** (2026-11-02): one `pipeline` mind with `pipelines: NamedPipeline[]` (`description-to-timeblock` and `generate-gap-questions` built, each also a tool; `gap-readings` and `account-to-other-kinds` planned). The **Agents** Go tab (`components/Lab/Agents/AgentsDesk.tsx`, added 2026-11-02) lists them and links to each lab.

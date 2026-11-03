@@ -3,7 +3,7 @@
  *
  * Before anything is written the call is planned again against the data as it is now. If the effect is not the
  * exact one the person approved (`signature`), nothing is written and the helper says so. Edits go through
- * one bulk write (`Port.commitMany`) and each item still gets its History line, written by the Lists helper. A merge uses the
+ * one bulk write (`Port.commitMany`) and each item still gets its History line, written by the Lists BIMBY. A merge uses the
  * same bulk replace as the Lists merge. One undo restores the old values, the pre-merge rows, and removes what
  * was added. Before and after the write `guard.ts` checks the plan and the result, and a journal survives a crash.
  */

@@ -11,7 +11,9 @@ Route: `/lab/bim-flow/` (`app/lab/bim-flow/page.tsx`). The BIM console's
 LLM tab opens it; **← Brain2** goes back to `/`. Chrome is a milled silver bay
 with house keycaps around phosphor glass wells. It writes nothing to the vault.
 
-_Last mapped: 2026-11-01_ **Agent rail.** A strip under the header lists every agent as a Blueprint (`components/Lab/Agents/AgentRail.tsx`, `lib/agents/`): one chip per BIM flow, plus the Tracking Helper (`/lab/tracking-helper`) and the Lists helper (`/lab/lists-helper`), which open their own labs (`../Agents/agent-href.ts`). A chip for a BIM flow switches the flow, the same as the Flow menu. The grid has a fourth row for it.
+_Last mapped: 2026-11-01_ **Agent rail.** A strip under the header lists every agent as a Blueprint (`components/Lab/Agents/AgentRail.tsx`, `lib/agents/`): one chip per BIM flow, plus the Tracking Helper (`/lab/tracking-helper`) and the Lists BIMBY (`/lab/lists-helper`), which open their own labs (`../Agents/agent-href.ts`). A chip for a BIM flow switches the flow, the same as the Flow menu. The grid has a fourth row for it.
+
+_Last mapped: 2026-11-02_ **Bench chrome.** Node kinds live in one **+ Node** menu (`node-palette.tsx`, grouped Decide / Find / Read / Say / Write, hover for what each does) instead of eighteen header keys, so the graph gets the room. Keys: Delete cuts the selected wire or node (the start message stays), Esc lets go, ⌘/Ctrl+Enter runs. **Reset graph** replaces the old Starter graph label. The run wells took a smaller share of the height (`32vh`).
 
 ## What it is for
 

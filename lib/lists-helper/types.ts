@@ -1,5 +1,5 @@
 /**
- * lib/lists-helper/types.ts — Shapes shared by the Lists helper's tools, parser, and session
+ * lib/lists-helper/types.ts — Shapes shared by the Lists BIMBY's tools, parser, and session
  *
  * The helper is a small set of typed tools over lists and items. A tool never writes: it reads a `World`
  * (a snapshot) and returns either an answer or a `Plan`. A plan is applied only after the person approves it,

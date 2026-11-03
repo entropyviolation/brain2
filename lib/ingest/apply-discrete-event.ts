@@ -271,7 +271,7 @@ export function applyThoughtProcess(payload: string, now = new Date()): ApplyRes
   }
 }
 
-export function applyIntake(payload: string, now = new Date(), intakeClass?: IntakeClass): ApplyResult {
+export function applyIntake(payload: string, now = new Date(), intakeClass?: IntakeClass, logSource?: LogSource): ApplyResult {
   const parsed = parseIntakePayload(payload, now)
   if (!parsed) {
     return { status: "error", kind: "intake", reply: "Intake what? Example: intake: coffee" }
@@ -283,7 +283,7 @@ export function applyIntake(payload: string, now = new Date(), intakeClass?: Int
     "Intake",
     parsed.note,
     ACTIVITY,
-    intakeMeta(intakeClass, parsed.clockCertainty),
+    intakeMeta(intakeClass, parsed.clockCertainty, logSource),
   )
   return {
     status: "ok",
@@ -718,8 +718,9 @@ export function fileTextAsShelf(input: {
   return id
 }
 
-function intakeMeta(intakeClass: IntakeClass | undefined, clockCertainty?: NoteClockCertainty): EntryMeta {
+function intakeMeta(intakeClass: IntakeClass | undefined, clockCertainty?: NoteClockCertainty, logSource?: LogSource): EntryMeta {
   return {
+    ...(logSource ? { logSource } : {}),
     eventKind: intakeClass ? `intake.${intakeClass}` : "intake",
     ...(intakeClass ? { intakeClass } : {}),
     ...(clockCertainty ? { clockCertainty } : {}),

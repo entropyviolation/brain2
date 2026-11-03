@@ -9,12 +9,13 @@
 
 import { toLocalCalendarDate } from "@/lib/date-utils"
 import { useEventStore } from "@/lib/event-store"
+import { withHolidays } from "@/lib/holidays"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useHealthImportStore } from "@/lib/phone-sync/health-store"
 import { useReviewsStore } from "@/lib/reviews-store"
-import { buildDatasets } from "./datasets"
 import { withoutSecrets } from "@/lib/secrets"
 import { secretsShown } from "@/lib/secrets-store"
+import { buildDatasets } from "./datasets"
 import type { TelegramFeedRow } from "@/lib/ingest/telegram-feed"
 import { itemTitle } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
@@ -37,8 +38,8 @@ interface RawEntry {
   precision?: string
   clockCertainty?: string
   generatedBy?: unknown
-}
   secret?: boolean
+}
 
 interface RawEvent {
   title: string
@@ -98,7 +99,6 @@ export function buildHistory(input: {
   }
 }
 
-/** Items of type person with every name they go by. */
 /** Day notes minus the ones marked secret, unless `includeSecrets`. */
 export function visibleDayNotes(notes: Record<string, string>, secretDates: Record<string, true> | undefined, includeSecrets: boolean): Record<string, string> {
   if (includeSecrets || !secretDates) return notes
@@ -115,6 +115,7 @@ export function secretHandles(tasks: Task[]): string[] {
     })
 }
 
+/** Items of type person with every name they go by. */
 export function buildPeople(tasks: Task[]): NonNullable<VaultSnapshot["people"]> {
   return tasks
     .filter((t) => t.type === "person")
@@ -144,7 +145,7 @@ export function snapshotFromStores(includeSecrets: boolean = secretsShown("chat"
     tasks: tasks as unknown as { type?: string; title?: string; createdAt?: unknown }[],
     dayNotes: visibleDayNotes(tt.dayNotes ?? {}, tt.secretDayNotes, includeSecrets),
     health: useHealthImportStore.getState().days,
-    events: useEventStore.getState().events,
+    events: withHolidays(useEventStore.getState().events),
   })
   return {
     items: tasks
@@ -155,8 +156,8 @@ export function snapshotFromStores(includeSecrets: boolean = secretsShown("chat"
     scopes: scopes.map((s) => ({ id: s.id, name: s.name, pens: s.pens.map((p) => ({ id: p.id, name: p.name })) })),
     skipListIds: skipListIdsFor(plainLists),
     people: buildPeople(tasks),
-    history,
     secretHandles: includeSecrets ? [] : secretHandles(allTasks),
+    history,
     datasets: buildDatasets({
       tasks,
       habits: habitState.tasks,
@@ -218,8 +219,8 @@ export function snapshotFromPersistItems(items: Record<string, string>, now = ne
       scopes: scopes.map((s) => ({ id: s.id, name: s.name, pens: (s.pens ?? []).map((p) => ({ id: p.id, name: p.name })) })),
       skipListIds: skipListIdsFor(lists),
       people: buildPeople(task?.tasks ?? []),
-      history,
       secretHandles: includeSecrets ? [] : secretHandles(rawTask?.tasks ?? []),
+      history,
       datasets: buildDatasets({
         tasks: (task?.tasks ?? []) as Task[],
         habits: habits as unknown as WeeklyTask[],

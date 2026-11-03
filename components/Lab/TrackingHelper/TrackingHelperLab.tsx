@@ -1,5 +1,5 @@
 /**
- * components/Lab/TrackingHelper/TrackingHelperLab.tsx — See and tune the Tracking Helper's flow
+ * components/Lab/TrackingHelper/TrackingHelperLab.tsx — See and tune the Tracking BIMBY's pipelines
  *
  * Left: its five stages (route, tokenize, wire, place, where) and its Blueprint facts. Middle: the editable
  * parts of the selected stage. Right: type an account, run it, and read each stage's time, prompt and output.
@@ -23,6 +23,8 @@ import type { TraceStage } from "@/lib/tracking-helper/types"
 import { systemText } from "@/lib/tracking-helper/wire"
 import { AgentRail } from "../Agents/AgentRail"
 import { agentLabHref } from "../Agents/agent-href"
+import { CopyReportButton } from "../Agents/CopyReportButton"
+import { GapQuestionsWell } from "./GapQuestionsWell"
 import "../BimFlow/bim-flow.css"
 import "./tracking-helper-lab.css"
 
@@ -116,7 +118,7 @@ export function TrackingHelperLab() {
         <button type="button" data-no95 className="bf-cap" onClick={() => (window.location.href = "/")}>
           ← Brain2
         </button>
-        <b className="bf-title">TRACKING · HELPER</b>
+        <b className="bf-title">TRACKING · BIMBY</b>
         <span className="bf-k">rev {flow.rev}</span>
         <span className={`bf-lamp ${models ? "is-on" : "is-off"}`} title={models ? "Ollama answering" : "Ollama not answering; the Helper falls back to rules"} />
         <span className="bf-k">{models ? `${models.length} models` : "rules only"}</span>
@@ -304,7 +306,24 @@ export function TrackingHelperLab() {
         </section>
 
         <section className="bf-inspector th-try" aria-label="Try it">
-          <b className="bf-k">Try it</b>
+          <b className="bf-k">Try it · description to timeblock pipeline</b>
+          <CopyReportButton
+            report={
+              run
+                ? {
+                    agent: "Tracking BIMBY · description to timeblock pipeline",
+                    where: "lib/tracking-helper/ (flow.ts, run.ts, wire.ts, assemble.ts, accept.ts)",
+                    input: text,
+                    summary: `route ${run.route} · ${run.blocks.length} blocks · ${ranMs} ms${run.model ? ` · ${run.model}` : ""}${run.fallback ? ` · rules only: ${run.fallback}` : ""}`,
+                    stages: run.trace,
+                    result: [
+                      ...run.blocks.map((b) => `${b.activity} ${b.startMin != null ? clockText(b.startMin) : "?"}–${b.endMin != null ? clockText(b.endMin) : "?"}${b.place ? ` @ ${b.place.name} (${b.place.source})` : ""}`),
+                      ...(run.unplaced.length ? [`no time for: ${run.unplaced.join(", ")}`] : []),
+                    ],
+                  }
+                : null
+            }
+          />
           <textarea className="bf-input th-area" rows={4} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void go("model") }} spellCheck={false} />
           <div className="bf-row">
             <button type="button" data-no95 className="bf-cap" disabled={!!running || !text.trim()} onClick={() => void go("model")}>
@@ -359,6 +378,8 @@ export function TrackingHelperLab() {
             <p className="th-help">Run an account to see each stage's time, the prompt the model saw, and the blocks it would propose. Nothing is written to Tracking.</p>
           )}
         </section>
+
+        <GapQuestionsWell onUseSeed={setText} />
       </div>
     </div>
   )

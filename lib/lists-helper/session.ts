@@ -1,5 +1,5 @@
 /**
- * lib/lists-helper/session.ts — The Lists helper's conversation (pure state machine over a Port)
+ * lib/lists-helper/session.ts — The Lists BIMBY's conversation (pure state machine over a Port)
  *
  * One line in, replies out. It holds three small things: the list you are working in, the one plan waiting for
  * your yes, and a duplicate review in progress. Nothing is written until a plan is approved ("yes", or "yes 137"

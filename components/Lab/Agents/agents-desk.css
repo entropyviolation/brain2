@@ -1,0 +1,253 @@
+/* components/Lab/Agents/agents-desk.css — the Agents desk tab: a solid cool-paper board, list left, detail right.
+   Opaque on purpose: the desk sits over the app backdrop, so every surface carries its own fill. */
+
+.ad-desk {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px;
+  color: #1f2226;
+  background: #e4e7ea;
+  border: 1px solid #5c6064;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 6px 18px rgba(0, 0, 0, 0.28);
+  font: 14px/1.45 Karla, system-ui, sans-serif;
+}
+
+.ad-list,
+.ad-detail {
+  background: #f4f5f7;
+  border: 1px solid #8b9096;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+.ad-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
+
+.ad-k {
+  font: 700 10px/1 Karla, system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4a4f54;
+}
+
+.ad-list .ad-k {
+  padding: 2px 4px 6px;
+}
+
+.ad-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px 8px;
+  text-align: left;
+  color: #1f2226;
+  font: 700 13px/1.2 Karla, system-ui, sans-serif;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  box-shadow: inset 0 -3px 0 #b3b8be, inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.ad-row:hover {
+  background: linear-gradient(180deg, #f7f8f9, #e6e9ec);
+}
+
+.ad-row:focus-visible {
+  outline: 2px solid #1f6f56;
+  outline-offset: 1px;
+}
+
+.ad-row.is-active {
+  background: #0b1210;
+  color: #7dffc4;
+  border-color: #0b1210;
+  box-shadow: inset 0 -3px 0 #7fe3c8;
+  transform: translateY(1px);
+}
+
+.ad-row .ag-glyph {
+  color: inherit;
+}
+
+.ad-tag {
+  font: 700 9px/1 Karla, system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a5f64;
+}
+
+.ad-row.is-active .ad-tag {
+  color: #3fae86;
+}
+
+.ad-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px 18px;
+  min-width: 0;
+}
+
+.ad-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #c3c7cb;
+}
+
+.ad-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.ad-purpose {
+  margin: 0;
+  max-width: 70ch;
+  color: #2a2c2e;
+}
+
+.ad-pipes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-pipe {
+  padding: 10px 12px;
+  background: #e9ecef;
+  border: 1px solid #b3b8be;
+  border-left: 4px solid #1f6f56;
+  border-radius: 3px;
+}
+
+.ad-pipe.is-planned {
+  border-left-color: #8b9096;
+  border-style: dashed;
+  border-left-style: solid;
+  background: #eff0f2;
+}
+
+.ad-pipe-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.ad-pipe-top b {
+  font-size: 14px;
+}
+
+.ad-badge {
+  padding: 2px 6px;
+  font: 700 9px/1.2 Karla, system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0f5c44;
+  background: #d5eee5;
+  border: 1px solid #7fb9a4;
+  border-radius: 2px;
+}
+
+.ad-badge.is-planned {
+  color: #4a4f54;
+  background: #dfe2e6;
+  border-color: #9aa0a6;
+}
+
+.ad-pipe p {
+  margin: 4px 0 0;
+  color: #2a2c2e;
+}
+
+.ad-stages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.ad-stages li {
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f2226;
+  background: #fff;
+  border: 1px solid #9aa0a6;
+  border-radius: 3px;
+}
+
+.ad-stages li + li::before {
+  content: "→";
+  margin-right: 6px;
+  margin-left: -2px;
+  color: #6e7378;
+  font-weight: 400;
+}
+
+.ad-meta {
+  font-size: 12px;
+  color: #4a4f54;
+}
+
+.ad-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.ad-key {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 12px 7px;
+  font: 700 12px/1.1 Karla, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  color: #1f2226;
+  text-decoration: none;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  box-shadow: inset 0 -3px 0 #b3b8be, inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ad-key:hover {
+  background: linear-gradient(180deg, #f7f8f9, #e6e9ec);
+}
+
+.ad-key.is-primary {
+  color: #7dffc4;
+  background: #0b1210;
+  border-color: #0b1210;
+  box-shadow: inset 0 -3px 0 #7fe3c8;
+}
+
+@media (max-width: 760px) {
+  .ad-desk {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+}

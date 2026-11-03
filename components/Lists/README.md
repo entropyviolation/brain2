@@ -200,7 +200,7 @@ components/Lists/
 │   └── CsvImportDialog.tsx        # Spreadsheet import wizard (CSV/TSV/Excel)
 ├── toolbar/
 │   ├── ListsToolbar.tsx           # Main toolbar — New / View / Organize (no archive buttons). _2026-11-02:_ every key on both rows is a house keycap on desktop (`filemanager98.css`, end of file): silver default, `fm-cap-mod` grey (Import, Settings), `fm-cap-seafoam` (New List), `fm-cap-cornflower` (New Folder, BIMBY); a latched key (Select, view/display, Gravity) stays CRT glass. The phone keeps its own cap rule. _2026-11-02:_ a BIMBY key (chat icon) after Select
-│   ├── ListsHelperKey.tsx         # Helper key: opens the Lists helper chat (`components/Lab/ListsHelper/`) in a dialog, starting in the open list
+│   ├── ListsHelperKey.tsx         # Helper key: opens the Lists BIMBY chat (`components/Lab/ListsHelper/`) in a dialog, starting in the open list
 │   ├── ToolbarSearch.tsx          # Local search field — never overwritten by filter results
 │   ├── SelectModeActionChrome.tsx # Shared select strip actions (count, keep/move, merge/delete); dest picker slotted
 │   ├── SelectionToolbar.tsx       # Select mode control strip (beside Add to folder; Duplicate selection)

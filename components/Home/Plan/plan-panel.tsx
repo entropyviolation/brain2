@@ -18,7 +18,10 @@
  */
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { isHolidayEvent, withHolidays } from "@/lib/holidays"
+import { MessageSquare } from "lucide-react"
+import { PlanBimbyDialog } from "@/components/Lab/PlanBimby/PlanBimbyDialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { orbFor } from "@/components/Icons"
@@ -65,7 +68,8 @@ export function PlanPanel({
   const currentDate = controlledDate ?? internalDate
   const setCurrentDate = setControlledDate ?? setInternalDate
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const events = useEventStore((s) => s.events)
+  const storedEvents = useEventStore((s) => s.events)
+  const events = useMemo(() => withHolidays(storedEvents, currentDate), [storedEvents, currentDate])
   const addEvent = useEventStore((s) => s.addEvent)
   const updateEvent = useEventStore((s) => s.updateEvent)
   const [showEventDialog, setShowEventDialog] = useState(false)
@@ -85,6 +89,7 @@ export function PlanPanel({
 
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showPasteDialog, setShowPasteDialog] = useState(false)
+  const [showPlanBimby, setShowPlanBimby] = useState(false)
   const [showPlanDialog, setShowPlanDialog] = useState(false)
   const [planDialogAction, setPlanDialogAction] = useState<PlannedAction | null>(null)
   const [planTab, setPlanTab] = usePersistedTab(APP_NAV_KEYS.homePlanTab, PLAN_TABS, "month")
@@ -122,6 +127,7 @@ export function PlanPanel({
   }
 
   const handleEventClick = useCallback((event: CalendarEvent) => {
+    if (isHolidayEvent(event)) return
     setEditingEvent(event)
     setNewEvent({
       title: event.title,
@@ -154,7 +160,7 @@ export function PlanPanel({
     // Views write through the event store directly.
   }
 
-  const eventCount = events.length
+  const eventCount = storedEvents.length
   const eventLabel = `${eventCount} event(s)`
 
   const dialogs = (
@@ -191,6 +197,8 @@ export function PlanPanel({
       <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
 
       <PasteEventsDialog open={showPasteDialog} onOpenChange={setShowPasteDialog} />
+
+      <PlanBimbyDialog open={showPlanBimby} onOpenChange={setShowPlanBimby} />
 
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
     </>
@@ -258,6 +266,9 @@ export function PlanPanel({
                 <span className="plan-mark-note">Calendar</span>
               </div>
               <div className="plan-toolbar-actions">
+                <button type="button" className="plan-btn" onClick={() => setShowPlanBimby(true)}>
+                  <MessageSquare className="plan-btn-icon" aria-hidden /> PLAN BIMBY
+                </button>
                 <button type="button" className="plan-btn" onClick={() => setShowSettingsDialog(true)}>
                   Settings
                 </button>

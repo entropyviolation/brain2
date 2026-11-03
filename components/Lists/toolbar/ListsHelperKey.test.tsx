@@ -7,7 +7,7 @@ describe("ListsHelperKey", () => {
     render(<ListsHelperKey />)
     expect(screen.queryByRole("dialog")).toBeNull()
     fireEvent.click(screen.getByRole("button", { name: "BIMBY" }))
-    expect(screen.getByRole("dialog", { name: "Lists helper" })).toBeTruthy()
+    expect(screen.getByRole("dialog", { name: "Lists BIMBY" })).toBeTruthy()
     fireEvent.keyDown(window, { key: "Escape" })
     expect(screen.queryByRole("dialog")).toBeNull()
   })

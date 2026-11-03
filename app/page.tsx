@@ -42,7 +42,7 @@ import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
 import { clearItemDetailDock, readItemDetailDock } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
 import { returnToHabitSettings } from "@/lib/habit-list-item"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
-import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, Library, ChartLine } from "lucide-react"
+import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, Library, ChartLine, Bot } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMessageIngest } from "@/hooks/useMessageIngest"
 import { AppHeader } from "@/components/AppHeader"
@@ -104,6 +104,7 @@ const SheetPopoutView = lazy(() =>
 const OperationsView = lazy(() =>
   import("@/components/Operations/OperationsView").then((mod) => ({ default: mod.OperationsView })),
 )
+const AgentsDesk = lazy(() => import("@/components/Lab/Agents/AgentsDesk").then((mod) => ({ default: mod.AgentsDesk })))
 const DocsPanel = lazy(() => import("@/components/Docs/DocsPanel").then((mod) => ({ default: mod.DocsPanel })))
 const EnhancedTaskDetail = lazy(() =>
   import("@/components/ItemDetail/ItemDetailPage").then((mod) => ({ default: mod.EnhancedTaskDetail })),
@@ -430,6 +431,10 @@ export default function Home() {
                   <ChartLine aria-hidden="true" />
                   <span className="b2-tab-label">{DATA_TAB_LABEL}</span>
                 </TabsTrigger>
+                <TabsTrigger value="agents" data-tab="agents" aria-label="Agents" title="Agents">
+                  <Bot aria-hidden="true" />
+                  <span className="b2-tab-label">Agents</span>
+                </TabsTrigger>
               </TabsList>
             }
           />
@@ -487,6 +492,11 @@ export default function Home() {
             {warm.includes("analytics") && (
               <DeskTab tab="analytics" active={activeTab === "analytics"}>
                 <EnhancedAnalytics />
+              </DeskTab>
+            )}
+            {warm.includes("agents") && (
+              <DeskTab tab="agents" active={activeTab === "agents"}>
+                <AgentsDesk />
               </DeskTab>
             )}
         </div>

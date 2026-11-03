@@ -25,8 +25,16 @@ import { itemTitle } from "@/lib/item-utils"
 import { habitScheduleMinutes } from "@/lib/habit-time-estimate"
 import { consumePlanDragClick, readPlanDrag, writePlanDrag } from "@/lib/plan-drag"
 import { usePlanPointerDrop } from "../rail/use-plan-rail-drag"
-import { hhmmToMinutes, movePlacement, placementFromDrop, type PlannedAction } from "@/lib/planned-actions"
+import {
+  hhmmToMinutes,
+  movePlacement,
+  placementFromDrop,
+  plannedDurationMinutes,
+  todoIdsCoveredByPlacements,
+  type PlannedAction,
+} from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
+import { plannedShade } from "../agenda-grid"
 import {
   PLAN_TASK_COLOR,
   PLAN_WEEK_ALLDAY_LIMIT,
@@ -54,15 +62,43 @@ function getEventDurationMinutes(event: CalendarEvent): number {
   return endHour * 60 + endMin - (startHour * 60 + startMin)
 }
 
-function slotKey(dayKey: string, hour: number): string {
-  return `${dayKey}|${hour}`
+const WEEK_HOUR_PX = 64
+
+interface WeekBlock {
+  key: string
+  kind: "event" | "task" | "planned"
+  startMinutes: number
+  durationMinutes: number
+  lane: number
+  lanes: number
 }
 
-function pushSlot<T>(map: Map<string, T[]>, dayKey: string, hour: number, item: T) {
-  const key = slotKey(dayKey, hour)
-  const bucket = map.get(key)
-  if (bucket) bucket.push(item)
-  else map.set(key, [item])
+/** Side-by-side lanes for blocks that overlap in time within one day. */
+function packLanes<T extends { startMinutes: number; durationMinutes: number }>(
+  items: T[],
+): (T & { lane: number; lanes: number })[] {
+  const sorted = [...items].sort((x, y) => x.startMinutes - y.startMinutes)
+  const out: (T & { lane: number; lanes: number })[] = []
+  let cluster: (T & { lane: number; lanes: number })[] = []
+  let laneEnds: number[] = []
+  let clusterEnd = -1
+  const flush = () => {
+    for (const row of cluster) row.lanes = Math.max(1, laneEnds.length)
+    out.push(...cluster)
+    cluster = []
+    laneEnds = []
+  }
+  for (const item of sorted) {
+    const end = item.startMinutes + Math.max(15, item.durationMinutes)
+    if (cluster.length && item.startMinutes >= clusterEnd) flush()
+    let lane = laneEnds.findIndex((laneEnd) => laneEnd <= item.startMinutes)
+    if (lane < 0) lane = laneEnds.length
+    laneEnds[lane] = end
+    clusterEnd = Math.max(clusterEnd, end)
+    cluster.push({ ...item, lane, lanes: 1 })
+  }
+  flush()
+  return out
 }
 
 export function WeekView({
@@ -86,20 +122,6 @@ export function WeekView({
   const updatePlannedAction = usePlannedActionStore((s) => s.updateAction)
 
   const weekKey = getWeekString(currentDate)
-
-  const timedEventsBySlot = new Map<string, CalendarEvent[]>()
-  const tasksBySlot = new Map<string, (typeof tasks)[number][]>()
-  for (const date of weekDates) {
-    const dayKey = formatLocalDateKey(date)
-    for (const event of events) {
-      if (event.isAllDay || !sameCalendarDay(event.date, date)) continue
-      pushSlot(timedEventsBySlot, dayKey, Number.parseInt(event.startTime.split(":")[0]), event)
-    }
-    for (const task of tasks) {
-      if (!task.scheduledDate || !task.scheduledTime || !sameCalendarDay(task.scheduledDate, date)) continue
-      pushSlot(tasksBySlot, dayKey, Number.parseInt(task.scheduledTime.split(":")[0]), task)
-    }
-  }
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -206,16 +228,6 @@ export function WeekView({
     })
   }
 
-  const getEventHeight = (event: CalendarEvent) => {
-    const durationMinutes = getEventDurationMinutes(event)
-    return Math.max(48, (durationMinutes / 60) * 72)
-  }
-
-  const getTaskHeight = (task: { estimatedDuration?: number }) => {
-    const mins = task.estimatedDuration ?? 30
-    return Math.max(48, (mins / 60) * 72)
-  }
-
   const getAllDayEventsForDate = (date: Date) => {
     return events.filter((event) => event.isAllDay && eventCoversDay(event, date))
   }
@@ -285,98 +297,154 @@ export function WeekView({
               )
             })}
 
-            {Array.from({ length: 24 }, (_, hour) => (
-              <div key={hour} className="contents">
-                <div className="plan-week-gutter">{hour.toString().padStart(2, "0")}:00</div>
-                {weekDates.map((date, dayIndex) => {
-                  const dayKey = formatLocalDateKey(date)
-                  const dayEvents = timedEventsBySlot.get(slotKey(dayKey, hour)) ?? []
-                  const hourTasks = tasksBySlot.get(slotKey(dayKey, hour)) ?? []
-                  return (
-                    <div
-                      key={`${hour}-${dayIndex}`}
-                      className="plan-week-cell"
-                      data-plan-drop="week"
-                      data-hour={hour}
-                      data-date={dayKey}
-                      data-past={isPastLocalCalendarDay(date, today) ? "true" : "false"}
-                      data-today={sameCalendarDay(date, today) ? "true" : "false"}
-                      onDragOver={onDragOver}
-                      onDrop={(e) => onDrop(e, date, hour)}
-                      onClick={() => {
-                        if (consumePlanDragClick()) return
-                        onCreateEvent(date, hour)
-                      }}
-                    >
-                      {dayEvents.map((event) => (
+            <div className="plan-week-body">
+              <div className="plan-week-gutters">
+                {Array.from({ length: 24 }, (_, hour) => (
+                  <div key={hour} className="plan-week-gutter" style={{ height: WEEK_HOUR_PX }}>
+                    {hour.toString().padStart(2, "0")}:00
+                  </div>
+                ))}
+              </div>
+              {weekDates.map((date) => {
+                const dayKey = formatLocalDateKey(date)
+                const covered = todoIdsCoveredByPlacements(plannedActions, date)
+                const pastAttr = isPastLocalCalendarDay(date, today) ? "true" : "false"
+                const todayAttr = sameCalendarDay(date, today) ? "true" : "false"
+                const blocks = packLanes<Omit<WeekBlock, "lane" | "lanes">>([
+                  ...events
+                    .filter((event) => !event.isAllDay && sameCalendarDay(event.date, date))
+                    .map((event) => ({
+                      key: `e-${event.id}`,
+                      kind: "event" as const,
+                      startMinutes: hhmmToMinutes(event.startTime),
+                      durationMinutes: getEventDurationMinutes(event),
+                    })),
+                  ...tasks
+                    .filter(
+                      (task) =>
+                        task.scheduledDate &&
+                        task.scheduledTime &&
+                        sameCalendarDay(task.scheduledDate, date) &&
+                        !covered.has(task.id),
+                    )
+                    .map((task) => ({
+                      key: `t-${task.id}`,
+                      kind: "task" as const,
+                      startMinutes: hhmmToMinutes(task.scheduledTime),
+                      durationMinutes: task.estimatedDuration ?? 30,
+                    })),
+                  ...plannedActions
+                    .filter((action) => action.date === dayKey)
+                    .map((action) => ({
+                      key: `p-${action.id}`,
+                      kind: "planned" as const,
+                      startMinutes: hhmmToMinutes(action.startTime),
+                      durationMinutes: plannedDurationMinutes(action),
+                    })),
+                ])
+                return (
+                  <div key={dayKey} className="plan-week-col" data-past={pastAttr} data-today={todayAttr}>
+                    {Array.from({ length: 24 }, (_, hour) => (
+                      <div
+                        key={hour}
+                        className="plan-week-cell"
+                        style={{ height: WEEK_HOUR_PX }}
+                        data-plan-drop="week"
+                        data-hour={hour}
+                        data-date={dayKey}
+                        data-past={pastAttr}
+                        data-today={todayAttr}
+                        onDragOver={onDragOver}
+                        onDrop={(e) => onDrop(e, date, hour)}
+                        onClick={() => {
+                          if (consumePlanDragClick()) return
+                          onCreateEvent(date, hour)
+                        }}
+                      />
+                    ))}
+                    {blocks.map((block) => {
+                      const width = 100 / block.lanes
+                      const style: React.CSSProperties = {
+                        top: (block.startMinutes / 60) * WEEK_HOUR_PX + 1,
+                        height: Math.max(22, (block.durationMinutes / 60) * WEEK_HOUR_PX - 2),
+                        left: `calc(${block.lane * width}% + 2px)`,
+                        width: `calc(${width}% - 4px)`,
+                      }
+                      if (block.kind === "event") {
+                        const event = events.find((row) => `e-${row.id}` === block.key)
+                        if (!event) return null
+                        return (
+                          <div
+                            key={block.key}
+                            className="plan-chip plan-week-block"
+                            style={{ ...style, ["--plan-chip-color" as string]: resolvePlanColor(event.color) }}
+                            draggable
+                            onDragStart={(e) => onEventDragStart(e, event.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onEventClick(event)
+                            }}
+                            title={planChipTooltip(planEventTimeLabel(event), event.title, event.location)}
+                          >
+                            <span className="plan-chip-time">
+                              {event.startTime}–{event.endTime}
+                            </span>
+                            <span className="plan-chip-title">{event.title}</span>
+                          </div>
+                        )
+                      }
+                      if (block.kind === "task") {
+                        const task = tasks.find((row) => `t-${row.id}` === block.key)
+                        if (!task) return null
+                        return (
+                          <div
+                            key={block.key}
+                            className="plan-chip plan-week-block"
+                            style={{ ...style, ["--plan-chip-color" as string]: PLAN_TASK_COLOR }}
+                            draggable
+                            onDragStart={(e) => onTaskDragStart(e, task.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onTaskClick(task.id)
+                            }}
+                            title={planChipTooltip(task.scheduledTime || "", itemTitle(task))}
+                          >
+                            <span className="plan-chip-time">
+                              {task.scheduledTime}
+                              {(task.estimatedDuration ?? 0) > 0 ? ` · ${task.estimatedDuration}m` : ""}
+                            </span>
+                            <span className="plan-chip-title">{itemTitle(task)}</span>
+                          </div>
+                        )
+                      }
+                      const action = plannedActions.find((row) => `p-${row.id}` === block.key)
+                      if (!action) return null
+                      return (
                         <div
-                          key={event.id}
-                          className="plan-chip"
-                          style={{
-                            ["--plan-chip-color" as string]: resolvePlanColor(event.color),
-                            position: "absolute",
-                            inset: 4,
-                            height: `${getEventHeight(event)}px`,
-                          }}
+                          key={block.key}
+                          className="plan-chip plan-week-block"
+                          data-kind="planned"
+                          data-shade={plannedShade(action)}
+                          style={style}
                           draggable
-                          onDragStart={(e) => onEventDragStart(e, event.id)}
+                          onDragStart={(e) => writePlanDrag(e.dataTransfer, "action", action.id)}
                           onClick={(e) => {
                             e.stopPropagation()
-                            onEventClick(event)
+                            onPlannedActionClick?.(action)
                           }}
-                          title={planChipTooltip(planEventTimeLabel(event), event.title, event.location)}
+                          title={planChipTooltip(`${action.startTime}–${action.endTime}`, action.title, action.notes)}
                         >
                           <span className="plan-chip-time">
-                            {event.startTime}–{event.endTime}
+                            {action.startTime}–{action.endTime}
                           </span>
-                          <span className="plan-chip-title">{event.title}</span>
+                          <span className="plan-chip-title">{action.title}</span>
                         </div>
-                      ))}
-
-                      {hourTasks.map((task, idx) => (
-                        <div
-                          key={task.id}
-                          className="plan-chip"
-                          style={{
-                            ["--plan-chip-color" as string]: PLAN_TASK_COLOR,
-                            position: "absolute",
-                            left: 4,
-                            right: 4,
-                            height: `${getTaskHeight(task)}px`,
-                            top: `${dayEvents.length * 56 + idx * 6 + 4}px`,
-                          }}
-                          draggable
-                          onDragStart={(e) => onTaskDragStart(e, task.id)}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onTaskClick(task.id)
-                          }}
-                          title={planChipTooltip(task.scheduledTime || "", itemTitle(task))}
-                        >
-                          <span className="plan-chip-title">{itemTitle(task)}</span>
-                          {(task.estimatedDuration ?? 0) > 0 && (
-                            <span className="plan-chip-time">{task.estimatedDuration}m</span>
-                          )}
-                        </div>
-                      ))}
-
-                      {plannedActions
-                        .filter((action) => action.date === dayKey && Math.floor(hhmmToMinutes(action.startTime) / 60) === hour)
-                        .map((action) => (
-                          <PlanChip
-                            key={action.id}
-                            kind="planned"
-                            timeLabel={`${action.startTime}–${action.endTime}`}
-                            title={action.title}
-                            tooltip={planChipTooltip(`${action.startTime}–${action.endTime}`, action.title, action.notes)}
-                            onClick={() => onPlannedActionClick?.(action)}
-                          />
-                        ))}
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
 

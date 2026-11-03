@@ -113,16 +113,21 @@ export function planPeopleItems(
   scopes: SyncScope[],
   people: PersonTask[],
   joinedPenIds: (task: PersonTask) => string[],
-): { join: { taskId: string; penId: string }[]; create: { name: string; penId: string }[] } {
+): { join: { taskId: string; penId: string }[]; create: { name: string; penId: string; penIds: string[] }[] } {
   const company = scopes.find((s) => s.id === COMPANY)
-  const out = { join: [] as { taskId: string; penId: string }[], create: [] as { name: string; penId: string }[] }
+  const out = { join: [] as { taskId: string; penId: string }[], create: [] as { name: string; penId: string; penIds: string[] }[] }
   if (!company) return out
   const joined = new Set(people.flatMap((task) => joinedPenIds(task)))
   for (const pen of company.pens) {
     if (!isPersonPen(company, pen) || joined.has(pen.id)) continue
     const byName = people.find((task) => norm(task.title || task.description || "") === norm(pen.name))
     if (byName) out.join.push({ taskId: byName.id, penId: pen.id })
-    else out.create.push({ name: pen.name, penId: pen.id })
+    else {
+      // Same-named pens share one new item, not one each.
+      const made = out.create.find((row) => norm(row.name) === norm(pen.name))
+      if (made) made.penIds.push(pen.id)
+      else out.create.push({ name: pen.name, penId: pen.id, penIds: [pen.id] })
+    }
   }
   return out
 }

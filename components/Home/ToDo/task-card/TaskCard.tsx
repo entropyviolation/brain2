@@ -89,7 +89,10 @@ import { useTodoPrefs } from "../todo-prefs"
 import { attentionGiven, attentionGivenLabel } from "../attention-given"
 import { pushedKeyForPeriod, todoPeriodValue, type TodoPeriod } from "../todo-utils"
 import type { TodoTimeInfo } from "../TodoBreakdown"
+import { useTodoPhone } from "../use-todo-phone"
+import { PhoneDock, PhoneNav, hasUnsavedDraft, type PhoneTab } from "./TaskCardPhone"
 import "./task-card.css"
+import "./task-card-phone.css"
 import { NativeSelect } from "@/components/ui/native-select"
 
 /** What the panel lends the card (its handlers, so the lid and the card agree). */
@@ -142,10 +145,7 @@ const inOtherLayer = (event: Event) => {
  */
 function guardEscape(event: KeyboardEvent): void {
   if (document.querySelector("[data-item-layer], .tcs-stat-pop, [data-task-card-pop], .trk-now-obj-stop-back")) return event.preventDefault()
-  const dirty = [...document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(".task-card [data-draft]")].some(
-    (el) => el.value.trim() !== (el.dataset.draft ?? "").trim(),
-  )
-  if (dirty && !window.confirm("Discard what you typed and close the card?")) event.preventDefault()
+  if (hasUnsavedDraft() && !window.confirm("Discard what you typed and close the card?")) event.preventDefault()
 }
 
 const taskCardFaces = `${frauncesFace} ${dmMonoFace} ${dashSegmentFaces}`
@@ -252,6 +252,10 @@ function TaskCardBody({
   const [nextOnly, setNextOnly] = useState(false)
   const [columnsView, setColumnsView] = useState(false)
   const [noticeDraft, setNoticeDraft] = useState("")
+  // Phone only (`task-card-phone.css`): one section at a time, filters folded, actions in the dock.
+  const phone = useTodoPhone()
+  const [tab, setTab] = useState<PhoneTab>(() => ((task.subtasks ?? []).length || focusStepId ? "steps" : "details"))
+  const [viewOpen, setViewOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
   // The card key is task + sub-card root, not the focused step. A new step id
@@ -413,215 +417,73 @@ function TaskCardBody({
     )
   }
 
-  return (
-    <TaskCardTimeUnit>
-    <div className="task-card-body" ref={rootRef}>
-      {/* ── Header ── */}
-      <header className="task-card-head">
-        {root ? (
-          <nav className="task-card-crumbs" aria-label="Where this card sits">
-            <button type="button" title="Back to the whole task" onClick={() => openSubCard(task.id, undefined)}>
-              {taskName}
-            </button>
-            {trail.slice(0, -1).map((t) => (
-              <span key={t.id}>
-                <i aria-hidden>›</i>
-                <button type="button" title={`Open ${itemTitleOrUntitled(t)} as the card's root`} onClick={() => openSubCard(task.id, t.id)}>
-                  {itemTitleOrUntitled(t)}
-                </button>
-              </span>
-            ))}
-          </nav>
-        ) : null}
-        {spentStep && flat.some((x) => x.id === spentStep) ? (
-          <section className="task-card-spent-panel" aria-label="Time behind this step">
-            <header>
-              <b>Time on “{flat.find((x) => x.id === spentStep)?.description}”</b>
-              <KeycapClose label="Close time detail" onClick={() => setSpentStep(null)} />
-            </header>
-            <SpentBlocks
-              scope={{
-                taskId: task.id,
-                stepIds: new Set(flattenSteps([flat.find((x) => x.id === spentStep)!]).map((x) => x.id)),
-                names: new Map(flat.map((x) => [x.id, x.description])),
-                onPatch: writeLedger,
-              }}
-            />
-          </section>
-        ) : null}
-        <div className="task-card-title-row">
-          <DialogTitle
-            className="task-card-name"
-            role="button"
-            tabIndex={0}
-            title="Show the whole task in the side bar"
-            onClick={() => setSelected(new Set())}
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " " ? (e.preventDefault(), setSelected(new Set())) : undefined)}
-          >
-            {name}
-          </DialogTitle>
-          <button type="button" className="task-card-key task-card-keycap" data-no95="" title="Open item detail on top" onClick={() => (root ? openStepItem(task.id, root.id) : pushItemLayer(task.id))}>
-            ↗ Item
-          </button>
-          <span className="task-card-plate">{host.periodLabel}</span>
-          <button
-            type="button"
-            data-no95=""
-            className="task-card-jewel is-required is-icon task-card-keycap"
-            title={`Required ${host.isRequired(task.id) ? "on" : "off"} for ${host.periodLabel.toLowerCase()}: must happen. Click to turn ${host.isRequired(task.id) ? "off" : "on"}.`}
-            aria-label="Required"
-            aria-pressed={host.isRequired(task.id)}
-            onClick={() => host.onToggleRequired(task.id)}
-          >
-            <CircleAlert size={17} aria-hidden />
-          </button>
-          <PriorityStar task={task} on={host.isPrioritized(task.id)} periodLabel={host.periodLabel} onToggle={() => host.onTogglePrioritized(task.id)} />
-          <span className={`task-card-lamp is-${task.completed ? "done" : (task.status ?? "active")}`} title="State">
-            {COMPLETION_STATUS_LABELS[task.completed ? "done" : (task.status ?? "active")] ?? "Active"}
-          </span>
-          {(task[pushKey] ?? 0) >= 1 ? (
-            <span
-              className="task-card-pushflag"
-              data-push-count={task[pushKey]}
-              style={{ ["--push-n" as string]: String(Math.min(task[pushKey] ?? 1, 20)) }}
-              title={`Pushed ${task[pushKey]} times this ${host.period}. Shrink it, split it, or drop it.`}
-            >
-              ↻ pushed ×{task[pushKey]}
-            </span>
-          ) : null}
-          <KeycapClose className="task-card-close" title="Close the card (Esc)" label="Close the card" onClick={closeTaskCard} />
-        </div>
-        <div className="task-card-title-row">
-          <TaskCardStats
-            data={{
-              view,
-              tierOf,
-              levels,
-              tier,
-              est,
-              ownEst,
-              estLog: root?.estimateLog,
-              parts: partsMinutes(view),
-              spent,
-              periodSpent,
-              spentAccount,
-              spentOnly: root ? "on this step only" : "on this task only",
-              spentScope: {
-                taskId: task.id,
-                stepIds: root ? new Set(flattenSteps([root]).map((x) => x.id)) : undefined,
-                names: new Map(flat.map((x) => [x.id, x.description])),
-                logs: task.timeLogs,
-                onPatch: writeLedger,
-              },
-              periodLabel: host.period,
-              penPool: time?.penPool,
-              pts,
-              earned,
-              pointsVisible,
-              levelName: reached === "none" ? "none" : STEP_TIER_LABEL[reached],
-              levelPts,
-              onPick: (id) => setSelected(new Set([id])),
-              ...statsTierExtra,
-            }}
-          />
-          <span className="task-card-spacer" />
-          {host.onClockStart ? (
-            <DvdTransportKey
-              mark={onClock ? "stop" : "play"}
-              pressed={onClock}
-              label={onClock ? `Stop the clock on ${name}` : `Working on ${name} now`}
-              onClick={() => (onClock ? host.onClockStop?.() : host.onClockStart?.(task.id))}
-            />
-          ) : null}
-          <button type="button" className="task-card-key task-card-keycap is-primary" data-no95="" title="Start the next open step now" onClick={() => host.onJustStart(task.id)}>
-            Just Start
-          </button>
-          <button
-            type="button"
-            className="task-card-key task-card-keycap"
-            data-no95=""
-            title="A 25-minute session on this task"
-            onClick={() => openSession({ startOn: "session", templateId: JUST_25_TEMPLATE_ID, seed: [{ taskId: task.id }] })}
-          >
-            Just 25
-          </button>
-          <button type="button" className="task-card-key task-card-keycap" data-no95="" title="Plan a session around this task" onClick={() => openSession({ startOn: "session", seed: [{ taskId: task.id }] })}>
-            Session with this
-          </button>
-        </div>
-      </header>
+  const titleEl = (
+    <DialogTitle
+      className="task-card-name"
+      role="button"
+      tabIndex={0}
+      title="Show the whole task in the side bar"
+      onClick={() => setSelected(new Set())}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " " ? (e.preventDefault(), setSelected(new Set())) : undefined)}
+    >
+      {name}
+    </DialogTitle>
+  )
+  /** Phone: show a section. Desktop: always shown (the attribute is left off). */
+  const hideOnPhone = (on: PhoneTab) => (phone && tab !== on ? true : undefined)
+  const justStartKey = (
+    <button type="button" className="task-card-key task-card-keycap is-primary" data-no95="" title="Start the next open step now" onClick={() => host.onJustStart(task.id)}>
+      Just Start
+    </button>
+  )
+  const just25Key = (
+    <button
+      type="button"
+      className="task-card-key task-card-keycap"
+      data-no95=""
+      title="A 25-minute session on this task"
+      onClick={() => openSession({ startOn: "session", templateId: JUST_25_TEMPLATE_ID, seed: [{ taskId: task.id }] })}
+    >
+      Just 25
+    </button>
+  )
+  const sessionKey = (
+    <button type="button" className="task-card-key task-card-keycap" data-no95="" title="Plan a session around this task" onClick={() => openSession({ startOn: "session", seed: [{ taskId: task.id }] })}>
+      {phone ? "Session" : "Session with this"}
+    </button>
+  )
+  const clockKey = host.onClockStart ? (
+    <DvdTransportKey
+      mark={onClock ? "stop" : "play"}
+      pressed={onClock}
+      label={onClock ? `Stop the clock on ${name}` : `Working on ${name} now`}
+      onClick={() => (onClock ? host.onClockStop?.() : host.onClockStart?.(task.id))}
+    />
+  ) : null
+  const openItem = () => (root ? openStepItem(task.id, root.id) : pushItemLayer(task.id))
+  const openStepCount = flat.filter((x) => !x.completed).length
+  const badges: Partial<Record<PhoneTab, string>> = {
+    ...(openStepCount ? { steps: String(openStepCount) } : {}),
+    ...(answers.length ? { notes: String(answers.length) } : {}),
+  }
 
-      <div className="task-card-main">
-        <div className="task-card-tree">
-          <CardSection title="Steps" count={stepsInView} className="task-card-plan">
-          {/* ── View switches ── */}
-          <div className="task-card-switches" role="toolbar" aria-label="Step view">
-            <span className="task-card-seg" role="group" aria-label="Level filter">
-              <button type="button" aria-pressed={!tier} title="Show every level" onClick={() => setTier(undefined)}>
-                All
-              </button>
-              {STEP_TIERS.map((t) => (
-                <button key={t} type="button" aria-pressed={tier === t} title={`Show only what counts for ${STEP_TIER_LABEL[t]}`} onClick={() => setTier(t)}>
-                  {STEP_TIER_SHORT[t]}
-                </button>
-              ))}
-            </span>
-            <label>
-              <input type="checkbox" title="Hide steps that wait on something" checked={hideLocked} onChange={(e) => setHideLocked(e.target.checked)} /> Hide locked
-            </label>
-            <label>
-              <input type="checkbox" title="Hide steps that are done" checked={hideCompleted} onChange={(e) => setHideCompleted(e.target.checked)} /> Hide completed
-            </label>
-            <label>
-              <input type="checkbox" title="Under each branch, show only the next step to do" checked={nextOnly} onChange={(e) => setNextOnly(e.target.checked)} /> Show next only
-            </label>
-            <button
-              type="button"
-              className="task-card-key"
-              aria-pressed={columnsView}
-              title={columnsView ? "Back to the step tree" : "Lay steps out in B | G | E columns; drag between them to change level"}
-              onClick={() => setColumnsView((v) => !v)}
-            >
-              List mode
-            </button>
-            <button type="button" className="task-card-key" title="Select every step not yet done" onClick={() => setSelected(new Set(openStepIds(view)))}>
-              Select all open
-            </button>
-            <button type="button" className="task-card-key" title="Select every end node (steps with nothing inside)" onClick={() => setSelected(new Set(leafStepIds(view)))}>
-              Select leaves
-            </button>
-            <button type="button" className="task-card-key" title="Clear the selection (Esc)" disabled={!sel.size} onClick={() => setSelected(new Set())}>
-              Deselect all
-            </button>
-          </div>
-
-          {columnsView ? (
-            <ThreeColumns steps={view} tierOf={tierOf} hideCompleted={hideCompleted} onSetTier={(id, t) => writeSteps("Step tier", massTier(steps, new Set([id]), t))} />
-          ) : (
-            <StepTree
-              steps={view}
-              onChange={(next) => host.onStepsChange(task.id, root ? replaceKids(steps, root.id, next) : next)}
-              columns={stepColumns}
-              tierTags={has("tier")}
-              tier={tier}
-              hideLocked={hideLocked}
-              hideCompleted={hideCompleted}
-              nextOnly={nextOnly}
-              extraLock={extraLock}
-              onOpenStep={(step) => openStepItem(task.id, step.id)}
-              checkboxSelects
-              onBeforeMove={(label) => runAsAction(label, () => undefined)}
-              selected={selected}
-              onSelectedChange={setSelected}
-              onVisibleIds={setVisibleIds}
-              label="Steps"
-            />
-          )}
-
-          {/* ── Mass edit (R8) ── */}
-          {sel.size > 0 ? (
+  // ── Mass edit (R8) ──
+  const massBar = sel.size > 0 ? (
             <div className="task-card-bar" role="toolbar" aria-label="Mass edit">
               <span className="task-card-num">{sel.size} selected</span>
+              {phone ? (
+                <>
+                  <button type="button" className="task-card-key task-card-bar-clear" title="Clear the selection" onClick={() => setSelected(new Set())}>
+                    Clear
+                  </button>
+                  <span className="task-card-bar-break" aria-hidden />
+                </>
+              ) : null}
+              {phone && sel.size === 1 ? (
+                <button type="button" className="task-card-key" title="Open this step's details" onClick={() => setTab("details")}>
+                  Details
+                </button>
+              ) : null}
               {STEP_TIERS.map((t) => (
                 <button key={t} type="button" title={`Set selected steps to ${STEP_TIER_LABEL[t]}`} onClick={bar("Tier", (s) => massTier(s, sel, t))}>
                   {STEP_TIER_SHORT[t]}
@@ -701,12 +563,206 @@ function TaskCardBody({
                 </span>
               ) : null}
             </div>
+  ) : null
+
+  return (
+    <TaskCardTimeUnit>
+    <div className="task-card-body" ref={rootRef} data-phone={phone ? "" : undefined}>
+      {phone ? <PhoneNav title={titleEl} tab={tab} onTab={setTab} badges={badges} onItem={openItem} /> : null}
+      {/* ── Header ── */}
+      <header className="task-card-head">
+        {root ? (
+          <nav className="task-card-crumbs" aria-label="Where this card sits">
+            <button type="button" title="Back to the whole task" onClick={() => openSubCard(task.id, undefined)}>
+              {taskName}
+            </button>
+            {trail.slice(0, -1).map((t) => (
+              <span key={t.id}>
+                <i aria-hidden>›</i>
+                <button type="button" title={`Open ${itemTitleOrUntitled(t)} as the card's root`} onClick={() => openSubCard(task.id, t.id)}>
+                  {itemTitleOrUntitled(t)}
+                </button>
+              </span>
+            ))}
+          </nav>
+        ) : null}
+        {spentStep && flat.some((x) => x.id === spentStep) ? (
+          <section className="task-card-spent-panel" aria-label="Time behind this step">
+            <header>
+              <b>Time on “{flat.find((x) => x.id === spentStep)?.description}”</b>
+              <KeycapClose label="Close time detail" onClick={() => setSpentStep(null)} />
+            </header>
+            <SpentBlocks
+              scope={{
+                taskId: task.id,
+                stepIds: new Set(flattenSteps([flat.find((x) => x.id === spentStep)!]).map((x) => x.id)),
+                names: new Map(flat.map((x) => [x.id, x.description])),
+                onPatch: writeLedger,
+              }}
+            />
+          </section>
+        ) : null}
+        <div className="task-card-title-row">
+          {phone ? null : titleEl}
+          {phone ? null : (
+            <button type="button" className="task-card-key task-card-keycap" data-no95="" title="Open item detail on top" onClick={openItem}>
+              ↗ Item
+            </button>
+          )}
+          <span className="task-card-plate">{host.periodLabel}</span>
+          <button
+            type="button"
+            data-no95=""
+            className="task-card-jewel is-required is-icon task-card-keycap"
+            title={`Required ${host.isRequired(task.id) ? "on" : "off"} for ${host.periodLabel.toLowerCase()}: must happen. Click to turn ${host.isRequired(task.id) ? "off" : "on"}.`}
+            aria-label="Required"
+            aria-pressed={host.isRequired(task.id)}
+            onClick={() => host.onToggleRequired(task.id)}
+          >
+            <CircleAlert size={17} aria-hidden />
+          </button>
+          <PriorityStar task={task} on={host.isPrioritized(task.id)} periodLabel={host.periodLabel} onToggle={() => host.onTogglePrioritized(task.id)} />
+          <span className={`task-card-lamp is-${task.completed ? "done" : (task.status ?? "active")}`} title="State">
+            {COMPLETION_STATUS_LABELS[task.completed ? "done" : (task.status ?? "active")] ?? "Active"}
+          </span>
+          {(task[pushKey] ?? 0) >= 1 ? (
+            <span
+              className="task-card-pushflag"
+              data-push-count={task[pushKey]}
+              style={{ ["--push-n" as string]: String(Math.min(task[pushKey] ?? 1, 20)) }}
+              title={`Pushed ${task[pushKey]} times this ${host.period}. Shrink it, split it, or drop it.`}
+            >
+              ↻ pushed ×{task[pushKey]}
+            </span>
           ) : null}
+          {phone ? null : <KeycapClose className="task-card-close" title="Close the card (Esc)" label="Close the card" onClick={closeTaskCard} />}
+        </div>
+        <div className="task-card-title-row">
+          <TaskCardStats
+            data={{
+              view,
+              tierOf,
+              levels,
+              tier,
+              est,
+              ownEst,
+              estLog: root?.estimateLog,
+              parts: partsMinutes(view),
+              spent,
+              periodSpent,
+              spentAccount,
+              spentOnly: root ? "on this step only" : "on this task only",
+              spentScope: {
+                taskId: task.id,
+                stepIds: root ? new Set(flattenSteps([root]).map((x) => x.id)) : undefined,
+                names: new Map(flat.map((x) => [x.id, x.description])),
+                logs: task.timeLogs,
+                onPatch: writeLedger,
+              },
+              periodLabel: host.period,
+              penPool: time?.penPool,
+              pts,
+              earned,
+              pointsVisible,
+              levelName: reached === "none" ? "none" : STEP_TIER_LABEL[reached],
+              levelPts,
+              onPick: (id) => setSelected(new Set([id])),
+              ...statsTierExtra,
+            }}
+          />
+          {phone ? null : (
+            <>
+              <span className="task-card-spacer" />
+              {clockKey}
+              {justStartKey}
+              {just25Key}
+              {sessionKey}
+            </>
+          )}
+        </div>
+      </header>
+
+      <div className="task-card-main">
+        <div className="task-card-tree" hidden={hideOnPhone("steps")}>
+          <CardSection title="Steps" count={stepsInView} className="task-card-plan">
+          {/* ── View switches ── */}
+          <div className="task-card-switches" role="toolbar" aria-label="Step view">
+            <span className="task-card-seg" role="group" aria-label="Level filter">
+              <button type="button" aria-pressed={!tier} title="Show every level" onClick={() => setTier(undefined)}>
+                All
+              </button>
+              {STEP_TIERS.map((t) => (
+                <button key={t} type="button" aria-pressed={tier === t} title={`Show only what counts for ${STEP_TIER_LABEL[t]}`} onClick={() => setTier(t)}>
+                  {STEP_TIER_SHORT[t]}
+                </button>
+              ))}
+            </span>
+            {phone ? (
+              <button type="button" className="task-card-key task-card-view-key" aria-expanded={viewOpen} onClick={() => setViewOpen((v) => !v)}>
+                View{hideLocked || hideCompleted || nextOnly ? " •" : ""}
+              </button>
+            ) : null}
+            <div className="task-card-viewrow" hidden={phone && !viewOpen ? true : undefined}>
+            <label>
+              <input type="checkbox" title="Hide steps that wait on something" checked={hideLocked} onChange={(e) => setHideLocked(e.target.checked)} /> Hide locked
+            </label>
+            <label>
+              <input type="checkbox" title="Hide steps that are done" checked={hideCompleted} onChange={(e) => setHideCompleted(e.target.checked)} /> Hide completed
+            </label>
+            <label>
+              <input type="checkbox" title="Under each branch, show only the next step to do" checked={nextOnly} onChange={(e) => setNextOnly(e.target.checked)} /> Show next only
+            </label>
+            {phone ? null : <button
+              type="button"
+              className="task-card-key"
+              aria-pressed={columnsView}
+              title={columnsView ? "Back to the step tree" : "Lay steps out in B | G | E columns; drag between them to change level"}
+              onClick={() => setColumnsView((v) => !v)}
+            >
+              List mode
+            </button>}
+            <button type="button" className="task-card-key" title="Select every step not yet done" onClick={() => setSelected(new Set(openStepIds(view)))}>
+              Select all open
+            </button>
+            <button type="button" className="task-card-key" title="Select every end node (steps with nothing inside)" onClick={() => setSelected(new Set(leafStepIds(view)))}>
+              Select leaves
+            </button>
+            <button type="button" className="task-card-key" title="Clear the selection (Esc)" disabled={!sel.size} onClick={() => setSelected(new Set())}>
+              Deselect all
+            </button>
+            </div>
+          </div>
+
+          {columnsView && !phone ? (
+            <ThreeColumns steps={view} tierOf={tierOf} hideCompleted={hideCompleted} onSetTier={(id, t) => writeSteps("Step tier", massTier(steps, new Set([id]), t))} />
+          ) : (
+            <StepTree
+              steps={view}
+              onChange={(next) => host.onStepsChange(task.id, root ? replaceKids(steps, root.id, next) : next)}
+              columns={stepColumns}
+              tierTags={has("tier")}
+              tier={tier}
+              hideLocked={hideLocked}
+              hideCompleted={hideCompleted}
+              nextOnly={nextOnly}
+              extraLock={extraLock}
+              onOpenStep={(step) => openStepItem(task.id, step.id)}
+              checkboxSelects
+              onBeforeMove={(label) => runAsAction(label, () => undefined)}
+              selected={selected}
+              onSelectedChange={setSelected}
+              onVisibleIds={setVisibleIds}
+              label="Steps"
+            />
+          )}
+
+          {phone ? null : massBar}
           </CardSection>
         </div>
 
         {/* ── Side panel ── */}
-        <aside className="task-card-side">
+        <aside className="task-card-side" hidden={phone && tab === "steps" ? true : undefined}>
+          <div className="task-card-pane" hidden={hideOnPhone("details")}>
           {(sel.size === 1 && oneStep) || (sel.size === 0 && root) ? (
             <NodeDetail
               isRoot={sel.size === 0}
@@ -828,14 +884,31 @@ function TaskCardBody({
 
           </>
           )}
+          </div>
 
+          <div className="task-card-pane" hidden={hideOnPhone("time")}>
           {sel.size > 1 ? null : (
             <TaskCardTimeAside task={task} focusStepId={sel.size === 1 ? [...sel][0] : root?.id} onWrite={writeLedger} />
           )}
+          </div>
 
+          <div className="task-card-pane" hidden={hideOnPhone("notes")}>
           <LogNotes task={task} nodeId={sel.size === 1 ? [...sel][0] : undefined} nodeName={(id) => flat.find((x) => x.id === id)?.description} />
+          </div>
         </aside>
       </div>
+      {phone ? (
+        <PhoneDock>
+          {massBar ?? (
+            <>
+              {clockKey}
+              {justStartKey}
+              {just25Key}
+              {sessionKey}
+            </>
+          )}
+        </PhoneDock>
+      ) : null}
     </div>
     </TaskCardTimeUnit>
   )

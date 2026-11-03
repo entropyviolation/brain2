@@ -24,6 +24,7 @@ import { fixtureCtx } from "@/lib/habit-helper/tests"
 import type { BimbyContext, TraceStage } from "@/lib/habit-helper/types"
 import { AgentRail } from "../Agents/AgentRail"
 import "../BimFlow/bim-flow.css"
+import { CopyReportButton } from "../Agents/CopyReportButton"
 import "../TrackingHelper/tracking-helper-lab.css"
 
 const AGENTS = builtinBlueprints()
@@ -304,6 +305,24 @@ export function HabitsBimbyLab() {
 
         <section className="bf-inspector th-try" aria-label="Try it">
           <b className="bf-k">Try it</b>
+          <CopyReportButton
+            report={
+              run
+                ? {
+                    agent: "Habits BIMBY",
+                    where: "lib/habit-helper/",
+                    input: text,
+                    summary: `route ${run.route} · ${run.proposals.length} proposals · ${run.asks.length} asks · ${ranMs} ms${run.model ? ` · ${run.model}` : ""}${run.fallback ? ` · rules only: ${run.fallback}` : ""}${onFixture ? " · on the test habits" : ""}`,
+                    stages: run.trace,
+                    result: [
+                      `reply: ${run.reply}`,
+                      ...run.proposals.map((p) => `${p.habit} ${p.day ?? ""} · ${p.from} → ${p.kind === "missed" ? `missed “${p.write?.missReason}”` : p.to}${p.why ? ` · ${p.why}` : ""}`),
+                      ...run.asks.map((a) => `ask: “${a.words}” → ${a.options.map((o) => o.name).join(" or ")}`),
+                    ],
+                  }
+                : null
+            }
+          />
           <textarea className="bf-input th-area" rows={4} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void go("model") }} spellCheck={false} />
           <label className="th-check">
             <input type="checkbox" checked={onFixture} onChange={(e) => setOnFixture(e.target.checked)} />
