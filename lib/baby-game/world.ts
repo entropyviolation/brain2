@@ -115,48 +115,49 @@ export type NodeKind = "berry" | "acorn" | "reed" | "clover" | "pebble" | "feath
 
 export type GameNode = { id: string; kind: NodeKind; x: number; y: number }
 
+// fish nodes sit on water tiles (a test checks it); move one and the ripple and shadow stay in the pond
 const nodeList: Array<[NodeKind, number, number]> = [
   // orchard
-  ["berry", 5, 6], ["berry", 7, 10], ["berry", 12, 6], ["berry", 4, 13],
-  ["acorn", 8, 5], ["acorn", 14, 9], ["acorn", 4, 9],
+  ["berry", 4, 7], ["berry", 7, 10], ["berry", 12, 6], ["berry", 3, 11],
+  ["acorn", 9, 4], ["acorn", 12, 11], ["acorn", 4, 9],
   ["reed", 8, 12], ["reed", 14, 13], ["reed", 11, 15],
-  ["clover", 6, 14], ["clover", 12, 10], ["feather", 7, 8], ["dig", 5, 15],
+  ["clover", 8, 13], ["clover", 11, 11], ["feather", 7, 8], ["dig", 4, 16],
   // meadow
   ["clover", 22, 18], ["clover", 29, 23], ["clover", 20, 24], ["clover", 27, 15],
   ["berry", 29, 15], ["pebble", 18, 23], ["pebble", 28, 24], ["dig", 22, 24],
   // pond and cove
-  ["reed", 34, 15], ["reed", 35, 21], ["reed", 43, 22], ["reed", 43, 13],
-  ["shell", 34, 17], ["shell", 37, 22], ["shell", 45, 18], ["fish", 37, 19], ["fish", 40, 20], ["fish", 43, 19],
-  ["pebble", 34, 12], ["pebble", 40, 5], ["shell", 44, 9], ["dig", 36, 12],
+  ["reed", 34, 15], ["reed", 33, 18], ["reed", 41, 24], ["reed", 43, 13],
+  ["shell", 34, 17], ["shell", 36, 24], ["shell", 45, 18], ["fish", 37, 18], ["fish", 38, 18], ["fish", 43, 18],
+  ["pebble", 34, 12], ["pebble", 39, 4], ["shell", 43, 8], ["dig", 35, 11],
   // hill
-  ["dig", 5, 28], ["dig", 9, 30], ["dig", 13, 28], ["dig", 6, 34], ["dig", 12, 35], ["dig", 14, 32],
-  ["mushroom", 4, 31], ["mushroom", 8, 35], ["mushroom", 13, 34], ["pebble", 5, 27], ["pebble", 11, 33],
-  ["acorn", 7, 29], ["berry", 14, 36],
+  ["dig", 3, 26], ["dig", 9, 30], ["dig", 12, 27], ["dig", 3, 31], ["dig", 12, 35], ["dig", 13, 32],
+  ["mushroom", 5, 31], ["mushroom", 9, 34], ["mushroom", 13, 34], ["pebble", 3, 27], ["pebble", 11, 33],
+  ["acorn", 9, 27], ["berry", 14, 36],
   // barn yard
-  ["clover", 34, 34], ["clover", 42, 29], ["berry", 44, 32], ["dig", 33, 29], ["dig", 40, 35], ["dig", 36, 33],
-  ["pebble", 44, 31], ["feather", 38, 36], ["mushroom", 35, 36],
+  ["clover", 34, 34], ["clover", 42, 29], ["berry", 44, 32], ["dig", 33, 29], ["dig", 42, 33], ["dig", 36, 33],
+  ["pebble", 44, 31], ["feather", 38, 37], ["mushroom", 35, 36],
   // aspen highlands
   ["berry", 52, 7], ["berry", 60, 9], ["clover", 53, 15], ["clover", 58, 17], ["feather", 55, 6], ["feather", 61, 14],
   ["acorn", 52, 12], ["acorn", 59, 20], ["mushroom", 54, 20], ["mushroom", 51, 17], ["dig", 57, 7], ["dig", 53, 10], ["dig", 60, 18],
-  ["reed", 62, 12], ["reed", 57, 18], ["pebble", 56, 19], ["shell", 56, 16], ["fish", 57, 8], ["fish", 52, 12],
+  ["reed", 62, 12], ["reed", 57, 18], ["pebble", 56, 19], ["shell", 56, 16], ["fish", 57, 9], ["fish", 53, 12],
   // mirror lake
-  ["fish", 55, 30], ["fish", 51, 32], ["fish", 59, 32], ["fish", 55, 46], ["reed", 48, 38], ["reed", 62, 38], ["shell", 50, 44],
+  ["fish", 55, 31], ["fish", 52, 32], ["fish", 58, 32], ["fish", 55, 45], ["reed", 48, 38], ["reed", 62, 38], ["shell", 50, 44],
   ["shell", 60, 44], ["pebble", 52, 28], ["pebble", 60, 28], ["clover", 50, 27], ["clover", 61, 46], ["dig", 49, 33], ["dig", 61, 34],
   ["dig", 52, 47], ["berry", 61, 29], ["mushroom", 49, 46], ["feather", 56, 27],
   // wood
-  ["mushroom", 19, 5], ["mushroom", 28, 7], ["mushroom", 22, 10], ["mushroom", 26, 4],
-  ["acorn", 18, 9], ["acorn", 29, 10], ["acorn", 21, 4], ["acorn", 27, 11],
-  ["feather", 20, 7], ["feather", 25, 9], ["dig", 18, 6], ["dig", 29, 5], ["pebble", 23, 8], ["berry", 30, 8],
+  ["mushroom", 18, 5], ["mushroom", 27, 5], ["mushroom", 22, 10], ["mushroom", 25, 3],
+  ["acorn", 18, 9], ["acorn", 29, 10], ["acorn", 22, 3], ["acorn", 27, 11],
+  ["feather", 20, 7], ["feather", 25, 10], ["dig", 18, 6], ["dig", 28, 5], ["pebble", 23, 8], ["berry", 30, 8],
   // cobalt glow marsh
   ["reed", 6, 44], ["reed", 13, 48], ["reed", 24, 45], ["reed", 9, 55], ["reed", 21, 57],
-  ["fish", 9, 49], ["fish", 17, 54], ["fish", 23, 49], ["mushroom", 4, 50], ["mushroom", 15, 58], ["mushroom", 27, 54],
+  ["fish", 9, 48], ["fish", 17, 53], ["fish", 24, 49], ["mushroom", 4, 50], ["mushroom", 15, 58], ["mushroom", 27, 54],
   ["clover", 11, 42], ["clover", 22, 42], ["feather", 18, 45], ["dig", 6, 58], ["dig", 28, 59], ["shell", 13, 53], ["berry", 4, 42],
   // the index stacks
   ["feather", 68, 6], ["feather", 75, 15], ["pebble", 72, 9], ["pebble", 68, 27], ["mushroom", 76, 22], ["mushroom", 67, 34],
   ["dig", 71, 18], ["dig", 74, 37], ["acorn", 69, 13], ["acorn", 76, 31], ["berry", 72, 25], ["clover", 70, 39],
   // firework dunes
   ["shell", 38, 53], ["shell", 47, 60], ["shell", 66, 59], ["pebble", 42, 58], ["pebble", 58, 52], ["pebble", 73, 56],
-  ["dig", 44, 53], ["dig", 55, 59], ["dig", 69, 53], ["dig", 75, 60], ["feather", 61, 56], ["fish", 52, 57], ["fish", 50, 54],
+  ["dig", 44, 53], ["dig", 55, 59], ["dig", 69, 53], ["dig", 75, 60], ["feather", 61, 56], ["fish", 52, 56], ["fish", 50, 54],
   // rhizome: the gardens between the alley and the shore
   ["clover", 86, 48], ["clover", 105, 48], ["berry", 90, 49], ["dig", 100, 50], ["pebble", 91, 47], ["feather", 107, 47], ["mushroom", 87, 50],
   ["shell", 92, 51], ["shell", 100, 51], ["fish", 89, 52], ["fish", 103, 52],
@@ -177,10 +178,10 @@ export const PROPS: Array<{ kind: PropKind; x: number; y: number }> = [
   { kind: "signpost", x: 30, y: 18 },
   { kind: "birdbath", x: 26, y: 14 },
   { kind: "blanket", x: 18, y: 25 },
-  { kind: "beehive", x: 12, y: 9 },
+  { kind: "beehive", x: 14, y: 11 },
   { kind: "scarecrow", x: 22, y: 29 },
   { kind: "wheelbarrow", x: 22, y: 32 },
-  { kind: "haybale", x: 38, y: 33 },
+  { kind: "haybale", x: 36, y: 34 },
   { kind: "haybale", x: 34, y: 36 },
   { kind: "rowboat", x: 47, y: 40 },
   { kind: "orb", x: 21, y: 21 },
@@ -189,16 +190,16 @@ export const PROPS: Array<{ kind: PropKind; x: number; y: number }> = [
   { kind: "library", x: 18, y: 22 },
   { kind: "thrift", x: 27, y: 22 },
   { kind: "collage", x: 27, y: 17 },
-  { kind: "fireworks", x: 41, y: 32 },
+  { kind: "fireworks", x: 42, y: 32 },
   { kind: "clock", x: 17, y: 22 },
-  { kind: "pendulum", x: 33, y: 22 },
-  { kind: "ducklings", x: 35, y: 23 },
+  { kind: "pendulum", x: 33, y: 24 },
+  { kind: "ducklings", x: 34, y: 24 },
   { kind: "sprinkler", x: 17, y: 30 },
-  { kind: "microscope", x: 12, y: 31 },
-  { kind: "fossil", x: 7, y: 32 },
-  { kind: "romanesco", x: 13, y: 7 },
+  { kind: "microscope", x: 11, y: 30 },
+  { kind: "fossil", x: 7, y: 31 },
+  { kind: "romanesco", x: 14, y: 6 },
   { kind: "slime", x: 20, y: 10 },
-  { kind: "wasps", x: 28, y: 9 },
+  { kind: "wasps", x: 30, y: 7 },
   { kind: "kitten", x: 36, y: 32 },
   // the far reaches
   { kind: "orb", x: 12, y: 50 },
@@ -377,10 +378,11 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   }
   // every friend's home is solid, with its door and a little yard kept clear
   for (const h of Object.values(HOMES)) {
-    hold(h.x, h.y, 1)
+    hold(h.x, h.y, 2)
     hold(...homeDoor(h), 1)
-    // the house is HOME_SCALE tiles wide, so its footing is solid on both sides of the middle tile
-    for (let dx = -1; dx <= 1; dx++) stationSolid.add(tileIndex(h.x + dx, h.y))
+    // a house is about four tiles wide, so its footing is solid one tile either side of the middle one (the art overhangs a little; keep homes four tiles apart so the row stays passable); a flat's tenants stand two apart, so the same covers the block
+    const reach = 1
+    for (let dx = -reach; dx <= reach; dx++) stationSolid.add(tileIndex(h.x + dx, h.y))
   }
   for (const n of NODES) hold(n.x, n.y, 2)
   for (const [x, y] of reserved) hold(x, y, 2)

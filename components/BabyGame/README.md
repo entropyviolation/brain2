@@ -249,3 +249,15 @@ Brief: more Starbound in colour and texture, less farm; Stardew-level detail; ho
 ## Reading controls (2026-11-03)
 
 In a friend's home, Shelf tab, a book shows: a reading style (an hour at a time, or all the way through until Stop), `Read it all in one go` / `Stop reading` (run by `BabyGame.tsx` `runReadAll`, so closing the screen does not stop it), the digest and idea chips, and per sitting the explanation, ideas, question, and an Edit button (`village.tsx` `SittingEditor`) that shows the whole passage and saves the player's version, optionally as a gold example. Gold examples list with a JSON copy at the bottom of the shelf. Menu holds the reading-model name.
+
+## Studying and manifestos in the home (2026-11-03)
+
+`village.tsx` `HomePanel` has a **Study** tab (`StudyPanel`): the study notebook, the manifesto (title, topic, thesis, outline, each written section in an expandable row, who agreed to read it), the manifesto study workbook, and the session log, with "Study now" and "Work on the manifesto now" buttons. `BabyGame.tsx` holds the runs, like reading: `runStudy` and `runWrite` (`HomeActions.studyNow` / `writeNow`), `readOnSchedule` chooses read, study or write per hour (`lib/baby-game/study.ts`), `goSleep` announces new manifestos in the morning card, and `startTalk` swaps the usual talk for a manifesto pitch when `pitchTarget` finds one. `shelf-io.ts` `bookText` returns a book's `inline` words first, so a manifesto copy needs no stored file; BookDetail hides "Open the file" for it. Rules and the why: `lib/baby-game/README.md`, _Studying and the manifesto_.
+
+## Bigger houses and blocks of flats (2026-11-03)
+
+_Last mapped: 2026-11-03_
+
+- **Size.** One art pixel of a house is now one game pixel: `housegen.ts` still paints on a 96 grid, `homeart-hi.ts` keeps it at 2× nearest (192) and stamps it 96 game pixels wide (it was 48), so a house stands about four tiles wide and reads chunkier. The specs are drawn at 0.8× so a pod is about 60 pixels across.
+- **Footing and spacing.** A home's solid footing is one tile either side of its middle (the art overhangs a little). Homes in `lib/baby-game/homes.ts` `PLACED` are four or more tiles apart so a row stays passable. Nodes, props and day spots the bigger art would hide were moved clear (`world.ts`, `cast.ts`).
+- **Blocks of flats.** `BLOCKS` in `homes.ts`: Crumb Court (mouse, hedgehog, kitten), Possum Stack (the three possums) and Barn Flats (puppy, foal, cub). A block is one building (kind `flat`, spec from `specFor("flat", blockId, tenants)`): a wide ground module with one front door per tenant, two tiles apart, a porthole over each door that glows while that tenant is home, and stacked modules with ribbon windows and roof gardens above. Each tenant is still its own home entry (own door tile, bed and name); `render.ts` draws the building once. **Planned:** unit interiors, a lift, tenants' balconies, and more blocks as the cast grows (a block holds three today).

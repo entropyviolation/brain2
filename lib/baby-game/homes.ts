@@ -8,7 +8,7 @@
  * `components/BabyGame/homeart.ts` paints each kind. Data only, so a generated cast can bring its own homes.
  */
 
-export type HomeKind = "nest" | "burrow" | "den" | "hollow" | "lodge" | "hutch" | "stall" | "igloo"
+export type HomeKind = "nest" | "burrow" | "den" | "hollow" | "lodge" | "hutch" | "stall" | "igloo" | "flat"
 
 export type Home = {
   kind: HomeKind
@@ -17,7 +17,12 @@ export type Home = {
   /** The home's own tile; its door is the tile below. */
   x: number
   y: number
+  /** The block of flats this is a unit of (a key of `BLOCKS`); the friends of one block share one building. */
+  block?: string
 }
+
+/** A building several friends share: stacked modules, one front door per friend along the ground floor, two tiles apart. */
+export type Block = { name: string; x: number; y: number; tenants: string[] }
 
 export const HOME_NOUN: Record<HomeKind, string> = {
   nest: "nest",
@@ -28,6 +33,7 @@ export const HOME_NOUN: Record<HomeKind, string> = {
   hutch: "little house",
   stall: "stall",
   igloo: "igloo",
+  flat: "flat",
 }
 
 /** The kind of home each species keeps. A species not listed gets a hutch. */
@@ -47,37 +53,52 @@ export const HOME_SCALE = 3
 
 export const homeKindFor = (species: string): HomeKind => SPECIES_HOME[species] ?? "hutch"
 
-/** Hand-placed for Valdivia (checked by `homes.test.ts`): in the friend's zone, off every node, prop and path. */
+/** Spread out for the bigger houses (about four tiles wide): in the friend's zone, off every node, prop and path. A friend listed in `BLOCKS` lives there instead. */
 const PLACED: Record<string, [number, number, string?]> = {
-  chick: [7, 6, "The Eggcup"],
-  bunny: [11, 5, "Snooze Hole"],
-  gosling: [14, 11, "The Guardhouse Nest"],
-  fawn: [11, 7, "The Fern Hollow"],
-  duckling: [39, 22, "Puddle Nest"],
-  otter: [41, 22, "Skipstone Lodge"],
+  chick: [6, 6, "The Eggcup"],
+  bunny: [13, 5, "Snooze Hole"],
+  gosling: [5, 15, "The Guardhouse Nest"],
+  fawn: [13, 10, "The Fern Hollow"],
+  duckling: [35, 22, "Puddle Nest"],
+  otter: [40, 22, "Skipstone Lodge"],
   capybara: [38, 12, "The Still Lodge"],
   penguin: [42, 5, "The Perfect Igloo"],
   blackduck: [44, 12, "The Dark Reed Nest"],
-  seal: [44, 23, "The Round Igloo"],
-  mouse: [9, 28, "Crumb Cellar"],
-  hedgehog: [12, 27, "The Soft Burrow"],
-  kitten: [8, 31, "The Purr Lab"],
-  possum: [4, 29, "Eldest Hollow"],
-  possum2: [11, 29, "Nightshift Hollow"],
-  possum3: [14, 27, "Smallest Hollow"],
-  fox: [11, 36, "The Kind Den"],
-  puppy: [35, 29, "The Very Good House"],
-  foal: [37, 34, "The Fast Stall"],
-  cub: [39, 34, "The Gentle Den"],
-  skunk: [18, 4, "The Perfumery"],
-  crow: [28, 4, "The Shiny Nest"],
-  owl: [22, 6, "The Song Archive"],
-  wolf: [26, 8, "The Spark Den"],
+  seal: [45, 22, "The Round Igloo"],
+  mouse: [4, 30, "Crumb Cellar"],
+  hedgehog: [6, 30, "The Soft Burrow"],
+  kitten: [8, 30, "The Purr Lab"],
+  possum: [4, 36, "Eldest Hollow"],
+  possum2: [6, 36, "Nightshift Hollow"],
+  possum3: [8, 36, "Smallest Hollow"],
+  fox: [14, 31, "The Kind Den"],
+  puppy: [37, 36, "The Very Good House"],
+  foal: [39, 36, "The Fast Stall"],
+  cub: [41, 36, "The Gentle Den"],
+  skunk: [19, 4, "The Perfumery"],
+  crow: [29, 4, "The Shiny Nest"],
+  owl: [24, 7, "The Song Archive"],
+  wolf: [27, 9, "The Spark Den"],
 }
 
-export const HOMES: Record<string, Home> = Object.fromEntries(
-  Object.entries(PLACED).map(([id, [x, y, name]]) => [id, { kind: homeKindFor(id), name: name ?? `The ${HOME_NOUN[homeKindFor(id)]}`, x, y }]),
-)
+/** Friends who share a building. Tenants stand two tiles apart on the block's row, left to right. */
+export const BLOCKS: Record<string, Block> = {
+  crumb: { name: "Crumb Court", x: 6, y: 30, tenants: ["mouse", "hedgehog", "kitten"] },
+  barn: { name: "Barn Flats", x: 39, y: 36, tenants: ["puppy", "foal", "cub"] },
+  possums: { name: "Possum Stack", x: 6, y: 36, tenants: ["possum", "possum2", "possum3"] },
+}
+
+export const HOMES: Record<string, Home> = {
+  ...Object.fromEntries(
+    Object.entries(PLACED).map(([id, [x, y, name]]) => [id, { kind: homeKindFor(id), name: name ?? `The ${HOME_NOUN[homeKindFor(id)]}`, x, y }]),
+  ),
+}
+for (const [bid, blk] of Object.entries(BLOCKS)) {
+  blk.tenants.forEach((id, i) => {
+    const own = PLACED[id]
+    HOMES[id] = { kind: "flat", name: own?.[2] ?? `${blk.name} ${i + 1}`, x: blk.x + (i - (blk.tenants.length - 1) / 2) * 2, y: blk.y, block: bid }
+  })
+}
 
 export const homeOf = (id: string): Home | undefined => HOMES[id]
 

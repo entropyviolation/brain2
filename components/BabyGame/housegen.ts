@@ -74,6 +74,8 @@ export type HouseSpec = {
   extras: Extra[]
   /** Seeds every bit of texture. */
   seed: number
+  /** A block of flats: how many friends share it. Each gets a front door two tiles apart on the ground module and a module of windows above. */
+  tenants?: number
 }
 
 const hash = (a: number, b: number) => {
@@ -89,7 +91,7 @@ const strHash = (s: string) => {
 const pick = <T,>(list: readonly T[], r: number): T => list[Math.min(list.length - 1, Math.floor(r * list.length))]!
 
 /** The spec for a friend's home: what the kind fixes (body, material, door), and what the id picks (colours, shapes, extras). */
-export function specFor(kind: HomeKind, id: string): HouseSpec {
+export function specFor(kind: HomeKind, id: string, tenants = 0): HouseSpec {
   const seed = strHash(id)
   const r = (k: number) => hash(seed, k)
   const wall = pick(Object.keys(WALLS), r(1)) as keyof typeof WALLS
@@ -97,23 +99,27 @@ export function specFor(kind: HomeKind, id: string): HouseSpec {
   const win = pick(["round", "arch", "quatrefoil"] as const, r(3))
   const sprinkle = (pool: Extra[], n: number) => pool.filter((_, i) => r(10 + i) < n)
   const base = { wall, roofRamp, window: win, seed }
+  /** One art pixel is one game pixel now (the picture is shown 2× nearest), so the shapes are drawn smaller than before to stand about four tiles wide. */
+  const K = 0.8
   switch (kind) {
     case "hutch":
-      return { ...base, body: "stack", material: "concrete", roof: "none", door: "round", hw: 26 + Math.floor(r(6) * 6), h: 3, extras: ["flowers", ...sprinkle(["lantern", "ivy"], 0.5)] }
+      return { ...base, body: "stack", material: "concrete", roof: "none", door: "round", hw: Math.round((26 + Math.floor(r(6) * 6)) * K), h: 3, extras: ["flowers", ...sprinkle(["lantern", "ivy"], 0.5)] }
     case "stall":
-      return { ...base, body: "pod", material: "shell", roof: "none", door: "round", hw: 42, h: 34, extras: ["pedestal", "flowers", ...sprinkle(["lantern", "crystals"], 0.5)] }
+      return { ...base, body: "pod", material: "shell", roof: "none", door: "round", hw: Math.round(42 * K), h: Math.round(34 * K), extras: ["pedestal", "flowers", ...sprinkle(["lantern", "crystals"], 0.5)] }
     case "nest":
-      return { ...base, body: "pod", material: "concrete", roof: "none", door: "round", hw: 32, h: 58, extras: ["flowers", ...sprinkle(["ivy", "lantern", "star"], 0.5)] }
+      return { ...base, body: "pod", material: "concrete", roof: "none", door: "round", hw: Math.round(32 * K), h: Math.round(58 * K), extras: ["flowers", ...sprinkle(["ivy", "lantern", "star"], 0.5)] }
     case "burrow":
-      return { ...base, body: "pod", material: "concrete", roof: "none", door: "round", hw: 38, h: 54, extras: ["ivy", "flowers", ...sprinkle(["crystals", "lantern"], 0.5)] }
+      return { ...base, body: "pod", material: "concrete", roof: "none", door: "round", hw: Math.round(38 * K), h: Math.round(54 * K), extras: ["ivy", "flowers", ...sprinkle(["crystals", "lantern"], 0.5)] }
     case "den":
-      return { ...base, body: "pod", material: "concrete", roof: "none", door: "round", hw: 36, h: 60, extras: ["stair", ...sprinkle(["ivy", "flowers", "lantern"], 0.5)] }
+      return { ...base, body: "pod", material: "concrete", roof: "none", door: "round", hw: Math.round(36 * K), h: Math.round(60 * K), extras: ["stair", ...sprinkle(["ivy", "flowers", "lantern"], 0.5)] }
     case "hollow":
-      return { ...base, body: "stack", material: "concrete", roof: "none", door: "round", hw: 20, h: 4, extras: ["ivy", "lantern", ...sprinkle(["flowers", "star"], 0.5)] }
+      return { ...base, body: "stack", material: "concrete", roof: "none", door: "round", hw: Math.round(20 * K), h: 4, extras: ["ivy", "lantern", ...sprinkle(["flowers", "star"], 0.5)] }
     case "lodge":
-      return { ...base, body: "pod", material: "shell", roof: "none", door: "round", hw: 40, h: 46, extras: ["pedestal", "water", "reeds", ...sprinkle(["lantern", "flowers"], 0.5)] }
+      return { ...base, body: "pod", material: "shell", roof: "none", door: "round", hw: Math.round(40 * K), h: Math.round(46 * K), extras: ["pedestal", "water", "reeds", ...sprinkle(["lantern", "flowers"], 0.5)] }
+    case "flat":
+      return { ...base, body: "stack", material: "concrete", roof: "none", door: "round", hw: 44, h: 4, tenants: Math.max(1, tenants), extras: ["flowers", "ivy", ...sprinkle(["lantern", "star"], 0.6)] }
     case "igloo":
-      return { ...base, body: "pod", material: "shell", roof: "none", door: "round", hw: 38, h: 50, extras: ["crystals", ...sprinkle(["star", "lantern", "flowers"], 0.6)] }
+      return { ...base, body: "pod", material: "shell", roof: "none", door: "round", hw: Math.round(38 * K), h: Math.round(50 * K), extras: ["crystals", ...sprinkle(["star", "lantern", "flowers"], 0.6)] }
   }
 }
 
@@ -620,17 +626,22 @@ function podBody(b: Buf, spec: HouseSpec, cx: number, lit: boolean) {
   return { top, eave: top }
 }
 
-function stackBody(b: Buf, spec: HouseSpec, cx: number, lit: boolean) {
+function stackBody(b: Buf, spec: HouseSpec, cx: number, lit: boolean, litArr?: boolean[]) {
   const n = spec.h
-  const ph = 21
+  const tenants = spec.tenants ?? 0
   const planter = MATERIALS.turf
   let topY = GY
+  let prevTop = GY + 5
   for (let i = 0; i < n; i++) {
-    const w = Math.round(spec.hw * (1.05 - i * 0.13)) + (i % 2) * 3
-    const ox = i === 0 ? 0 : Math.round(((hash(spec.seed, i) - 0.5) * 2) * Math.min(14, 46 - w - 2))
+    const flatBase = tenants > 0 && i === 0
+    const ph = flatBase ? 24 : 21
+    const w = flatBase ? spec.hw : Math.round(spec.hw * (tenants ? 0.82 : 1.05) - (tenants ? (i - 1) * 7 : i * 0.13 * spec.hw)) + (i % 2) * 3
+    const ox = i === 0 ? 0 : Math.round(((hash(spec.seed, i) - 0.5) * 2) * Math.min(12, 46 - w - 2))
     const pcx = cx + ox
-    const bottom = GY - i * (ph - 5) - (i === 0 ? 0 : 0)
+    const bottom = i === 0 ? GY : prevTop + 5
     const top = bottom - ph
+    prevTop = top
+    const litM = litArr && tenants ? litArr[(i === 0 ? 0 : i - 1) % litArr.length]! : lit
     const box: Box = { x0: pcx - w, y0: top, x1: pcx + w, y1: bottom }
     // a rounded octagon: a squared-off ellipse, flat on the bottom
     const inside = (x: number, y: number) => {
@@ -641,16 +652,18 @@ function stackBody(b: Buf, spec: HouseSpec, cx: number, lit: boolean) {
     part(b, box, inside, (x, y) => materialColor(spec, x, y, 0.12 + lightAt(x, y, box, 0.75) * 0.85, box), wallEdge(spec))
     // a shadowed underside where it hangs over the pod below
     for (let x = pcx - w + 3; x < pcx + w - 3; x++) if (inside(x, bottom - 1) && i > 0) b.set(x, bottom - 1, MATERIALS.concrete[3]!)
-    // a ribbon window: dark glass in a frame, mullions, a pale reflection
-    const wy0 = top + 6
-    const wh = 9
-    const wx0 = pcx - w + 6
-    const ww = w * 2 - 12
-    const trim = MATERIALS.concrete
-    part(b, { x0: wx0 - 2, y0: wy0 - 2, x1: wx0 + ww + 2, y1: wy0 + wh + 2 }, (x, y) => x >= wx0 - 2 && x <= wx0 + ww + 2 && y >= wy0 - 2 && y <= wy0 + wh + 2 && (Math.abs(x - pcx + 0.5) < w - 3), (x, y) => tone(trim, 0.2, x, y), trim[4]!)
-    const ramp = lit ? GLOW : GLASS
-    part(b, { x0: wx0, y0: wy0, x1: wx0 + ww, y1: wy0 + wh }, (x, y) => x >= wx0 && x <= wx0 + ww && y >= wy0 && y <= wy0 + wh && Math.abs(x - pcx + 0.5) < w - 5, (x, y) => tone(ramp, 0.3 + (y - wy0) / (wh * 1.3) + (hash(x >> 2, i + spec.seed) > 0.8 ? -0.15 : 0), x, y), GLASS[4]!)
-    for (let x = wx0 + 7; x < wx0 + ww - 3; x += 9) for (let y = wy0; y <= wy0 + wh; y++) if (b.get(x, y) !== -1) b.set(x, y, GLASS[4]!)
+    if (!flatBase) {
+      // a ribbon window: dark glass in a frame, mullions, a pale reflection
+      const wy0 = top + 6
+      const wh = 9
+      const wx0 = pcx - w + 6
+      const ww = w * 2 - 12
+      const trim = MATERIALS.concrete
+      part(b, { x0: wx0 - 2, y0: wy0 - 2, x1: wx0 + ww + 2, y1: wy0 + wh + 2 }, (x, y) => x >= wx0 - 2 && x <= wx0 + ww + 2 && y >= wy0 - 2 && y <= wy0 + wh + 2 && (Math.abs(x - pcx + 0.5) < w - 3), (x, y) => tone(trim, 0.2, x, y), trim[4]!)
+      const ramp = litM ? GLOW : GLASS
+      part(b, { x0: wx0, y0: wy0, x1: wx0 + ww, y1: wy0 + wh }, (x, y) => x >= wx0 && x <= wx0 + ww && y >= wy0 && y <= wy0 + wh && Math.abs(x - pcx + 0.5) < w - 5, (x, y) => tone(ramp, 0.3 + (y - wy0) / (wh * 1.3) + (hash(x >> 2, i + spec.seed) > 0.8 ? -0.15 : 0), x, y), GLASS[4]!)
+      for (let x = wx0 + 7; x < wx0 + ww - 3; x += 9) for (let y = wy0; y <= wy0 + wh; y++) if (b.get(x, y) !== -1) b.set(x, y, GLASS[4]!)
+    }
     // a roof garden on whatever of the top is not covered: a little hedge and flowers
     for (let x = pcx - w + 4; x < pcx + w - 3; x += 3) {
       if (!inside(x, top + 1) || hash(x, spec.seed + i * 31) < 0.35) continue
@@ -659,8 +672,14 @@ function stackBody(b: Buf, spec: HouseSpec, cx: number, lit: boolean) {
       b.rect(planter[1]!, x, top - hh, 2, 1)
       if (hash(x, i + 11) > 0.6) b.rect(BITS[x % BITS.length]!, x + 1, top - hh - 1, 2, 2)
     }
-    // the door, on the lowest pod
-    if (i === 0) {
+    if (flatBase) {
+      // one front door per tenant, two tiles (32 pixels) apart, with a porthole above that glows while they are home
+      for (let k = 0; k < tenants; k++) {
+        const off = Math.round((k - (tenants - 1) / 2) * 32)
+        door(b, { ...spec, door: "round" }, pcx + off, 12, 16, litArr ? litArr[k]! : lit)
+        porthole(b, spec, pcx + off, top + 6, 3, litArr ? litArr[k]! : lit)
+      }
+    } else if (i === 0) {
       door(b, { ...spec, door: "round" }, pcx + Math.round(w * 0.45), 11, 15, lit)
       porthole(b, spec, pcx - Math.round(w * 0.42), top + 12, 3, lit)
     }
@@ -672,7 +691,9 @@ function stackBody(b: Buf, spec: HouseSpec, cx: number, lit: boolean) {
 // ---- the whole house -------------------------------------------------------------------------------------------
 
 /** Draw a house into a fresh buffer: `lit` turns the windows and lantern on, for when its friend is home after dark. */
-export function buildHouse(spec: HouseSpec, lit: boolean): Int32Array {
+export function buildHouse(spec: HouseSpec, litIn: boolean | boolean[]): Int32Array {
+  const litArr = Array.isArray(litIn) ? litIn : undefined
+  const lit: boolean = litArr ? litArr.some(Boolean) : (litIn as boolean)
   const b = new Buf()
   const cx = 48
   const e = new Set(spec.extras)
@@ -697,7 +718,7 @@ export function buildHouse(spec: HouseSpec, lit: boolean): Int32Array {
     case "dome": ({ top, eave: roofBase } = domeBody(b, spec, cx, lit)); break
     case "bulb": ({ top, eave: roofBase } = bulbBody(b, spec, cx, lit)); break
     case "pod": ({ top, eave: roofBase } = podBody(b, spec, cx, lit)); break
-    case "stack": ({ top, eave: roofBase } = stackBody(b, spec, cx, lit)); break
+    case "stack": ({ top, eave: roofBase } = stackBody(b, spec, cx, lit, litArr)); break
   }
   if (spec.roof !== "none") {
     const over = spec.body === "tower" ? 8 : 6
@@ -762,7 +783,7 @@ export function buildHouse(spec: HouseSpec, lit: boolean): Int32Array {
 }
 
 /** The house as RGBA bytes (`HOUSE_W` squared), a soft cool shadow under it. */
-export function houseRgba(spec: HouseSpec, lit: boolean): Uint8ClampedArray {
+export function houseRgba(spec: HouseSpec, lit: boolean | boolean[]): Uint8ClampedArray {
   const px = buildHouse(spec, lit)
   const data = new Uint8ClampedArray(W * W * 4)
   // a flattened ellipse of shadow: translucent, the same blue-violet the trees cast

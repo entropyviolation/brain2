@@ -12,7 +12,7 @@ import type { HomeKind } from "../lib/baby-game/homes"
 const [out = "houses.png", litArg, ...rest] = process.argv.slice(2)
 const lit = litArg === "lit"
 const ids = rest.length ? rest : ["chick", "bunny", "fox", "otter"]
-const KINDS: HomeKind[] = ["hutch", "stall", "nest", "burrow", "den", "hollow", "lodge", "igloo"]
+const KINDS: HomeKind[] = ["hutch", "stall", "nest", "burrow", "den", "hollow", "lodge", "igloo", "flat"]
 const S = 3
 const cw = HOUSE_W * S
 const W = cw * KINDS.length
@@ -21,7 +21,7 @@ const img = new Uint8Array(W * H * 4)
 const ground = lit ? [22, 36, 70] : [78, 160, 140]
 for (let i = 0; i < W * H; i++) { img[i * 4] = ground[0]!; img[i * 4 + 1] = ground[1]!; img[i * 4 + 2] = ground[2]!; img[i * 4 + 3] = 255 }
 ids.forEach((id, row) => KINDS.forEach((kind, col) => {
-  const rgba = houseRgba(specFor(kind, id), lit)
+  const rgba = houseRgba(specFor(kind, id, kind === "flat" ? 3 : 0), lit)
   for (let y = 0; y < HOUSE_W; y++) for (let x = 0; x < HOUSE_W; x++) {
     const a = rgba[(y * HOUSE_W + x) * 4 + 3]! / 255
     if (!a) continue

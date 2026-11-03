@@ -30,7 +30,8 @@ import { drawHome } from "./homeart"
 import { drawFalls, drawScenery, paintWater } from "./sceneryart"
 import { buildScenery, type Scenery } from "@/lib/baby-game/scenery"
 import { drawHomeHi } from "./homeart-hi"
-import { HOMES, HOME_SCALE, homeDoor } from "@/lib/baby-game/homes"
+import { BLOCKS, HOMES, HOME_SCALE, homeDoor } from "@/lib/baby-game/homes"
+import { specFor } from "./housegen"
 import { EXTENT_H, EXTENT_W, GATES, MAP_H, MAP_W, NODES, FLAT_PROPS, PLOTS, PROPS, STATIONS, T, TILE, tileIndex, type World } from "@/lib/baby-game/world"
 
 /** What the village shows: 320×200 game pixels, 20×12.5 tiles. One game pixel is one real pixel of the frame (`DETAIL` 1); the page scales it up whole. */
@@ -579,6 +580,14 @@ const sceneryOf = (world: World): Scenery => {
   return sc
 }
 
+const houseSpecs = new Map<string, ReturnType<typeof specFor>>()
+const houseSpec = (kind: Parameters<typeof specFor>[0], id: string, tenants = 0) => {
+  const k = `${kind}:${id}:${tenants}`
+  let sp = houseSpecs.get(k)
+  if (!sp) houseSpecs.set(k, (sp = specFor(kind, id, tenants)))
+  return sp
+}
+
 let veil: Veil | null = null
 
 /** Colour and strength of the day's veil by hour: dusk purple, a long blue night, a pink dawn. */
@@ -806,16 +815,27 @@ export function drawFrame(ctx: CanvasRenderingContext2D, f: Frame) {
     // the picnic blanket lies flat, so everything standing goes over it
     bodies.push({ y: FLAT_PROPS.has(p.kind) ? -1 + i * 0.001 : (p.y + 1) * TILE - 1, draw: () => drawProp(ctx, p.kind, p.x * TILE, p.y * TILE, t, i, { rain: s.weather === "rain", night }) })
   }
-  for (const [id, h] of Object.entries(HOMES)) {
-    if ((h.x - 2) * TILE > camX + VIEW_W || (h.x + 3) * TILE < camX || h.y * TILE > camY + VIEW_H + 16 || (h.y + 4) * TILE < camY) continue
+  // each friend's home, and each block of flats once (its windows glow for whoever of its tenants is home)
+  const homeLit = (id: string, h: (typeof HOMES)[string]) => {
     const npc = sim.npcs[id]
     const [dx, dy] = homeDoor(h)
-    // a window glows after dark while its friend is home and still up
-    const lit = (night || hour(s) >= 19) && !!npc && !npc.asleep && Math.hypot(npc.x - center(dx), npc.y - center(dy)) < TILE * 2
-    bodies.push({ y: (h.y + 1) * TILE - 1, draw: () => {
-        // the painted 96px home, pooled onto the game's own pixel grid
-        drawHomeHi(ctx, h.kind, h.x * TILE + TILE / 2, (h.y + 1) * TILE, lit, id)
-      } })
+    return (night || hour(s) >= 19) && !!npc && !npc.asleep && Math.hypot(npc.x - center(dx), npc.y - center(dy)) < TILE * 2
+  }
+  const drawnBlocks = new Set<string>()
+  for (const [id, h] of Object.entries(HOMES)) {
+    if ((h.x - 5) * TILE > camX + VIEW_W || (h.x + 6) * TILE < camX || h.y * TILE > camY + VIEW_H + 16 || (h.y + 6) * TILE < camY) continue
+    if (h.block) {
+      if (drawnBlocks.has(h.block)) continue
+      drawnBlocks.add(h.block)
+      const blk = BLOCKS[h.block]!
+      const xs = blk.tenants.map((t) => HOMES[t]!.x)
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+      const lit = blk.tenants.map((t) => homeLit(t, HOMES[t]!))
+      bodies.push({ y: (h.y + 1) * TILE - 1, draw: () => drawHomeHi(ctx, houseSpec(h.kind, h.block!, blk.tenants.length), h.block!, cx * TILE + TILE / 2, (h.y + 1) * TILE, lit) })
+      continue
+    }
+    const lit = homeLit(id, h)
+    bodies.push({ y: (h.y + 1) * TILE - 1, draw: () => drawHomeHi(ctx, houseSpec(h.kind, id), id, h.x * TILE + TILE / 2, (h.y + 1) * TILE, lit) })
   }
   for (const fly of FLIES) bodies.push({ y: flyY(fly, t) + 40, draw: () => drawFly(ctx, fly, t) })
   bodies.sort((p, q) => p.y - q.y).forEach((b) => b.draw())
