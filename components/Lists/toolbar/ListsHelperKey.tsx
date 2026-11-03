@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * components/Lists/toolbar/ListsHelperKey.tsx — The Lists helper, one key away
+ * components/Lists/toolbar/ListsHelperKey.tsx — The Lists BIMBY, one key away
  *
  * A toolbar key that opens the helper chat (`components/Lab/ListsHelper/`) over the window. It starts in the open
  * list, so "add Dune" lands there. The chat is the same one as `/lab/lists-helper/`; closing it keeps the conversation.
@@ -30,7 +30,7 @@ export function ListsHelperKey({ listId }: { listId?: string }) {
       {open && typeof document !== "undefined"
         ? createPortal(
             <div className="lh-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
-              <div className="lh-embed" role="dialog" aria-label="Lists helper">
+              <div className="lh-embed" role="dialog" aria-label="Lists BIMBY">
                 <ListsHelperChat initialListId={listId} onClose={() => setOpen(false)} />
               </div>
             </div>,

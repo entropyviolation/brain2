@@ -529,4 +529,51 @@ describe("TaskCard", () => {
     act(() => openTaskCard("t1", "disc"))
     expect(within(side).queryByRole("region", { name: "Actual and estimate" })).toBeNull()
   })
+
+  describe("on a phone", () => {
+    beforeEach(() => {
+      vi.spyOn(window, "matchMedia").mockImplementation(
+        (query: string) =>
+          ({ matches: query.includes("max-width: 767px"), media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false }) as MediaQueryList,
+      )
+    })
+
+    it("shows one section at a time behind a segmented control, with the actions in the dock", () => {
+      seed()
+      render(<TaskCard host={host()} />)
+      act(() => openTaskCard("t1"))
+      const tabs = screen.getByRole("tablist", { name: "Card sections" })
+      expect(within(tabs).getAllByRole("tab").map((t) => t.textContent?.replace(/\d+$/, ""))).toEqual(["Steps", "Details", "Time", "Notes"])
+      expect(within(tabs).getByRole("tab", { name: /^Steps/ }).getAttribute("aria-selected")).toBe("true")
+      const side = document.querySelector("aside.task-card-side") as HTMLElement
+      expect(side.hidden).toBe(true)
+      const dock = screen.getByRole("group", { name: "Actions" })
+      expect(within(dock).getByRole("button", { name: "Just Start" })).toBeTruthy()
+      expect(within(dock).getByRole("button", { name: "Session" })).toBeTruthy()
+      expect(screen.getByRole("button", { name: "Item" })).toBeTruthy()
+
+      fireEvent.click(within(tabs).getByRole("tab", { name: "Details" }))
+      expect(side.hidden).toBe(false)
+      expect((document.querySelector(".task-card-tree") as HTMLElement).hidden).toBe(true)
+    })
+
+    it("swaps the dock for the mass-edit bar while steps are selected, and folds the filters behind View", () => {
+      seed()
+      render(<TaskCard host={host()} />)
+      act(() => openTaskCard("t1"))
+      const row = document.querySelector('[data-step-id="insert"]') as HTMLElement
+      fireEvent.click(within(row).getByRole("checkbox"))
+      const dock = screen.getByRole("group", { name: "Actions" })
+      expect(within(dock).getByText("1 selected")).toBeTruthy()
+      expect(within(dock).queryByRole("button", { name: "Just Start" })).toBeNull()
+      fireEvent.click(within(dock).getByRole("button", { name: "Details" }))
+      expect(screen.getByRole("tab", { name: "Details" }).getAttribute("aria-selected")).toBe("true")
+
+      fireEvent.click(screen.getByRole("tab", { name: /^Steps/ }))
+      const viewRow = document.querySelector(".task-card-viewrow") as HTMLElement
+      expect(viewRow.hidden).toBe(true)
+      fireEvent.click(screen.getByRole("button", { name: /^View/ }))
+      expect(viewRow.hidden).toBe(false)
+    })
+  })
 })

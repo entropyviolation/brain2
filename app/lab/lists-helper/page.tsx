@@ -1,5 +1,5 @@
 /**
- * app/lab/lists-helper/page.tsx — Talk to the Lists helper and see its flow
+ * app/lab/lists-helper/page.tsx — Talk to the Lists BIMBY and see its flow
  *
  * A standalone route, like `/lab/tracking-helper`. See `components/Lab/ListsHelper/README.md`.
  */

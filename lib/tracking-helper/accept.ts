@@ -60,6 +60,8 @@ function notesOf(b: ProposedBlock): string {
   const edge = (min: number, cert: string, chained?: boolean, open?: boolean) => `${clockText(min)}${cert === "estimated" ? " (est)" : ""}${chained ? " (from the next/previous block)" : ""}${open ? " (not given)" : ""}`
   return [
     "Created from Tracking helper.",
+    b.with ? `With ${b.with}.` : "",
+    b.mood ? `Felt ${b.mood}.` : "",
     b.notes,
     `Said: “${b.from}”`,
     `Start ${edge(b.startMin!, b.startCert, b.startChained, b.openStart)}; end ${edge(b.endMin!, b.endCert, b.endChained, b.openEnd)}.`,

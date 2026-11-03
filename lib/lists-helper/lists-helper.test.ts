@@ -571,3 +571,31 @@ describe("apply a type to a list's items; pick when unsure", () => {
     })
   })
 })
+
+describe("find items that lack an attribute", () => {
+  const make = () =>
+    harness(
+      [
+        task("a", "Dune", { type: "book", attributes: { author: "Frank Herbert" } }),
+        task("b", "Emma", { type: "book" }),
+        task("c", "Ulysses", { type: "book" }),
+        task("d", "Dish soap", { type: "task" }),
+      ],
+      [],
+    )
+  const text = (rs: ReturnType<ReturnType<typeof make>["say"]>) => JSON.stringify(rs)
+  it("keeps the type when question words come before it", () => {
+    const out = text(make().say("how many Book items lack an author?"))
+    expect(out).toContain("2 matches")
+    expect(out).toContain("Emma")
+    expect(out).not.toContain("Dish soap")
+  })
+  it("reads a plural type with no word 'items'", () => {
+    const out = text(make().say("which books are missing an author"))
+    expect(out).toContain("2 matches")
+    expect(out).not.toContain("Dish soap")
+  })
+  it("says so when no item in scope has that attribute", () => {
+    expect(text(make().say("how many Book items lack a flavour?"))).toContain("attribute called")
+  })
+})

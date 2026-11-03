@@ -381,22 +381,30 @@ function followHubAfterPaint(name: string, local: string | null, painted: string
  */
 export async function mergeHubIntoStores(hub: HubSnapshot, names?: string[]): Promise<string[]> {
   if (!hub?.items) return []
-  const keys = names ?? [...persistRehydrators.keys()]
+  const keys = names ?? [...persistRehydrators.keys(), ...Object.keys(hub.items).filter(isPlanTextStorageKey)]
   const changed: string[] = []
   const ran = new Set<() => void | Promise<void>>()
+  let planTextChanged = false
   for (const name of keys) {
+    const planText = isPlanTextStorageKey(name)
     const rehydrate = persistRehydrators.get(name) ?? persistRehydrators.get(persistKey(name))
-    if (!rehydrate || ran.has(rehydrate)) continue
+    if (!rehydrate && !planText) continue
+    if (rehydrate && ran.has(rehydrate)) continue
     const hubValue = hubItem(hub, name)
     if (typeof hubValue !== "string") continue
     const local = readLocalItem(name)
     const chosen = choosePersistSnapshot(name, local, hubValue)
     if (typeof chosen !== "string" || chosen === local) continue
     writeChosenLocal(name, local, chosen)
-    ran.add(rehydrate)
     changed.push(name)
-    await rehydrate()
+    if (planText) planTextChanged = true
+    if (rehydrate) {
+      ran.add(rehydrate)
+      await rehydrate()
+    }
   }
+  // Plan logs are dynamic keys (`dayPlan-<date>`) with no store to rehydrate.
+  if (planTextChanged) emitAppendLogChange()
   return changed
 }
 

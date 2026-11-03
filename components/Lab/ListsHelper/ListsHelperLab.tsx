@@ -1,5 +1,5 @@
 /**
- * components/Lab/ListsHelper/ListsHelperLab.tsx — Chat with the Lists helper, and see how it works
+ * components/Lab/ListsHelper/ListsHelperLab.tsx — Chat with the Lists BIMBY, and see how it works
  *
  * Left: its flow (read → plan → approve → apply → undo, lit where the conversation is) and its tools. Right: the
  * chat. A plan shows counts, real rows, and what is left alone before anything is written; a duplicate shows its

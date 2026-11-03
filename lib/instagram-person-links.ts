@@ -6,7 +6,7 @@
  * Instagram report's account card (`InstagramView.tsx`).
  */
 import { commitItemEdit } from "@/lib/commit-item-edit"
-import { createPerson, ensurePeopleIKnowList, personRecords } from "@/lib/people-i-know"
+import { createPerson, ensurePeopleIKnowList, personNamed, personRecords } from "@/lib/people-i-know"
 import { normalizeInstagram, presentPersonProfile } from "@/lib/person-profile"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
@@ -46,7 +46,13 @@ export function unlinkInstagramFromPerson(personId: string, handle: string): voi
 export function createPersonFromInstagram(handle: string, name?: string): string | null {
   const clean = normalizeInstagram(handle)
   if (!clean) return null
-  const person = createPerson((name ?? "").trim() || clean, ensurePeopleIKnowList())
+  const label = (name ?? "").trim() || clean
+  const known = personNamed(label)
+  if (known) {
+    linkInstagramToPerson(known.id, clean)
+    return known.id
+  }
+  const person = createPerson(label, ensurePeopleIKnowList())
   useTaskStore.getState().addTask(person)
   linkInstagramToPerson(person.id, clean)
   return person.id

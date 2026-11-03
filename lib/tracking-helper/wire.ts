@@ -28,7 +28,7 @@ export function wireSchema(tokens: Token[]): Record<string, unknown> {
         maxItems: 14,
         items: {
           type: "object",
-          required: ["activity", "place", "day", "start", "end", "maybeEnd", "length", "startVague", "endVague", "notes"],
+          required: ["activity", "place", "day", "start", "end", "maybeEnd", "length", "startVague", "endVague", "notes", "with", "mood"],
           properties: {
             activity: STR,
             place: STR,
@@ -40,6 +40,8 @@ export function wireSchema(tokens: Token[]): Record<string, unknown> {
             startVague: { type: "boolean" },
             endVague: { type: "boolean" },
             notes: { type: "string", maxLength: 100 },
+            with: STR,
+            mood: { type: "string", maxLength: 40 },
           },
         },
       },
@@ -59,7 +61,7 @@ export function userText(marked: string, tokens: Token[], ctx: HelperContext): s
   return [`TODAY: ${ctx.now.toDateString()}`, places ? `KNOWN PLACES: ${places}` : "", `TAGS: ${tags || "none"}`, `TEXT: ${marked}`].filter(Boolean).join("\n")
 }
 
-const blank = (): WiredSegment => ({ activity: "", place: "", day: "", start: "", end: "", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "" })
+const blank = (): WiredSegment => ({ activity: "", place: "", day: "", start: "", end: "", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "", with: "", mood: "" })
 
 /** Keep only well-formed entries; the grammar already did most of this. */
 export function cleanWiring(out: unknown): Wiring {

@@ -65,6 +65,16 @@ describe("Tracking helper as a Blueprint", () => {
     expect(b.limits.maxCalls).toBe(1)
   })
 
+  it("is the Tracking BIMBY: the timeblock pipeline and the gap questions pipeline are its tools, two more are planned", () => {
+    const b = helperBlueprint()
+    expect(b.name).toBe("Tracking BIMBY")
+    const ps = b.mind.kind === "pipeline" ? b.mind.pipelines ?? [] : []
+    expect(ps.filter((p) => p.status === "built").map((p) => p.id)).toEqual(["description-to-timeblock", "generate-gap-questions"])
+    expect(ps.filter((p) => p.status === "planned")).toHaveLength(2)
+    expect(ps.flatMap((p) => (p.asTool ? [p.asTool] : [])).sort()).toEqual(b.tools.map((t) => t.name).sort())
+    expect(ps[1]!.stages.every((s) => s.cost === "code")).toBe(true)
+  })
+
   it("carries the flow as it is, and survives a JSON round trip", () => {
     const flow = starterFlow()
     flow.wire.extra = "one more fix"

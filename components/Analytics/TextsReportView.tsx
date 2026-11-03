@@ -31,7 +31,7 @@ import {
   type TextsStatus,
 } from "@/lib/texts-report"
 import { linkHandlesToPerson, unlinkHandlesFromPerson } from "@/lib/phone-person-links"
-import { createPerson, ensurePeopleIKnowList, personPhoneNumbers, personRecords } from "@/lib/people-i-know"
+import { createPerson, ensurePeopleIKnowList, personNamed, personPhoneNumbers, personRecords } from "@/lib/people-i-know"
 import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { useTaskStore } from "@/lib/task-store"
 import { useTextsNavStore } from "@/lib/texts-report-nav"
@@ -92,8 +92,9 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
         return
       }
       if (req.type === "create-person") {
-        const person = createPerson(req.name, ensurePeopleIKnowList())
-        useTaskStore.getState().addTask(person)
+        const known = personNamed(req.name)
+        const person = known ?? createPerson(req.name, ensurePeopleIKnowList())
+        if (!known) useTaskStore.getState().addTask(person)
         linkHandlesToPerson(person.id, req.handles)
         return
       }

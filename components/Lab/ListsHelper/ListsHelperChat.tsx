@@ -1,5 +1,5 @@
 /**
- * components/Lab/ListsHelper/ListsHelperChat.tsx — The Lists helper's chat, shared by the lab and the Lists dialog
+ * components/Lab/ListsHelper/ListsHelperChat.tsx — The Lists BIMBY's chat, shared by the lab and the Lists dialog
  *
  * Plans show counts, real rows and warnings before anything is written; a duplicate shows its items side by side.
  * The engine is `lib/lists-helper/`; this file only draws it and calls `step`.
@@ -298,8 +298,8 @@ export function ListsHelperChat({ initialListId, onPhase, example, onClose }: { 
           <span className={`bim-lamp${busy ? "" : " is-idle"}`} aria-hidden="true" />
           BIMBY
         </div>
-        <span className="bim-crt-name">Lists helper · plans first, then writes</span>
-        {onClose ? <KeycapClose className="bim-crt-x" label="Close Lists helper" onClick={onClose} /> : null}
+        <span className="bim-crt-name">Lists BIMBY · plans first, then writes</span>
+        {onClose ? <KeycapClose className="bim-crt-x" label="Close Lists BIMBY" onClick={onClose} /> : null}
       </div>
 
       <div className="bim-mode lh-focus">

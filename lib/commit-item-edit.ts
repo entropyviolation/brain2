@@ -51,6 +51,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   hiddenShellTabs: true,
   hiddenAttributeIds: true,
   body: true,
+  secret: true,
   description: true,
   stage: true,
   monkeyBrain: true,

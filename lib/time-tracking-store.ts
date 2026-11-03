@@ -285,6 +285,8 @@ interface TimeTrackingState {
    * still there on the Activity Log and Day Log for the same date.
    */
   dayNotes: Record<string, string>
+  /** Dates (or period keys) whose day note is private (`lib/secrets.ts`). Kept in the timegrid blob, not with the note text. */
+  secretDayNotes?: Record<string, true>
   /** Cell size the grid draws and paints with. Storage stays minute-accurate. */
   gridStep: GridStep
   /** Whether the grid shows one day or a whole week. Purely a way of looking. */
@@ -365,6 +367,7 @@ interface TimeTrackingState {
 
   /** Replace the plaintext notes for one local calendar day. Empty text drops the key. */
   setDayNotes: (date: string, text: string) => void
+  setDayNoteSecret: (date: string, secret: boolean) => void
   /**
    * Notes on an untracked gap (Activity Log). Keyed by date|scope|start|end.
    * Empty text drops the key.
@@ -1857,6 +1860,13 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       moveEntryTo: (id, startMin, endMin) => {
         rememberWorld("move block")
         set((state) => dropping(state, moveEntry(state.entries, id, startMin, endMin, () => rid("te"))))
+      },
+
+      setDayNoteSecret: (date, secret) => {
+        set((state) => {
+          const { [date]: _was, ...rest } = state.secretDayNotes ?? {}
+          return { secretDayNotes: secret ? { ...rest, [date]: true as const } : rest }
+        })
       },
 
       setDayNotes: (date, text) => {

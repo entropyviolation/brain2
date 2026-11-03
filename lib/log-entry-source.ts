@@ -19,6 +19,7 @@ const LABEL: Record<LogSource, string> = {
   nfc: "NFC",
   "phone-sync": "phone sync",
   "statement-import": "a statement",
+  "plan-bimby": "the Plan BIMBY",
 }
 
 /** Phrase after “Added from ”. Always a string, including old rows. */

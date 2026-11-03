@@ -387,7 +387,7 @@ Prompt library and rerun-on-saved-inputs. Done when: every BIM node kind that
 calls code uses a registered tool, and an edit-prompt-and-rerun loop works for
 the Helper's WIRE stage.
 
-**PH-5 Evals and Compare.**
+**PH-5 Evals and Compare.** _Started 2026-11-02: **Landed** as `/lab/agents` (cases, variants, scorecard, two-run compare for closed-list BIMBY picks; `lib/agents/bench.ts`). Not yet: the BIM bench suites, rev-on-save guard, sweep._
 Cases, suites, scorecards, regression guard on save, diff view for two revs, a
 one-variable sweep. Done when: the 28 hand and ~80 real-data BIM tests run as a
 suite under EV-1 to EV-4, and a Helper rev can be compared to the last.

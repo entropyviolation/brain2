@@ -8,6 +8,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
+import { BIM_CHAT_DRAFT_KEY, readDraft, writeTextDraft } from "@/lib/draft-store"
 import { useBimChatStore } from "@/lib/ingest/bim-chat"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { chatPhotoFromFile } from "@/lib/ingest/chat-photo"
@@ -21,10 +22,21 @@ export function useBimChat() {
   const checkIn = useBimChatStore((s) => s.checkIn)
   const llm = useBimLlmMode((s) => s.on)
   const setLlm = useBimLlmMode((s) => s.setOn)
-  const [draft, setDraft] = useState("")
+  const [draft, setDraftState] = useState("")
   const [photos, setPhotos] = useState<IncomingAttachment[]>([])
   const [photoError, setPhotoError] = useState("")
   const logRef = useRef<HTMLDivElement>(null)
+
+  // The unsent line is kept on every keystroke and comes back after a closed
+  // screen or a reload. Only a send clears it.
+  const setDraft = (text: string) => {
+    setDraftState(text)
+    writeTextDraft(BIM_CHAT_DRAFT_KEY, text)
+  }
+  useEffect(() => {
+    const saved = readDraft<{ text?: string }>(BIM_CHAT_DRAFT_KEY)?.text
+    if (saved) setDraftState((now) => now || saved)
+  }, [])
 
   // BIM speaks only after you do. Check-ins come from the ask me key, not on open.
   useEffect(() => {

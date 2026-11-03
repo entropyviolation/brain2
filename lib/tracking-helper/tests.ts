@@ -84,7 +84,7 @@ export function replay(t: HelperTest, ctx: Omit<HelperContext, "now">): TestResu
   return compare(out.blocks.map(rowOf), t.expect)
 }
 
-const seg = (o: Partial<WiredSegment>): WiredSegment => ({ activity: "", place: "", day: "", start: "", end: "", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "", ...o })
+const seg = (o: Partial<WiredSegment>): WiredSegment => ({ activity: "", place: "", day: "", start: "", end: "", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "", with: "", mood: "", ...o })
 
 export const FRIDAY_TEXT = `on Friday I was definitely walking around Ocean beach at least from 4:30 - 5 pm but potentially longer, maybe until 5:30, FOR SURE left at 4:30. from sometime after 5:55, I started doing the dishes, which i did until 6:19 , then I took out the trash (a task I had seriously been resisting) in the rain and threw out a neighbor's trash abandoned by the dumpster too which i counted as a good deed for the day. by 6:22 the trash stuff was done. seem to have maybe been scrolling from 6:30 - 7:19 ish around 7:34 started actually working on foxtide cd stuff. not sure for how long though. And then october 31st went for a walk from around 5:50ish until exactly 6:27 scrolled until about 7:30`
 

@@ -189,3 +189,46 @@ describe("compare", () => {
     expect(miss.diff).toHaveLength(2)
   })
 })
+
+describe("overnight blocks", () => {
+  const text = "Yesterday I woke up at 5pm and scrolled until 9 then from then until about 6am working on brain 2"
+  const { tokens } = tokenize(text)
+  const id = (raw: string) => tokens.find((t) => t.raw === raw)!.id
+  it("ends a block the next morning when its end reads earlier than its start", () => {
+    const wiring: Wiring = { segments: [seg({ activity: "scrolling", start: id("5pm"), end: id("9") }), seg({ activity: "working", start: id("9"), end: id("6am") })] }
+    const { blocks } = assemble(wiring, tokens, text, ctx())
+    const work = blocks.find((b) => b.activity === "working")!
+    expect(work.startMin).toBe(21 * 60)
+    expect(work.endMin).toBe(30 * 60)
+    expect(work.openEnd).toBeUndefined()
+  })
+  it("wraps a 13 hour block too", () => {
+    const wiring: Wiring = { segments: [seg({ activity: "working", start: id("5pm"), end: id("6am") })] }
+    expect(assemble(wiring, tokens, text, ctx()).blocks[0]!.endMin).toBe(30 * 60)
+  })
+})
+
+describe("untimed entries", () => {
+  const text = "on october 9th I went walking for 5 hours with patricia and we were happy the whole time, we went to mission beach and at 3pm i had a dentist appointment until around 5 and then i got ice cream with elijah"
+  const { tokens } = tokenize(text)
+  const id = (raw: string) => tokens.find((t) => t.raw === raw)!.id
+  const wiring: Wiring = {
+    segments: [
+      seg({ activity: "walking", place: "mission beach", day: id("october 9th"), length: id("5 hours"), with: "patricia", mood: "happy" }),
+      seg({ activity: "dentist appointment", start: id("3pm"), end: id("5"), endVague: true }),
+      seg({ activity: "getting ice cream", with: "elijah" }),
+    ],
+  }
+  it("hangs a length-only walk off the next start and chains an untimed entry after the last end", () => {
+    const { blocks, unplaced } = assemble(wiring, tokens, text, ctx({ locationPens: [{ id: "p", name: "mission beach" }] }))
+    expect(unplaced).toEqual([])
+    const by = (a: string) => blocks.find((b) => b.activity === a)!
+    expect([by("walking").startMin, by("walking").endMin]).toEqual([10 * 60, 15 * 60])
+    expect(by("walking").with).toBe("patricia")
+    expect(by("walking").mood).toBe("happy")
+    expect(by("walking").place?.name).toBe("mission beach")
+    expect(by("getting ice cream").startMin).toBe(17 * 60)
+    expect(by("getting ice cream").startCert).toBe("estimated")
+    expect(by("getting ice cream").with).toBe("elijah")
+  })
+})

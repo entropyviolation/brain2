@@ -1,8 +1,10 @@
-# Tracking Helper flow lab
+# Tracking BIMBY lab
 
 The Tracking Helper is a **BIMBY** (BIM + baby): a small sub-agent that does one specific job. See `lib/agents/README.md`.
 
-_Last mapped: 2026-11-01_
+_Last mapped: 2026-11-02_
+
+The lab shows both Tracking BIMBY pipelines. **Try it · description to timeblock pipeline** is the old Tracking Helper run. **Generate gap questions pipeline** (`GapQuestionsWell.tsx`) runs `lib/tracking-helper/gaps.ts` on the past 7 days of Tracking entries: lane coverage, per-day numbers, and the questions. **Use** on a question puts its opening words in the Try it box. Both wells have a Copy report key in the upper right.
 
 Route: `/lab/tracking-helper/` (`app/lab/tracking-helper/page.tsx`). The Tracking Helper dialog has a **Flow lab** key.
 A bench like [`../BimFlow`](../BimFlow/README.md), for a smaller flow. Runs write nothing to Tracking. The flow it edits is
@@ -10,6 +12,7 @@ the `HelperFlow` the chat reads (`trackinghelper-flow-v1`, `lib/tracking-helper/
 
 | File | Role |
 |------|------|
+| `GapQuestionsWell.tsx` | The gap questions well: run, coverage, questions, Use, Copy report |
 | `TrackingHelperLab.tsx` | The bench, built on the agent Blueprint (`lib/agents/adapters/tracking-helper.ts`, `components/Lab/Agents/AgentRail.tsx`): the five stages and the Blueprint's facts, the editable parts of the selected stage, and a run panel with each stage's time, prompt and output |
 | `tracking-helper-lab.css` | Its styling, over `../BimFlow/bim-flow.css` |
 | `helper-tests.tsx` / `.css` | The test panel under the bench (below) |

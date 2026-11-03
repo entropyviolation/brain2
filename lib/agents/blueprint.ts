@@ -46,6 +46,21 @@ export interface PipelineStage {
   does: string
 }
 
+/**
+ * One named pipeline of a BIMBY that has several. A built one can also be a tool of the whole agent
+ * (`asTool` is that tool's name in `Blueprint.tools`). A planned one is an idea named in a plan, shown but not run.
+ */
+export interface NamedPipeline {
+  id: string
+  name: string
+  does: string
+  status: "built" | "planned"
+  stages: PipelineStage[]
+  asTool?: string
+  /** Where the idea comes from, for a planned one. */
+  plan?: string
+}
+
 export interface PolicyRule {
   id: string
   label: string
@@ -55,7 +70,7 @@ export interface PolicyRule {
 
 export type Mind =
   | { kind: "graph"; flow: Flow }
-  | { kind: "pipeline"; stages: PipelineStage[]; flow?: HelperFlow | HabitsBimbyFlow }
+  | { kind: "pipeline"; stages: PipelineStage[]; flow?: HelperFlow | HabitsBimbyFlow; pipelines?: NamedPipeline[] }
   | { kind: "policy"; rules: PolicyRule[] }
 
 export interface ToolUse {
@@ -177,6 +192,13 @@ export function validateBlueprint(b: Blueprint): string[] {
     for (const s of m.stages) {
       if (ids.has(s.id)) out.push(`stage id "${s.id}" is used twice`)
       ids.add(s.id)
+    }
+    const pids = new Set<string>()
+    for (const p of m.pipelines ?? []) {
+      if (pids.has(p.id)) out.push(`pipeline id "${p.id}" is used twice`)
+      pids.add(p.id)
+      if (p.status === "built" && !p.stages.length) out.push(`pipeline "${p.id}" is built but has no stages`)
+      if (p.asTool && !seenTools.has(p.asTool)) out.push(`pipeline "${p.id}" is the tool "${p.asTool}", which the agent does not list`)
     }
   } else if (!m.rules.length) out.push("policy has no rules")
   return out

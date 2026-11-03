@@ -9,7 +9,7 @@
  * saved copy gets the new one, and its own copy is kept under a `:backup:<rev>` key.
  */
 
-export const TRACKING_HELPER_REV = "2026-11-01-orphans-examples"
+export const TRACKING_HELPER_REV = "2026-11-02-with-mood-lengths"
 
 export interface WireExample {
   /** Tagged text, as the model sees it. */
@@ -55,19 +55,23 @@ export const WIRE_SYSTEM =
   "day: the D tag it happened on, empty when it continues the previous entry's day. " +
   "length: the U tag when the text gives a length instead of an end. " +
   "activity: a short lowercase phrase ('walking', 'dishes', 'taking out trash', 'scrolling'). " +
-  "notes: at most 12 words of what the words imply beyond the activity, such as a feeling about it, a good deed, who was there. Empty when there is nothing. " +
+  "with: the people who were there, as written, never the speaker ('patricia', 'elijah and jake'). Empty when none. " +
+  "mood: how they felt during it, one or two words ('happy', 'tired'). Empty when not said. " +
+  "notes: at most 12 words of anything else the words imply beyond the activity, such as a good deed. Empty when there is nothing. Do not repeat the place, with or mood in notes. " +
+  "An entry with a length ('for 5 hours') but no clock still gets listed: give length and leave start and end empty. " +
+  "A thing done with no time at all, told after another ('and then I got ice cream'), is still listed with start and end empty. " +
   "'at least from A - B but potentially longer, maybe until C' is start A, end B, maybeEnd C: end is the plain time, never the 'maybe' one. " +
   "A later sentence like 'by 6:22 the trash stuff was done' is the end of that earlier thing: use its tag as end. " +
-  "Skip anything with no time near it. Do not pad the list."
+  "Do not invent things that were not said."
 
 export const WIRE_EXAMPLES: WireExample[] = [
   {
     text: "yesterday[D1] I was cooking from 5[T1] until like 6:15[T2] and I ate right after, then showered by 7[T3]. Really proud I finally cooked instead of ordering.",
     json: JSON.stringify({
       segments: [
-        { activity: "cooking", place: "", day: "D1", start: "T1", end: "T2", maybeEnd: "", length: "", startVague: false, endVague: true, notes: "proud to cook instead of ordering" },
-        { activity: "eating", place: "", day: "", start: "", end: "", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "" },
-        { activity: "showering", place: "", day: "", start: "", end: "T3", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "" },
+        { activity: "cooking", place: "", day: "D1", start: "T1", end: "T2", maybeEnd: "", length: "", startVague: false, endVague: true, notes: "", with: "", mood: "proud" },
+        { activity: "eating", place: "", day: "", start: "", end: "", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "", with: "", mood: "" },
+        { activity: "showering", place: "", day: "", start: "", end: "T3", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "", with: "", mood: "" },
       ],
     }),
   },
@@ -75,8 +79,18 @@ export const WIRE_EXAMPLES: WireExample[] = [
     text: "Tuesday[D1] I was reading at least from 2[T1] - 3 pm[T2] but maybe longer, maybe until 3:30[T3]. Then I made tea, a ritual I love. By 3:40[T4] the tea was done.",
     json: JSON.stringify({
       segments: [
-        { activity: "reading", place: "", day: "D1", start: "T1", end: "T2", maybeEnd: "T3", length: "", startVague: false, endVague: true, notes: "" },
-        { activity: "making tea", place: "", day: "", start: "", end: "T4", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "a ritual they love" },
+        { activity: "reading", place: "", day: "D1", start: "T1", end: "T2", maybeEnd: "T3", length: "", startVague: false, endVague: true, notes: "", with: "", mood: "" },
+        { activity: "making tea", place: "", day: "", start: "", end: "T4", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "", with: "", mood: "" },
+      ],
+    }),
+  },
+  {
+    text: "on march 3rd[D1] I went running for 2 hours[U1] with sam and we felt great, we went to the park, and at 4pm[T1] I had a haircut until about 5[T2], then got tacos with jo.",
+    json: JSON.stringify({
+      segments: [
+        { activity: "running", place: "the park", day: "D1", start: "", end: "", maybeEnd: "", length: "U1", startVague: false, endVague: false, notes: "", with: "sam", mood: "great" },
+        { activity: "haircut", place: "", day: "", start: "T1", end: "T2", maybeEnd: "", length: "", startVague: false, endVague: true, notes: "", with: "", mood: "" },
+        { activity: "getting tacos", place: "", day: "", start: "", end: "", maybeEnd: "", length: "", startVague: false, endVague: false, notes: "", with: "jo", mood: "" },
       ],
     }),
   },

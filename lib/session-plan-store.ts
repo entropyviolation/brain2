@@ -15,7 +15,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import {
   admitSession,
@@ -175,3 +175,4 @@ export function parkLiveSession(now = new Date(), futureNote?: string): SessionP
 }
 
 registerPhoneWindowStore(useSessionPlanStore)
+registerPersistRehydrator(persistKey("session-plans"), () => useSessionPlanStore.persist.rehydrate())

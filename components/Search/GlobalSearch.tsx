@@ -35,6 +35,8 @@ import { answerHouseQuestion } from "@/lib/graph/pattern-questions"
 import { projectVault } from "@/lib/graph/vault-graph"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useReviewsStore } from "@/lib/reviews-store"
+import { useSecretsStore } from "@/lib/secrets-store"
+import { SecretsToggle } from "@/components/Secrets/SecretsToggle"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Item, Task, List, Folder, ItemTypeDefinition } from "@/lib/types"
 import "./search-chrome.css"
@@ -166,6 +168,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
   const [includeItems, setIncludeItems] = React.useState(true)
   const [includeHidden, setIncludeHidden] = React.useState(false)
   const [titleOnly, setTitleOnly] = React.useState(false)
+  const includeSecrets = useSecretsStore((s) => s.unlocked && s.include.search)
 
   const listRef = React.useRef<HTMLUListElement>(null)
   const rules = useItemTypeStore((s) => s.relationRules)
@@ -204,7 +207,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
   }, [open])
 
   const { results, hiddenOnly } = React.useMemo(() => {
-    const opts = { titleOnly }
+    const opts = { titleOnly, includeSecrets }
     const combined: CombinedResult[] = []
 
     if (includeFolders) {
@@ -241,7 +244,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
     }
 
     return { results: combined.slice(0, Math.max(0, limit)), hiddenOnly: hiddenMatches > 0 }
-  }, [query, items, categories, folders, includeFolders, includeLists, includeItems, includeHidden, titleOnly, limit])
+  }, [query, items, categories, folders, includeFolders, includeLists, includeItems, includeHidden, titleOnly, includeSecrets, limit])
 
   const spine = React.useMemo(
     () => projectVault({ entries, scopes, items: items as Task[], reviews, events }),
@@ -261,7 +264,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
 
   // A new query or filter lands on the best hit. Same query with a new catalog
   // (vault hydration) only clamps the highlight into range.
-  const highlightKey = `${query}\0${includeFolders}\0${includeLists}\0${includeItems}\0${includeHidden}\0${titleOnly}`
+  const highlightKey = `${query}\0${includeFolders}\0${includeLists}\0${includeItems}\0${includeHidden}\0${titleOnly}\0${includeSecrets}`
   const highlightKeyRef = React.useRef(highlightKey)
   React.useEffect(() => {
     if (highlightKeyRef.current !== highlightKey) {
@@ -371,6 +374,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
                   <CheckOption label="Title only" checked={titleOnly} onChange={setTitleOnly} />
                   <CheckOption label="Include hidden items" checked={includeHidden} onChange={setIncludeHidden} />
                 </div>
+                <SecretsToggle surface="search" />
               </div>
             </CollapsibleContent>
           </Collapsible>

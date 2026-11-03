@@ -38,6 +38,7 @@ import { FlowRuns } from "./flow-runs"
 import { archive } from "@/lib/bim-flow/archive"
 import { loadHistory, saveHistory, slimRun, type SavedRun } from "@/lib/bim-flow/run-history"
 import { AgentRail } from "../Agents/AgentRail"
+import { NodePalette } from "./node-palette"
 import { agentLabHref } from "../Agents/agent-href"
 import { builtinBlueprints } from "@/lib/agents/registry"
 import "./bim-flow.css"
@@ -208,7 +209,8 @@ export function BimFlowLab() {
     void listOllamaModels().then(setModels)
     void loadHubVault().then((h) => {
       setHub(h)
-      void loadTexts({ people: h?.snap.people ?? snapshotFromStores().people }).then((rows) => {
+      const vault = h?.snap ?? snapshotFromStores()
+      void loadTexts({ people: vault.people, hideHandles: vault.secretHandles }).then((rows) => {
         setTextRows(rows ?? [])
         setTextsState(rows && rows.length ? "ok" : "none")
       })
@@ -461,6 +463,34 @@ export function BimFlowLab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysesOpen, hub, storeRows.length, insightLog])
 
+  // Bench keys: Delete cuts the selected wire or node, Esc lets go, ⌘/Ctrl+Enter runs. Typing in a field is left alone.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      const typing = !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        if (running || !models || (source === "ask" ? !question.trim() : !baseInputs.length)) return
+        e.preventDefault()
+        void start()
+        return
+      }
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === "Escape") { setSelectedNodeId(null); setSelectedEdgeId(null); return }
+      if (e.key !== "Delete" && e.key !== "Backspace") return
+      if (selectedEdgeId) {
+        e.preventDefault()
+        setFlow((f) => ({ ...f, edges: f.edges.filter((x) => x.id !== selectedEdgeId) }))
+        setSelectedEdgeId(null)
+      } else if (selectedNodeId && flow.nodes.find((n) => n.id === selectedNodeId)?.kind !== "message") {
+        e.preventDefault()
+        setFlow((f) => ({ ...f, nodes: f.nodes.filter((n) => n.id !== selectedNodeId), edges: f.edges.filter((x) => x.from !== selectedNodeId && x.to !== selectedNodeId) }))
+        setSelectedNodeId(null)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  })
+
   const startNodes = flow.nodes.filter((n) => n.kind === "message" && n.config.entry)
   const isAnalysis = flowId.startsWith("a:")
   const def = isAnalysis ? { id: flowId, name: analyses.find((a) => `a:${a.id}` === flowId)?.name ?? "Analysis", blurb: "An analysis node view.", input: "question" as const, build: () => buildAnalysisFlow(analyses.find((a) => `a:${a.id}` === flowId) ?? analyses[0]!) } : flowDef(flowId as FlowId)
@@ -496,17 +526,14 @@ export function BimFlowLab() {
         <button type="button" data-no95 className="bf-cap" onClick={() => setAnalysesOpen(true)}>Analyses · {analyses.length}</button>
         <button type="button" data-no95 className="bf-cap" onClick={() => setDriveOpen(true)}>Drive · {driveBoard(drive).length}</button>
         <span className="bf-sep" />
-        {(["gate", "route", "search", "link", "choose", "extract", "retrieve", "compute", "guard", "clarify", "fallback", "question", "context", "related", "answer", "handoff", "propose", "blocks"] as const).map((k) => (
-          <button key={k} type="button" data-no95 className="bf-cap" onClick={() => addNode(k)}>+ {k}</button>
-        ))}
-        <span className="bf-sep" />
+        <NodePalette onAdd={addNode} />
         {selectedEdgeId ? (
-          <button type="button" data-no95 className="bf-cap" onClick={() => { setFlow((f) => ({ ...f, edges: f.edges.filter((e) => e.id !== selectedEdgeId) })); setSelectedEdgeId(null) }}>
+          <button type="button" data-no95 className="bf-cap" title="Delete" onClick={() => { setFlow((f) => ({ ...f, edges: f.edges.filter((e) => e.id !== selectedEdgeId) })); setSelectedEdgeId(null) }}>
             Cut wire
           </button>
         ) : null}
         <button type="button" data-no95 className="bf-cap" onClick={() => { if (confirm(`Replace this graph with the starter ${def.name} graph?`)) setFlow(def.build()) }}>
-          Starter graph
+          Reset graph
         </button>
       </header>
 
@@ -574,7 +601,7 @@ export function BimFlowLab() {
             {running ? (
               <button type="button" data-no95 onClick={() => job && ctls.current.get(job.id)?.abort()}>Stop</button>
             ) : (
-              <button type="button" data-no95 className="is-go" disabled={!models || (source === "ask" ? !question.trim() : !baseInputs.length)} onClick={() => void start()}>
+              <button type="button" data-no95 className="is-go" title="Run (⌘/Ctrl+Enter)" disabled={!models || (source === "ask" ? !question.trim() : !baseInputs.length)} onClick={() => void start()}>
                 Run {source === "ask" ? 1 : baseInputs.length}
               </button>
             )}

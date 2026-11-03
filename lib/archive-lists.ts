@@ -10,11 +10,8 @@
  */
 import type { Folder, List, Task } from "@/lib/types"
 import { isMissed } from "@/lib/completion-status"
-import {
-  findNextActionsFolder,
-  NA_SMART_COMPLETED,
-  NA_SMART_MISSED,
-} from "@/lib/scheduled-lists-sync"
+import { NA_SMART_COMPLETED, NA_SMART_MISSED } from "@/lib/na-smart-ids"
+import { findNextActionsFolder } from "@/lib/scheduled-lists-sync"
 
 export const ARCHIVE_COMPLETED_NAME = "Completed"
 export const ARCHIVE_MISSED_NAME = "Missed Opportunities"

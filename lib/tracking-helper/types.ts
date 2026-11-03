@@ -45,6 +45,10 @@ export interface WiredSegment {
   endVague: boolean
   /** Short facts worth keeping that the words imply ("overcame resistance", "good deed"). */
   notes: string
+  /** Who was there, as written ("patricia", "elijah and jake"). */
+  with?: string
+  /** How they felt, in a word or two ("happy"). */
+  mood?: string
 }
 
 export interface Wiring {
@@ -71,6 +75,10 @@ export interface ProposedBlock {
   /** The text never gave a start. `startMin` is a stand-in until the person sets it. */
   openStart?: boolean
   notes: string
+  /** Who was there. */
+  with?: string
+  /** How they felt. */
+  mood?: string
   /** The words this block was read from. */
   from: string
 }

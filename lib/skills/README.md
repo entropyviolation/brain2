@@ -33,7 +33,7 @@ never pruned.
 | `learn.ts` | `recordReaction`: log plus credit. The only impure seam |
 | `distill.ts` | `lessonOf`/`lessonsOf` (no model), `distillWithModel`, `cleanSkills`, the prompt and schema |
 | `evolve.ts` | `statsByCategory`, `weakCategories`, `sampleFailures`, `evolve`, `withProposals` |
-| `seeds.ts` | Hand-written skills for the Tracking Helper and the Lists helper, carried by `Blueprint.skills` |
+| `seeds.ts` | Hand-written skills for the Tracking Helper and the Lists BIMBY, carried by `Blueprint.skills` |
 | `skills.test.ts` | Pick, upkeep, storage, distill, evolve |
 
 ## Where it is used

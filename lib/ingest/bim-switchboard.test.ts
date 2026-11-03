@@ -3,7 +3,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import type { Crew } from "@/lib/bim-flow/crew"
 import type { FlowRun } from "@/lib/bim-flow/types"
 
-const crew: Crew = { route: ["small"], gate: ["small"], pick: ["big"], extract: ["big"], prose: ["big"], check: ["big"], main: "big" }
+const crew: Crew = { route: ["small"], gate: ["small"], pick: ["big"], extract: ["big"], prose: ["big"], check: ["big"], critic: ["big"], main: "big" }
 const state = vi.hoisted(() => ({ crew: null as unknown, route: null as unknown, run: null as unknown }))
 
 vi.mock("@/lib/bim-flow/chat-models", () => ({ chatCrew: async () => state.crew }))

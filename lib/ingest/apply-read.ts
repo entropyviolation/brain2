@@ -5,10 +5,12 @@
  * resolve pens. Inbox dumps newest capture first. Telegram chunking happens
  * at send time, not here.
  */
+import { secretsShown } from "@/lib/secrets-store"
 import { formatLocalDateKey, toLocalCalendarDate } from "@/lib/date-utils"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { buildFolderTree, isAutoScheduledPeriodFolder, type FolderTreeNode } from "@/lib/folder-tree"
 import { useEventStore } from "@/lib/event-store"
+import { withHolidays } from "@/lib/holidays"
 import { useHabitsStore } from "@/lib/habits-store"
 import { isHabitGoalMet, isGoalType } from "@/lib/habit-utils"
 import { incrementalLoggedValue } from "@/lib/incremental-habits"
@@ -520,7 +522,7 @@ function formatFoldersCatalog(): string {
 }
 
 function formatSearch(query: string): string {
-  const hits = searchItems(query, useTaskStore.getState().tasks).slice(0, SEARCH_CAP)
+  const hits = searchItems(query, useTaskStore.getState().tasks, { includeSecrets: secretsShown("chat") }).slice(0, SEARCH_CAP)
   if (hits.length === 0) return `No items match “${query}”.`
   const lines = [`Search “${query}” (${hits.length}${hits.length === SEARCH_CAP ? "+" : ""})`]
   hits.forEach((hit, i) => {
@@ -692,9 +694,8 @@ function formatTags(): string {
 
 function formatPlan(now: Date): string {
   const key = formatLocalDateKey(now)
-  const events = useEventStore
-    .getState()
-    .events.filter((event) => formatLocalDateKey(toLocalCalendarDate(event.date)) === key)
+  const events = withHolidays(useEventStore.getState().events, now)
+    .filter((event) => formatLocalDateKey(toLocalCalendarDate(event.date)) === key)
     .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "") || a.title.localeCompare(b.title))
   if (events.length === 0) return `No events on ${formatDay(now)}.`
   const lines = [`Plan ${formatDay(now)}`]

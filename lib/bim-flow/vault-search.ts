@@ -48,6 +48,8 @@ export interface VaultSnapshot {
   /** Recent file events (created or changed), loaded by the lab from the hub. */
   files?: import("./file-activity").FileEvent[]
   /** People with every name they go by. */
+  /** Handles of secret people. Texts to or from them are never loaded. */
+  secretHandles?: string[]
   people?: { id: string; title: string; names: string[]; /** Saved phone numbers and emails, for naming texts. */ handles?: string[] }[]
 }
 

@@ -63,6 +63,7 @@ export const APP_TABS = [
   "modules",
   "inventory",
   "analytics",
+  "agents",
 ] as const
 export type AppTab = (typeof APP_TABS)[number]
 

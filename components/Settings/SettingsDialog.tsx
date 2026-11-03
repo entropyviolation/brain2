@@ -58,6 +58,9 @@ const HomeLocationField = lazy(() =>
 const BirthdayField = lazy(() =>
   import("@/components/Settings/you/BirthdayField").then((m) => ({ default: m.BirthdayField })),
 )
+const SecretsField = lazy(() =>
+  import("@/components/Settings/you/SecretsField").then((m) => ({ default: m.SecretsField })),
+)
 const DayAnchorField = lazy(() =>
   import("@/components/Settings/you/DayAnchorField").then((m) => ({ default: m.DayAnchorField })),
 )
@@ -254,6 +257,7 @@ export function SettingsDialog({
                   {selected.id === "settings-home" ? <HomeLocationField /> : null}
                   {selected.id === "settings-birthday" ? <BirthdayField /> : null}
                   {selected.id === "settings-day-anchor" ? <DayAnchorField /> : null}
+                  {selected.id === "settings-secrets" ? <SecretsField /> : null}
                   {selected.id === "settings-window-gray" ? <ChromeFaceField /> : null}
                   {selected.id === "settings-desktop" ? <PcbBackdropField /> : null}
                   {selected.id === "settings-bouba" ? <BoubaKikiField /> : null}

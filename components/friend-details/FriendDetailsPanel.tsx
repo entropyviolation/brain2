@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { useEffect, useState, type MutableRefObject } from "react"
+import { lazy, Suspense, useEffect, useState, type MutableRefObject } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { BabyAnimalPhoto } from "@/lib/baby-animal-photos"
 import { pickFriendTodoNudge } from "@/lib/baby-animal-nudge"
@@ -29,6 +29,9 @@ import { FriendDetailsVoice } from "@/components/friend-details/personality/Frie
 import { confirmDiscard, useFriendDraft } from "@/components/friend-details/useFriendDraft"
 import { PixelIcon } from "@/components/friend-details/PixelIcon"
 import "@/components/friend-details/friend-details.css"
+
+/** The baby animal game loads only when opened: canvas, sprites, and the world stay out of the first parse. */
+const BabyGame = lazy(() => import("@/components/BabyGame/BabyGame").then((m) => ({ default: m.BabyGame })))
 
 const POWER_MS = 560
 const TAB_KEY = "brain2-friend-details-tab"
@@ -87,6 +90,7 @@ export function FriendDetailsPanel({
   const [missionId, setMissionId] = useState<string | null>(null)
   const [seenLevel, setSeenLevel] = useState<number | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000)
@@ -292,6 +296,10 @@ export function FriendDetailsPanel({
             Revert
           </button>
         ) : null}
+        <button type="button" className="friend-key" data-no95="" onClick={() => setPlaying(true)} title="A little village to explore with this friend">
+          <PixelIcon name="sprout" />
+          Baby animal game
+        </button>
         <button type="button" className="friend-key" data-no95="" onClick={dismissPage}>
           Close
         </button>
@@ -301,6 +309,19 @@ export function FriendDetailsPanel({
           </button>
         ) : null}
       </footer>
+      {playing ? (
+        <Suspense fallback={null}>
+          <BabyGame
+            friend={{
+              animalId,
+              name: who,
+              level: bond.level,
+              realMission: missions.find((row) => row.status === "accepted")?.title ?? null,
+            }}
+            onClose={() => setPlaying(false)}
+          />
+        </Suspense>
+      ) : null}
       <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
         <DialogContent className="fm98-dialog sm:max-w-md">
           <DialogHeader>

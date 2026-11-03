@@ -9,6 +9,7 @@
  * - **Chaining**: a block with no start begins where the block before it ended, and one with no
  *   end finishes where the next begins, taking that edge's certainty. "by 6:22 the trash was
  *   done" and "dishes until 6:19" give the trash its start for free.
+ * - **Overnight**: an end that reads earlier than its start ends the next day (endMin past 1440), up to 16 hours.
  * - **Stand-ins**: a start with no end gets `DEFAULT_OPEN_MIN` minutes, estimated and flagged
  *   `openEnd`, so the card asks for the real end instead of hiding the gap.
  * - **Places** are said, learned from the person's own history, or assumed for a chore (`places.ts`).
@@ -19,6 +20,8 @@ import { resolvePlace } from "./places"
 import type { Cert, HelperContext, ProposedBlock, Token, WiredSegment, Wiring } from "./types"
 
 export const DEFAULT_OPEN_MIN = 30
+/** The longest block an end earlier than its start may be read as running into the next day. */
+export const MAX_OVERNIGHT_MIN = 16 * 60
 
 export interface Assembled {
   blocks: ProposedBlock[]
@@ -64,6 +67,7 @@ interface Draft {
   endCert: Cert
   startChained?: boolean
   endChained?: boolean
+  len: number | null
 }
 
 /**
@@ -155,16 +159,12 @@ export function assemble(raw: Wiring, tokens: Token[], text: string, ctx: Helper
       start = end - len
       startCert = "estimated"
     }
-    if (start === null && end === null) {
-      unplaced.push(activity)
-      continue
-    }
     const dayTok = byId.get(seg.day)?.kind === "day" ? byId.get(seg.day) : undefined
     let day: string | null = (dayTok && resolveDay(dayTok.raw, ctx.now)) || sectionDay(startTok ?? endTok) || lastDay
     // No day word anywhere: the latest day this time has already happened.
     if (!day) day = Math.max(start ?? 0, end ?? 0) > nowMin ? yesterday : today
     lastDay = day
-    drafts.push({ seg, day, start, end, startCert, endCert })
+    drafts.push({ seg, day, start, end, startCert, endCert, len })
   }
 
   // Chain neighbours on the same day, in the order told.
@@ -181,15 +181,33 @@ export function assemble(raw: Wiring, tokens: Token[], text: string, ctx: Helper
       d.endCert = next.startCert
       d.endChained = true
     }
+    // "walked for 5 hours" told before a 3pm appointment: the length hangs off whichever edge a neighbour gave.
+    if (d.len && d.start === null && d.end !== null) {
+      d.start = d.end - d.len
+      d.startCert = "estimated"
+    } else if (d.len && d.end === null && d.start !== null) {
+      d.end = d.start + d.len
+      d.endCert = "estimated"
+    }
+    // A thing told with no time of its own ("then I got ice cream") only follows the one before: its edges are guesses.
+    if (!d.seg.start && !d.seg.end) {
+      d.startCert = "estimated"
+      d.endCert = "estimated"
+    }
   })
 
   const blocks: ProposedBlock[] = []
   drafts.forEach((d, i) => {
     const activity = d.seg.activity.trim()
+    if (d.start === null && d.end === null) {
+      unplaced.push(activity)
+      return
+    }
     let { start, end } = d
     let openEnd = false
     let openStart = false
-    if (start !== null && end !== null && end <= start) end = null
+    // An end that reads earlier than its start ran past midnight ("from 9 until about 6am"), when that is a day or less.
+    if (start !== null && end !== null && end <= start) end = end + 1440 - start <= MAX_OVERNIGHT_MIN ? end + 1440 : null
     if (start !== null && end === null) {
       end = Math.min(start + openMin, 1440)
       openEnd = true
@@ -215,6 +233,8 @@ export function assemble(raw: Wiring, tokens: Token[], text: string, ctx: Helper
       ...(openEnd ? { openEnd } : {}),
       ...(openStart ? { openStart } : {}),
       notes,
+      ...(d.seg.with?.trim() ? { with: d.seg.with.trim() } : {}),
+      ...(d.seg.mood?.trim() ? { mood: d.seg.mood.trim() } : {}),
       from: sentenceAround(text, tokenOf(d.seg.start)?.at ?? tokenOf(d.seg.end)?.at ?? 0) || activity,
     })
   })

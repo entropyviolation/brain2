@@ -3,7 +3,7 @@
  *
  * An item is "on" a list when its id is in `task.lists`. These helpers combine any number of lists: `union`
  * (on any), `intersection` (on all), `difference` (on the first, on none of the rest). `combineLists` takes a
- * small expression, so a screen, a tool, or the Lists helper can ask "on A and B but not C" the same way.
+ * small expression, so a screen, a tool, or the Lists BIMBY can ask "on A and B but not C" the same way.
  * Order of the input is kept. Used by `lib/lists-helper/tools.ts` (collect-items).
  */
 

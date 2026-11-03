@@ -294,6 +294,12 @@ export interface Item {
   hiddenAttributeIds?: string[]
   /** Rich-text / markdown body for document-type items (Feature 4, Worker D). */
   body?: string
+  /**
+   * Private. A secret item is left out of every search and every LLM context
+   * unless secrets are unlocked and switched on for that surface
+   * (`lib/secrets.ts`, `lib/secrets-store.ts`).
+   */
+  secret?: boolean
 }
 
 /**

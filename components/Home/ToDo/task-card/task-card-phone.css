@@ -1,0 +1,277 @@
+/* components/Home/ToDo/task-card/task-card-phone.css — the task card as an iPhone sheet.
+   Phone only (max-width 767px, the same gate as `use-todo-phone.ts`). Desktop card is untouched.
+   One section at a time behind a segmented control, filters folded behind View, the actions in a
+   dock at the thumb. Targets are 44pt, fields 16px, safe areas honoured. See docs/MOBILE_STYLE.md. */
+
+@media (max-width: 767px) {
+  .task-card [hidden] { display: none !important; }
+
+  /* ── Sheet ── */
+  .task-card {
+    background: #eef0f3;
+    border: 0;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 30px rgba(12, 35, 74, 0.28);
+    font-size: 15px;
+    overscroll-behavior: contain;
+    transition: translate 0.2s cubic-bezier(0.2, 1, 0.3, 1);
+  }
+  .task-card-body { padding-bottom: 0; }
+  .task-card-main { display: block; overflow: visible; }
+  .task-card-tree { padding: 8px 12px 16px; }
+  .task-card-side { border-left: 0; padding: 12px 12px 20px; gap: 12px; }
+  .task-card-pane { display: flex; flex-direction: column; gap: 12px; }
+  .task-card-pane > section,
+  .task-card-pane > .tcs-node > section {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(18, 53, 110, 0.11);
+  }
+  .task-card-pane > * { animation: tcs-in 0.28s cubic-bezier(0.2, 1, 0.3, 1) both; }
+
+  /* ── Nav: grabber, Item, title, close; then the segmented control. Sticky. ── */
+  .task-card-nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(238, 240, 243, 0.94);
+    -webkit-backdrop-filter: saturate(1.6) blur(16px);
+    backdrop-filter: saturate(1.6) blur(16px);
+    border-bottom: 1px solid rgba(18, 53, 110, 0.14);
+  }
+  .task-card-nav-bar {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(52px, auto) minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 8px 4px 4px;
+    touch-action: pan-x;
+  }
+  .task-card-grabber {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    width: 36px;
+    height: 5px;
+    margin-left: -18px;
+    border-radius: 3px;
+    background: rgba(60, 60, 67, 0.3);
+  }
+  .task-card-nav-item {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 10px;
+    border: 0;
+    background: none;
+    color: #163e82;
+    font: 500 17px/1 -apple-system, system-ui, sans-serif;
+    text-align: left;
+  }
+  .task-card-nav-title { min-width: 0; text-align: center; }
+  .task-card-nav .task-card-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: none;
+    min-width: 0;
+    font: 600 17px/1.2 -apple-system, system-ui, sans-serif;
+    font-variation-settings: normal;
+    letter-spacing: -0.01em;
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .task-card-nav-close.keycap-close,
+  .task-card .task-card-nav-close {
+    position: static;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    justify-self: end;
+  }
+  .task-card-segs {
+    display: flex;
+    gap: 2px;
+    margin: 4px 12px 8px;
+    padding: 2px;
+    border-radius: 9px;
+    background: rgba(118, 118, 128, 0.14);
+  }
+  .task-card-segs-tab,
+  body.win95-app .task-card .task-card-segs-tab {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 36px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    box-shadow: none;
+    color: #1f2328;
+    font: 500 14px/1 -apple-system, system-ui, sans-serif;
+    white-space: nowrap;
+    transition: background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .task-card-segs-tab[aria-selected="true"],
+  body.win95-app .task-card .task-card-segs-tab[aria-selected="true"] {
+    background: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  }
+  .task-card-segs-tab i {
+    margin-left: 4px;
+    padding: 1px 5px;
+    white-space: nowrap;
+    border-radius: 9px;
+    background: rgba(18, 53, 110, 0.12);
+    color: #12356e;
+    font: 600 11px/1.3 -apple-system, system-ui, sans-serif;
+    font-style: normal;
+  }
+
+  /* ── Header: chips and the stat glass. The name lives in the nav. ── */
+  .task-card-head { padding: 10px 12px; gap: 8px; }
+  .task-card-title-row { gap: 6px; }
+  .task-card-plate { font-size: 11px; }
+  .task-card-head .task-card-jewel,
+  .task-card-head .task-card-keycap { min-width: 44px; min-height: 44px; }
+  .task-card-lamp { font-size: 12px; padding: 4px 10px; border-radius: 12px; }
+  .task-card-crumbs { display: flex; gap: 4px; overflow-x: auto; white-space: nowrap; }
+  .task-card-crumbs button { min-height: 44px; padding: 0 6px; font-size: 14px; }
+  .task-card .tcs-stats {
+    flex: 1 1 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .task-card .tcs-stats::-webkit-scrollbar { display: none; }
+  .task-card .tcs-stat-wrap { scroll-snap-align: start; flex: 0 0 auto; }
+  body.win95-app .task-card .tcs-stat { min-height: 44px; }
+
+  /* ── Steps ── */
+  .task-card-switches { gap: 8px; margin-bottom: 8px; font-size: 14px; }
+  .task-card-seg { display: flex; flex: 1 1 auto; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(118, 118, 128, 0.14); }
+  .task-card-seg button,
+  body.win95-app .task-card .task-card-seg button {
+    flex: 1 1 0;
+    min-height: 36px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    box-shadow: none;
+    font-size: 14px;
+  }
+  .task-card-seg button[aria-pressed="true"],
+  body.win95-app .task-card .task-card-seg button[aria-pressed="true"] { background: #fff; color: #0c234a; font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16); }
+  .task-card-view-key { min-height: 44px; padding: 0 14px; font-size: 14px; }
+  .task-card-viewrow {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid rgba(18, 53, 110, 0.11);
+    overflow: hidden;
+  }
+  .task-card-viewrow > label,
+  .task-card-viewrow > button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 0;
+    border-bottom: 1px solid rgba(18, 53, 110, 0.08);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 16px;
+    text-align: left;
+  }
+  .task-card-viewrow > :last-child { border-bottom: 0; }
+  .task-card-viewrow input[type="checkbox"] { width: 22px; height: 22px; flex: none; }
+
+  /* Rows: tall, the name first, the figures on a line of their own. */
+  .task-card .step-tree { --step-indent: 12px; }
+  .task-card .step-tree-row { flex-wrap: wrap; min-height: 48px; row-gap: 0; padding-top: 4px; padding-bottom: 4px; }
+  .task-card .step-tree-name { font-size: 16px; line-height: 1.3; padding: 8px 0; min-height: 40px; display: flex; align-items: center; }
+  .task-card .step-tree-fold { flex-basis: 40px; min-height: 44px; justify-content: center; }
+  .task-card .step-tree-dot:not(.is-bare) { width: 30px; height: 30px; cursor: pointer; }
+  .task-card .step-tree-cols { order: 10; flex: 1 1 60%; margin: 0 0 4px 0; padding-left: calc(var(--step-depth, 0) * var(--step-indent, 16px) + 48px); gap: 8px; min-height: 0; }
+  .task-card .step-tree-cols:empty { display: none; }
+  .task-card .task-card-cols { margin-left: 0; flex-wrap: wrap; gap: 8px; }
+  /* ↗ and + are hover-only on desktop. A touch screen has no hover: they ride on the selected row. */
+  .task-card .step-tree-open,
+  .task-card .step-tree-child { display: none; min-width: 44px; min-height: 44px; font-size: 18px; opacity: 1; }
+  .task-card .step-tree-open,
+  .task-card .step-tree-child { order: 11; flex: none; }
+  .task-card .step-tree-row.is-selected .step-tree-open,
+  .task-card .step-tree-row.is-selected .step-tree-child { display: inline-flex; align-items: center; justify-content: center; }
+  .task-card .step-tier-tag { min-width: 28px; height: 28px; font-size: 12px; }
+  .task-card .step-spark { opacity: 1; width: 32px; height: 32px; }
+  .task-card .tc-est,
+  .task-card .task-card-spent-btn,
+  .task-card .task-card-pts { min-height: 32px; font-size: 14px; }
+  .task-card .step-tree-add button,
+  .task-card .step-tree-more button { min-height: 44px; font-size: 15px; }
+  .task-card .task-card-three { grid-template-columns: 1fr; }
+
+  /* ── Detail panes ── */
+  .task-card-side h3 { font-size: 11px; }
+  .task-card .tcs-node-meta { gap: 8px; font-size: 12px; }
+  .task-card .tcs-meta-pill { min-height: 32px; display: inline-flex; align-items: center; }
+  .task-card-pane button { min-height: 44px; }
+  .task-card-pane :is(input[type="checkbox"], input[type="radio"]) { min-width: 22px; min-height: 22px; }
+
+  /* ── Dock: thumb-reach actions, or the mass-edit bar while steps are selected ── */
+  .task-card-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: rgba(238, 240, 243, 0.94);
+    -webkit-backdrop-filter: saturate(1.6) blur(16px);
+    backdrop-filter: saturate(1.6) blur(16px);
+    border-top: 1px solid rgba(18, 53, 110, 0.16);
+  }
+  .task-card-dock > .task-card-keycap { min-height: 44px; padding: 0 14px; font-size: 15px; white-space: nowrap; }
+  .task-card-dock > .is-primary { flex: 1 1 auto; font-weight: 600; }
+  .task-card-dock .task-card-bar {
+    position: static;
+    flex: 1 1 100%;
+    max-height: 55dvh;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    gap: 6px;
+    border: 0;
+    background: none;
+  }
+  body.win95-app .task-card .task-card-dock .task-card-bar { border: 0; background: none; padding: 0; }
+  .task-card-dock .task-card-bar-break { flex: 1 1 100%; height: 0; }
+  .task-card-dock .task-card-bar > .task-card-num { flex: 1 1 0; font-size: 13px; color: #12356e; font-weight: 600; }
+  .task-card-dock .task-card-bar button,
+  body.win95-app .task-card .task-card-dock .task-card-bar button,
+  .task-card-dock .task-card-bar select { min-height: 44px; min-width: 0; flex: 1 1 auto; padding: 0 4px; font-size: 14px; }
+  .task-card-dock .task-card-bar { gap: 4px; }
+  .task-card-dock .task-card-bar-more {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    flex: 1 1 100%;
+  }
+  .task-card-dock .task-card-bar-more > * { min-width: 0; }
+  .task-card-dock .task-card-pts { width: 100%; min-height: 44px; font-size: 16px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .task-card { transition: none; }
+    .task-card-pane > * { animation: none; }
+  }
+}
