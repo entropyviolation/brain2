@@ -1,5 +1,5 @@
 /**
- * lib/texts-report.ts — Renderer side of Analytics → Texts
+ * lib/texts-report.ts — Renderer side of Data → Texts
  *
  * The texts report is built by `scripts/texts-analysis/` on this Mac and served
  * on loopback by `serve.py`. Electron starts that server (`electron/texts-report.js`)
@@ -37,15 +37,24 @@ export function getDesktopTextsBridge(): DesktopTextsBridge | undefined {
   return (window as unknown as { desktop?: { texts?: DesktopTextsBridge } }).desktop?.texts
 }
 
-/** "Updated Sun 25 Oct, 21:04" or "Not run yet". */
+/** "Updated Sun 25 Oct, 21:04", "Not run yet", or why the last update failed. */
 export function textsUpdatedLabel(status: TextsStatus | undefined, locale?: string): string {
   if (status?.running) return "Updating now…"
+  if (status?.error) return textsErrorSentence(status.error)
   const iso = status?.lastRun
   if (!iso) return "Not run yet"
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return "Not run yet"
   const when = d.toLocaleString(locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
   return `Updated ${when}`
+}
+
+/** The last update's failure, in a sentence. A refused chat.db read means Full Disk Access. */
+export function textsErrorSentence(error: string): string {
+  if (/Operation not permitted|PermissionError/.test(error)) {
+    return "The last update could not read Messages. Give Brain2 Full Disk Access in System Settings → Privacy & Security, then Update now."
+  }
+  return `The last update failed: ${error}`
 }
 
 /** One person as the report sees them: name and every saved number / email. */
@@ -65,7 +74,7 @@ export type ReportRequest =
   | { type: "sections"; sections: TextsSection[] }
   | { type: "section"; id: string }
 
-/** One heading of the report, for the Analytics sidebar. */
+/** One heading of the report, for the Data sidebar. */
 export type TextsSection = { id: string; label: string }
 
 function cleanHandles(value: unknown): string[] {
@@ -153,7 +162,7 @@ export function textsCardFor(handles: readonly string[], rows = readTextsIndex()
   return rows.find((row) => row.handles.some((h) => want.has(normalizeHandle(h)))) ?? null
 }
 
-/** Go to Analytics → Texts and open the relationship page for these numbers. */
+/** Go to Data → Texts and open the relationship page for these numbers. */
 export function openTextsFor(handles: readonly string[]): void {
   try {
     window.sessionStorage.setItem(OPEN_KEY, JSON.stringify(handles))
@@ -178,7 +187,7 @@ export function takePendingTextsOpen(): string[] | null {
   }
 }
 
-/** Open Analytics → Texts in its own, bigger window (desktop), or a browser window. */
+/** Open Data → Texts in its own, bigger window (desktop), or a browser window. */
 export function openTextsWindow(): void {
   const path = "/popout/?view=texts"
   const desktop = (window as unknown as { desktop?: { openModulePopout?: (target: string) => void } }).desktop

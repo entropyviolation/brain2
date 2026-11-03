@@ -24,28 +24,101 @@ function ymd(date: Date): string {
   return formatLocalDateKey(date)
 }
 
+/** Scheduling fields from `createNextActionItem`. Plain items do not inherit these. */
+const NEXT_ACTION_BLOCK = [
+  "estimatedDuration",
+  "cognitiveLoad",
+  "urgency",
+  "importance",
+  "context",
+  "entropy",
+  "allowPartialCompletion",
+  "minimumChunkSize",
+  "dependencies",
+] as const
+
+function itemIsScheduled(partial: Partial<Task>): boolean {
+  return Boolean(
+    partial.scheduledDate ||
+      partial.scheduledTime ||
+      partial.scheduledWeek ||
+      partial.scheduledMonth ||
+      partial.scheduledYear ||
+      partial.deadline,
+  )
+}
+
+/**
+ * Fields the vault actually reads. Next-action rows (`type: "task"`) keep the
+ * `createNextActionItem` set. Plain list rows (`type: "item"`) keep the
+ * `createListItem` set, including reward 1 unless this row set its own.
+ * `explicitReward` is that row's own value; omit it and a list item becomes 1.
+ * A plain item keeps a scheduling field only when that row set it, or when the
+ * item itself is scheduled fiction.
+ */
+function withAppFields(task: Task, explicitReward?: number): Task {
+  const next: Task = {
+    ...task,
+    title: task.title ?? task.description,
+    tags: task.tags ?? [],
+    links: task.links ?? [],
+    subtasks: task.subtasks ?? [],
+    lists: task.lists ?? [],
+  }
+  if (next.type === "item") {
+    next.rewardValue = explicitReward ?? 1
+    if (next.completed == null) next.completed = false
+    if (!next.stage) next.stage = next.lists.length ? "clarified" : "list"
+  } else if (next.type === "task") {
+    if (!next.stage) next.stage = "clarified"
+    if (next.rewardValue == null) next.rewardValue = 1
+    if (next.estimatedDuration == null) next.estimatedDuration = 30
+    if (next.cognitiveLoad == null) next.cognitiveLoad = 2
+    if (next.urgency == null) next.urgency = 3
+    if (next.importance == null) next.importance = 3
+    if (!next.context) next.context = "@general"
+    if (next.entropy == null) next.entropy = 0.5
+    if (next.allowPartialCompletion == null) next.allowPartialCompletion = false
+    if (next.minimumChunkSize == null) next.minimumChunkSize = 15
+    next.dependencies = next.dependencies ?? []
+    if (next.completed == null) next.completed = false
+  }
+  return next
+}
+
 function row(partial: Partial<Task> & Pick<Task, "id" | "description">, now: Date): Task {
   const createdAt = partial.createdAt instanceof Date ? partial.createdAt : now
-  const task: Task = {
-    stage: "clarified",
-    estimatedDuration: 45,
-    cognitiveLoad: 2,
-    urgency: 3,
-    importance: 3,
-    dependencies: [],
-    context: "@anywhere",
-    entropy: 0.2,
-    rewardValue: 20,
-    completed: false,
-    lists: [],
-    allowPartialCompletion: false,
-    minimumChunkSize: 15,
-    type: "task",
-    ...partial,
-    createdAt,
+  const task = withAppFields(
+    {
+      stage: "clarified",
+      estimatedDuration: 45,
+      cognitiveLoad: 2,
+      urgency: 3,
+      importance: 3,
+      dependencies: [],
+      context: "@anywhere",
+      entropy: 0.2,
+      rewardValue: 20,
+      completed: false,
+      lists: [],
+      allowPartialCompletion: false,
+      minimumChunkSize: 15,
+      type: "task",
+      tags: [],
+      links: [],
+      subtasks: [],
+      ...partial,
+      createdAt,
+      title: partial.title ?? partial.description,
+    },
+    partial.rewardValue,
+  )
+  if (task.type !== "item" || itemIsScheduled(partial)) return task
+  const plain: Task = { ...task }
+  for (const key of NEXT_ACTION_BLOCK) {
+    if (partial[key] === undefined) delete plain[key]
   }
-  task.title = task.title ?? task.description
-  return task
+  return plain
 }
 
 const FILM_ATTRS: AttributeDefinition[] = [
@@ -280,7 +353,6 @@ export function extraTasks(now: Date): Task[] {
           [OPERATION_ATTR.mission]: "One poster on the door before the October class, and a broadside for the firing party.",
           [OPERATION_ATTR.stage]: "active",
           [OPERATION_ATTR.categories]: ["studio", "print"],
-          [OPERATION_ATTR.homeNotes]: "Iron black first. The red is a second pass and can slip.",
           [OPERATION_ATTR.trackingTagIds]: ["tag-craft"],
           [OPERATION_ATTR.trackingPenId]: "act-press",
           [OPERATION_ATTR.taskListId]: "list-letterpress",
@@ -317,6 +389,13 @@ export function extraTasks(now: Date): Task[] {
             },
           ]),
         },
+        noteLog: [
+          {
+            id: "note_legacy_demo-op-press_homenotes",
+            date: "2026-06-01",
+            text: "Iron black first. The red is a second pass and can slip.",
+          },
+        ],
         links: [
           { id: "lnk-press-phase-lock", relation: "has-phase", targetId: "demo-op-press-lock" },
           { id: "lnk-press-phase-ink", relation: "has-phase", targetId: "demo-op-press-ink" },
@@ -350,7 +429,12 @@ export function extraTasks(now: Date): Task[] {
         scheduledDate: d(1),
         scheduledTime: "13:00",
         estimatedDuration: 90,
+        tags: ["print", "proof"],
         dependencies: ["demo-op-press-lock"],
+        attributes: { proofSheets: 3 },
+        itemAttributeDefinitions: [
+          { id: "proofSheets", name: "Proof sheets", type: "number", allowFloat: false },
+        ],
         riskFlag: true,
         pertEstimate: { optimistic: 40, likely: 90, pessimistic: 150 },
         definitionOfDone: "One proof is dry, readable at arm's length, and photographed.",
@@ -504,6 +588,7 @@ export function extraTasks(now: Date): Task[] {
         type: "item",
         lists: ["list-places"],
         stage: "list",
+        tags: ["north-light"],
         attributes: {
           placeKind: "desk",
           city: "Portland",
@@ -938,100 +1023,102 @@ export function extraTasks(now: Date): Task[] {
 
 /** Attach graph edges and week marks onto rows the base seed already created. */
 export function deepenBaseTasks(tasks: Task[], now: Date): Task[] {
+  return tasks.map((task) => withAppFields(shapeBaseTask(task, now)))
+}
+
+function shapeBaseTask(task: Task, now: Date): Task {
   const week = getWeekString(now)
   const today = ymd(now)
-  return tasks.map((task) => {
-    if (task.id === "demo-belief-cadence") {
-      return {
-        ...task,
-        links: [
-          { id: "lnk-cadence-leach", relation: "supported-by", targetId: "demo-source-leach", stance: "strong-support" as const, weight: 0.8 },
-          { id: "lnk-cadence-marathon", relation: "refuted-by", targetId: "demo-source-marathon", stance: "weak-refute" as const, weight: 0.35 },
-          { id: "lnk-cadence-manual", relation: "supported-by", targetId: "demo-book-manual", stance: "weak-support" as const, weight: 0.4 },
-        ],
-      }
+  if (task.id === "demo-belief-cadence") {
+    return {
+      ...task,
+      links: [
+        { id: "lnk-cadence-leach", relation: "supported-by", targetId: "demo-source-leach", stance: "strong-support" as const, weight: 0.8 },
+        { id: "lnk-cadence-marathon", relation: "refuted-by", targetId: "demo-source-marathon", stance: "weak-refute" as const, weight: 0.35 },
+        { id: "lnk-cadence-manual", relation: "supported-by", targetId: "demo-book-manual", stance: "weak-support" as const, weight: 0.4 },
+      ],
     }
-    if (task.id === "demo-note-glaze") {
-      return {
-        ...task,
-        links: [
-          { id: "lnk-glaze-op", relation: "about", targetId: "demo-op-kiln" },
-          { id: "lnk-glaze-lock", relation: "see-also", targetId: "demo-note-lockup" },
-        ],
-        itemAttributeDefinitions: [
-          { id: "iron", name: "Iron oxide %", type: "number", allowFloat: true },
-        ],
-        attributes: { ...task.attributes, iron: 1.8 },
-      }
+  }
+  if (task.id === "demo-note-glaze") {
+    return {
+      ...task,
+      links: [
+        { id: "lnk-glaze-op", relation: "about", targetId: "demo-op-kiln" },
+        { id: "lnk-glaze-lock", relation: "see-also", targetId: "demo-note-lockup" },
+      ],
+      itemAttributeDefinitions: [
+        { id: "iron", name: "Iron oxide %", type: "number", allowFloat: true },
+      ],
+      attributes: { ...task.attributes, iron: 1.8 },
     }
-    if (task.id === "demo-op-kiln") {
-      return {
-        ...task,
-        isSummary: true,
-        links: [
-          { id: "lnk-kiln-photo", relation: "has-phase", targetId: "demo-op-phase-photos" },
-          { id: "lnk-kiln-order", relation: "has-phase", targetId: "demo-op-phase-order" },
-          { id: "lnk-kiln-install", relation: "has-phase", targetId: "demo-op-phase-install" },
-          { id: "lnk-kiln-place", relation: "sited-at", targetId: "demo-place-kiln" },
-          { id: "lnk-kiln-res", relation: "uses", targetId: "demo-res-manual" },
-        ],
-      }
+  }
+  if (task.id === "demo-op-kiln") {
+    return {
+      ...task,
+      isSummary: true,
+      links: [
+        { id: "lnk-kiln-photo", relation: "has-phase", targetId: "demo-op-phase-photos" },
+        { id: "lnk-kiln-order", relation: "has-phase", targetId: "demo-op-phase-order" },
+        { id: "lnk-kiln-install", relation: "has-phase", targetId: "demo-op-phase-install" },
+        { id: "lnk-kiln-place", relation: "sited-at", targetId: "demo-place-kiln" },
+        { id: "lnk-kiln-res", relation: "uses", targetId: "demo-res-manual" },
+      ],
     }
-    if (task.id === "demo-na-catalog") {
-      return {
-        ...task,
-        todoMarks: [{ period: "day", periodKey: today, required: true }, { period: "week", periodKey: week, prioritized: true }],
-        contributesToObjectiveIds: ["demo-obj-7"],
-        dayRatings: { [today]: { importance: 9, excitement: 5 } },
-        links: [{ id: "lnk-catalog-place", relation: "done-at", targetId: "demo-place-stacks" }],
-      }
+  }
+  if (task.id === "demo-na-catalog") {
+    return {
+      ...task,
+      todoMarks: [{ period: "day", periodKey: today, required: true }, { period: "week", periodKey: week, prioritized: true }],
+      contributesToObjectiveIds: ["demo-obj-7"],
+      dayRatings: { [today]: { importance: 9, excitement: 5 } },
+      links: [{ id: "lnk-catalog-place", relation: "done-at", targetId: "demo-place-stacks" }],
     }
-    if (task.id === "demo-op-phase-install") {
-      return {
-        ...task,
-        dependencies: ["demo-op-phase-order", "demo-waiting-parts"],
-        riskFlag: true,
-        pertEstimate: { optimistic: 90, likely: 180, pessimistic: 300 },
-        definitionOfDone: "Controller powers, a dry fire holds cone 06, photos filed on the kiln note.",
-      }
+  }
+  if (task.id === "demo-op-phase-install") {
+    return {
+      ...task,
+      dependencies: ["demo-op-phase-order", "demo-waiting-parts"],
+      riskFlag: true,
+      pertEstimate: { optimistic: 90, likely: 180, pessimistic: 300 },
+      definitionOfDone: "Controller powers, a dry fire holds cone 06, photos filed on the kiln note.",
     }
-    if (task.id === "demo-done-newsletter") {
-      return {
-        ...task,
-        stage: "completed" as const,
-        status: "done" as const,
-        completionReview: {
-          taskId: "demo-done-newsletter",
-          completedAt: task.completedDate instanceof Date ? task.completedDate : now,
-          actualDuration: 70,
-          satisfaction: 7,
-          resistance: 4,
-          focus: 6,
-          distraction: 5,
-          notes: "Caption took longer than the send.",
-        },
-      }
+  }
+  if (task.id === "demo-done-newsletter") {
+    return {
+      ...task,
+      stage: "completed" as const,
+      status: "done" as const,
+      completionReview: {
+        taskId: "demo-done-newsletter",
+        completedAt: task.completedDate instanceof Date ? task.completedDate : now,
+        actualDuration: 70,
+        satisfaction: 7,
+        resistance: 4,
+        focus: 6,
+        distraction: 5,
+        notes: "Caption took longer than the send.",
+      },
     }
-    if (task.id === "demo-book-leach") {
-      return {
-        ...task,
-        links: [{ id: "lnk-leach-source", relation: "excerpted-as", targetId: "demo-source-leach" }],
-        contributesToGoalIds: ["demo-goal-books"],
-      }
+  }
+  if (task.id === "demo-book-leach") {
+    return {
+      ...task,
+      links: [{ id: "lnk-leach-source", relation: "excerpted-as", targetId: "demo-source-leach" }],
+      contributesToGoalIds: ["demo-goal-books"],
     }
-    if (task.id === "demo-scheduled-class") {
-      return {
-        ...task,
-        schedulingConstraints: {
-          canOnlyBeDoneOnDays: ["thursday"],
-          timeOfDayPreference: "evening",
-          canOnlyBeDoneAt: ["18:30"],
-        },
-        links: [{ id: "lnk-class-juniper", relation: "expects", targetId: "demo-people-juniper" }],
-      }
+  }
+  if (task.id === "demo-scheduled-class") {
+    return {
+      ...task,
+      schedulingConstraints: {
+        canOnlyBeDoneOnDays: ["thursday"],
+        timeOfDayPreference: "evening",
+        canOnlyBeDoneAt: ["18:30"],
+      },
+      links: [{ id: "lnk-class-juniper", relation: "expects", targetId: "demo-people-juniper" }],
     }
-    return task
-  })
+  }
+  return task
 }
 
 export function deepenLists(lists: List[]): List[] {

@@ -1,7 +1,7 @@
 /**
  * lib/task-card.ts — The To Do task card's rules (Phase 12, R7 R8 R15)
  *
- * Pure. The card (`components/Home/ToDo/TaskCard.tsx`) plans this period's
+ * Pure. The card (`components/Home/ToDo/task-card/TaskCard.tsx`) plans this period's
  * work on one task. Here: which card is open (a tiny store, so item detail and
  * a step item can open it), the mass-edit bar's tree edits (each returns a new
  * tree; the card writes it once, so one undo per bar action), the task's
@@ -24,7 +24,7 @@ interface TaskCardState {
   stepId?: string
   /** Open the card with this step as its root: the tree and totals show only what is inside it. */
   rootStepId?: string
-  /** How many hosts (`todo-panel`) are mounted; item detail shows **Card** only when one is. */
+  /** How many desk hosts are mounted. The phone switch does not register one. Item detail shows **Card** only when a host is. */
   hosts: number
 }
 
@@ -70,6 +70,29 @@ export function withEstimate(s: Subtask, minutes: number, now = new Date()): Sub
 
 export function setEstimate(steps: readonly Subtask[] | undefined, id: string, minutes: number): Subtask[] {
   return mapIds(steps, new Set([id]), (s) => withEstimate(s, minutes))
+}
+
+/**
+ * Keep `Task.estimateLog` in step with the task's own `estimatedDuration`.
+ * `updateTask` calls this, so item detail, the task card, the drawer, and a
+ * ghost accept that writes the task all land here. The same minutes again
+ * adds no row. A shorter log on `next` is a stale draft: the stored rows stay.
+ * Step logs are not touched.
+ */
+export function noteTaskEstimate(prev: Pick<Task, "estimatedDuration" | "estimateLog">, next: Task, now = new Date()): Task {
+  const before = Math.max(0, Math.round(prev.estimatedDuration ?? 0))
+  const after = Math.max(0, Math.round(next.estimatedDuration ?? 0))
+  const prevLog = prev.estimateLog ?? []
+  const nextLog = next.estimateLog ?? []
+  const extended = nextLog.length > prevLog.length
+  const base = extended ? nextLog : prevLog
+  if (before === after) {
+    if (nextLog.length >= prevLog.length) return next
+    return prevLog.length ? { ...next, estimateLog: prevLog } : next
+  }
+  const last = base[base.length - 1]
+  if (extended && last?.minutes === after) return { ...next, estimateLog: base }
+  return { ...next, estimateLog: [...base, { at: now.toISOString(), minutes: after }] }
 }
 
 /** Called by the host on mount; returns the unmount. */

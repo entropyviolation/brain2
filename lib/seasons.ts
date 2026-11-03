@@ -91,6 +91,17 @@ export function monthKeysInQuarter(key: string): string[] {
   return [0, 1, 2].map((i) => `${parsed.year}-${String(startMonth + i + 1).padStart(2, "0")}`)
 }
 
+/**
+ * Months of a quarter key, split on `-Q`.
+ * Looser than `monthKeysInQuarter`: `2026-Q03` and `26-Q3` still expand.
+ */
+export function monthsInQuarter(key: string): string[] {
+  const [year, quarter] = key.split("-Q")
+  const start = (Number(quarter) - 1) * 3 + 1
+  if (!year || !Number.isFinite(start) || start < 1) return []
+  return [0, 1, 2].map((i) => `${year}-${String(start + i).padStart(2, "0")}`)
+}
+
 export function quarterEndDate(key: string): Date | null {
   const months = monthKeysInQuarter(key)
   const last = months[months.length - 1]

@@ -15,7 +15,7 @@
 
 import { useMemo } from "react"
 import { Inbox } from "lucide-react"
-import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
+import { ItemNotesLog } from "@/components/ItemDetail/tabs/notes/ItemNotesLog"
 import { foldPersonNoteLog } from "@/lib/person-notes-fold"
 import { PERSON_ATTR } from "@/lib/person-types"
 import type { Task } from "@/lib/types"

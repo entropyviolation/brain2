@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-25_
 
-File: `components/Analytics/GoalsAnalytics.tsx`, plus `GoalTexturePlate` from `CompletionReviewPlates.tsx` (shared with Reflection, not changed here). Math: `lib/objectives.ts` (`goalProgressPercent`, `goalsNeedingAttention`), `accuracy-stats.ts` (`goalPace`).
+File: `components/Analytics/accuracy/GoalsAnalytics.tsx`, plus `GoalTexturePlate` from `CompletionReviewPlates.tsx` (shared with Reflection, not changed here). Math: `lib/objectives.ts` (`goalProgressPercent`, `goalsNeedingAttention`), `accuracy-stats.ts` (`goalPace`).
 
 ## Information
 - Goals: target, current, unit, period kind, start / end / deadline, completed.

@@ -1,0 +1,14 @@
+/* components/Lab/TrackingHelper/skills-panel.css — the Skills panel, on top of helper-tests.css (.tht) */
+.ths { margin-top: 0; }
+.ths-stats { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ths-stats li { display: grid; grid-template-columns: minmax(140px, 220px) 1fr auto; align-items: center; gap: 8px; font: 11px/1.2 ui-monospace, Menlo, monospace; }
+.ths-bar { height: 6px; background: hsl(214 14% 86%); border-radius: 3px; overflow: hidden; }
+.ths-bar i { display: block; height: 100%; background: hsl(150 50% 40%); }
+.ths-stats li[data-weak="1"] .ths-bar i { background: hsl(340 60% 48%); }
+.ths-tag { font: 700 10px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
+.tht-list li[data-status="proposed"] { border-left-color: hsl(215 70% 50%); }
+.tht-list li[data-status="retired"] { opacity: 0.55; }
+@media (max-width: 640px) {
+  .ths-stats li { grid-template-columns: 1fr auto; }
+  .ths-bar { grid-column: 1 / -1; }
+}

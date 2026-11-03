@@ -3,21 +3,23 @@
  *
  * Stop already wrote the span. This builds a picture of that sitting (the
  * task, its steps, the objectives, estimated against the minutes just spent)
- * and, on Done, writes the corrections back: step and task completion,
- * estimates, the log note, a 1–5 satisfaction, energy, what got in the way,
- * and an optional note for the next time that task or pen goes on the clock.
+ * and, on Save, writes the session reflection: estimates, the log note, a
+ * 1–5 satisfaction, energy, what got in the way, and an optional note for
+ * the next time that task or pen goes on the clock.
  *
- * Close leaves the log as the clock wrote it. Cancel on the unfinished
- * question never gets here — the clock is still running.
+ * It does not mark the task or a step completed. That is the completion
+ * reflection (`CompletionDialog`), which opens only when something actually
+ * completes the task. Skip leaves the log as the clock wrote it. Cancel on
+ * the unfinished question never gets here — the clock is still running.
  */
 "use client"
 
 import type { NowObjective } from "@/lib/now-objective"
-import { objectiveWorkedMs } from "@/lib/now-objective"
+import { formatObjectiveWhen, objectiveWorkedMs } from "@/lib/now-objective"
 import type { PenColorSession } from "@/lib/pen-color-session-store"
 import type { WorkSession } from "@/lib/work-session-store"
 import type { Subtask, Task, TimeLogEntry, TimeLogSessionReview } from "@/lib/types"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, formatLocalHhmm } from "@/lib/date-utils"
 import { clockNoteField, clockPathLabel } from "@/lib/task-clock-log"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { finishStep, placeSteps, stepPath } from "@/lib/next-step"
@@ -35,7 +37,7 @@ import {
 } from "@/lib/operation-work-session"
 import { stopPenColorSession } from "@/lib/pen-color-session"
 import { useSessionDebriefStore } from "@/lib/session-debrief-store"
-import type { DebriefStep, SessionDebriefDraft, SittingEnergy, SittingReview } from "@/lib/session-debrief-store"
+import type { DebriefObjective, DebriefStep, SessionDebriefDraft, SittingEnergy, SittingReview } from "@/lib/session-debrief-store"
 
 export type { DebriefObjective, DebriefStep, SessionDebriefDraft, SessionHandoff, SittingEnergy, SittingReview } from "@/lib/session-debrief-store"
 
@@ -53,7 +55,6 @@ export interface DebriefAnswers {
   satisfaction?: number
   energy?: SittingEnergy
   blocker: string
-  taskCompleted: boolean
   taskEstimate: number | null
   logMinutes: number
   steps: DebriefStepEdit[]
@@ -61,10 +62,6 @@ export interface DebriefAnswers {
 
 function minutesOrNull(value: number | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.round(value) : null
-}
-
-function hhmm(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
 }
 
 function clockFace(iso: string): string {
@@ -99,7 +96,7 @@ function penLogIds(task: Task | undefined, session: { trackingEntryIds?: string[
   const ids = new Set(session.trackingEntryIds ?? [])
   const painted = task.timeLogs.filter((log) => log.entryIds?.some((id) => ids.has(id)))
   if (painted.length) return painted.map((log) => log.id)
-  const start = hhmm(new Date(session.startedAt))
+  const start = formatLocalHhmm(new Date(session.startedAt))
   const date = formatLocalDateKey(new Date(session.startedAt))
   const loose = [...task.timeLogs].reverse().find((log) => log.date === date && log.startTime === start && log.stepId === session.stepId)
   return loose ? [loose.id] : []
@@ -151,7 +148,12 @@ function stepsFor(
 function objectiveRows(list: readonly NowObjective[] | undefined, endedAt: Date): DebriefObjective[] {
   return (list ?? []).map((row) => {
     const window = objectiveWindow(row, endedAt)
-    return { text: row.text, completed: Boolean(row.completedAt), minutes: window.minutes, when: window.when }
+    return {
+      text: row.text,
+      completed: Boolean(row.completedAt),
+      minutes: window.minutes,
+      when: formatObjectiveWhen(row, endedAt),
+    }
   })
 }
 
@@ -172,6 +174,7 @@ function draftBase(input: {
   timeLogIds: string[]
   note: string
   operationId?: string
+  pauseSpans?: SessionDebriefDraft["pauseSpans"]
 }): SessionDebriefDraft {
   const path = input.task ? clockPathLabel(input.task, input.stepId) : input.title
   return {
@@ -192,6 +195,7 @@ function draftBase(input: {
     trackingEntryIds: input.trackingEntryIds,
     timeLogIds: input.timeLogIds,
     note: input.note,
+    ...(input.pauseSpans?.length ? { pauseSpans: input.pauseSpans.map((span) => ({ ...span })) } : {}),
     taskCompleted: Boolean(input.task?.completed),
     taskEstimate: minutesOrNull(input.task?.estimatedDuration),
     steps: stepsFor(input.task, input.stepId, input.objectives, input.startedAt, input.endedAt, input.activeMinutes),
@@ -227,6 +231,7 @@ export function buildPenDraft(
     timeLogIds: logIds,
     note: log?.notes ?? "",
     operationId: undefined,
+    pauseSpans: session.pauseSpans,
   })
 }
 
@@ -258,6 +263,7 @@ export function buildWorkDraft(
     timeLogIds,
     note: log?.notes ?? workedOnTitle(session.title),
     operationId: session.operationId,
+    pauseSpans: session.pauseSpans,
   })
 }
 
@@ -328,14 +334,15 @@ function patchLogs(logs: TimeLogEntry[] | undefined, draft: SessionDebriefDraft,
     next.push({
       id: `tl-debrief-${draft.startedAt}`,
       date: formatLocalDateKey(started),
-      startTime: hhmm(started),
-      endTime: hhmm(ended),
+      startTime: formatLocalHhmm(started),
+      endTime: formatLocalHhmm(ended),
       durationMinutes: answers.logMinutes,
       notes: note || undefined,
       taskId: draft.taskId,
       ...(draft.stepId ? { stepId: draft.stepId } : {}),
       ...(draft.trackingEntryIds.length ? { entryIds: [...draft.trackingEntryIds] } : {}),
       ...(review ? { sessionReview: review } : {}),
+      ...(draft.pauseSpans?.length ? { pauseSpans: draft.pauseSpans.map((span) => ({ ...span })) } : {}),
     })
     return next
   }
@@ -343,6 +350,7 @@ function patchLogs(logs: TimeLogEntry[] | undefined, draft: SessionDebriefDraft,
   next = next.map((log) => {
     if (!draft.timeLogIds.includes(log.id)) return log
     const row: TimeLogEntry = { ...log, notes: note || undefined }
+    if (draft.pauseSpans?.length && !row.pauseSpans?.length) row.pauseSpans = draft.pauseSpans.map((span) => ({ ...span }))
     if (!stamped && review) {
       row.sessionReview = review
       stamped = true
@@ -378,30 +386,36 @@ export function offerWorkDebrief(session: WorkSession | null, endedAt = new Date
   useSessionDebriefStore.getState().open(buildWorkDraft(session, endedAt, task, penFace(session.scopeId, session.penId)))
 }
 
-/** Stop the pen clock from a Stop key, then open the sitting review. */
+/** Stop the pen clock from a Stop key, then open the end-of-session reflection. The task stays open. */
 export function reviewPenStop(park: boolean, now = new Date()): void {
   offerPenDebrief(stopPenColorSession(now, park ? { parkUnfinished: true } : undefined), now)
 }
 
-/** Stop the operation clock from a Stop key, then open the sitting review. */
+/** Stop the operation clock from a Stop key, then open the end-of-session reflection. The operation stays open. */
 export function reviewWorkStop(park: boolean, now = new Date()): void {
   offerWorkDebrief(stopWorkingOnOperation(now, park ? { parkUnfinished: true } : undefined), now)
 }
 
-/** Write the sheet. One undo step. Close does not call this. */
+/**
+ * Estimates may change. Completion may not: a stop is mid-task, and this
+ * sheet is not the completion reflection. Step ticks in `answers` are ignored.
+ */
+function reflectionSteps(before: readonly DebriefStep[], edits: readonly DebriefStepEdit[]): DebriefStepEdit[] {
+  return edits.map((edit) => {
+    const prev = before.find((row) => row.stepId === edit.stepId)
+    return prev ? { ...edit, completed: prev.completed } : edit
+  })
+}
+
+/** Write the sheet. One undo step. Skip does not call this. Does not complete the task. */
 export function saveSessionDebrief(draft: SessionDebriefDraft, answers: DebriefAnswers, now = new Date()): void {
   runAsAction("save sitting notes", () => {
     const task = draft.taskId ? useTaskStore.getState().tasks.find((row) => row.id === draft.taskId) : undefined
     if (task) {
       const next: Task = {
         ...task,
-        subtasks: applyDebriefSteps(task.subtasks, draft.steps, answers.steps, now),
+        subtasks: applyDebriefSteps(task.subtasks, draft.steps, reflectionSteps(draft.steps, answers.steps), now),
         timeLogs: patchLogs(task.timeLogs, draft, answers),
-      }
-      if (answers.taskCompleted !== Boolean(task.completed)) {
-        next.completed = answers.taskCompleted
-        if (answers.taskCompleted) next.completedDate = now
-        else delete next.completedDate
       }
       if ((minutesOrNull(task.estimatedDuration) ?? null) !== answers.taskEstimate) {
         if (answers.taskEstimate && answers.taskEstimate > 0) next.estimatedDuration = answers.taskEstimate

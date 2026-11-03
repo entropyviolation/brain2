@@ -1,0 +1,87 @@
+{
+  "duckling": {
+    "from": "Mathilda, the yellow duckling, sprite_00020_.png front and sprite_00022_.png side and back (liked 2026-11-02)",
+    "views": {
+      "front": {
+        "file": "sprite_00020_.png",
+        "part": 0,
+        "height": 17,
+        "tol": 70,
+        "shadow": true,
+        "skip": "rRpPq"
+      },
+      "side": {
+        "file": "sprite_00022_.png",
+        "part": 2,
+        "height": 17,
+        "flip": true,
+        "tol": 70,
+        "shadow": true,
+        "skip": "rRpPq"
+      },
+      "back": {
+        "file": "sprite_00022_.png",
+        "part": 5,
+        "height": 17,
+        "tol": 70,
+        "shadow": true,
+        "skip": "rRpPq"
+      }
+    }
+  },
+  "blackduck": {
+    "from": "Pynchon, the dark brown duckling, sprite_00029_.png front and sprite_00030_.png side (liked 2026-11-02)",
+    "views": {
+      "front": {
+        "file": "sprite_00029_.png",
+        "part": 0,
+        "height": 17,
+        "tol": 70,
+        "shadow": true,
+        "skip": "rRpPqiIJ"
+      },
+      "side": {
+        "file": "sprite_00030_.png",
+        "part": 5,
+        "height": 17,
+        "flip": true,
+        "tol": 70,
+        "shadow": true,
+        "skip": "rRpPqiIJ"
+      },
+      "back": {
+        "file": "sprite_00029_.png",
+        "part": 0,
+        "height": 17,
+        "tol": 70,
+        "faceless": true,
+        "shadow": true,
+        "skip": "rRpPqiIJ"
+      }
+    }
+  },
+  "kitten": {
+    "from": "Reid, the white kitten, sprite_00032_.png front and back, sprite_00031_.png side (liked 2026-11-02)",
+    "views": {
+      "front": {
+        "file": "sprite_00032_.png",
+        "part": 0,
+        "height": 21,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite_00031_.png",
+        "part": 0,
+        "height": 19,
+        "flip": true,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "sprite_00032_.png",
+        "part": 1,
+        "height": 21,
+        "skip": "iIJ"
+      }
+    }
+  }
+}

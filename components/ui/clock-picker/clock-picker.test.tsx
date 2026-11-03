@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { useState } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ClockPicker } from "./clock-picker"
@@ -105,7 +105,7 @@ describe("ClockPicker", () => {
     expect(onChange).toHaveBeenLastCalledWith("16:02")
   })
 
-  it("opens a typed time on the drums and the ceramic face", () => {
+  it("opens a typed time on the drums and the ceramic face", async () => {
     function Harness() {
       const [value, setValue] = useState("08:00")
       return <ClockPicker aria-label="When" value={value} onChange={setValue} />
@@ -123,8 +123,11 @@ describe("ClockPicker", () => {
     expect(face).toHaveAttribute("data-hour", "4")
     expect(face).toHaveAttribute("data-minute", "2")
     expect(face).toHaveAttribute("data-period", "PM")
-    expect(face.querySelector(".clock-picker-face")).toBeTruthy()
+    expect(face.querySelector(".clock-picker-painting")).toBeNull()
     expect(face.querySelector(".clock-picker-hands")).toBeTruthy()
+    await waitFor(() => {
+      expect(face.querySelector(".clock-picker-face")).toBeTruthy()
+    })
   })
 
   it("keeps Now inside the popup", () => {

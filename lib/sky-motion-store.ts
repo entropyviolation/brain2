@@ -18,6 +18,7 @@ import {
   DEFAULT_RATE_INDEX,
   DEFAULT_VIEW_WIDTH_LOG,
 } from "@/lib/sky-motion"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const SKY_MOTION_STORAGE_KEY = persistKey("sky-motion")
 
@@ -70,3 +71,5 @@ export const useSkyMotionStore = create<SkyMotionState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useSkyMotionStore)

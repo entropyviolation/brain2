@@ -11,7 +11,7 @@ import {
   shouldLink,
   type LinkStat,
 } from "@/lib/resource-links"
-import { resourceKind, resourcesText } from "@/lib/item-resources"
+import { resourceKind, resourcesText, webLinkResource } from "@/lib/item-resources"
 import type { ItemResource } from "@/lib/types"
 
 const psd: LinkStat = {
@@ -55,9 +55,9 @@ describe("linkedResource", () => {
 
 describe("relinkResource", () => {
   it("follows a rename and keeps caption, id, and text", () => {
-    const r: ItemResource = { ...linkedResource(psd), caption: "Hero art", extractedText: "layers" }
+    const r: ItemResource = { ...linkedResource(psd), caption: "Hero art", useNote: "print this", extractedText: "layers" }
     const moved = relinkResource(r, { ...psd, path: "/Users/me/Archive/Hero.psd", name: "Hero.psd", bookmark: undefined })
-    expect(moved).toMatchObject({ id: r.id, caption: "Hero art", extractedText: "layers", name: "Hero.psd" })
+    expect(moved).toMatchObject({ id: r.id, caption: "Hero art", useNote: "print this", extractedText: "layers", name: "Hero.psd" })
     expect(moved.link?.path).toBe("/Users/me/Archive/Hero.psd")
     expect(moved.link?.bookmark).toBe(psd.bookmark)
     expect(resolutionMoved(r, { status: "moved", link: { ...psd, path: "/x/Hero.psd" } })).toBe(true)
@@ -86,5 +86,14 @@ describe("helpers", () => {
   it("is searchable by name, caption, and extracted text", () => {
     const r = { ...linkedResource(psd), caption: "hero", extractedText: "src/index.ts" }
     expect(resourcesText([r])).toBe("Big.psd hero src/index.ts")
+  })
+
+  it("keeps a web link and its use note searchable", () => {
+    const link = webLinkResource("https://example.com/spec", new Date("2026-10-27T00:00:00Z"))
+    expect(link).toMatchObject({ name: "example.com/spec", url: "https://example.com/spec" })
+    expect(link?.uri).toMatch(/^url:/)
+    expect(resourceKind(link!)).toBe("link")
+    expect(webLinkResource("not a link")).toBeNull()
+    expect(resourcesText([{ ...link!, useNote: "the spec" }])).toBe("example.com/spec the spec https://example.com/spec")
   })
 })

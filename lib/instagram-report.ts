@@ -25,6 +25,8 @@ export interface InstagramStatus {
     exportDate: string
     builtAt: string
     ffmpeg: boolean
+    /** Media files Google Drive would not download. The report was still built. */
+    skipped?: number
   } | null
   lastError: { at: string; step: string; message: string; stderr?: string; exportName?: string } | null
   running: boolean
@@ -234,7 +236,7 @@ export function readAccountRequest(data: unknown): AccountRequest | null {
 
 const OPEN_KEY = "brain2-instagram-open"
 
-/** Go to Analytics → Sources → Instagram and open this account's card. */
+/** Go to Data → Sources → Instagram and open this account's card. */
 export function openInstagramFor(handle: string): void {
   const clean = normalizeInstagram(handle)
   if (!clean) return

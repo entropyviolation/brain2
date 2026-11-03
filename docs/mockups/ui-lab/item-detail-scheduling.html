@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item detail · Scheduling — Brain2 UI lab</title>
+<style>
+:root { --crt: #7dffc4; --bench: #1e2028; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 13px;
+  background: #12141a;
+  color: #e4e4ea;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(250px, 320px) 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (max-width: 920px) { body { grid-template-columns: 1fr; } }
+.bench {
+  background: var(--bench);
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 96vh;
+  overflow: auto;
+  font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: var(--crt);
+  opacity: .7;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #444;
+  border-radius: 3px;
+}
+.lab-sections a:hover { opacity: 1; }
+.lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  color: var(--crt);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.lede { margin: 0 0 8px; opacity: .82; line-height: 1.4; }
+.bench h2 {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin: 12px 0 6px;
+  color: var(--crt);
+  font-weight: 700;
+}
+.bench label { display: block; margin: 7px 0 2px; opacity: .9; }
+.bench select, .bench input[type="range"] { width: 100%; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.bench button.reset {
+  font: inherit;
+  font-size: 10px;
+  color: #e8e8ec;
+  background: #2a2d36;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 4px 8px;
+  cursor: pointer;
+  margin: 0 0 8px;
+}
+.bench :focus-visible, .detail :focus-visible { outline: 2px solid var(--accent, #000080); outline-offset: 2px; }
+
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: .04em;
+  opacity: .85;
+}
+.stage-well {
+  flex: 1;
+  min-height: 520px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 28px 16px 40px;
+  border-radius: 8px;
+  background: #008080;
+}
+.frame { width: min(100%, calc(var(--panel) * 1px)); }
+.lab-note { margin: 0; font-size: 10px; opacity: .65; }
+
+.detail {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: min(86vh, 980px);
+  overflow: hidden;
+  background: var(--face);
+  color: var(--ink);
+  font-family: var(--ff);
+  font-size: calc(var(--type) * 1px);
+  font-weight: var(--weight);
+  line-height: calc(var(--leading) / 100);
+  letter-spacing: calc(var(--track) * 0.01em);
+  border: calc(var(--bw) * 1px) solid #0a0a0a;
+  border-radius: calc(var(--rad) * 1px);
+  filter: contrast(calc(var(--contrast) / 100)) saturate(calc(var(--sat) / 100)) brightness(calc(var(--bright) / 100));
+  box-shadow:
+    inset calc(var(--bevel) * -1px) calc(var(--bevel) * -1px) #0a0a0a,
+    inset calc(var(--bevel) * 1px) calc(var(--bevel) * 1px) #fff,
+    inset calc(var(--bevel) * -2px) calc(var(--bevel) * -2px) #808080,
+    inset calc(var(--bevel) * 2px) calc(var(--bevel) * 2px) #dfdfdf,
+    0 calc(var(--shade) * 0.45px) calc(var(--shade) * 1px) rgba(0,0,0,.28);
+}
+.detail button, .detail input, .detail select, .detail textarea { font: inherit; color: inherit; }
+.detail :focus-visible { outline-width: calc(var(--focus) * 1px); }
+
+.fascia {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--keygap) * 1px);
+  padding: calc(var(--fasciapad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255, calc(var(--mill) / 100)) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--sheen), var(--face) 52%, var(--shade-face));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 calc(var(--rule) * 1px) var(--line);
+}
+.fascia-row { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--keygap) * 1px); }
+.mark {
+  flex: 1 1 16rem;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: calc(var(--tabh) * 1px + 8px);
+  padding: 6px 12px 6px 8px;
+  border-radius: calc(var(--rad) * 1px);
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt) 16%, transparent), transparent 48%),
+    #070c0a;
+  color: var(--crt);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.45), 0 0 0 1px #1a1c1e;
+}
+.power, .save-lamp, .tab::before, .plate i, .card h3 i {
+  width: calc(var(--lamp) * 1px);
+  height: calc(var(--lamp) * 1px);
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #9aa, #222 60%, #000);
+  box-shadow: 0 0 0 1px #111, 0 0 calc(var(--glow) * 0.4px) transparent;
+}
+.power.is-on, .tab[aria-selected="true"]::before, .save.is-saved .save-lamp {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 calc(var(--glow) * 2px) color-mix(in srgb, var(--crt) 70%, transparent);
+}
+.save.is-unsaved .save-lamp {
+  background: radial-gradient(circle at 35% 30%, #ead0c8, #c56e74 42%, #4c2226 78%);
+  box-shadow: 0 0 0 1px #3a181c, 0 0 calc(var(--glow) * 2px) rgba(197,110,116,.45);
+}
+.orb {
+  width: calc(var(--orb) * 1px);
+  height: calc(var(--orb) * 1px);
+  flex: none;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0d2b8, #c4784a 46%, #6a3a28 80%);
+  box-shadow: inset -2px -2px 4px rgba(0,0,0,.35), 0 0 0 1px #3a241c;
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--crt);
+  font-family: var(--titleff);
+  font-weight: var(--titlew);
+  font-size: calc(var(--titlesize) * 1px);
+  letter-spacing: calc(var(--titletrack) * 0.01em);
+  text-transform: uppercase;
+  text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt);
+  padding: 0;
+}
+.win-keys { margin-left: auto; display: flex; gap: 4px; }
+.win-key, .key, .tab, .sw { border: 0; cursor: pointer; border-radius: calc(var(--rad) * 1px); }
+.win-key {
+  width: calc(var(--keyh) * 0.8px);
+  height: calc(var(--keyh) * 0.72px);
+  background: linear-gradient(180deg, #fff, var(--card2));
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px var(--line);
+  font-size: calc(var(--keysize) * 1px);
+}
+.plate, .chip, .save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: calc(var(--keyh) * 0.8px);
+  padding: 2px 8px;
+  border-radius: calc(var(--rad) * 1px);
+  background: linear-gradient(180deg, var(--card1), var(--card2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 1px var(--line);
+  font-size: calc(var(--keysize) * 0.9px);
+  font-weight: var(--keyw);
+  letter-spacing: calc(var(--keytrack) * 0.01em);
+  text-transform: uppercase;
+}
+.save { box-shadow: inset 1px 1px 0 rgba(0,0,0,.25), inset -1px -1px 0 rgba(255,255,255,.5); }
+.keys { display: flex; flex-wrap: wrap; gap: calc(var(--keygap) * 1px); }
+.key {
+  min-height: calc(var(--keyh) * 1px);
+  padding: 4px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.72), transparent 30%), linear-gradient(165deg, var(--sheen), var(--face) 70%, var(--shade-face));
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px var(--line);
+  font-size: calc(var(--keysize) * 1px);
+  font-weight: var(--keyw);
+  letter-spacing: calc(var(--keytrack) * 0.01em);
+  text-transform: uppercase;
+}
+.key.danger { color: #800000; }
+.tablist {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: calc(var(--tabgap) * 1px);
+  margin: 8px 8px 0;
+  padding: 4px;
+  border-radius: calc(var(--rad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255, calc(var(--mill) / 100)) 0 1px, transparent 1px 2px),
+    var(--nickel);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.16), 0 0 0 calc(var(--rule) * 1px) var(--line);
+}
+.tab {
+  position: relative;
+  min-height: calc(var(--tabh) * 1px);
+  padding: 0 8px 0 calc(var(--lamp) * 1px + 14px);
+  background: linear-gradient(180deg, rgba(255,255,255,.75), transparent 46%), linear-gradient(180deg, var(--sheen), var(--card2));
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px var(--line);
+  font-family: var(--mono);
+  font-size: calc(var(--tabsize) * 1px);
+  font-weight: var(--labelw);
+  letter-spacing: calc(var(--tabtrack) * 0.01em);
+  text-transform: uppercase;
+}
+.tab::before { content: ""; position: absolute; left: 8px; top: 50%; margin-top: calc(var(--lamp) * -0.5px); }
+.tab[aria-selected="true"] {
+  color: var(--crt);
+  text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt);
+  background: radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt) 16%, transparent), transparent 48%), #070c0a;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.55);
+}
+.tab.secondary { min-height: calc(var(--tabh) * 0.88px); font-size: calc(var(--tabsize) * 0.9px); }
+.tab:disabled { opacity: 1; cursor: default; }
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: calc(var(--scrollpad) * 1px);
+  container-type: inline-size;
+}
+.sched { display: flex; flex-direction: column; gap: calc(var(--gap) * 1px); }
+.readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--readmin) * 1px), 1fr));
+  gap: calc(var(--readgap) * 1px);
+  overflow: hidden;
+  border-radius: calc(var(--rad) * 1px);
+  background: #1b2520;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.5), 0 0 0 1px #1a1c1e;
+  font-family: var(--mono);
+}
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: calc(var(--readpad) * 1px) calc(var(--readpad) * 1px + 3px);
+  background: radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt) 12%, transparent), transparent 50%), #070c0a;
+  color: color-mix(in srgb, var(--crt) 62%, #070c0a);
+}
+.cell[data-on="true"] {
+  color: var(--crt);
+  text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt);
+}
+.cell-label {
+  font-size: calc(var(--readlabel) * 1px);
+  letter-spacing: calc(var(--readtrack) * 0.01em);
+  text-transform: uppercase;
+}
+.cell-value {
+  font-size: calc(var(--readsize) * 1px);
+  letter-spacing: calc(var(--readtrack) * 0.25 * 0.01em);
+  word-break: break-word;
+}
+.sec { display: flex; flex-direction: column; gap: calc(var(--ingap) * 1px); }
+.sechead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding-bottom: 6px;
+  border-bottom: calc(var(--rule) * 1px) solid var(--line);
+}
+.sechead h2 {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: calc(var(--secsize) * 1px);
+  font-weight: var(--labelw);
+  letter-spacing: calc(var(--ltrack) * 0.01em);
+  text-transform: uppercase;
+}
+.num {
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: calc(var(--numsize) * 1px);
+  letter-spacing: .08em;
+  color: var(--crt);
+  background: #070c0a;
+  text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt);
+}
+.help { flex-basis: 100%; margin: 0; font-size: calc(var(--helpsize) * 1px); letter-spacing: calc(var(--helptrack) * 0.01em); color: var(--muted); font-weight: var(--weight); }
+.card, .row, .callout {
+  border-radius: calc(var(--rad) * 1px);
+  padding: calc(var(--cardpad) * 1px) calc(var(--cardpad) * 1px + 2px);
+  background: linear-gradient(180deg, var(--card1), var(--card2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 0 0 calc(var(--rule) * 1px) var(--line);
+}
+.card { display: flex; flex-direction: column; gap: calc(var(--ingap) * 1px); }
+.card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: calc(var(--cardsize) * 1px);
+  font-weight: var(--labelw);
+  letter-spacing: calc(var(--ltrack) * 0.01em);
+  text-transform: uppercase;
+}
+.field { display: flex; flex-direction: column; gap: calc(var(--fieldgap) * 1px); align-items: flex-start; }
+.field label, .name, .pair span, .mark-row .who {
+  font-family: var(--mono);
+  font-size: calc(var(--labelsize) * 1px);
+  font-weight: var(--labelw);
+  letter-spacing: calc(var(--ltrack) * 0.01em);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.name, .mark-row .who { color: var(--ink); }
+.detail .field input,
+.detail .field select,
+.detail .field textarea {
+  width: calc(var(--fieldw) * 1%);
+  max-width: 100%;
+  background: #fff;
+  color: var(--ink);
+  border: calc(var(--fieldbw) * 1px) solid var(--line);
+  border-radius: calc(var(--fieldrad) * 1px);
+  padding: calc(var(--fieldpy) * 1px) calc(var(--fieldpx) * 1px);
+  font-family: var(--ff);
+  font-weight: var(--weight);
+  letter-spacing: calc(var(--track) * 0.01em);
+  text-transform: none;
+}
+.detail textarea { min-height: calc(var(--boxh) * 1px); resize: vertical; }
+.currently { margin: 0; font-size: calc(var(--helpsize) * 0.92px); color: var(--muted); font-variant-numeric: tabular-nums; }
+.plain {
+  margin: 0;
+  font-family: var(--ff);
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+.row, .callout { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.row p, .callout p { margin: 4px 0 0; }
+.stack { display: block; }
+.marks { display: flex; flex-direction: column; gap: calc(var(--ingap) * 0.7px); margin-top: 8px; }
+.mark-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.pair { display: flex; align-items: center; gap: calc(var(--keygap) * 2px); }
+.pair span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.callout { box-shadow: inset calc(var(--callout) * 1px) 0 0 #2a6a52, inset 0 1px 0 #fff, 0 0 0 calc(var(--rule) * 1px) var(--line); }
+.when {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--colgap) * 1px);
+}
+.limits { display: flex; flex-direction: column; gap: calc(var(--gap) * 1px); }
+@container (max-width: 640px) {
+  .when { grid-template-columns: 1fr; }
+}
+.sw {
+  width: calc(var(--sww) * 1px);
+  height: calc(var(--swh) * 1px);
+  flex: none;
+  position: relative;
+  background: #1b2220;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.7), 0 0 0 1px var(--line);
+  border-radius: 999px;
+  padding: 0;
+}
+.sw::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(var(--swh) * 1px - 4px);
+  height: calc(var(--swh) * 1px - 4px);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, var(--card2));
+  box-shadow: 0 1px 2px rgba(0,0,0,.45);
+}
+.sw[aria-checked="true"] {
+  background: #0c3a29;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.55), 0 0 calc(var(--glow) * 2px) color-mix(in srgb, var(--crt) 45%, transparent);
+}
+.sw[aria-checked="true"]::after {
+  left: calc(var(--sww) * 1px - var(--swh) * 1px + 2px);
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt) 70%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw::after { transition: none; }
+}
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="habits.html">Habits</a>
+    <a href="plan.html">Plan</a>
+    <a href="todo.html">To do</a>
+    <a href="goals.html">Goals</a>
+    <a href="tracking.html">Tracking</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Ops</a>
+    <a href="pen-settings.html">Pen</a>
+    <a href="timeblock.html">Timeblock</a>
+    <a href="baby-animal.html">Friend</a>
+    <a href="item-detail-scheduling.html" aria-current="page">Scheduling</a>
+  </nav>
+  <h1>Scheduling lab</h1>
+  <p class="lede">Item detail, Scheduling, as the app draws it. Studio kiln rebuild. Elijah, Studio, pen Kiln. Today in this lab is Tue 27 Oct 2026. The controls change measure and type on this one screen.</p>
+  <button type="button" class="reset" id="reset">Reset measures</button>
+
+  <h2>Type</h2>
+  <label>Body font
+    <select data-key="font">
+      <option value="house">Tahoma / MS Sans Serif</option>
+      <option value="grotesk">Avenir, Segoe</option>
+      <option value="system">System UI</option>
+      <option value="mono">UI monospace</option>
+      <option value="serif">Palatino, Georgia</option>
+      <option value="round">Rounded UI</option>
+      <option value="typewriter">Typewriter</option>
+      <option value="didot">Didot, Bodoni</option>
+    </select>
+  </label>
+  <label>Label font
+    <select data-key="labelFont">
+      <option value="mono">UI monospace</option>
+      <option value="house">Tahoma / MS Sans Serif</option>
+      <option value="grotesk">Avenir, Segoe</option>
+      <option value="system">System UI</option>
+      <option value="serif">Palatino, Georgia</option>
+      <option value="round">Rounded UI</option>
+      <option value="typewriter">Typewriter</option>
+      <option value="didot">Didot, Bodoni</option>
+    </select>
+  </label>
+  <label>Title font
+    <select data-key="titleFont">
+      <option value="house">Tahoma / MS Sans Serif</option>
+      <option value="mono">UI monospace</option>
+      <option value="grotesk">Avenir, Segoe</option>
+      <option value="system">System UI</option>
+      <option value="serif">Palatino, Georgia</option>
+      <option value="round">Rounded UI</option>
+      <option value="typewriter">Typewriter</option>
+      <option value="didot">Didot, Bodoni</option>
+    </select>
+  </label>
+  <label>Type size <span class="val"></span>
+    <input type="range" data-key="type" min="11" max="20" step="1" data-unit="px">
+  </label>
+  <label>Weight <span class="val"></span>
+    <input type="range" data-key="weight" min="400" max="800" step="50">
+  </label>
+  <label>Line height <span class="val"></span>
+    <input type="range" data-key="leading" min="110" max="180" step="5" data-unit="%">
+  </label>
+  <label>Letter spacing <span class="val"></span>
+    <input type="range" data-key="track" min="-2" max="12" step="1" data-unit="em/100">
+  </label>
+
+  <h2>Labels and titles</h2>
+  <label>Label size <span class="val"></span>
+    <input type="range" data-key="labelsize" min="8" max="18" step="1" data-unit="px">
+  </label>
+  <label>Label weight <span class="val"></span>
+    <input type="range" data-key="labelw" min="400" max="800" step="50">
+  </label>
+  <label>Label tracking <span class="val"></span>
+    <input type="range" data-key="ltrack" min="0" max="28" step="1" data-unit="em/100">
+  </label>
+  <label>Section title <span class="val"></span>
+    <input type="range" data-key="secsize" min="9" max="20" step="1" data-unit="px">
+  </label>
+  <label>Card title <span class="val"></span>
+    <input type="range" data-key="cardsize" min="9" max="20" step="1" data-unit="px">
+  </label>
+  <label>Help size <span class="val"></span>
+    <input type="range" data-key="helpsize" min="9" max="18" step="1" data-unit="px">
+  </label>
+  <label>Help tracking <span class="val"></span>
+    <input type="range" data-key="helptrack" min="0" max="16" step="1" data-unit="em/100">
+  </label>
+  <label>Item title size <span class="val"></span>
+    <input type="range" data-key="titlesize" min="12" max="28" step="1" data-unit="px">
+  </label>
+  <label>Item title weight <span class="val"></span>
+    <input type="range" data-key="titlew" min="500" max="800" step="50">
+  </label>
+  <label>Item title tracking <span class="val"></span>
+    <input type="range" data-key="titletrack" min="0" max="28" step="1" data-unit="em/100">
+  </label>
+
+  <h2>Spacing</h2>
+  <label>Section gap <span class="val"></span>
+    <input type="range" data-key="gap" min="4" max="36" step="1" data-unit="px">
+  </label>
+  <label>In-card gap <span class="val"></span>
+    <input type="range" data-key="ingap" min="2" max="28" step="1" data-unit="px">
+  </label>
+  <label>Card padding <span class="val"></span>
+    <input type="range" data-key="cardpad" min="4" max="32" step="1" data-unit="px">
+  </label>
+  <label>Fascia padding <span class="val"></span>
+    <input type="range" data-key="fasciapad" min="2" max="28" step="1" data-unit="px">
+  </label>
+  <label>Body padding <span class="val"></span>
+    <input type="range" data-key="scrollpad" min="0" max="32" step="1" data-unit="px">
+  </label>
+  <label>Column gap <span class="val"></span>
+    <input type="range" data-key="colgap" min="4" max="48" step="1" data-unit="px">
+  </label>
+  <label>Tab gap <span class="val"></span>
+    <input type="range" data-key="tabgap" min="0" max="14" step="1" data-unit="px">
+  </label>
+  <label>Key gap <span class="val"></span>
+    <input type="range" data-key="keygap" min="0" max="18" step="1" data-unit="px">
+  </label>
+  <label>Label gap <span class="val"></span>
+    <input type="range" data-key="fieldgap" min="0" max="16" step="1" data-unit="px">
+  </label>
+
+  <h2>Frame</h2>
+  <label>Panel width <span class="val"></span>
+    <input type="range" data-key="panel" min="480" max="1100" step="10" data-unit="px">
+  </label>
+  <label>Radius <span class="val"></span>
+    <input type="range" data-key="rad" min="0" max="18" step="1" data-unit="px">
+  </label>
+  <label>Border <span class="val"></span>
+    <input type="range" data-key="bw" min="0" max="6" step="1" data-unit="px">
+  </label>
+  <label>Shadow <span class="val"></span>
+    <input type="range" data-key="shade" min="0" max="40" step="1" data-unit="px">
+  </label>
+  <label>Bevel <span class="val"></span>
+    <input type="range" data-key="bevel" min="0" max="4" step="1" data-unit="px">
+  </label>
+  <label>Contrast <span class="val"></span>
+    <input type="range" data-key="contrast" min="70" max="140" step="1" data-unit="%">
+  </label>
+  <label>Saturation <span class="val"></span>
+    <input type="range" data-key="sat" min="40" max="160" step="1" data-unit="%">
+  </label>
+  <label>Brightness <span class="val"></span>
+    <input type="range" data-key="bright" min="80" max="125" step="1" data-unit="%">
+  </label>
+
+  <h2>Fields</h2>
+  <label>Field width <span class="val"></span>
+    <input type="range" data-key="fieldw" min="40" max="100" step="1" data-unit="%">
+  </label>
+  <label>Field padding x <span class="val"></span>
+    <input type="range" data-key="fieldpx" min="2" max="20" step="1" data-unit="px">
+  </label>
+  <label>Field padding y <span class="val"></span>
+    <input type="range" data-key="fieldpy" min="1" max="16" step="1" data-unit="px">
+  </label>
+  <label>Field border <span class="val"></span>
+    <input type="range" data-key="fieldbw" min="0" max="4" step="1" data-unit="px">
+  </label>
+  <label>Field radius <span class="val"></span>
+    <input type="range" data-key="fieldrad" min="0" max="16" step="1" data-unit="px">
+  </label>
+  <label>Constraints height <span class="val"></span>
+    <input type="range" data-key="boxh" min="48" max="180" step="2" data-unit="px">
+  </label>
+
+  <h2>Readout</h2>
+  <label>Value size <span class="val"></span>
+    <input type="range" data-key="readsize" min="10" max="24" step="1" data-unit="px">
+  </label>
+  <label>Readout label <span class="val"></span>
+    <input type="range" data-key="readlabel" min="8" max="16" step="1" data-unit="px">
+  </label>
+  <label>Readout padding <span class="val"></span>
+    <input type="range" data-key="readpad" min="4" max="22" step="1" data-unit="px">
+  </label>
+  <label>Readout min <span class="val"></span>
+    <input type="range" data-key="readmin" min="90" max="240" step="2" data-unit="px">
+  </label>
+  <label>Readout gap <span class="val"></span>
+    <input type="range" data-key="readgap" min="0" max="10" step="1" data-unit="px">
+  </label>
+  <label>Readout tracking <span class="val"></span>
+    <input type="range" data-key="readtrack" min="0" max="24" step="1" data-unit="em/100">
+  </label>
+  <label>Phosphor glow <span class="val"></span>
+    <input type="range" data-key="glow" min="0" max="16" step="1" data-unit="px">
+  </label>
+
+  <h2>Tabs and keys</h2>
+  <label>Tab height <span class="val"></span>
+    <input type="range" data-key="tabh" min="24" max="48" step="1" data-unit="px">
+  </label>
+  <label>Tab size <span class="val"></span>
+    <input type="range" data-key="tabsize" min="9" max="16" step="1" data-unit="px">
+  </label>
+  <label>Tab tracking <span class="val"></span>
+    <input type="range" data-key="tabtrack" min="0" max="20" step="1" data-unit="em/100">
+  </label>
+  <label>Lamp size <span class="val"></span>
+    <input type="range" data-key="lamp" min="4" max="16" step="1" data-unit="px">
+  </label>
+  <label>Switch width <span class="val"></span>
+    <input type="range" data-key="sww" min="28" max="64" step="1" data-unit="px">
+  </label>
+  <label>Switch height <span class="val"></span>
+    <input type="range" data-key="swh" min="14" max="32" step="1" data-unit="px">
+  </label>
+  <label>Key height <span class="val"></span>
+    <input type="range" data-key="keyh" min="22" max="44" step="1" data-unit="px">
+  </label>
+  <label>Key size <span class="val"></span>
+    <input type="range" data-key="keysize" min="9" max="16" step="1" data-unit="px">
+  </label>
+  <label>Key weight <span class="val"></span>
+    <input type="range" data-key="keyw" min="500" max="800" step="50">
+  </label>
+  <label>Key tracking <span class="val"></span>
+    <input type="range" data-key="keytrack" min="0" max="22" step="1" data-unit="em/100">
+  </label>
+  <label>Orb size <span class="val"></span>
+    <input type="range" data-key="orb" min="16" max="48" step="1" data-unit="px">
+  </label>
+
+  <h2>Ink</h2>
+  <label>Mill lightness <span class="val"></span>
+    <input type="range" data-key="millface" min="140" max="230" step="1">
+  </label>
+  <label>Ink <span class="val"></span>
+    <input type="range" data-key="inkv" min="0" max="90" step="1">
+  </label>
+  <label>Muted <span class="val"></span>
+    <input type="range" data-key="mutedv" min="30" max="140" step="1">
+  </label>
+  <label>Phosphor <span class="val"></span>
+    <input type="range" data-key="phosphor" min="15" max="85" step="1">
+  </label>
+  <label>Mill stripe <span class="val"></span>
+    <input type="range" data-key="mill" min="0" max="45" step="1" data-unit="%">
+  </label>
+  <label>Rule <span class="val"></span>
+    <input type="range" data-key="rule" min="0" max="4" step="1" data-unit="px">
+  </label>
+  <label>Callout bar <span class="val"></span>
+    <input type="range" data-key="callout" min="0" max="10" step="1" data-unit="px">
+  </label>
+  <label>Number size <span class="val"></span>
+    <input type="range" data-key="numsize" min="8" max="16" step="1" data-unit="px">
+  </label>
+  <label>Focus ring <span class="val"></span>
+    <input type="range" data-key="focus" min="0" max="4" step="1" data-unit="px">
+  </label>
+</aside>
+
+<div class="stage" id="stage">
+  <div class="stage-cap">
+    <span>Item detail · Scheduling</span>
+    <span>Studio kiln rebuild · Elijah · Studio · Pen Kiln</span>
+  </div>
+  <div class="stage-well">
+    <div class="frame">
+      <article class="detail" id="detail" data-ui-name="Item detail" aria-label="Item detail, Scheduling">
+        <header class="fascia">
+          <div class="fascia-row">
+            <div class="mark">
+              <span class="power is-on" aria-hidden="true"></span>
+              <button type="button" class="orb" aria-label="Item icon" tabindex="-1"></button>
+              <input class="title" id="itemTitle" data-field="title" value="Studio kiln rebuild" aria-label="Item name">
+            </div>
+            <div class="win-keys">
+              <button type="button" class="win-key" aria-label="Settings" tabindex="-1">▣</button>
+              <button type="button" class="win-key" aria-label="Minimize" tabindex="-1">–</button>
+              <button type="button" class="win-key" aria-label="Close" tabindex="-1">×</button>
+            </div>
+          </div>
+          <div class="fascia-row">
+            <span class="plate"><i aria-hidden="true"></i>Task</span>
+            <span class="chip">next</span>
+          </div>
+          <div class="fascia-row">
+            <div class="keys">
+              <span class="save is-saved" id="saveFlag"><span class="save-lamp" aria-hidden="true"></span><span id="saveWord">Saved</span></span>
+              <button type="button" class="key" data-act="save">Save</button>
+              <button type="button" class="key" tabindex="-1">Complete</button>
+              <button type="button" class="key" tabindex="-1" title="Too late — file as a missed opportunity">Missed</button>
+              <button type="button" class="key" tabindex="-1" title="Open the To Do task card">Card</button>
+              <button type="button" class="key danger" tabindex="-1">Delete</button>
+            </div>
+          </div>
+        </header>
+        <div class="tablist" role="tablist" aria-label="Item detail">
+          <button type="button" class="tab" role="tab" disabled>Details</button>
+          <button type="button" class="tab" role="tab" aria-selected="true">Scheduling</button>
+          <button type="button" class="tab" role="tab" disabled>Dependencies</button>
+          <button type="button" class="tab" role="tab" disabled>Subtasks</button>
+          <button type="button" class="tab" role="tab" disabled>Notes</button>
+          <button type="button" class="tab" role="tab" disabled>Resources</button>
+          <button type="button" class="tab secondary" role="tab" disabled>Links</button>
+          <button type="button" class="tab secondary" role="tab" disabled>Analysis</button>
+          <button type="button" class="tab secondary" role="tab" disabled>Time</button>
+          <button type="button" class="tab secondary" role="tab" disabled>History</button>
+        </div>
+        <div class="scroll" id="sched" role="tabpanel" aria-label="Scheduling"></div>
+      </article>
+    </div>
+  </div>
+  <p class="lab-note">A date clears week, month, and year. A week, month, or year clears the date. Move to Weekly uses Tue 27 Oct 2026.</p>
+</div>
+
+<script>
+(function () {
+  const TODAY = "2026-10-27";
+  const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const MONS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const FONTS = {
+    house: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    grotesk: '"Avenir Next", "Segoe UI", sans-serif',
+    system: "system-ui, sans-serif",
+    mono: "ui-monospace, Menlo, Consolas, monospace",
+    serif: "Palatino, Georgia, serif",
+    round: '"Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif',
+    typewriter: '"Courier New", Courier, monospace',
+    didot: 'Didot, "Bodoni MT", Palatino, serif'
+  };
+  const INITIAL = {
+    font: "house", labelFont: "mono", titleFont: "house",
+    type: 12, weight: 400, leading: 135, track: 0,
+    labelsize: 11, labelw: 500, ltrack: 12,
+    secsize: 12, cardsize: 11, helpsize: 12, helptrack: 0,
+    titlesize: 15, titlew: 700, titletrack: 12,
+    gap: 18, ingap: 12, cardpad: 14, fasciapad: 10, scrollpad: 8, colgap: 32,
+    tabgap: 4, keygap: 6, fieldgap: 4,
+    panel: 860, rad: 3, bw: 0, shade: 8, bevel: 1, contrast: 100, sat: 100, bright: 100,
+    fieldw: 100, fieldpx: 8, fieldpy: 5, fieldbw: 1, fieldrad: 0, boxh: 72,
+    readsize: 13, readlabel: 9, readpad: 9, readmin: 130, readgap: 1, readtrack: 20, glow: 3,
+    tabh: 32, tabsize: 11, tabtrack: 9, lamp: 8,
+    sww: 36, swh: 20, keyh: 28, keysize: 11, keyw: 700, keytrack: 10, orb: 28,
+    millface: 192, inkv: 17, mutedv: 58, phosphor: 50, mill: 16, rule: 1, callout: 3, numsize: 10, focus: 2
+  };
+  const state = Object.assign({}, INITIAL);
+  const detail = document.getElementById("detail");
+  const sched = document.getElementById("sched");
+  const stage = document.getElementById("stage");
+  let dirty = false;
+  let rendering = false;
+  const data = {
+    title: "Studio kiln rebuild",
+    scheduledDate: "2026-10-30",
+    scheduledTime: "16:00",
+    scheduledWeek: "",
+    scheduledMonth: "",
+    scheduledYear: "",
+    deadline: "2026-11-01",
+    mustAfter: "2026-10-28",
+    mustBefore: "2026-11-01",
+    timePref: "afternoon",
+    dayConstraints: "Weekdays. Glaze test Tue 27 Oct. Brick delivery Wed 28 Oct morning. First firing Fri 30 Oct after 16:00. Studio closed Monday.",
+    send: true,
+    autoPush: true,
+    marks: {
+      "day:2026-10-30": { required: true, prioritized: true },
+      "week:2026-10-26_2026-11-01": { required: false, prioritized: true },
+      "month:2026-10": { required: false, prioritized: false }
+    }
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
+  function parse(iso) {
+    const p = String(iso || "").split("-");
+    if (p.length < 3) return null;
+    const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  function iso(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function pretty(isoStr) {
+    const d = parse(isoStr);
+    if (!d) return isoStr || "";
+    return DOW[d.getDay()] + ", " + MONS[d.getMonth()] + " " + d.getDate();
+  }
+  function weekKey(isoStr) {
+    const d = parse(isoStr);
+    if (!d) return "";
+    const mondayOffset = d.getDay() === 0 ? -6 : 1 - d.getDay();
+    const start = addDays(d, mondayOffset);
+    return iso(start) + "_" + iso(addDays(start, 6));
+  }
+  function weekLabel(key) {
+    const parts = String(key).split("_");
+    const a = parse(parts[0]);
+    const b = parse(parts[1]);
+    if (!a || !b) return "Week " + key;
+    const endFmt = a.getMonth() === b.getMonth() ? String(b.getDate()) : MONS[b.getMonth()] + " " + b.getDate();
+    return "Week of " + MONS[a.getMonth()] + " " + a.getDate() + "–" + endFmt;
+  }
+  function monthLabel(key) {
+    const p = String(key).split("-");
+    const m = Number(p[1]) - 1;
+    if (!p[0] || m < 0) return key;
+    return MONTHS[m] + " " + p[0];
+  }
+  function placement() {
+    if (data.scheduledDate) {
+      const day = pretty(data.scheduledDate);
+      return data.scheduledTime ? day + " · " + data.scheduledTime : day;
+    }
+    if (data.scheduledWeek) return "Week " + data.scheduledWeek;
+    if (data.scheduledMonth) return "Month " + data.scheduledMonth;
+    if (data.scheduledYear) return "Year " + data.scheduledYear;
+    return "Not placed";
+  }
+  function slots() {
+    const out = [];
+    const day = data.scheduledDate || data.deadline || "";
+    if (day) out.push({ period: "day", key: day, label: pretty(day) });
+    const wk = data.scheduledWeek || (day ? weekKey(day) : "");
+    if (wk) out.push({ period: "week", key: wk, label: weekLabel(wk) });
+    let mk = data.scheduledMonth;
+    if (!mk && day) mk = day.slice(0, 7);
+    if (!mk && wk) mk = wk.slice(0, 7);
+    if (mk) out.push({ period: "month", key: mk, label: monthLabel(mk) });
+    return out;
+  }
+  function gray(n) {
+    const v = Math.max(0, Math.min(255, Math.round(n)));
+    const h = v.toString(16).padStart(2, "0");
+    return "#" + h + h + h;
+  }
+  function mix(a, b, t) {
+    return a.map(function (v, i) { return Math.round(v + (b[i] - v) * t); });
+  }
+  function hex(rgb) {
+    return "#" + rgb.map(function (v) {
+      return Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0");
+    }).join("");
+  }
+  function phosphor(v) {
+    const base = [0x7d, 0xff, 0xc4];
+    if (v <= 50) return hex(mix([8, 28, 20], base, v / 50));
+    return hex(mix(base, [255, 255, 255], (v - 50) / 50));
+  }
+  function paint() {
+    const face = state.millface;
+    detail.style.setProperty("--ff", FONTS[state.font] || FONTS.house);
+    detail.style.setProperty("--mono", FONTS[state.labelFont] || FONTS.mono);
+    detail.style.setProperty("--titleff", FONTS[state.titleFont] || FONTS.house);
+    detail.style.setProperty("--face", gray(face));
+    detail.style.setProperty("--sheen", gray(face + 20));
+    detail.style.setProperty("--shade-face", gray(face - 42));
+    detail.style.setProperty("--card1", gray(Math.min(255, face + 46)));
+    detail.style.setProperty("--card2", gray(face + 15));
+    detail.style.setProperty("--nickel", gray(face - 12));
+    detail.style.setProperty("--line", gray(Math.max(40, face - 100)));
+    detail.style.setProperty("--ink", gray(state.inkv));
+    detail.style.setProperty("--muted", gray(state.mutedv));
+    detail.style.setProperty("--crt", phosphor(state.phosphor));
+    Object.keys(INITIAL).forEach(function (k) {
+      if (k === "font" || k === "labelFont" || k === "titleFont") return;
+      if (k === "millface" || k === "inkv" || k === "mutedv" || k === "phosphor") return;
+      detail.style.setProperty("--" + k, String(state[k]));
+      stage.style.setProperty("--" + k, String(state[k]));
+    });
+  }
+  function syncControls() {
+    document.querySelectorAll("[data-key]").forEach(function (el) {
+      el.value = state[el.dataset.key];
+      const val = el.parentElement && el.parentElement.querySelector(".val");
+      if (val) val.textContent = el.value + (el.dataset.unit ? " " + el.dataset.unit : "");
+    });
+  }
+  function help(text) { return '<p class="help">' + esc(text) + "</p>"; }
+  function field(id, label, inner, extra) {
+    return '<div class="field"><label for="' + id + '">' + esc(label) + "</label>" + inner + (extra || "") + "</div>";
+  }
+  function dateInput(id, fieldName, value) {
+    return '<input id="' + id + '" data-field="' + fieldName + '" type="date" value="' + esc(value || "") + '">';
+  }
+  function switchBtn(label, on, act, extra) {
+    return '<button type="button" class="sw" role="switch" aria-label="' + esc(label) + '" aria-checked="' + (on ? "true" : "false") + '" data-act="' + act + '"' + (extra || "") + "></button>";
+  }
+  function optionList(values, current) {
+    return values.map(function (v) {
+      return '<option value="' + esc(v[0]) + '"' + (v[0] === current ? " selected" : "") + ">" + esc(v[1]) + "</option>";
+    }).join("");
+  }
+  function renderSched() {
+    const focus = document.activeElement;
+    const focusId = focus && sched.contains(focus) ? focus.id : "";
+    const sel = focus && focusId ? focus.selectionStart : null;
+    const placed = placement();
+    rendering = true;
+    const rows = slots().map(function (slot) {
+      const mark = data.marks[slot.period + ":" + slot.key] || { required: false, prioritized: false };
+      const id = slot.period + ":" + slot.key;
+      return '<div class="mark-row"><span class="who">' + esc(slot.label) + '</span><div class="pair">' +
+        "<span>Required " + switchBtn("Required for " + slot.label, mark.required, "mark", ' data-mark="' + esc(id) + '" data-flag="required"') + "</span>" +
+        "<span>Prioritized " + switchBtn("Prioritized for " + slot.label, mark.prioritized, "mark", ' data-mark="' + esc(id) + '" data-flag="prioritized"') + "</span>" +
+        "</div></div>";
+    }).join("");
+    const callout = (data.scheduledDate && !data.scheduledWeek)
+      ? '<div class="callout"><div><p class="plain">On daily to-do list</p><p class="help">Move this task to the weekly to-do list instead of today.</p></div><button type="button" class="key" data-act="weekly">Move to Weekly</button></div>'
+      : "";
+    const weekValue = data.scheduledWeek ? data.scheduledWeek.slice(0, 10) : "";
+    const currently = data.scheduledWeek ? '<p class="currently">Currently: ' + esc(data.scheduledWeek) + "</p>" : "";
+    sched.innerHTML =
+      '<div class="sched">' +
+        '<div class="readout" role="group" aria-label="Scheduling summary">' +
+          '<div class="cell" data-on="' + (placed !== "Not placed") + '"><span class="cell-label">Placed</span><span class="cell-value">' + esc(placed) + "</span></div>" +
+          '<div class="cell" data-on="' + Boolean(data.deadline) + '"><span class="cell-label">Deadline</span><span class="cell-value">' + esc(data.deadline ? pretty(data.deadline) : "None") + "</span></div>" +
+          '<div class="cell" data-on="' + data.send + '"><span class="cell-label">Scheduler</span><span class="cell-value">' + (data.send ? "Sent" : "Not sent") + "</span></div>" +
+          '<div class="cell" data-on="' + data.autoPush + '"><span class="cell-label">Auto-push</span><span class="cell-value">' + (data.autoPush ? "On" : "Off") + "</span></div>" +
+        "</div>" +
+        '<section class="sec" aria-label="Where it shows up">' +
+          '<header class="sechead"><span class="num">01</span><h2>Where it shows up</h2>' +
+          help("Which lists read this item: the Scheduler, and the To Do periods.") + "</header>" +
+          '<div class="row"><div><div class="name">Send to Scheduler</div>' +
+          help("Off unless you turn it on, or a list this item is on is already sent. Dates, deadlines, and an itinerary are not the Scheduler.") +
+          "</div>" + switchBtn("Send to Scheduler", data.send, "send") + "</div>" +
+          '<div class="row"><div><div class="name">Auto-push</div>' +
+          help("Off unless you turn it on. When this day, week, or month ends unfinished, it stays Undone for that period and is scheduled on the next one in To Do. This does not put the item in the Scheduler.") +
+          "</div>" + switchBtn("Auto-push", data.autoPush, "auto") + "</div>" +
+          (rows ? '<div class="row stack"><div class="name">Required and prioritized</div>' +
+            help("This item is assigned to every period below. Required must be done and sits on its own list. Prioritized stays on Assigned and is marked.") +
+            '<div class="marks">' + rows + "</div></div>" : "") +
+          callout +
+        "</section>" +
+        '<section class="sec" aria-label="When">' +
+          '<header class="sechead"><span class="num">02</span><h2>When</h2>' +
+          help("Pick one placement. Setting a date clears the looser ones.") + "</header>" +
+          '<div class="when">' +
+            '<div class="card"><h3><i aria-hidden="true"></i>Specific Date & Time</h3>' +
+              field("scheduled-date", "Scheduled Date", dateInput("scheduled-date", "scheduledDate", data.scheduledDate)) +
+              field("scheduled-time", "Scheduled Time", '<input id="scheduled-time" data-field="scheduledTime" type="text" value="' + esc(data.scheduledTime) + '" autocomplete="off">') +
+            "</div>" +
+            '<div class="card"><h3>Flexible Scheduling</h3>' +
+              field("scheduled-week", "Scheduled Week", '<input id="scheduled-week" data-field="weekPick" type="date" value="' + esc(weekValue) + '">', currently) +
+              field("scheduled-month", "Scheduled Month", '<input id="scheduled-month" data-field="scheduledMonth" type="month" value="' + esc(data.scheduledMonth) + '">') +
+              field("scheduled-year", "Scheduled Year", '<input id="scheduled-year" data-field="scheduledYear" type="number" min="2024" max="2030" value="' + esc(data.scheduledYear) + '">') +
+            "</div>" +
+          "</div>" +
+        "</section>" +
+        '<section class="sec" aria-label="Deadline and limits">' +
+          '<header class="sechead"><span class="num">03</span><h2>Deadline and limits</h2>' +
+          help("What it must beat, and the windows it must stay inside.") + "</header>" +
+          '<div class="limits">' +
+            '<div class="card"><h3><i aria-hidden="true"></i>Deadline</h3>' +
+              field("deadline", "Deadline Date", dateInput("deadline", "deadline", data.deadline)) +
+            "</div>" +
+            '<div class="card"><h3><i aria-hidden="true"></i>Scheduling Constraints</h3>' +
+              '<div class="when">' +
+                field("must-be-done-after", "Must be done after", dateInput("must-be-done-after", "mustAfter", data.mustAfter)) +
+                field("must-be-done-before", "Must be done before", dateInput("must-be-done-before", "mustBefore", data.mustBefore)) +
+              "</div>" +
+              '<div class="field"><label for="time-preference">Time of day preference</label><select id="time-preference" data-field="timePref">' +
+                optionList([["none", "No preference"], ["morning", "Morning"], ["afternoon", "Afternoon"], ["evening", "Evening"], ["night", "Night"]], data.timePref) +
+              "</select></div>" +
+              '<div class="field"><label for="day-constraints">Day constraints</label><textarea id="day-constraints" data-field="dayConstraints" rows="3">' + esc(data.dayConstraints) + "</textarea></div>" +
+            "</div>" +
+          "</div>" +
+        "</section>" +
+      "</div>";
+    rendering = false;
+    if (focusId) {
+      const el = document.getElementById(focusId);
+      if (el) {
+        el.focus();
+        if (sel != null && el.setSelectionRange) {
+          try { el.setSelectionRange(sel, sel); } catch (err) { /* date inputs */ }
+        }
+      }
+    }
+    paintSave();
+  }
+  function paintSave() {
+    const flag = document.getElementById("saveFlag");
+    flag.classList.toggle("is-saved", !dirty);
+    flag.classList.toggle("is-unsaved", dirty);
+    document.getElementById("saveWord").textContent = dirty ? "Unsaved changes" : "Saved";
+  }
+  function clearLooser() {
+    data.scheduledWeek = "";
+    data.scheduledMonth = "";
+    data.scheduledYear = "";
+  }
+  function clearDate() {
+    data.scheduledDate = "";
+    data.scheduledTime = "";
+  }
+  function applyField(fieldName, value) {
+    if (fieldName === "title") data.title = value;
+    else if (fieldName === "scheduledDate") {
+      data.scheduledDate = value;
+      if (value) clearLooser();
+    } else if (fieldName === "scheduledTime") data.scheduledTime = value;
+    else if (fieldName === "weekPick") {
+      if (value) {
+        data.scheduledWeek = weekKey(value);
+        clearDate();
+        data.scheduledMonth = "";
+        data.scheduledYear = "";
+      } else data.scheduledWeek = "";
+    } else if (fieldName === "scheduledMonth") {
+      data.scheduledMonth = value;
+      if (value) {
+        clearDate();
+        data.scheduledWeek = "";
+        data.scheduledYear = "";
+      }
+    } else if (fieldName === "scheduledYear") {
+      data.scheduledYear = value;
+      if (value) {
+        clearDate();
+        data.scheduledWeek = "";
+        data.scheduledMonth = "";
+      }
+    } else if (fieldName === "deadline" || fieldName === "mustAfter" || fieldName === "mustBefore" || fieldName === "timePref" || fieldName === "dayConstraints") {
+      data[fieldName] = value;
+    }
+    dirty = true;
+    renderSched();
+  }
+
+  document.querySelectorAll("[data-key]").forEach(function (el) {
+    function readControl() {
+      state[el.dataset.key] = el.type === "range" ? Number(el.value) : el.value;
+      const val = el.parentElement && el.parentElement.querySelector(".val");
+      if (val) val.textContent = el.value + (el.dataset.unit ? " " + el.dataset.unit : "");
+      paint();
+    }
+    el.addEventListener("input", readControl);
+    if (el.tagName === "SELECT") el.addEventListener("change", readControl);
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    Object.keys(INITIAL).forEach(function (k) { state[k] = INITIAL[k]; });
+    syncControls();
+    paint();
+  });
+  detail.addEventListener("input", function (e) {
+    if (rendering) return;
+    const t = e.target;
+    if (!t.dataset || !t.dataset.field) return;
+    applyField(t.dataset.field, t.value);
+  });
+  detail.addEventListener("change", function (e) {
+    if (rendering) return;
+    const t = e.target;
+    if (!t.dataset || !t.dataset.field) return;
+    if (t.dataset.field === "scheduledTime" || t.dataset.field === "title" || t.dataset.field === "dayConstraints" || t.dataset.field === "scheduledYear") return;
+    applyField(t.dataset.field, t.value);
+  });
+  detail.addEventListener("click", function (e) {
+    const b = e.target.closest("[data-act]");
+    if (!b || !detail.contains(b)) return;
+    const act = b.dataset.act;
+    if (act === "save") {
+      dirty = false;
+      paintSave();
+      return;
+    }
+    if (act === "send") data.send = !data.send;
+    else if (act === "auto") data.autoPush = !data.autoPush;
+    else if (act === "mark") {
+      const id = b.dataset.mark;
+      const flag = b.dataset.flag;
+      const prev = data.marks[id] || { required: false, prioritized: false };
+      data.marks[id] = {
+        required: flag === "required" ? !prev.required : prev.required,
+        prioritized: flag === "prioritized" ? !prev.prioritized : prev.prioritized
+      };
+    } else if (act === "weekly") {
+      data.scheduledWeek = weekKey(TODAY);
+      clearDate();
+      data.scheduledMonth = "";
+      data.scheduledYear = "";
+    } else return;
+    dirty = true;
+    renderSched();
+  });
+
+  syncControls();
+  paint();
+  renderSched();
+})();
+</script>
+</body>
+</html>

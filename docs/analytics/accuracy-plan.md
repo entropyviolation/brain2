@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/PlanVsReality.tsx`. Math: `lib/plan-vs-reality.ts` (`computePlanVsReality`). New plates: `accuracy-views.css`, `quantile` from `accuracy-stats.ts`.
+File: `components/Analytics/accuracy/PlanVsReality.tsx`. Math: `lib/plan-vs-reality.ts` (`computePlanVsReality`). New plates: `accuracy/accuracy-views.css`, `quantile` from `accuracy-stats.ts`.
 
 ## Information
 - Grain (day / week / month / season) and one period inside the shared window.

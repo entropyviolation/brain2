@@ -163,6 +163,7 @@ function LayerPopup({ layer, index }: { layer: ItemLayer; index: number }) {
       taskId={layer.taskId}
       open
       stackAbove
+      holdOnMinimize
       onClose={() => popItemLayer(layer.key)}
       layerHeader={<StepLayerHeader layer={layer} index={index} />}
       onStepComplete={

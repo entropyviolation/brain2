@@ -202,16 +202,23 @@ function lastOperationWorkDate(operation: Task, allTasks: Task[]): Date | null {
   return latest
 }
 
-function lastLinkedWorkDate(itemId: string, actions: ActionRecord[]): Date | null {
-  let latest: Date | null = null
+/**
+ * Latest completed-action date per item the action serves. Built once per
+ * pass: asking each item to scan every action was quadratic, and with tens of
+ * thousands of items it held the renderer at 100% CPU.
+ */
+function linkedWorkDates(actions: ActionRecord[]): Map<string, Date> {
+  const latestByTarget = new Map<string, Date>()
   for (const action of actions) {
     if (!action.completed) continue
-    const serves = (action.links ?? []).some((link) => link.targetId === itemId)
-    if (!serves) continue
     const d = safeToDate(action.completedDate ?? undefined)
-    latest = laterDate(latest, d)
+    if (!d) continue
+    for (const link of action.links ?? []) {
+      const prev = latestByTarget.get(link.targetId)
+      if (!prev || d.getTime() > prev.getTime()) latestByTarget.set(link.targetId, d)
+    }
   }
-  return latest
+  return latestByTarget
 }
 
 function isPastNeglectWindow(
@@ -263,7 +270,7 @@ function goalAsQueueItem(goal: Goal): Task {
 function isNeglectedStructure(
   task: Task,
   allTasks: Task[],
-  actions: ActionRecord[],
+  linkedWork: Map<string, Date>,
   now: Date,
   neglectDays: number,
 ): boolean {
@@ -273,7 +280,7 @@ function isNeglectedStructure(
     return isPastNeglectWindow(lastOperationWorkDate(task, allTasks), task.createdAt, now, neglectDays)
   }
   if (!isListFurniture(task)) return false
-  const lastWork = laterDate(latestTimeLogDate(task), lastLinkedWorkDate(task.id, actions))
+  const lastWork = laterDate(latestTimeLogDate(task), linkedWork.get(task.id) ?? null)
   return isPastNeglectWindow(lastWork, task.createdAt, now, neglectDays)
 }
 
@@ -325,6 +332,7 @@ export function getNeedsAttention(
   for (const t of tasks) clearedById.set(t.id, isClearedFromWork(t))
 
   const actions = enabled.has("neglected") ? tasksToActionRecords(tasks) : []
+  const linkedWork = linkedWorkDates(actions)
   const byId = new Map<string, NeedsAttentionEntry>()
   const order: string[] = []
 
@@ -345,7 +353,7 @@ export function getNeedsAttention(
     if (enabled.has("unclarified") && isUnclarified(task)) push(task, "unclarified")
     if (enabled.has("blocked") && isBlocked(task, clearedById)) push(task, "blocked")
     if (enabled.has("stale") && isStale(task, now, staleDays)) push(task, "stale")
-    if (enabled.has("neglected") && isNeglectedStructure(task, tasks, actions, now, neglectDays)) {
+    if (enabled.has("neglected") && isNeglectedStructure(task, tasks, linkedWork, now, neglectDays)) {
       push(task, "neglected")
     }
     if (

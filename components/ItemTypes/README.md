@@ -14,8 +14,8 @@ shows a cover and pages-read; a wishlist rug does not grow a Schedule tab.
 
 ## Notes
 
-- **Analytics library.** Analytics → Library → **Item Types**
-  (`components/Analytics/ItemTypesLibrary.tsx`) is the browse / sort / count /
+- **Data library.** Data → Library → **Item Types**
+  (`components/Analytics/library/ItemTypesLibrary.tsx`) is the browse / sort / count /
   drill surface. This panel remains the Settings editor.
 - **System vs catalog vs user.** `kind: "system"` (Task, Item, Note, Operation)
   is always re-seeded from code and locked in the editor. `kind: "catalog"`

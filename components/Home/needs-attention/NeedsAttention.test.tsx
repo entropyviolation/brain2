@@ -1,0 +1,242 @@
+/**
+ * NeedsAttention — Home card omits the stale reason.
+ */
+import { fireEvent, render, screen } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { resetAllStores } from "@/tests/test-utils"
+import { taskRepository } from "@/lib/data/task-repository"
+import { useTaskStore } from "@/lib/task-store"
+import type { Task } from "@/lib/types"
+import { NeedsAttention } from "./NeedsAttention"
+
+const NOW = new Date("2026-06-23T12:00:00.000Z")
+
+function daysAgo(days: number): Date {
+  return new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000)
+}
+
+function task(overrides: Partial<Task> = {}): Task {
+  return {
+    id: overrides.id ?? "t1",
+    description: overrides.description ?? "Task",
+    stage: "clarified",
+    createdAt: NOW,
+    completed: false,
+    lists: [],
+    scheduledDate: NOW,
+    ...overrides,
+  }
+}
+
+describe("NeedsAttention", () => {
+  beforeEach(() => {
+    resetAllStores()
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it("does not show stale-only items or a Stale tag", () => {
+    taskRepository.add(
+      task({
+        id: "stale-only",
+        description: "Aging unscheduled task",
+        createdAt: daysAgo(30),
+        scheduledDate: undefined,
+      }),
+    )
+    taskRepository.add(
+      task({
+        id: "overdue",
+        description: "Late report",
+        deadline: daysAgo(2),
+      }),
+    )
+    taskRepository.add(
+      task({
+        id: "inbox-and-stale",
+        description: "Old inbox item",
+        stage: "inbox",
+        createdAt: daysAgo(40),
+        scheduledDate: undefined,
+      }),
+    )
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+
+    expect(screen.queryByText("Aging unscheduled task")).not.toBeInTheDocument()
+    expect(screen.queryByText("Stale")).not.toBeInTheDocument()
+    expect(screen.queryByText("Unclarified")).not.toBeInTheDocument()
+    expect(screen.queryByText("Old inbox item")).not.toBeInTheDocument()
+    expect(screen.getByText("Late report")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Overdue" })).toBeInTheDocument()
+  })
+
+  it("shows neglected goals and zombie tasks with queue actions", () => {
+    taskRepository.add(
+      task({
+        id: "zombie",
+        description: "Rescheduled forever",
+        daysPushed: 8,
+      }),
+    )
+
+    render(
+      <NeedsAttention
+        onOpenItem={() => {}}
+        options={{
+          now: NOW,
+          goals: [
+            {
+              id: "goal-cold",
+              title: "Read 20 books",
+              type: "count",
+              target: 20,
+              current: 0,
+              periodKind: "year",
+              objectiveIds: ["obj"],
+              points: 1,
+              completed: false,
+              createdAt: daysAgo(40),
+            },
+          ],
+        }}
+        defaultCollapsed={false}
+      />,
+    )
+
+    expect(screen.getByRole("heading", { name: "Neglected" })).toBeInTheDocument()
+    expect(screen.getByText("Read 20 books")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Zombie" })).toBeInTheDocument()
+    expect(screen.getByText("Rescheduled forever")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Split" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Clarify" })).not.toBeInTheDocument()
+  })
+
+  it("kills a queued item after confirm", () => {
+    taskRepository.add(task({ id: "zombie", description: "Rescheduled forever", daysPushed: 8 }))
+    vi.spyOn(window, "confirm").mockReturnValue(true)
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+
+    expect(taskRepository.getById("zombie")).toBeUndefined()
+    expect(screen.queryByText("Rescheduled forever")).not.toBeInTheDocument()
+  })
+
+  it("splits a queued item from a prompt into subtasks", () => {
+    taskRepository.add(task({ id: "zombie", description: "Rescheduled forever", daysPushed: 8, subtasks: [] }))
+    vi.spyOn(window, "prompt").mockReturnValue("Draft\nEdit")
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("button", { name: "Split" }))
+
+    expect(taskRepository.getById("zombie")?.subtasks?.map((s) => s.description)).toEqual(["Draft", "Edit"])
+  })
+
+  it("does not list an inbox capture", () => {
+    taskRepository.add(task({ id: "inbox", description: "Vague idea", stage: "inbox" }))
+    taskRepository.add(task({ id: "late-inbox", description: "Late inbox", stage: "inbox", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+
+    expect(screen.queryByText("Vague idea")).not.toBeInTheDocument()
+    expect(screen.queryByText("Late inbox")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Clarify" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Unclarified" })).not.toBeInTheDocument()
+  })
+
+  it("hides a category and remembers it", () => {
+    taskRepository.add(task({ id: "zombie", description: "Rescheduled forever", daysPushed: 8 }))
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("button", { name: /Hide Zombie/ }))
+
+    expect(screen.queryByText("Rescheduled forever")).not.toBeInTheDocument()
+    expect(screen.getByText("Late report")).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem("cogs-needs-attention-hidden") ?? "[]")).toEqual(["zombie"])
+
+    fireEvent.click(screen.getByRole("button", { name: /Show Zombie/ }))
+    expect(screen.getByText("Rescheduled forever")).toBeInTheDocument()
+  })
+
+  it("keeps the count at zero until the task vault has hydrated", () => {
+    vi.spyOn(useTaskStore.persist, "hasHydrated").mockReturnValue(false)
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+
+    expect(screen.getByLabelText("0 need attention")).toBeInTheDocument()
+    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
+  })
+
+  it("opens into the reading order when count > 0 and nothing is stored", () => {
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
+
+    expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByText("Late report")).toBeInTheDocument()
+  })
+
+  it("stays collapsed when the queue is empty and nothing is stored", () => {
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
+
+    expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
+  })
+
+  it("persists collapsed and expanded state in localStorage", () => {
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} />)
+    const toggle = screen.getByRole("button", { name: /Needs Attention/ })
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(localStorage.getItem("cogs-home-needs-attention")).toBe("collapsed")
+    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    expect(localStorage.getItem("cogs-home-needs-attention")).toBe("expanded")
+    expect(screen.getByText("Late report")).toBeInTheDocument()
+  })
+
+  it("restores the stored collapsed state after remount", () => {
+    taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
+    localStorage.setItem("cogs-home-needs-attention", "collapsed")
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+
+    expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByText("Late report")).not.toBeInTheDocument()
+  })
+
+  it("selects a range and deletes those rows together", () => {
+    taskRepository.add(task({ id: "a", description: "First zombie", daysPushed: 8 }))
+    taskRepository.add(task({ id: "b", description: "Second zombie", daysPushed: 8 }))
+    taskRepository.add(task({ id: "c", description: "Third zombie", daysPushed: 8 }))
+    vi.spyOn(window, "confirm").mockReturnValue(true)
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select First zombie" }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Third zombie" }), { shiftKey: true })
+
+    expect(screen.getByRole("checkbox", { name: "Select First zombie" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Select Second zombie" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Select Third zombie" })).toBeChecked()
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete selected" }))
+
+    expect(taskRepository.getById("a")).toBeUndefined()
+    expect(taskRepository.getById("b")).toBeUndefined()
+    expect(taskRepository.getById("c")).toBeUndefined()
+  })
+})

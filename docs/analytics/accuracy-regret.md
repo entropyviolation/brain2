@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/RegretView.tsx`. Math: `lib/regret-store.ts` (`regretCost`, `daysOverdue`, `dailyRegretIncrement`, ledger by local `YYYY-MM-DD`). New plates use `squareSide` from `accuracy-stats.ts`.
+File: `components/Analytics/accuracy/RegretView.tsx`. Math: `lib/regret-store.ts` (`regretCost`, `daysOverdue`, `dailyRegretIncrement`, ledger by local `YYYY-MM-DD`). New plates use `squareSide` from `accuracy-stats.ts`.
 
 ## Information
 - Ledger rows in the window (date, task, regret, optional blocked reason).

@@ -1,6 +1,6 @@
 # Plan — analytics vision
 
-What an Analytics view of **Plan** should be able to say, using the records Plan actually keeps.
+What an Data view of **Plan** should be able to say, using the records Plan actually keeps.
 
 Plan is a calendar of **prospective** intentions at several grains, plus a written log for the day, week, month, and season. It is not a record of what was lived. Lived / tracked numbers are **retrospective** and need an outside join ([`TEMPORAL_POLARITY.md`](../TEMPORAL_POLARITY.md)). The hour grid can outline tracked time, and a header “followed / skipped” path can stamp a task, but those outcomes are not fields on a calendar event or a planned-action block. This document stays inside Plan’s own entities, names the formulas in plain language, and marks every place a true “what happened” number would need a later join.
 
@@ -199,7 +199,7 @@ Plan does not own a second task table. A chip, a rail row, and a funnel card are
 |---|---|
 | `period` | `day` \| `week` \| `month` \| `year` |
 | `value` | Day `YYYY-MM-DD`, week range, month `YYYY-MM`, or year `YYYY` |
-| `resolved` | Omitted, or `assimilated` \| `pushed` \| `discarded` \| `clarified` |
+| `resolved` | Omitted, or `assimilated` \| `pushed` \| `discarded` \| `clarified` \| `missed` |
 
 What the resolution means:
 
@@ -208,6 +208,7 @@ What the resolution means:
 | omitted | Automatic roll-up when the period ended and the task was still open, or persist backfill of a live assignment whose period has already ended | Yes. The Scheduler can still triage it. |
 | `pushed` | Explicit push or auto-push onto the next period | Yes, as a plan that was deferred. Push counters increment. Roll-up does not. |
 | `clarified` | Dismiss or Unschedule on a past Scheduler card | The period was closed without finishing. Undone list can still show it. |
+| `missed` | Missed on a past Scheduler card | Hidden from that card's default queue. The task status stays unchanged. Undone list can still show it. |
 | `discarded` | To Do Discard | Dropped from the working lists. The row remains. |
 | `assimilated` | Named on the type as a resolution | Roll-up itself leaves `resolved` unset. Do not assume every coarser landing is marked assimilated. |
 
@@ -777,7 +778,7 @@ A status line on every view: which store the numbers came from (events, planned 
 
 All-day events store `00:00`–`23:59` and then the duration function returns 0 because `isAllDay` is set. They paint every day from `date` through `endDate` inclusive. They do not enter commitment minutes. Turning all-day off clears `endDate` in the dialog but does not by itself rewrite the clock. A toggle off without editing times can leave a ~24-hour timed event. Treat `isAllDay` as the capacity switch, and if it is false, trust the clock — including a suspicious 00:00–23:59.
 
-Dropping a timed event on the day rail sets `isAllDay: true` and leaves `isScheduled: true`. That is “taken off the hour grid,” not “deleted,” and not “unscheduled” in the task sense. Analytics should call it **demoted to banner**.
+Dropping a timed event on the day rail sets `isAllDay: true` and leaves `isScheduled: true`. That is “taken off the hour grid,” not “deleted,” and not “unscheduled” in the task sense. Data should call it **demoted to banner**.
 
 There is no all-day planned action. A habit or to-do is either untimed on the rail or a timed block.
 

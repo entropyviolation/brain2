@@ -82,4 +82,27 @@ describe("ModulesPanel", () => {
     expect(screen.getByText("Kept trip")).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Modules" })).not.toBeInTheDocument()
   })
+
+  it("opens the module guide from the key beside Settings", async () => {
+    const user = userEvent.setup()
+    useModulesStore.setState({
+      modules: [
+        {
+          id: "ws-trip",
+          type: "workspace",
+          kind: "workspace",
+          title: "Kept trip",
+          config: {},
+          views: [{ id: "notes-1", title: "Notes", kind: "notes", config: {} }],
+        },
+      ],
+    })
+    writeStoredId(APP_NAV_KEYS.modulesWorkspaceId, "ws-trip")
+    render(<ModulesPanel />)
+
+    await user.click(screen.getByRole("button", { name: "How to build and set up a module" }))
+    expect(screen.getByRole("heading", { name: "Building a module" })).toBeInTheDocument()
+    expect(screen.getByText(/Build from scratch/)).toBeInTheDocument()
+    expect(screen.getByText(/Spreadsheet \(editable grid\)/)).toBeInTheDocument()
+  })
 })

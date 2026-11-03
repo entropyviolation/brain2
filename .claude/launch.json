@@ -9,6 +9,12 @@
       "autoPort": true
     },
     {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
       "name": "app (running)",
       "url": "http://localhost:3000"
     }

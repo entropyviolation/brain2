@@ -28,7 +28,7 @@ import { readPlanDrag, writePlanDrag, type PlanDragPayload } from "@/lib/plan-dr
 import type { TrackedAgendaBlock } from "@/components/Home/Tracking/tracked-agenda-blocks"
 import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { temporalAttr } from "@/lib/temporal-polarity"
-import { usePlanPointerDrop } from "./use-plan-rail-drag"
+import { usePlanPointerDrop } from "./rail/use-plan-rail-drag"
 import {
   hhmmToMinutes,
   plannedDurationMinutes,
@@ -193,6 +193,16 @@ interface GridItem {
   tags?: TrackedAgendaBlock["tags"]
   /** Event-linked prerequisite deadline (HM1) — renders a "must be done before" badge. */
   mustBeDoneBefore?: Date
+}
+
+const PLANNED_SHADES = 6
+
+/** Stable shade slot for a planned action, so the same task keeps its tint. */
+export function plannedShade(action?: PlannedAction): number {
+  const key = action ? `${action.sourceId ?? action.title}` : ""
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return h % PLANNED_SHADES
 }
 
 export function AgendaGrid({
@@ -553,8 +563,9 @@ export function AgendaGrid({
     setDragHighlight(null)
   }
 
-  /** Plan-mode events draw as one slab over the hour rows, not a slice per hour. */
-  const isEventSlab = (item: GridItem) => mode === "plan" && item.kind === "event" && !item.isGhost
+  /** Plan-mode events and planned actions draw as one slab over the hour rows, not a slice per hour. */
+  const isEventSlab = (item: GridItem) =>
+    mode === "plan" && (item.kind === "event" || item.kind === "planned") && !item.isGhost
 
   return (
     <div ref={rootRef} className={["agenda95", maxHeight].filter(Boolean).join(" ")}>
@@ -734,13 +745,23 @@ export function AgendaGrid({
       {gridItems.filter(isEventSlab).map((item) => {
         const top = (item.startMinutes / 60) * HOUR_HEIGHT
         const height = Math.max(22, (Math.max(1, item.durationMinutes) / 60) * HOUR_HEIGHT)
+        const slabPlanned = item.kind === "planned"
         return (
           <div
             key={item.id}
-            className="agenda-block agenda-block-opal agenda-span agenda-event-span"
-            data-kind="event"
+            className={
+              slabPlanned
+                ? "agenda-block agenda-block-planned agenda-span agenda-event-span"
+                : "agenda-block agenda-block-opal agenda-span agenda-event-span"
+            }
+            data-kind={item.kind}
             data-temporal={temporalAttr("prospective")}
-            style={{ top, height, ["--plan-chip-color" as string]: resolvePlanColor(item.color) }}
+            data-shade={slabPlanned ? plannedShade(item.planned) : undefined}
+            style={{
+              top,
+              height,
+              ["--plan-chip-color" as string]: slabPlanned ? undefined : resolvePlanColor(item.color),
+            }}
             draggable
             title={item.sublabel ? `${item.sublabel}  ${item.label}` : item.label}
             onMouseDown={(e) => e.stopPropagation()}
@@ -750,7 +771,9 @@ export function AgendaGrid({
               if (slot) dragCreateHover({ currentTarget: slot, clientY: e.clientY }, Number(slot.dataset.hour))
             }}
             onMouseUp={dragCreateFinish}
-            onDragStart={(e) => onEventDragStart(e, item.id)}
+            onDragStart={(e) =>
+              slabPlanned ? onPlannedDragStart(e, item.id) : onEventDragStart(e, item.id)
+            }
             onDragOver={(e) => {
               e.preventDefault()
               e.dataTransfer.dropEffect = "move"
@@ -768,7 +791,8 @@ export function AgendaGrid({
             }}
             onClick={(e) => {
               e.stopPropagation()
-              if (item.event) onEventClick?.(item.event)
+              if (slabPlanned && item.planned) onPlannedActionClick?.(item.planned)
+              else if (item.event) onEventClick?.(item.event)
             }}
           >
             <div className="agenda-event-head">

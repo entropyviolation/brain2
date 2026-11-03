@@ -64,6 +64,15 @@ export function isDemoProfile(): boolean {
   return readDataProfile() === "demo"
 }
 
+/** True when this runtime can open IndexedDB. False in SSR and some tests. */
+export function idbAvailable(): boolean {
+  try {
+    return typeof indexedDB !== "undefined" && indexedDB != null
+  } catch {
+    return false
+  }
+}
+
 export function isDemoPhysicalKey(name: string): boolean {
   return name.startsWith(DEMO_PERSIST_PREFIX)
 }

@@ -1,6 +1,6 @@
 # 05 · Screen Time, DMs, email
 
-_Last mapped: 2026-10-22_
+_Last mapped: 2026-10-25_
 
 **Wave 2.** Needs `00-core.md`.
 
@@ -17,6 +17,8 @@ No iOS API hands raw usage to an app. Add a Shortcuts **personal automation** pe
 
 IMAP read by the hub. Gmail needs an app password, stored only on the Mac. Store from, to, subject, and time by default. Bodies only when the person turns them on in Settings (off by default), matching the plan. The "keep bodies" decision of 2026-10-22 was about texts. Owns `lib/phone-sync/email.ts` and `scripts/email-reader.mjs`.
 
+**Planned (2026-11-02).** Watch rules, an email cleaner module, and needs-a-reply rows build on this reader: [`STREAM_LOG_PLAN.md`](../STREAM_LOG_PLAN.md) section 10.
+
 ## Done
 
-- Each source shows in Settings → Phone sync with its last run.
+- Settings → Phone sync already names Screen Time, DMs, and email, and says they are not built. A last run appears once a reader exists.

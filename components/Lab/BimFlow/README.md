@@ -1,0 +1,387 @@
+# BIM flow lab
+
+_Last mapped: 2026-10-30_
+
+Next steps and lessons for whoever picks this up: [`docs/BIM_FLOW_HANDOFF.md`](../../../docs/BIM_FLOW_HANDOFF.md).
+The Tracking Helper has a smaller bench of its own: [`../TrackingHelper/README.md`](../TrackingHelper/README.md).
+Before adding a prompt that asks a model to guess something about the person, see [`docs/BIM_SIGNALS_PLAYBOOK.md`](../../../docs/BIM_SIGNALS_PLAYBOOK.md): learn the fact from their own data first, then hand it to the model.
+
+A bench for building BIM's routed model flow and testing it on real BIM text.
+Route: `/lab/bim-flow/` (`app/lab/bim-flow/page.tsx`). The BIM console's
+LLM tab opens it; **← Brain2** goes back to `/`. Chrome is a milled silver bay
+with house keycaps around phosphor glass wells. It writes nothing to the vault.
+
+_Last mapped: 2026-11-01_ **Agent rail.** A strip under the header lists every agent as a Blueprint (`components/Lab/Agents/AgentRail.tsx`, `lib/agents/`): one chip per BIM flow, plus the Tracking Helper (`/lab/tracking-helper`) and the Lists BIMBY (`/lab/lists-helper`), which open their own labs (`../Agents/agent-href.ts`). A chip for a BIM flow switches the flow, the same as the Flow menu. The grid has a fourth row for it.
+
+_Last mapped: 2026-11-02_ **Bench chrome.** Node kinds live in one **+ Node** menu (`node-palette.tsx`, grouped Decide / Find / Read / Say / Write, hover for what each does) instead of eighteen header keys, so the graph gets the room. Keys: Delete cuts the selected wire or node (the start message stays), Esc lets go, ⌘/Ctrl+Enter runs. **Reset graph** replaces the old Starter graph label. The run wells took a smaller share of the height (`32vh`).
+
+## What it is for
+
+A message like "making garlic confit now" at 1:30 and "garlic done" at 2:00
+should become a cooking block, a pantry note, and nothing else. One prompt
+that asks for everything did badly on real BIM days: it filled every empty
+hour with a made-up block and tagged most lines as idea + todo + buy. One
+narrow yes/no question per room, then a small pick from a short list, did
+much better. This bench is that shape, made visible and editable.
+
+## How it is wired
+
+- The engine is `lib/bim-flow/`. `run-flow.ts` walks the graph per message.
+  A node reads only outputs on its own path back to the message.
+- Node kinds:
+  - **message**: the input.
+  - **gate** (Y/N): one yes/no question. It follows the Y or N wire.
+  - **search** (FIND): no model. The message's content words
+    (`vault-search.ts`) are matched against items, lists, habits, pens, or
+    people. Items bring the lists they already sit on. Instagram follower
+    dumps and word banks are skipped.
+  - **choose** (PICK): the model picks from that search's options only.
+  - **extract** (PULL): named fields under a JSON schema. A clock comes back
+    as written. Code places it.
+  - **propose** (WRITE?): collects what would be written.
+  - **blocks** (SPANS): hands an activity signal to `assembleBlocks`
+    (`blocks.ts`). Code opens, closes, and estimates the spans after the batch.
+    Any extract that feeds a `blocks` node is also shown the day's tracked context
+    (`day-context.ts`): confirmed blocks, unknown gaps, location, screen time,
+    company, mood, events, Health. Built blocks are trimmed around confirmed time.
+  - **related** (TERMS): the model adds words the notes may have used.
+  - **retrieve** (READ): no model. Reads tracked entries, messages and notes,
+    days with a named person, or one day (`lib/bim-flow/retrieve.ts`). Code
+    counts first, last, how many, minutes, and repeated words.
+  - **answer** (SAY): the model writes from the evidence only. Modes: answer,
+    summarize, check (re-reads the draft against the evidence), interview.
+  - **question** (ASK, no model): holds the wording an `interview` answer is asked,
+    as its own node so you can edit it or try another. Keep wordings as variants
+    (`config.variants`, plus the shipped `INTERVIEW_VARIANTS` in `task-flows.ts`).
+    _Last mapped: 2026-10-31_ An `answer` in `interview` mode reads every row on its
+    path (`fromNodeIds`) and asks the person up to 8 questions about what the data
+    cannot say. The Recap a day view has this lane: a `retrieve` day read with
+    `everything` (all tracking views, phone texts, BIM messages, logs, notes, dated dataset rows,
+    confirmed blocks, gaps, Health), then `What to ask` and `Questions for you`. Code only de-duplicates; nothing is
+    cited or written. Shipped day graph bumped in `FLOW_REV` so saved copies refresh.
+- **context** (LINKED?, code first): which of the two earlier lines this message needs.
+  Later nodes on its path see only those. Code decides the clear pairs; the rest get one
+  yes/no each, or are dropped in code-only mode. First node of the routed BIM text view.
+  See "A labelled set from the real feed" below. _Last mapped: 2026-11-01_
+- Ten views, picked at the top, one start node each: Log a message (parallel
+  baseline), Log: BIM text (routed), Log: phone capture, Log: time-grid note,
+  Ask about me, Summarize a topic, Recap a day, Ritual: why-blocked reason,
+  Ritual: night answer, Ritual: morning plan (`lib/bim-flow/flows.ts`,
+  `task-flows.ts`, doors in `entries.ts`).
+- **compute** (COUNT, no model): `lib/bim-flow/compute.ts`. One counting function over tracked
+  entries: `count`, `minutes`, `by-day`, `streak`, `days-since`, `longest-gap`, `top-pens`,
+  `compare` (this span against the equal span before). A time word in the message
+  ("yesterday", "this week", "last 10 days", "the weekend") sets the window; else the plan's
+  days; else the node's. Output is shaped like a READ's, so SAY reads it and only phrases the
+  facts. Machine-painted rows are left out unless asked.
+- **guard** (KNOWN?, no model): Y when any subject word was ever written down (items, lists,
+  habits, pens, people, entries, messages, logs, notes; stems match). N pushes a
+  confidence-none answer ("the notes never mention …") and stops the lane, so the model is
+  never asked about socks on Mars.
+- **clarify** (WHICH?, no model): Y when a name fits two or more candidates
+  (`entity-link.ts` `ambiguous`). It pushes "Which Elijah: A or B?" as the answer and stops.
+  N goes on.
+- **route** (ROUTE): picks one output by regex in code, else asks the model
+  once; only that lane runs. **handoff**: passes the message to another flow.
+- **link** (LINK) node: code-only entity linking
+  (`lib/bim-flow/entity-link.ts`). Its output is shaped like a FIND node's, so a
+  PICK can read it. The starter Log graph's people lane uses it (`s-people`,
+  `linkKind: "person"`): nicknames and typos now find the person, and when
+  nothing links it falls back to the old word search. `linkKind: "topic"` or
+  `"any"` covers lists, habits, pens and items. Saved graphs keep their old FIND
+  node until **Starter graph** is pressed.
+- **Entity linking** (`lib/bim-flow/entity-link.ts`): code-only. An entity is a person or a topic (list, habit, pen, item).
+  It finds the longest known name in a message, ranks candidates by match,
+  message context, how often the notes mention it, and shared lists, and returns
+  `linked`, `ambiguous` (two near-equal candidates, for a future clarify node),
+  or `nil` (a capitalized name the vault lacks). Stages and sources:
+  `docs/KG_ONTOLOGY_KGQA_REFERENCES.md`, `docs/BIM_FLOW_HANDOFF.md`.
+- **Analyses** button: a catalog of what BIM looks for in the Data screens
+  (miss reasons, ritual answers, pushed tasks, thoughts, moods), each a node
+  view, with an insight log (Keep / Dismiss, answer a question) and a run log
+  (`analyses-sheet.tsx`, `lib/bim-flow/analyses.ts`). Each graph is
+  saved on its own (`bimflow-graph-v2:<id>`).
+- **Drive** button: resistance and excitement about tasks, as scores that
+  change (`drive-sheet.tsx`, `lib/bim-flow/drive.ts`, method in
+  [`docs/BIM_DRIVE.md`](../../../docs/BIM_DRIVE.md)). The Log graph has a drive
+  lane (gate → extract task / pole / strength / reason → `drive` proposal); after
+  a run the lab writes those proposals to the drive log, the one thing a run
+  keeps. **Scan notes** reads long notes, BIM messages and logs: code picks the
+  sentences with feeling, the model reads them, code drops any reading whose
+  quote is not in the text. The `drive` dataset and six Drive analyses make it
+  readable by Analyses. Stored in `bimflow-drive-v1`. Saved Log graphs need
+  **Starter graph** to get the lane.
+- Inputs (`lib/bim-flow/inputs.ts`): each message, grouped by time, or the
+  whole day, plus Search, Related terms, Semantic (needs `nomic-embed-text`).
+- **Tests** opens a sheet (`flow-tests.tsx`) with 28 hand-written tests plus about 80 built from the person's own data (`lib/bim-flow/tests-real.ts`; see below) (the open view's tests lead the list, marked
+  THIS VIEW; **Run N for <view>** runs just those on the graph as it is now) and every past
+  run: answer, counted facts, evidence read, trace. Kept in `bimflow-tests-v1`.
+  Each test has its own color (`testColor`). While one runs, its flow is drawn
+  read-only: finished nodes take the test's color, the node running now pulses
+  in it, and a ribbon below adds a card per finished step. Each kept run stores
+  every step (`StepRec`: node, port, ms, output, prompt; outputs cut at 6000
+  characters, first six inputs). Open a run to replay it: the path lit on the
+  graph, the ribbon with a time bar per step, red at the step that errored, and
+  a click on a step or node shows its full output and the prompt. Runs kept
+  before this have text trace only. The engine's `onStart`/`onStep` hooks feed it.
+- **Parallel runs.** Each Run press is its own job (`Job` in `BimFlowLab.tsx`):
+  own abort controller, live messages, progress and notes. A chip row under the
+  Run button lists up to 12 jobs, `●` while running. Click one to view it; Stop
+  stops the viewed job only; **Clear done** drops finished chips. Switching view
+  shows the newest job for that graph. The engine (`runFlow`) already shared no
+  state, so the limit was the one shared abort. Drive scan, tests and analyses
+  each keep their own abort (one at a time within a kind), so none stops a flow
+  run. Jobs are in memory; every run is still saved to Runs. The local model
+  decides how fast parallel calls really go.
+- **Runs** (header button, `this view / all kept`) lists past runs, newest first
+  (`flow-runs.tsx`, `lib/bim-flow/run-history.ts`, kept in `bimflow-runs-v1`,
+  120 runs, plus the kept test runs). A scope switch picks **This view** or
+  **All views**; a source switch picks All, Bench, Brain2 button, or Tests; a node filter keeps
+  only runs that went through that node (counts shown). Each keeps the graph as it
+  ran, the input and the whole result, with big step outputs cut. Pick one to
+  replay it step by step, or **Open output** (Run-button runs) for the dry-run
+  preview. Every Run press saves. The picked run opens on its **Final answer** (large, with
+  confidence, counted facts, evidence, blocks, suggestions, or the error), and each row shows
+  the first line of it. **My note on this run** is a free-text box kept per run id in
+  `bimflow-run-notes-v1` (saved when you leave the box); rows with a note say so.
+  _Last mapped: 2026-10-31_ Each run says where it started (`origin`, `ORIGIN_LABEL`): "Run on
+  the BIM flow bench", "Activated from Brain2 button click" (the Suggest button in BIM's LLM
+  tab, kept apart in `bimflow-button-runs-v1`, 30 runs, so a week of messages cannot push bench
+  runs out), or "Created in BIM flow tests". Runs from before origins are bench runs. A Suggest
+  run also shows **Suggested**: each suggestion it showed, with the person's verdict and reason.
+- **Texts** (source button beside BIM day / Paste / Ask): the person's phone
+  texts from the last two weeks, read from the hub (`/api/phone-texts`, loaded
+  once by `lib/bim-flow/texts-client.ts`). Old texts are not relevant to what
+  the person is doing now, so the server caps the window (default 14 days, never
+  over 60) and the `texts` retrieve defaults to 30. A day is picked as for BIM
+  days. A selector chooses how a day is fed: **What I sent** (each sent text is
+  one line, "… (to Sam)"), **Both sides** (every text, speaker first), or
+  **Conversations** (texts in one thread within 30 min join as one input).
+  Every Log flow runs on these as on BIM text. The **Texts: what was I doing**
+  flow (`texts-day`) reads the whole day: a `texts` retrieve counts when the
+  person was sending, the quiet gaps of 90+ min, who they talked to, and reply
+  speed (`digest` in `texts.ts`); a `day` retrieve adds what was tracked; an
+  answer says what each stretch suggests and cites the text it used, then is checked.
+  A `texts` retrieve with `days: 1` is a day read (every text that day, no word filter).
+  The day read also adds a sleep window (`text-sleep.ts`: no text inside any of 26
+  logged sleep blocks) and a company fact when the person is trading texts with
+  someone they have marked as company (`text-company.ts`: texts to Elijah ran
+  0.10 an hour together vs 1.54 apart), and a weak "Mood hint" lane that is
+  not fed to the answer. Checked on real data: a single text almost never names the activity (1/60 right
+  in every context style; the model mostly and correctly says unknown), so texts
+  are used for presence and stated facts, not as activity labels. See the
+  handoff for numbers.
+  The day read also adds screen facts (`screen-presence.ts`): runs when the Mac was
+  in use (ActivityWatch) and when Instagram ran on the phone, each with counts from
+  the person's own confirmed blocks. Which pens they match is learned at run time;
+  it says nothing under 8 Mac days or 10 phone days. Chrome-history blocks are
+  left out (no gain over the baseline). Apps the person declared as evidence for an
+  activity (`DECLARED_APPS`: Cursor means Computer Work, YouTube means youtube) are stated as their rule, not as a rate.
+  File facts (`file-activity.ts`, loaded by `file-activity-client.ts` from the hub's
+  `/api/file-activity`, a read-only walk of `~` cached ten minutes; the first call takes
+  several seconds): files saved or changed in `elijah/foxtide` are stated as the person's
+  rule for Foxtide work (`DECLARED_FOLDERS`); busy and quiet stretches are learned on
+  their confirmed blocks, with noisy folders (like `websites`) dropped. It says nothing
+  learned under 8 days with events or 40 blocks.
+- **Pan**: drag the empty board to scroll it. A click without a drag clears the
+  selection.
+- **Preview** shows answers with their evidence (★ = used) as well as blocks and
+  changes. The canvas opens at 68% with − + Fit.
+- Model calls go to Ollama on `127.0.0.1:11434` (`ollama.ts`). `num_ctx` is
+  fixed, because a new value reloads the model. Arrays carry `maxItems`.
+  Without that, Qwen repeats list items until it runs out of tokens.
+- The vault comes from the live stores. A plain browser tab has empty stores,
+  because only Electron pulls the hub. There, `loadHubVault` reads
+  `/api/persist` read-only. The top bar says which copy is in use.
+- Teach: open a message, select a gate, then press **Should be YES** or
+  **Should be NO**. The message is kept on that gate (`config.examples`) and
+  shown to the model as a taught answer next run.
+- The graph and the model choice are per device in `localStorage`
+  (`bimflow-graph-v1`, `bimflow-model`). **Starter graph** restores
+  `defaultFlow()`.
+
+| File | Role |
+|------|------|
+| `BimFlowLab.tsx` | Page state, message source (a BIM day from the Telegram feed, or pasted `HH:MM text` lines), run, results, blocks |
+| `flow-canvas.tsx` | Node board: drag nodes, pan the background, wire from ports, select a wire, lit trace, live test glow, read-only mode |
+| `analyses-sheet.tsx` | Analyses sheet: catalog and editor, insight log, run log |
+| `drive-sheet.tsx` | Drive sheet: per-task resistance / excitement board, readings, scan |
+| `flow-runs.tsx` | Runs sheet: past runs of the open view, replay, reopen the output |
+| `flow-tests.tsx` | Test sheet: tests with their colors, live run view, replay of every kept run |
+| `flow-inspector.tsx` | Edit a node, read its step for the open message, teach a gate |
+| `flow-preview.tsx` | Dry-run sheet over a finished run: time blocks on an hour axis with a tick per message, items grouped by list, other changes; each card names its message and node. Opens after a run, or with **Preview** |
+| `bim-flow.css` | Green phosphor, the BIM console's glass |
+
+## Tests from the person's own data
+
+_Last mapped: 2026-10-30_
+
+`lib/bim-flow/tests-real.ts` holds tests worded from the real vault. **Real ·** tests are
+BIM texts sent Oct 14–30 (shorthand, one-word lines, open-ended times, spending, medicine
+counts, dreams, brain2 ideas that are not activities, links with notes, rules that want a
+build). **Vault ·** tests come from the rest of the store: older text-log entries
+(Sep 23–Oct 15), lists and their items (needed, reading, films, cook, perfume, trip,
+Foxtide CDs), habits, task regrets, day reviews and day notes. They cover every view:
+routed log, grammar-first, phone capture (duplicates, placing, multi-item, builds), time-grid
+notes, Ask, Ask: count it, Summarize, Recap a day, and the three rituals. A test may carry
+`expect`, the words a good run should meet, shown as "Should:" in the sheet. Most have no hard
+check, so they read as "review". Instagram handles and phone numbers were left out; a
+stranger's name was swapped. The inputs are verbatim private text and are committed with the
+repo.
+
+_Last mapped: 2026-11-01_ Every pasted clock in `tests-real.ts` was UTC (66 of 66), so "Walking since
+4:46" ran as if sent at 00:09 and the walk landed at 4:46 am. They are local now. Eight more real
+tests carry hard checks: `noBlocks` (ideas, spending, people, feelings, links) and `blockStarts` (a
+block of that activity starts within 10 min of a clock, as in the walk at 16:46).
+
+## A labelled set from the real feed, and what it found
+
+_Last mapped: 2026-11-01_
+
+This is the plan's eval set ("label real feed messages per gate"). `lib/bim-flow/real-feed.ts` holds 108
+real BIM lines (Oct 14–31), each with its real send time and the two lines before it, labelled by hand
+with what a good run does: the first route (doing, keeping, self, people, none), the activity pen and
+relation (with a stated clock or minutes left), the list, the self lane, people, habits, places. Lines
+whose block the person painted or accepted say so. It also holds 48 pairs: is the earlier line needed to
+read the later one?
+
+- `label-model.ts` answers every model step from the labels. Running the real flow with it leaves only
+  code wrong: search that never offered the right pen or list, a misplaced block.
+- `real-feed.test.ts` runs everywhere, with no vault file and no model: the context check against the
+  pairs, the context node in the routed flow, block times against the painted walk (16:40–17:10) and the
+  accepted cleaning block (20:28–20:58), BIM's own heads.
+- `real-vault.test.ts` reads `data/shared-persist.json` (skipped when missing) and runs every labelled
+  line through the routed flow on the real vault.
+- `real-feed.live.test.ts` (opt-in, `BIM_LIVE=1`) scores a real model per room against the same labels,
+  next to the label-model ceiling, and writes `data/bim-flow-runs/real-eval-<model>-<date>.json`.
+
+Found and fixed on the real data:
+- **Context.** The person asked for this in BIM on Oct 30: "allow llm bimflow to ask for message
+  context… a layer like 'are these 2 messages connected?'". New node `context` (LINKED?,
+  `lib/bim-flow/context-link.ts`) sits first in **Log: BIM text (routed)**; only the earlier lines it keeps
+  are shown to later nodes. Code links two lines that share a word rare in the person's feed (learned
+  from the feed, so "brain2" and "elijah" do not count) or repeat each other ("O", then "Log o"). It drops
+  a line that opens with BIM's own head ("Brain2:", "Thought process:"), a bare link or scan before it,
+  and anything over 20 min apart with no shared word. In the labels, every line that leaned on the one
+  before without a shared word came within 4 min. Opening words ("also", "this", "thus") never decide:
+  "Thus spent 80$ on weed" pointed past the line right before it. The rest go to one yes/no each, or are
+  dropped in code-only mode (inspector). Over all 516 feed lines code settles 71% of pairs.
+- **People.** Elijah, Rebecca and Linda each exist three times as person items (stubs made from
+  company pens). "Elijah" is a nickname on Elijah Gibbins-Croft, so the stubs fold into him
+  (`collapseSameName`); "elijah" no longer asks "Which Elijah: Elijah or Elijah?". The two real Rebeccas
+  (Ellis, Anne Smith) stay a question. The list "tell elijah" no longer hides the person in "Tell elijah
+  about texts": the people lane links people only (`LinkOptions.kind`).
+- **Search.** Pens and lists whose names are pasted paragraphs (`isArtifactName`: over 9 words or 70
+  characters) and same-name repeats ("Text log" three times) are no longer offered. The list lane also
+  offers the list a head names ("Lyric:", "Merch:", "Get:" → needed, as BIM's grammar does) and the
+  lists the person's items with the same first word sit on (`cueLists`, learned: items that start
+  "need" sit mostly on Needed). With a perfect model, the right list was offered for 29 of 37 lines;
+  now 34. Still missed: "Gotta get shoes sole repair stuff", "Portable scanner", "Prevent mold on wood
+  counter tops".
+- **First live score** (`qwen2.5:14b-instruct` for every step, 108 lines, 701 s, report in
+  `data/bim-flow-runs/`). Model vs what code allows: first route 68% vs 100%, activity 20% vs 100%,
+  no invented block 98% vs 100%, list 22% vs 92%, body or mind 84% vs 100%, context yes/no 84%
+  (32 unsure pairs). Why activity is low: "Doing which?" may follow one output, and the model picks
+  `habit` for "Done with shower", "Taking a shower rn" and "Walking since 4:46" (showering and walking
+  read as habits), so the pen lane never runs. Why lists are low: the first route sends "Brain2: …",
+  "Lyric: …" and "Cleaning: …" heads to doing or body-or-mind. **Planned:** run the activity lane on
+  every `doing` line with habit and place as extra lanes, and route BIM's own heads to `keeping` by code.
+- **Clocks.** "nap since 10" was dropped (only H:MM was read); a bare hour now counts. A finished or
+  did-earlier line kept its default 30 min even with a stated start; it now starts at the clock.
+
+## Scenarios, structures and a made-up week
+
+_Last mapped: 2026-10-30_
+
+Tests that need no model. `lib/bim-flow/scenarios.ts` holds one invented week (Oct 24–30,
+2026, "now" Fri 15:00) where every right answer is known by hand: a 5-day walking streak, a
+17-day gym gap, a machine-painted cooking row, two people named Elijah, a French note. Its
+`scriptedModel` answers by rule and defaults to the safe answer (gate no, pick none), so a
+test states only the model replies it needs.
+- `compute.test.ts`: `parseWhen` on 13 phrasings and month/week edges; every compute
+  function, empty and missing data; `premiseCheck` (stems, French).
+- `scenarios.test.ts`: the **Ask: count it** flow end to end (`askCalcFlow`): hours, streak,
+  days since, week over week, two lanes at one SAY, the premise guard, which Elijah.
+- `structures.test.ts`: diamonds, cycles, self-loops, orphans, 60-deep chains, 40-wide fans,
+  gate/guard/clarify/route ports, failing nodes, bad regexes, handoff depth, and a 150-seed
+  fuzz: any wiring ends, runs each node at most once, and only runs reachable nodes.
+- `grammar-first.test.ts`: **Log: grammar first** (`grammarFirstFlow`). BIM's own verbs
+  (`log:`, `intake:`, `dh:`, a link first, `groc`/`lists`/`info`) are routed by code with no
+  model; a plain line goes on to the routed log flow.
+- `blocks.scenarios.test.ts`: block timelines. It found a real bug: a "finished" with no
+  start reached back 30 min over the block before it. It now starts where that block ended.
+- Opt-in live pass: `BIM_LIVE=1 npx vitest run lib/bim-flow/scenarios.live.test.ts` runs the
+  new flows on the same week against Ollama and checks the model repeated the counted number.
+
+## Every run is archived
+
+Each model call, flow run, and test result is also posted to
+`/api/bim-flow-archive` (`lib/bim-flow/archive.ts`), which appends one JSON
+line to `data/bim-flow-runs/YYYY-MM-DD.jsonl` (git-ignored, append only). The
+browser history above still caps at 40 runs and 80 tests; the archive does not.
+Runs Claude starts in the lab while testing are kept the same way. Needs the
+app server running (it holds `scripts/persist-api.mjs`).
+
+## Test pass, 2026-10-30
+
+All 22 tests were run once and kept (`data/bim-flow-runs/`, git-ignored). Findings and fixes to try: [`docs/BIM_FLOW_TEST_FINDINGS.md`](../../../docs/BIM_FLOW_TEST_FINDINGS.md). Applied after it:
+
+- Test output shows block clocks in local time (it showed UTC).
+- Word match in `retrieve.ts` no longer treats "show" as "shower".
+- A habit or person proposal with nothing picked is dropped, not shown.
+- The Ask flow's "Any other fact?" gate is worded so an odd personal question still reaches the notes and gets "the notes do not record it". The phone capture's command gate has make/add examples.
+- The answer prompt says "2 days ago", not "before TODAY".
+
+Saved graphs keep old prompts until **Starter graph** is pressed.
+
+## Told facts live in the chat, not the lab
+
+Facts and questions typed to BIM ("I last saw Shelby July 5th", "when did I last see Shelby?", "countdown to when Elijah comes home") are handled by the chat (`lib/ingest/bim-tell.ts`), not by a graph here. See `docs/BIM_FLOW_HANDOFF.md`. **Planned:** a lab door for them.
+
+## Decided, not built
+
+_Last mapped: 2026-10-30_
+
+- **Auto-write, marked.** Proposals write straight to the vault through the
+  BIM executor, with no approve step. Each write is tagged `autowritten` and
+  `llm`. It carries the model name, the node path, and any reasoning the model
+  gave. Correcting a write feeds back as a taught example on the node that
+  made it. Every write stays one undo.
+- **Topic runs become blocks.** A run of messages on one project (30 minutes
+  of CD design ideas) implies a block of that work for the span. This needs a
+  node that groups nearby messages by topic before `assembleBlocks`.
+- **Every room, ranked per person.** All rooms get lanes, and more will come.
+  Which ones matter most comes from use and stated preference. That is kept
+  in a per-person section of the instructions, which changes person by
+  person.
+- **Guarding the per-person section.** Because people can edit instructions,
+  that section needs a safety layer before it ships to anyone else. It may
+  shape routing and preferences. It may not widen what a node can write,
+  reach outside the vault, or override the fixed rules.
+
+- **Build requests.** "Make a new daily habit 'be home for more than 5 hours'… autodetect from location or manual" should wire a habit to a location signal from existing parts. Door `build-request` and test `build-habit-home` exist to probe it; the gate and parts list are not built. See `docs/BIM_FLOW_HANDOFF.md`.
+- **Build requests for items, lists, and folders.** Add to an existing list, make a list or folder on request, or make one from a description (an existing list wins when it fits). Door `build-list` and tests `build-item`, `build-list`, `build-list-described` probe it. Not built.
+
+- **Old texts (separate tool).** Texts go back to 2018 (about 300k bodies in
+  `data/phone-sync/messages.jsonl`). The Texts source here is deliberately
+  recent only. A later, separate tool should read the old texts for one
+  relationship, or to learn about something from before Brain2 existed or knew
+  anything, on its own screen with its own windowing (a person, a span, a
+  topic), never mixed into the daily flows.
+
+**Planned:** the question-routing, tools, and eval plan from Hogan et al. 2025 and the KG+LLM reading is in `docs/BIM_FLOW_HANDOFF.md` and `docs/BIM_FLOW_RESEARCH.md`. Also: keep the graph in the vault, not per device; a labelled test set
+with a score per gate; embedding search beside word search; and running the
+graph on the hub when a message lands.
+
+## Suggestions in the app
+
+_Last mapped: 2026-10-30_
+
+The BIM console's LLM tab (`components/Bim/console/llm-suggestions.tsx`) runs this engine on the last week and lists unsaved time blocks, items, and habit completions (`lib/bim-flow/suggestions.ts`). It uses the bench's saved `log-routed` graph and model. Texts feed time blocks and habits only, never items. Cached per-message results live in `localStorage` (`bimsuggest-results-v1`). Running writes nothing. ACCEPT on a row writes that one suggestion (`lib/bim-flow/accept.ts`, one undo step).
+
+_Last mapped: 2026-10-31_
+
+- **Every pass is kept.** A Suggest press that asked the model about at least one message is saved as a run (`saveButtonRun`): whole on disk (`data/bim-flow-runs/`, `origin: "brain2-button"`), slimmed on the device, with the suggestions it showed. It is saved even when stopped part way. It opens in **Runs** like any other run, with replay and **My note on this run**. A pass where every message was already read asks no model and saves nothing.
+- **Verdicts.** REJECT opens a box: why is this wrong. SAVE REJECTION keeps the reason. ACCEPT keeps the row's note (optional) on the block. Both go to `bimsuggest-verdicts-v1` and the disk archive (kind `suggestion-verdict`, `lib/bim-flow/suggestion-verdicts.ts`), with the suggestion and the run id. A suggestion with a verdict is not shown again. Old dismissals (`bimsuggest-dismissed-v1`) still hide theirs. **Planned:** feed rejected reasons back to the flow as examples, so a mistake is not repeated.
+- **Overlapping blocks.** Suggested blocks are trimmed around saved time, but not around each other or around accepted LLM blocks. Message blocks still come one activity at a time (`assembleBlocks`); overlaps come from a message block against a Screen Time or file rule, or from a later pass. The same activity seen twice with overlapping times is one suggestion over both spans, "DETECTED N TIMES", keeping each detection. Accepted blocks are stamped `generatedBy.kind` `llm` and may overlap other LLM blocks (Tracking's `layerEntries`); time the person painted still refuses. Accepting a block of the same activity over an LLM block merges them into one block. The notes say "Autodetected by the BIM LLM flow. Detected N times by LLM:" and list each detection's time, source, reason, evidence lines, and the person's note. The LLM tab lists accepted LLM blocks that still overlap. In Tracking the block editor says the block was autodetected and names what it overlaps; moving an edge over the other block trims it. While two LLM blocks overlap, Activity totals count those minutes twice.
+- **Planned:** writing without a press, on the auto-write plan in the handoff.

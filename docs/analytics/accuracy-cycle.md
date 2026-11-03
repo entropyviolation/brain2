@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/CycleView.tsx`. Not the menstrual Cycle phase view (that is Time → Cycle phase). Math: `signal-stats.ts` (`openItemAges`, survival curve), `accuracy-stats.ts` (`doneRateByPushes`, `AGE_BANDS`).
+File: `components/Analytics/accuracy/CycleView.tsx`. Not the menstrual Cycle phase view (that is Time → Cycle phase). Math: `signal-stats.ts` (`openItemAges`, survival curve), `accuracy-stats.ts` (`doneRateByPushes`, `AGE_BANDS`).
 
 ## Information
 - `daysPushed`, `weeksPushed`, `monthsPushed` per item (all time, not windowed, except "Pushed in window").

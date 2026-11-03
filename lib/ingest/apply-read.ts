@@ -5,10 +5,12 @@
  * resolve pens. Inbox dumps newest capture first. Telegram chunking happens
  * at send time, not here.
  */
+import { secretsShown } from "@/lib/secrets-store"
 import { formatLocalDateKey, toLocalCalendarDate } from "@/lib/date-utils"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { buildFolderTree, isAutoScheduledPeriodFolder, type FolderTreeNode } from "@/lib/folder-tree"
 import { useEventStore } from "@/lib/event-store"
+import { withHolidays } from "@/lib/holidays"
 import { useHabitsStore } from "@/lib/habits-store"
 import { isHabitGoalMet, isGoalType } from "@/lib/habit-utils"
 import { incrementalLoggedValue } from "@/lib/incremental-habits"
@@ -29,14 +31,15 @@ import { applyMainInfo } from "./apply-glossary"
 import { BIM_PING } from "./bim"
 import { parkLooseText } from "./apply-iphone-notes"
 import { resolveName, type Named } from "./name-resolve"
+import { formatClock } from "./clock-pen"
 import { minutesPastMidnight } from "./times"
 import type { ApplyResult, IngestIntentKind, NameCandidate, PendingClarify } from "./types"
 
 const SEARCH_CAP = 25
 const TAG_CAP = 40
 
-export function applyInfo(): ApplyResult {
-  return applyMainInfo()
+export function applyInfo(chat = false): ApplyResult {
+  return applyMainInfo(chat)
 }
 
 export function applyPing(): ApplyResult {
@@ -519,7 +522,7 @@ function formatFoldersCatalog(): string {
 }
 
 function formatSearch(query: string): string {
-  const hits = searchItems(query, useTaskStore.getState().tasks).slice(0, SEARCH_CAP)
+  const hits = searchItems(query, useTaskStore.getState().tasks, { includeSecrets: secretsShown("chat") }).slice(0, SEARCH_CAP)
   if (hits.length === 0) return `No items match “${query}”.`
   const lines = [`Search “${query}” (${hits.length}${hits.length === SEARCH_CAP ? "+" : ""})`]
   hits.forEach((hit, i) => {
@@ -691,9 +694,8 @@ function formatTags(): string {
 
 function formatPlan(now: Date): string {
   const key = formatLocalDateKey(now)
-  const events = useEventStore
-    .getState()
-    .events.filter((event) => formatLocalDateKey(toLocalCalendarDate(event.date)) === key)
+  const events = withHolidays(useEventStore.getState().events, now)
+    .filter((event) => formatLocalDateKey(toLocalCalendarDate(event.date)) === key)
     .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "") || a.title.localeCompare(b.title))
   if (events.length === 0) return `No events on ${formatDay(now)}.`
   const lines = [`Plan ${formatDay(now)}`]
@@ -713,15 +715,6 @@ function penAt(now: Date, scopeId: string): string | null {
   const scope = useTimeTrackingStore.getState().scopes.find((s) => s.id === scopeId)
   const pen = scope?.pens.find((p) => p.id === hit.penId)
   return pen?.name ?? hit.title ?? null
-}
-
-function formatClock(min: number): string {
-  const wrapped = ((Math.floor(min) % 1440) + 1440) % 1440
-  const h = Math.floor(wrapped / 60)
-  const m = wrapped % 60
-  const am = h < 12
-  const h12 = h % 12 || 12
-  return `${h12}:${String(m).padStart(2, "0")} ${am ? "AM" : "PM"}`
 }
 
 function formatDay(date: Date): string {

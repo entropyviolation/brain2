@@ -24,6 +24,8 @@ import "./discharge.css"
 import "./index-card.css"
 import "./lace.css"
 import "./arcade.css"
+import { homePixelFaces } from "@/lib/fonts/home-pixel-faces"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 
 const CONCEPTS = [
   { id: "discharge", no: "I", name: "Discharge", line: "Gas tubes, nixies, scope trace, bearings, patch bay", C: MockDischarge },
@@ -65,6 +67,7 @@ export function NodeDetailLab() {
   const [math, setMath] = useState(false)
   const [clock, setClock] = useState(false)
   const [calm, setCalm] = useState(false)
+  useStampFontVariables(homePixelFaces)
   const task = tasks.find((t) => t.id === taskId) ?? withSteps.find((t) => t.id === "lab-task-cds") ?? withSteps[0]
   const n = useNode(task?.id ?? null, stepId)
 
@@ -103,7 +106,7 @@ export function NodeDetailLab() {
   const shown = all ? CONCEPTS : CONCEPTS.filter((c) => c.id === concept)
 
   return (
-    <div className={`lab${calm ? " is-calm" : ""}`}>
+    <div className={`lab ${homePixelFaces}${calm ? " is-calm" : ""}`}>
       <header className="lab-bar">
         <a className="lab-back" href="/" title="Back to the app">
           ← Brain2

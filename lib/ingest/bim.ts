@@ -1,5 +1,5 @@
 /**
- * lib/ingest/bim.ts — BIM identity (Brain2 Ingestion Messenger)
+ * lib/ingest/bim.ts — BIM identity (Brain Interface Manager)
  *
  * The Telegram bot introduces himself as BIM. He/him in the intro copy, as
  * the user asked. Keep user-facing names here so Settings, pair replies, and
@@ -7,7 +7,7 @@
  */
 
 export const BIM_SHORT = "BIM"
-export const BIM_FULL = "Brain2 Ingestion Messenger"
+export const BIM_FULL = "Brain Interface Manager"
 export const BIM_HANDLE = "@brain2_phone_bot"
 
 /** First-meeting / startup intro. He speaks about himself with he/him. */

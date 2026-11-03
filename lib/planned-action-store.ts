@@ -9,7 +9,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import {
   findPlacementForSource,
@@ -120,3 +120,5 @@ export const usePlannedActionStore = create<PlannedActionState>()(
     },
   ),
 )
+
+registerPersistRehydrator(persistKey("planned-actions"), () => usePlannedActionStore.persist.rehydrate())

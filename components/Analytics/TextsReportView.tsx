@@ -1,5 +1,5 @@
 /**
- * components/Analytics/TextsReportView.tsx — Analytics → Texts → Report
+ * components/Analytics/TextsReportView.tsx — Data → Texts → Report
  *
  * Frames the texts report exactly as `scripts/texts-analysis/` draws it. The
  * report keeps its own look on purpose (allie, 2026-10-22): no studio skin, no
@@ -13,7 +13,7 @@
  * for Person → View text analytics (`writeTextsIndex`). Only messages from
  * the frame's own window and origin are read. Open in window shows the same
  * view at `/popout/?view=texts` (`popout`). In the main window the frame's
- * sections are listed in the Analytics sidebar (`lib/texts-report-nav.ts`)
+ * sections are listed in the Data sidebar (`lib/texts-report-nav.ts`)
  * and the frame hides its own nav; the pop-out keeps it.
  */
 "use client"
@@ -31,11 +31,11 @@ import {
   type TextsStatus,
 } from "@/lib/texts-report"
 import { linkHandlesToPerson, unlinkHandlesFromPerson } from "@/lib/phone-person-links"
-import { createPerson, ensurePeopleIKnowList, personPhoneNumbers, personRecords } from "@/lib/people-i-know"
+import { createPerson, ensurePeopleIKnowList, personNamed, personPhoneNumbers, personRecords } from "@/lib/people-i-know"
 import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { useTaskStore } from "@/lib/task-store"
 import { useTextsNavStore } from "@/lib/texts-report-nav"
-import { ChartFrame } from "./chart-frame"
+import { ChartFrame } from "./studio/chart-frame"
 
 type State =
   | { kind: "loading" }
@@ -77,7 +77,7 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
       if (!req) return
       if (req.type === "ready") {
         sendPeople()
-        // In the main window the report's sections move to the Analytics sidebar; the pop-out keeps its own nav.
+        // In the main window the report's sections move to the Data sidebar; the pop-out keeps its own nav.
         frameRef.current?.contentWindow?.postMessage({ source: "brain2", type: "nav", sidebar: !popout }, frameOrigin)
         // Person → View text analytics: open that relationship once the frame is listening.
         const handles = takePendingTextsOpen()
@@ -92,8 +92,9 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
         return
       }
       if (req.type === "create-person") {
-        const person = createPerson(req.name, ensurePeopleIKnowList())
-        useTaskStore.getState().addTask(person)
+        const known = personNamed(req.name)
+        const person = known ?? createPerson(req.name, ensurePeopleIKnowList())
+        if (!known) useTaskStore.getState().addTask(person)
         linkHandlesToPerson(person.id, req.handles)
         return
       }
@@ -157,7 +158,7 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
           <p className="an-canvas-title">Texts</p>
           <p className="an-canvas-kicker">
             Messages on this Mac, read locally. {state.kind === "ready" ? textsUpdatedLabel(state.status) : null}
-            {state.kind === "ready" ? " · Updates daily." : null}
+            {state.kind === "ready" && !state.status?.error ? " · Updates daily." : null}
           </p>
         </div>
         {state.kind === "ready" ? (

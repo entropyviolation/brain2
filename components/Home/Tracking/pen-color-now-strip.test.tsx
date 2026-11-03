@@ -1,14 +1,31 @@
-import { render, screen } from "@testing-library/react"
+import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { startPenColorSession } from "@/lib/pen-color-session"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { PenColorNowStrip } from "./pen-color-now-strip"
 
 describe("PenColorNowStrip", () => {
   beforeEach(() => {
     resetAllStores()
+  })
+
+  it("does not paint more minutes while the header clock is absent", () => {
+    vi.useFakeTimers()
+    const at = new Date(2026, 9, 24, 23, 4, 4)
+    vi.setSystemTime(at)
+    startPenColorSession("loc-work", at)
+    const endOf = () => useTimeTrackingStore.getState().entries.find((e) => e.penId === "loc-work")!.endMin
+    const first = endOf()
+    render(<PenColorNowStrip />)
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+    expect(endOf()).toBe(first)
+    expect(usePenColorSessionStore.getState().session).not.toBeNull()
+    vi.useRealTimers()
   })
 
   it("searches pen colors and logs the chosen one from this second", async () => {
@@ -46,7 +63,20 @@ describe("PenColorNowStrip", () => {
     expect(screen.getByText(/Location · since /)).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Pause Work" }))
+    expect(usePenColorSessionStore.getState().session?.pausedAt).toBeUndefined()
+    await user.click(within(screen.getByTestId("pause-reason-dialog")).getByRole("button", { name: "Cancel" }))
+    expect(usePenColorSessionStore.getState().session?.pausedAt).toBeUndefined()
+
+    await user.click(screen.getByRole("button", { name: "Pause Work" }))
+    await user.click(within(screen.getByTestId("pause-reason-dialog")).getByRole("button", { name: "Pause" }))
+    expect(usePenColorSessionStore.getState().session?.pausedAt).toBeUndefined()
+
+    await user.click(screen.getByRole("button", { name: "Pause Work" }))
+    const pauseDialog = screen.getByTestId("pause-reason-dialog")
+    await user.type(within(pauseDialog).getByRole("textbox", { name: "Reason for pausing" }), "coffee")
+    await user.click(within(pauseDialog).getByRole("button", { name: "Pause" }))
     expect(usePenColorSessionStore.getState().session?.pausedAt).toBeTruthy()
+    expect(usePenColorSessionStore.getState().session?.pauseSpans?.[0].reason).toBe("coffee")
     expect(screen.getByRole("button", { name: "Resume Work" })).toHaveAttribute("data-dvd-mark", "play")
     expect(screen.getByRole("button", { name: "Resume Work" }).querySelector("polygon")).toBeTruthy()
 
@@ -54,7 +84,7 @@ describe("PenColorNowStrip", () => {
     await user.click(screen.getByTestId("now-objectives-trigger"))
     expect(screen.getByTestId("now-objectives-pop")).toBeInTheDocument()
     await user.type(screen.getByRole("textbox", { name: "Add objective" }), "ship it")
-    await user.click(screen.getByRole("button", { name: "Add objective" }))
+    await user.click(screen.getByRole("button", { name: "Now" }))
     expect(usePenColorSessionStore.getState().session?.nowObjectives?.[0].text).toBe("ship it")
 
     await user.click(screen.getByRole("button", { name: "Stop working on Work" }))

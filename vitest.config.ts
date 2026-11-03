@@ -12,11 +12,12 @@ export default defineConfig({
     env: { TZ: "America/Los_Angeles" },
     globals: true,
     css: true,
-    exclude: ["**/node_modules/**", "**/e2e/**"],
+    exclude: ["**/node_modules/**", "**/e2e/**", "**/.mobile-build/**"],
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "."),
+      "next/font/google": path.resolve(__dirname, "tests/next-font-google-mock.ts"),
     },
   },
 })

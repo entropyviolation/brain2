@@ -7,6 +7,7 @@
  */
 "use client"
 
+import { SecretMark } from "@/components/Secrets/SecretMark"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, FileText, FileUp, Folder, Plus, Trash2, Download } from "lucide-react"
 import { orbFor } from "@/components/Icons"
@@ -374,6 +375,10 @@ export function DocsPanel() {
                 <Trash2 className="h-3.5 w-3.5" />
                 Delete
               </button>
+              <SecretMark
+                checked={selected.secret === true}
+                onChange={(on) => useTaskStore.getState().updateTask({ ...selected, secret: on ? true : undefined })}
+              />
               <button
                 type="button"
                 className="docs-btn"
@@ -474,14 +479,13 @@ export function DocsPanel() {
                     placeholder="Document title"
                   />
                   <input
-                    className="docs-field"
+                    className="docs-field docs-folder-field"
                     value={folderDraft}
                     onChange={(e) => setFolderDraft(e.target.value)}
                     onBlur={handleFolderBlur}
                     list="docs-folder-suggestions"
                     placeholder="Folder"
                     aria-label="Folder"
-                    style={{ width: 140 }}
                   />
                   <datalist id="docs-folder-suggestions">
                     {folders.map((f) => (

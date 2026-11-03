@@ -1,0 +1,17 @@
+/* components/Lab/TrackingHelper/helper-tests.css — Tracking Helper test panel: cool paper, silver keys, mono labels */
+.tht { max-width: 980px; margin: 24px auto 60px; padding: 0 16px; display: grid; gap: 10px; font-size: 13px; color: hsl(var(--foreground)); }
+.tht h2, .tht h3 { margin: 6px 0 0; font: 700 12px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+.tht p { margin: 0; color: hsl(var(--muted-foreground)); }
+.tht-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tht-name { flex: 1; min-width: 160px; }
+.tht button { border: 1px solid hsl(var(--border)); border-bottom-color: hsl(215 14% 62%); background: linear-gradient(180deg, hsl(210 20% 98%), hsl(214 14% 86%)); color: hsl(222 30% 18%); border-radius: 3px; padding: 5px 9px; font: 600 11px/1 ui-monospace, Menlo, monospace; cursor: pointer; }
+.tht button:disabled { opacity: 0.5; cursor: default; }
+.tht input, .tht textarea { font: 12px/1.4 ui-monospace, Menlo, monospace; border: 1px solid hsl(var(--border)); border-radius: 3px; padding: 6px 8px; background: hsl(var(--card)); color: inherit; box-sizing: border-box; }
+.tht textarea { width: 100%; }
+.tht input { flex: 1; min-width: 160px; }
+.tht-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tht-list li { border: 1px solid hsl(var(--border)); border-left: 4px solid hsl(215 14% 62%); border-radius: 3px; padding: 8px; background: hsl(var(--card)); display: grid; gap: 6px; }
+.tht-list li[data-pass="1"] { border-left-color: hsl(150 50% 40%); }
+.tht-list li[data-pass="0"] { border-left-color: hsl(340 60% 48%); }
+.tht pre { margin: 0; padding: 8px; background: hsl(222 30% 12%); color: hsl(178 60% 82%); border-radius: 3px; overflow: auto; max-height: 260px; white-space: pre-wrap; word-break: break-word; font: 11px/1.4 ui-monospace, Menlo, monospace; }
+.dark .tht button { background: linear-gradient(180deg, hsl(215 14% 30%), hsl(215 14% 20%)); color: hsl(210 20% 92%); }

@@ -1,7 +1,7 @@
 /**
  * lib/overcommitment.ts — Classical load early-warning (#238)
  *
- * Two daily series over a caller-supplied date window (the shared Analytics
+ * Two daily series over a caller-supplied date window (the shared Data
  * range): reconstructed day-pushes from `Task.daysPushed`, and logged minutes
  * from `timeLogs`. Trend, rolling slope, and change-points come from
  * `lib/metrics.ts`. Nothing here reschedules a day.

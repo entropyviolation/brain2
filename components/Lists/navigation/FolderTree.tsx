@@ -1,29 +1,29 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import type { Folder, List } from "@/lib/types"
+import type { Folder, ItemTypeDefinition, List } from "@/lib/types"
+import { ITEM_TYPES_FOLDER_NAME, ITEM_TYPES_LOCATION, compareItemTypeLists, itemTypeListLabel } from "@/lib/item-type-lists"
 import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import { MODULE_LISTS_FOLDER_ID } from "@/lib/module-lists"
 import {
   buildFolderTree,
   defaultExpandedFolderIds,
   flattenFolderTree,
-  isEditableFolder,
 } from "@/lib/folder-tree"
 import { buildListTree, flattenListTree } from "@/lib/list-tree"
 import { folderFor } from "@/components/Icons"
+import type { OpenTarget } from "@/components/Lists/types"
 
 export interface FolderTreeProps {
   folders: Folder[]
   location: string
-  openTarget: unknown
+  openTarget: OpenTarget
   isHome: boolean
   isAll: boolean
   onNavTo: (loc: string) => void
   onDragOver: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent, folder: Folder | null) => void
   onCreateFolder: () => void
-  onEditFolder?: (folder: Folder) => void
   /**
    * Optional nested-category (sublist) tree (Feature 8). When provided, a
    * "Lists" section renders the categories indented by their `parentListId`
@@ -33,6 +33,12 @@ export interface FolderTreeProps {
   /** Currently open category id, used to highlight the active sublist. */
   activeCategoryId?: string
   onNavToCategory?: (categoryId: string) => void
+  /** Registered item types. Quick Access → Item Types lists one row per type. */
+  itemTypes?: ItemTypeDefinition[]
+  /** Open the virtual list of items of this type. */
+  onOpenItemType?: (typeId: string) => void
+  /** Phone only. Hides this pane; the Address label brings it back. */
+  collapsed?: boolean
 }
 
 function QaGlyph({ glyph }: { glyph: string }) {
@@ -53,10 +59,12 @@ export function FolderTree({
   onDragOver,
   onDrop,
   onCreateFolder,
-  onEditFolder,
   categories,
   activeCategoryId,
   onNavToCategory,
+  itemTypes = [],
+  onOpenItemType,
+  collapsed = false,
 }: FolderTreeProps) {
   const tree = useMemo(() => buildFolderTree(folders), [folders])
   const moduleListsFolder = useMemo(
@@ -66,6 +74,13 @@ export function FolderTree({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() =>
     defaultExpandedFolderIds(folders, location),
   )
+  const [itemTypesOpen, setItemTypesOpen] = useState(false)
+  const typeRows = useMemo(
+    () => [...itemTypes].sort(compareItemTypeLists),
+    [itemTypes],
+  )
+  const itemTypesHere = location === ITEM_TYPES_LOCATION
+  const openTypeId = openTarget?.type === "item-type" ? openTarget.id : undefined
 
   useEffect(() => {
     setExpandedIds((prev) => {
@@ -110,7 +125,12 @@ export function FolderTree({
       : []
 
   return (
-    <nav className="fm-sidebar" aria-label="Lists folders">
+    <nav
+      id="fm-folder-tree"
+      className={`fm-sidebar${collapsed ? " fm-folders-collapsed" : ""}`}
+      hidden={collapsed || undefined}
+      aria-label="Lists folders"
+    >
       <div className="fm-sidebar-heading" id="fm-qa-heading">
         Quick Access
       </div>
@@ -134,6 +154,53 @@ export function FolderTree({
           <QaGlyph glyph="🗂" />
           <span className="fm-tree-label">All</span>
         </div>
+        <div
+          role="listitem"
+          className={`fm-tree-item fm-qa-item${itemTypesHere && !openTarget ? " active" : ""}`}
+          onClick={() => onNavTo(ITEM_TYPES_LOCATION)}
+        >
+          {typeRows.length > 0 ? (
+            <button
+              type="button"
+              className="fm-tree-toggle"
+              data-no95
+              aria-label={itemTypesOpen ? "Collapse Item Types" : "Expand Item Types"}
+              aria-expanded={itemTypesOpen}
+              onClick={(e) => {
+                e.stopPropagation()
+                setItemTypesOpen((open) => !open)
+              }}
+            >
+              {itemTypesOpen ? "▼" : "▶"}
+            </button>
+          ) : (
+            <span className="fm-tree-toggle-spacer" aria-hidden />
+          )}
+          <QaGlyph glyph="🏷" />
+          <span className="fm-tree-label">{ITEM_TYPES_FOLDER_NAME}</span>
+        </div>
+        {itemTypesOpen &&
+          typeRows.map((type) => {
+            const id = String(type.id)
+            const selected = openTypeId === id
+            return (
+              <div
+                key={id}
+                role="listitem"
+                className={`fm-tree-item fm-qa-item fm-qa-type${selected ? " active" : ""}`}
+                onClick={() => onOpenItemType?.(id)}
+                data-item-type-id={id}
+              >
+                <span className="fm-tree-toggle-spacer" aria-hidden />
+                <span
+                  className="fm-qa-type-lamp"
+                  style={{ background: type.color ?? "#64748b" }}
+                  aria-hidden
+                />
+                <span className="fm-tree-label">{itemTypeListLabel(type)}</span>
+              </div>
+            )
+          })}
         {moduleListsFolder && (
           <div
             role="listitem"
@@ -174,6 +241,7 @@ export function FolderTree({
                 <button
                   type="button"
                   className="fm-tree-toggle"
+                  data-no95
                   aria-label={expanded ? "Collapse folder" : "Expand folder"}
                   aria-expanded={expanded}
                   onClick={(e) => toggleExpanded(folder.id, e)}
@@ -192,20 +260,6 @@ export function FolderTree({
                 decoding="async"
               />
               <span className="fm-tree-label">{folder.name}</span>
-              {onEditFolder && isEditableFolder(folder.id) && (
-                <button
-                  type="button"
-                  className="fm-tree-edit"
-                  title="Folder settings"
-                  aria-label={`Edit ${folder.name}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEditFolder(folder)
-                  }}
-                >
-                  ⚙
-                </button>
-              )}
             </div>
           )
         })}

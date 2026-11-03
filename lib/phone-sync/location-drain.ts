@@ -12,7 +12,7 @@
  * the Telegram drain). A batch that opens but is not a location batch is
  * skipped, so one bad upload cannot block the queue.
  *
- * The hub starts it (`scripts/phone-hub.ts`, owned by the core):
+ * The hub starts it (`scripts/phone-hub.ts`, owned by the core). `paused` skips a tick when Settings has location off:
  *   if (CAPTURE_URL) startLocationDrain({ boxUrl: CAPTURE_URL, token: CAPTURE_TOKEN, privateKey, open: openSealed, ... })
  */
 import type { PhoneArchive } from "./archive"
@@ -21,9 +21,9 @@ import type { PhoneSyncRun } from "./types"
 import type { ApplyPhoneResult } from "./write"
 
 export interface LocationDrainDeps {
-  /** Capture box base URL, no trailing slash (`COGS_CAPTURE_BOX_URL`). */
+  /** Capture box base URL, no trailing slash (`BRAIN2_CAPTURE_BOX_URL`). */
   boxUrl: string
-  /** Pull token (`COGS_CAPTURE_TOKEN`), not the phone's upload token. */
+  /** Pull token (`BRAIN2_CAPTURE_TOKEN`), not the phone's upload token. */
   token: string
   /** Capture private key, base64 (`~/.brain2/capture-private.key`). */
   privateKey: string
@@ -37,6 +37,8 @@ export interface LocationDrainDeps {
   apply?: (batch: LocationBatch) => ApplyPhoneResult
   fetch?: typeof fetch
   now?: () => number
+  /** When this returns true the tick waits and does not pull. The hub reads the Settings switch. */
+  paused?: () => boolean
 }
 
 interface UploadRow {
@@ -120,6 +122,10 @@ export function startLocationDrain(
 
   const tick = async () => {
     if (stopped || running) return
+    if (deps.paused?.()) {
+      if (!stopped) timer = setTimeout(() => void tick(), intervalMs)
+      return
+    }
     running = true
     let more = false
     try {

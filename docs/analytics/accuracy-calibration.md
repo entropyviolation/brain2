@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/CalibrationView.tsx`. Math: `lib/calibration.ts` (points, summary, ±10% band, ratio buckets, weekly trend) and `components/Analytics/accuracy-stats.ts` (barcode, bias stats, size bins, PERT). Test: `CalibrationView.test.tsx`, `accuracy-stats.test.ts`.
+File: `components/Analytics/accuracy/CalibrationView.tsx`. Math: `lib/calibration.ts` (points, summary, ±10% band, ratio buckets, weekly trend) and `components/Analytics/accuracy/accuracy-stats.ts` (barcode, bias stats, size bins, PERT). Test: `CalibrationView.test.tsx`, `accuracy/accuracy-stats.test.ts`.
 
 ## Information
 - Completed tasks with an estimate (`estimatedDuration`) and an exact actual (`exactDurationMinutes`; estimated or rough actuals are left out). Ratio = actual ÷ estimate.

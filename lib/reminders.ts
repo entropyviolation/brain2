@@ -42,6 +42,7 @@ import {
   nextMoonReminderEvening,
   type LunarKind,
 } from "@/lib/lunar"
+import { registerItemWriteSurface, withItemWriteSource } from "@/lib/item-write-source"
 import { useTaskStore } from "@/lib/task-store"
 import type { List, Task } from "@/lib/types"
 
@@ -201,6 +202,9 @@ export function ensureRemindersList(): string {
   return REMINDERS_LIST_ID
 }
 
+const REMINDER_SEED_SURFACE = "reminder-seed"
+registerItemWriteSurface({ id: REMINDER_SEED_SURFACE, label: "reminder seed" })
+
 /**
  * Idempotent seed of `new moon tonight` and `full moon tonight` on the
  * Reminders list. Match by stable id or exact title. Text me and Persistent
@@ -210,11 +214,13 @@ export function ensureMoonNightReminders(now: Date = new Date()): {
   newMoonId: string
   fullMoonId: string
 } {
-  const listId = ensureRemindersList()
-  return {
-    newMoonId: seedOneMoonReminder(listId, NEW_MOON_REMINDER_ID, NEW_MOON_TONIGHT_NAME, "new-moon", now),
-    fullMoonId: seedOneMoonReminder(listId, FULL_MOON_REMINDER_ID, FULL_MOON_TONIGHT_NAME, "full-moon", now),
-  }
+  return withItemWriteSource({ surface: REMINDER_SEED_SURFACE }, () => {
+    const listId = ensureRemindersList()
+    return {
+      newMoonId: seedOneMoonReminder(listId, NEW_MOON_REMINDER_ID, NEW_MOON_TONIGHT_NAME, "new-moon", now),
+      fullMoonId: seedOneMoonReminder(listId, FULL_MOON_REMINDER_ID, FULL_MOON_TONIGHT_NAME, "full-moon", now),
+    }
+  })
 }
 
 function parseClock(value: string | undefined): { hours: number; minutes: number } | null {

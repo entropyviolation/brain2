@@ -54,6 +54,7 @@ function messageEntry(record: MessageRecord, t: EntryTargets): TimeEntry {
     endMin: min,
     title: `${arrow} ${text}`.trim(),
     generatedBy: phoneStamp(record.source, record.sourceId),
+    logSource: "phone-sync",
   }
 }
 
@@ -74,6 +75,7 @@ function callEntries(record: CallRecord, t: EntryTargets): TimeEntry[] {
         endMin: min,
         title: record.direction === "in" ? "missed call" : `${arrow} no answer`,
         generatedBy: stamp,
+        logSource: "phone-sync",
       },
     ]
   }
@@ -100,6 +102,7 @@ function callEntries(record: CallRecord, t: EntryTargets): TimeEntry[] {
       title: `${arrow} call`,
       spanId,
       generatedBy: stamp,
+      logSource: "phone-sync",
     })
     cursor = sliceEnd
     part++

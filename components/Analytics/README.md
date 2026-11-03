@@ -1,10 +1,21 @@
-# `components/Analytics/` — Analytics studio
+# `components/Analytics/` — Data studio
 
-The **heart of Brain2**. Capture, Lists, Tracking, Habits, Reviews, and Modules
-write the vault. This tab is mass personal data and information-resource
-**collection, presentation, and analysis** — and the place that turns that mass
-into endless tools. A chart that cannot open its items, or a finding that
-cannot become a next instrument, is unfinished.
+_Last mapped: 2026-10-28_
+
+The desk tab is **Data**, formerly Analytics. On a phone (`max-width: 767px`) the studio height follows the content, tables scroll inside the pane, fields are 16px, and drill dialogs are bottom sheets. Desktop chrome is unchanged. The folder and the stored tab id stay `analytics`, so a saved place still opens this room.
+
+## Intention
+
+_Last mapped: 2026-10-28_
+
+Data is a hugely important tab. The intention is one room for analytics, analysis, data visualization, the library, stats, and annotation.
+
+- **Analytics.** Vast sections, and combined analysis suites, over all data in the vault. What ships is the studio groups in `chrome/analytics-tabs.ts` (Behavior, Time, Accuracy, Meta, Texts, Library, Sources) on one remembered window.
+- **View.** A person can look at data that already exists. Searchable spreadsheet-style libraries — a plain, boring data store — are **Planned**. Library views today are catalogs (item types, lists and areas, attributes, tags, stages, weight).
+- **Sources.** Add and update outside data, including Instagram, texts, and browser history. Instagram and Browser already ship under Sources. Texts already has a report view.
+- **Annotation.** On some screens the job is to clean, annotate, correct, confirm, or otherwise fix the data. That pass is **Planned**. A chart that cannot open its items is still unfinished.
+
+The other rooms write tasks, habits, and tracking. Data reads those stores for the suites. It does not become a second writer of them. Source imports, and a later annotation pass, write the records those screens own. A finding that cannot become a next instrument is unfinished.
 
 ## Public door
 
@@ -13,22 +24,21 @@ lazy-loads that export from `app/page.tsx`. Views are interior
 (`analytics-views.tsx`). The shell also loads `analytics-chrome.css` from
 `app/layout.tsx`.
 
-Analytics reads the task, habit, and tracking stores. It is not the writer of
-tasks, habits, or tracking.
+Data reads the task, habit, and tracking stores for the suites. See **Intention** above for sources and the planned annotation pass.
 
 The remembered window is `useAnalyticsRangeStore` in `analytics-range-store.ts`.
 Other rooms do not write it.
 
-The **Analytics** top-level tab is a light instrument studio over the vault
+The **Data** top-level tab is a light instrument studio over the vault
 already captured: tasks, points, habits, tracking scopes, sleep, metrics,
 cycle marks, reviews, operations, goals, and the item library. Charts use **recharts**
 (themed, including **pies**) plus shared studio primitives (treemap, density,
 mosaic, hour×day, ribbon, **phosphor traces**). Non-trivial math lives in pure
 `lib/*` helpers plus `cross-section.ts`, `hour-day.ts`, `observatory-findings.ts`,
-and `signal-stats.ts` here. No LLM in this studio today. Tasks, habits, and tracking stay in their own stores. Sources → Browser keeps Chrome exports in IndexedDB (`brain2-browser-history`, `lib/browser-history.ts`) and paints Screen Time through `lib/chrome-sessions.ts`. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
+and `signal-stats.ts` here. No LLM in this studio today. Tasks, habits, and tracking stay in their own stores. Sources → Browser keeps Chrome exports in IndexedDB (`brain2-browser-history`, `lib/browser-history.ts`) and paints Screen Time through `lib/chrome-sessions.ts`. The Brain2 Chrome extension (`extensions/chrome-history`) posts each finished local day to `/api/chrome-history` when this app is on localhost:3000; `hooks/use-chrome-history-inbox.ts` files it. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). Local only. The first grouping of why-it-wasn't-done notes is [`docs/analytics-plan/13-local-readings.md`](../../docs/analytics-plan/13-local-readings.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
 
 **Product law (this tab only):** keep the `.fm98` **title bar** and **status bar**
-so Analytics still lives in Brain2 next to Lists. Inside them the room is an **esoteric data plate**
+so Data still lives in Brain2 next to Lists. Inside them the room is an **esoteric data plate**
 (`analytics-atlas.css`, drawn from designrefs 0001–0124; see
 [`docs/DESIGN_REFS.md`](../../docs/DESIGN_REFS.md#analytics-atlas-0001-0124)):
 _Last mapped: 2026-10-23_ the range bay is a plain paper header with one ink
@@ -40,10 +50,12 @@ guide tab with its number. Canvases and plot wells are plain cool white paper,
 no graph rule. Each `.an-plate` has a double rule and crop marks, and each
 `.an-canvas-title` is numbered `FIG. 01`, `FIG. 02`… by a CSS counter. Readouts
 are one ruled card. `.an-scope` is a dark graphite well with a cobalt grid and a
-white trace. Type (loaded in `app/layout.tsx` via `next/font`, 2026-10-23):
+white trace. _Last mapped: 2026-10-27._ Type loads with this screen
+(`lib/fonts/analytics-type.ts`), not the root layout:
 **Bricolage Grotesque** (`--font-an-display`) for titles and values,
 **Instrument Sans** (`--font-an-text`) for keys, labels, ticks, prose and
-portaled drills, with tabular numbers. This replaces the pixel faces in this
+portaled drills, with tabular numbers. The variable classes sit on `.an95`
+and are stamped on `<html>` so a portaled drill still sees them. This replaces the pixel faces in this
 room only; Home and Lab keep theirs. Section map: [`docs/analytics/INDEX.md`](../../docs/analytics/INDEX.md). No italics. One accent,
 cobalt. No yellow, no celestial or astrology motifs (star icons are fine). Data fills (heat hues, pens, item-type colors)
 are data and are not re-tinted. The skin is CSS only: same DOM, same `role="tab"`
@@ -83,85 +95,115 @@ hidden from Settings. Causal groups stay as they are. A series shows an
 observed count and an expected-by-chance count. The app never marks a run
 meaningful on its own.
 
-**Item Types** is a first-class Analytics **Library** view. Settings still
-**edits** types. Do not move the library out of Analytics.
+**Item Types** is a first-class Data **Library** view. Settings still
+**edits** types. Do not move the library out of Data.
 
 _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per view, are in [`docs/analytics/viz-inspiration.md`](../../docs/analytics/viz-inspiration.md). It is a menu, not a spec.
 
+_Last mapped: 2026-10-30_ **Sources → Health** (`sources/HealthView.tsx`, math in `lib/health-report.ts`) reports the Apple Health data the iPhone import already stored: daily steps, distance, flights, active energy, heart rate, workouts from Activity, and a link to logged sleep. It reads `health-store.ts`, the time-tracking entries, and the sleep log, and writes nothing. Unlike Instagram and Browser it follows the shared date range. Days Health left blank stay out of every mean; weekday, trend, and sleep-link sentences are withheld below their floors (`HEALTH_FLOORS`). The Mac does not read Health, so the view is empty on a desktop that never received the phone's stores. **Planned:** a heart-rate-by-hour plate and sleep stages, which the import does not store yet.
+
+## Folders
+
+_Last mapped: 2026-10-28_
+
+The public door stays in this folder. Each studio group has the views it already names. `relations/` was already its own library and stays where it is.
+
+| Folder | Holds |
+|--------|--------|
+| `behavior/` | Habits, streaks, points, velocity, reflection, to-do pulse, reviews, seasons, overcommit |
+| `time/` | Tracking, its composition boards, and the other Time views |
+| `accuracy/` | Plan vs reality, calibration, cycle, regret, goals |
+| `meta/` | Observatory, cross-section, metrics, correlation, spectrum, summary, research report |
+| `library/` | Item types, lists and areas, attributes, tags, stages, weight, graph gaps |
+| `atlas/` | Library → Atlas: the whole-vault graph and the schema category (_Last mapped: 2026-11-01_) |
+| `sources/` | Instagram, Browser, and Health |
+| `chrome/` | Studio index, group catalog, remembered range, lazy view map |
+| `studio/` | Chart frame, Open in Lists, studio kit, studio plots |
+
+`hour-day.ts`, `signal-stats.ts`, and `CompletionReviewPlates.tsx` stay beside the door because each one is used by more than one group. `studio-views.test.tsx` stays for the same reason. The shell still loads `analytics-chrome.css` and `analytics-atlas.css` from this folder. `TextsReportView.tsx` stays here because the texts pop-out imports it.
+
 ## Files
+
+_Last mapped: 2026-10-28_
 
 | File | Purpose |
 |------|---------|
-| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
-| `analytics-views.tsx` | One `React.lazy` chunk per Analytics view. |
-| `AnalyticsNav.tsx` | Left studio index (`data-ui-name="Analytics index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
-| `analytics-tabs.ts` | Seven groups (behavior, time, accuracy, meta, texts, library, sources), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A Meaning group is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
-| `analytics-range.ts` | Presets, custom inclusive from–to, named week/month/season, prev/next (`stepAnalyticsWindow` / `previousAnalyticsWindow` / `nextAnalyticsWindow`), labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers. |
-| `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`); `stepPeriod` for Prev/Next. |
-| `chart-frame.tsx` | Empty / thin furniture + **Open in Lists** (`an-open-lists`). |
+| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Data"` (docs path this file). Mounts `useScreenTimeSync` while Data is open. The open view is a lazy chunk (`chrome/analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`time/cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
+| `chrome/analytics-views.tsx` | One `React.lazy` chunk per Data view. |
+| `chrome/AnalyticsNav.tsx` | Left studio index (`data-ui-name="Data index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
+| `chrome/analytics-tabs.ts` | Seven groups (behavior, time, accuracy, meta, texts, library, sources), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A Meaning group is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
+| `chrome/analytics-range.ts` | Presets, custom inclusive from–to, named week/month/season, prev/next (`stepAnalyticsWindow` / `previousAnalyticsWindow` / `nextAnalyticsWindow`), labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers, `weekdayIndex`. |
+| `chrome/analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`); `stepPeriod` for Prev/Next. |
+| `studio/chart-frame.tsx` | Empty / thin furniture + **Open in Lists** (`an-open-lists`). |
 | `CompletionReviewPlates.tsx` | Plates shared by Reflection and Goals, reading the completion popup and the later Reflect save (not period rituals): exact / est. / unknown time, and the same three marks for starts (an unknown start is a count, not a time), expected vs actual difficulty, optional feelings (satisfaction and distraction included), later `reflectNotes`, where hard or joyful work went, and quick-review points. |
-| `open-in-lists.ts` | Chart → Lists jump. |
-| `accuracy-stats.ts` / `accuracy-views.css` | Pure math and skin for the new Accuracy plates (band verdicts, barcode, bias stats, size bins, PERT hits, age bands, done share by pushes, goal pace). Tested in `accuracy-stats.test.ts`. _Last mapped: 2026-10-23_ |
+| `studio/open-in-lists.ts` | Chart → Lists jump. |
+| `accuracy/accuracy-stats.ts` / `accuracy/accuracy-views.css` | Pure math and skin for the new Accuracy plates (band verdicts, barcode, bias stats, size bins, PERT hits, age bands, done share by pushes, goal pace). Tested in `accuracy/accuracy-stats.test.ts`. _Last mapped: 2026-11-03_ |
 | `analytics-chrome.css` | Milled range/index chrome + light instrument interior (`.an-plate`, white `.an-plot-well`, pie, treemap, density, mosaic, hour×day, phosphor `.an-scope`, horizon/violin/alluvial). Plate hover dims rows/mosaic at 0.35; pie dims per `.recharts-sector` at 0.72 (not the pie `<g>` wrapper). One body scroll on `.an-content`. Title/status stay Lists. Drill / popup titles (`.an-drill`, `.an-popup`) are crisp Karla ink-green — opted out of the global CRT glow caption in `app/win95.css`. |
-| `studio-kit.tsx` | FindingBlock, StudioReadout (`formatCrtNumber` for numeric values), StudioHelp (`?`), StudioCheck, CanvasTitle, SlicePie (no Recharts Legend; white 2px slice gaps; hole label; pen fills stay opaque — hover/active dims other sectors to 0.72 and strokes the active path 2px ink; never opacity on the whole pie SVG), SliceTreemap, SliceMosaic (full chroma; luminance text), SplitBar (one segment row: name · duration · percent; clickable; narrow segments keep full text in title/aria), HourDayHeatmap (opaque empty cells; first/month/last day labels), DensityCalendar, StudioBars (`formatCrtNumber`), PhosphorTrace. |
-| `studio-plots.tsx` / `studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples (shared white frame), Cleveland cycle, StudioSpark (phosphor on `.an-scope`). |
+| `studio/studio-kit.tsx` | FindingBlock, StudioReadout (`formatCrtNumber` for numeric values), StudioHelp (`?`), StudioCheck, CanvasTitle, SlicePie (no Recharts Legend; white 2px slice gaps; hole label; pen fills stay opaque — hover/active dims other sectors to 0.72 and strokes the active path 2px ink; never opacity on the whole pie SVG), SliceTreemap, SliceMosaic (full chroma; luminance text), SplitBar (one segment row: name · duration · percent; clickable; narrow segments keep full text in title/aria), HourDayHeatmap (opaque empty cells; first/month/last day labels), DensityCalendar, StudioBars (`formatCrtNumber`), PhosphorTrace. |
+| `studio/studio-plots.tsx` / `studio/studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples (shared white frame), Cleveland cycle, StudioSpark (phosphor on `.an-scope`). |
 | `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Overlapping blocks on one minute count once, so an hour stays ≤ 60. Hour×pen small multiples + weekday cycle. |
-| `observatory-findings.ts` | Pearson-r findings for Observatory. Named apart from `Observatory.tsx` (macOS case-fold). |
-| `research-report.ts` / `ResearchReportView.tsx` | Meta view `research-report`: a plain-language rundown of the shared window. Sections appear only when a live series clears a floor (habit-day gap, streak, grade gap, tracking coverage, sleep, one wellbeing move, plan vs tracked minutes, text-pipeline stamps, gratitude, why / blocked-reason counts). Copy rundown is plain text. No model. |
+| `meta/observatory-findings.ts` | Pearson-r findings for Observatory. Named apart from `meta/Observatory.tsx` (macOS case-fold). |
+| `meta/PeriodSummaryView.tsx` | _Last mapped: 2026-11-02._ Meta view `summary`. When the shared window is exactly a day, week, month, season, or year it shows that period's written summary (or says there is none, with **write it here**) and its children's summaries. Then the plates from `components/PeriodSummary/` over the window. **Past summaries** lists every period with written text or a kept record, newest first; a row moves the window there. Reads only, except the written summary field. |
+| `meta/research-report.ts` / `meta/ResearchReportView.tsx` | Meta view `research-report`: a plain-language rundown of the shared window. Sections appear only when a live series clears a floor (habit-day gap, streak, grade gap, tracking coverage, sleep, one wellbeing move, plan vs tracked minutes, text-pipeline stamps, gratitude, why / blocked-reason counts). Copy rundown is plain text. No model. |
 | `signal-stats.ts` | Shannon entropy of pens/day, Gini, list HHI, Markov transitions, weekday/weekend cut, open-item ages. |
-| `HabitsView.tsx` | Density calendar, sorted bars, week/month grade, Good days, climb, tracking-link split, habit-% lag trace, horizon of daily %, weekday/weekend slopegraph. Day % and rates drop exempt periods from the denominator. |
-| `PointsView.tsx` | Daily stacked source split (habit / bonus / task) + cumulative + top earners. _Last mapped: 2026-10-20_ A **Points ledger** plate (`#analytics-points-ledger`) lists every award, newest first; a row opens the same breakdown as Home Latest award (`components/Home/award-detail.tsx`). Latest award's foot key lands here through `lib/points-ledger-nav.ts`, and the row that was open on Home opens expanded. |
-| `StreaksWidget.tsx` | Current + longest (not clipped). Optional week-habit streak. Not merged with Home. |
-| `ReflectionView.tsx` | Legacy score trajectory + queue, plus completion-review plates (`CompletionReviewPlates.tsx`): points, clock certainty, expected vs actual difficulty, feelings (satisfaction and distraction included), later Reflect notes, goal/objective texture. Prompt history shows each task's `reflectNotes`. |
-| `TodoPulseView.tsx` | Morning to-do walkthrough: labeled tier / duration / points / day importance / resistance series / day excitement; BIM mornings tagged. |
-| `ReviewsView.tsx` | Rituals reader: morning (sun), start slices, end/night body, blocked-reason mosaic (Other shows the typed words). Quarter cards show the season label. Below that, a dated list of why-it-didn't notes (push, missed task, habit, missed op, and the same ritual tokens) with counts by preset and by source. The mosaic stays the ritual chart. |
-| `PeriodArcReading.tsx` | Week, month, season, and year reflections in the analytics range, grouped by the ritual headings. Inspiration photos use the attachment store. |
-| `SeasonsView.tsx` | Calendar-quarter comparison (this year + last year): completions, points, quarter rituals, climate rollup, season goals. |
-| `OvercommitmentView.tsx` | Sentence + n; weeks/months pushed in the finding when present. Does not reschedule. |
-| `VelocityView.tsx` | Completions, points, median cycle time, reward scatter. |
-| `TrackingAnalytics.tsx` | Centered header bay (scope, % basis, untracked, assumed, depth, **Find blocks**) under the range bar; full help behind `?`. Plates: **How much** (metal readouts + phosphor spark), **Composition** (large donut + ranked rows as legend + **period filmstrip** + **day/week color strips** above average-day All/Mon–Sun ribbons + tags + tag bars), **Up / down** (compact white-well table vs `previousAnalyticsWindow`), **Hour × day**, **Rhythm** (weekday/weekend + hour×pen), **Duration** (violin + instants + Open in Lists). Linked `activeId` highlight lives on the composition plate — hovering a pen does not rebuild the filmstrip or the hour×day grid. Pen drill: Split/Reach, donut, **one** SplitBar with name · duration · percent (no duplicate percent row), block list → `entry-dialog` / gap → `LogActivityDialog` with `an-popup` crisp titles. Mosaic rectangles removed from Tracking only (`SliceMosaic` stays for other views). After the composition: **By level** (`TrackingContextPlates.tsx`, `LevelLadderPlate`) — one 100% bar per named level of the chosen view, minutes rolled to the pen at that level, “No {level}” grey when a chain lacks that rung; click drills the pen. **Who you were with** (`CompanyHeadcountPlate`, `lib/company-headcount.ts`) — Company minutes by headcount (Alone, 1, 2, 3, 4+, count unknown), readouts for alone / with others / mean company / not recorded, top Activity pens per headcount, and most time with. Unknown company is neither alone nor with anyone. |
-| `PeopleView.tsx` | Time → **People**. Company person pens (`isPersonPen`), minutes from `personMinuteMasks` (Company blocks naming them ∪ Social “Who with?” ticks). Readouts (people seen, time with anyone, new faces, drifting), the **Who** table (window time, change vs the previous window, days, times, last, usual activity · place, rhythm), **Drifting** (past 2× rhythm and ≥ 14 days), time with anyone by day, and the headcount plate. |
-| `average-day.ts` / `AverageDayBoard.tsx` | Pure 15-minute slot averages → All days + Mon–Sun ribbons. Stable pen order from ranked rows; empty occupancy is white well. Sits **under** the period filmstrip in Composition. |
-| `period-filmstrip.ts` / `PeriodFilmstrip.tsx` | Chronological pen bar for the whole window (Home Tracking ribbon language), **above** average-day ribbons. One owner per minute (same as the time grid); painted minutes plus gaps equal days × 1440. Gaps respect Show untracked; click block → EntryDialog, click gap → Log activity. A search jump adds `is-hit` and scrolls that block into the strip. The daily sparkline uses `uniqueMinutesByDate`. |
-| `grain-strips.ts` / `GrainStrips.tsx` | One equal cell per day, and per week when the window spans two Mondays. Color is the pen at the current display depth that owned the most minutes (`minuteMap`, so overlap votes once). Empty days stay white. A tie keeps the earlier pen in the palette. |
-| `tag-trends.ts` / `TagTrendBoard.tsx` | Monthly tag bars beside the weekly series from `tagWeekTrend`. Same union as `tagTotals`: a minute tagged in two scopes counts once. Zero buckets stay in the row. |
-| `block-search.ts` / `BlockSearch.tsx` | Find blocks on this surface. Matcher is `searchTracking` in `lib/tracking-search.ts` (display name, notes, project, primary pen, secondary pens, counts-as chains, action formats, and a mood reading’s word, body, vibe, shorthand, reframe, and about-that). A row jumps: switch scope, highlight the filmstrip segment, open `entry-dialog`. A date outside the shared window opens the block and says so — the window does not move. **Show matches in this view** reruns the Tracking measures on that set (`SEARCH_FILTER_LIMIT`). Other paint is omitted, not called untracked, and Show untracked is paused until Clear. |
-| `period-delta.ts` / `PeriodDeltaTable.tsx` | Pen minutes vs previous equal window from `previousAnalyticsWindow` (same stepper as the range bar). Ink ± deltas; "new" / "same". Renders as a tight four-column table in a scrollable white plot well (max ~320px). |
+| `behavior/HabitsView.tsx` | Density calendar, sorted bars, week/month grade, Good days, climb, tracking-link split, habit-% lag trace, horizon of daily %, weekday/weekend slopegraph. Day % and rates drop exempt periods from the denominator. |
+| `behavior/PointsView.tsx` | Daily stacked source split (habit / bonus / task) + cumulative + top earners. _Last mapped: 2026-10-20_ A **Points ledger** plate (`#analytics-points-ledger`) lists every award, newest first; a row opens the same breakdown as Home Latest award (`components/Home/award-detail.tsx`). Latest award's foot key lands here through `lib/points-ledger-nav.ts`, and the row that was open on Home opens expanded. |
+| `behavior/StreaksWidget.tsx` | Current + longest (not clipped). Optional week-habit streak. Not merged with Home. |
+| `behavior/ReflectionView.tsx` | Legacy score trajectory + queue, plus completion-review plates (`CompletionReviewPlates.tsx`): points, clock certainty, expected vs actual difficulty, feelings (satisfaction and distraction included), later Reflect notes, goal/objective texture. Prompt history shows each task's `reflectNotes`. |
+| `behavior/TodoPulseView.tsx` | Morning to-do walkthrough: labeled tier / duration / points / day importance / resistance series / day excitement; BIM mornings tagged. |
+| `behavior/ReviewsView.tsx` | Rituals reader: morning (sun), start slices, end/night body, blocked-reason mosaic (Other shows the typed words). Quarter cards show the season label. Below that, a dated list of why-it-didn't notes (push, missed task, habit, missed op, and the same ritual tokens) with counts by preset and by source. The mosaic stays the ritual chart. |
+| `behavior/PeriodArcReading.tsx` | Week, month, season, and year reflections in the analytics range, grouped by the ritual headings. Inspiration photos use the attachment store. |
+| `behavior/SeasonsView.tsx` | Calendar-quarter comparison (this year + last year): completions, points, quarter rituals, climate rollup, season goals. |
+| `behavior/OvercommitmentView.tsx` | Sentence + n; weeks/months pushed in the finding when present. Does not reschedule. |
+| `behavior/VelocityView.tsx` | Completions, points, median cycle time, reward scatter. |
+| `time/TrackingAnalytics.tsx` | Centered header bay (scope, % basis, untracked, assumed, depth, **Find blocks**) under the range bar; full help behind `?`. Plates: **How much** (metal readouts + phosphor spark), **Composition** (large donut + ranked rows as legend + **period filmstrip** + **day/week color strips** above average-day All/Mon–Sun ribbons + tags + tag bars), **Up / down** (compact white-well table vs `previousAnalyticsWindow`), **Hour × day**, **Rhythm** (weekday/weekend + hour×pen), **Duration** (violin + instants + Open in Lists). Linked `activeId` highlight lives on the composition plate — hovering a pen does not rebuild the filmstrip or the hour×day grid. Pen drill: Split/Reach, donut, **one** SplitBar with name · duration · percent (no duplicate percent row), block list → `entry-dialog` / gap → `LogActivityDialog` with `an-popup` crisp titles. Mosaic rectangles removed from Tracking only (`SliceMosaic` stays for other views). After the composition: **By level** (`time/TrackingContextPlates.tsx`, `LevelLadderPlate`) — one 100% bar per named level of the chosen view, minutes rolled to the pen at that level, “No {level}” grey when a chain lacks that rung; click drills the pen. **Who you were with** (`CompanyHeadcountPlate`, `lib/company-headcount.ts`) — Company minutes by headcount (Alone, 1, 2, 3, 4+, count unknown), readouts for alone / with others / mean company / not recorded, top Activity pens per headcount, and most time with. Unknown company is neither alone nor with anyone. |
+| `time/PeopleView.tsx` | Time → **People**. Company person pens (`isPersonPen`), minutes from `personMinuteMasks` (Company blocks naming them ∪ Social “Who with?” ticks). Readouts (people seen, time with anyone, new faces, drifting), the **Who** table (window time, change vs the previous window, days, times, last, usual activity · place, rhythm), **Drifting** (past 2× rhythm and ≥ 14 days), time with anyone by day, and the headcount plate. |
+| `time/average-day.ts` / `time/AverageDayBoard.tsx` | Pure 15-minute slot averages → All days + Mon–Sun ribbons. Stable pen order from ranked rows; empty occupancy is white well. Sits **under** the period filmstrip in Composition. |
+| `time/period-filmstrip.ts` / `time/PeriodFilmstrip.tsx` | Chronological pen bar for the whole window (Home Tracking ribbon language), **above** average-day ribbons. One owner per minute (same as the time grid); painted minutes plus gaps equal days × 1440. Gaps respect Show untracked; click block → EntryDialog, click gap → Log activity. A search jump adds `is-hit` and scrolls that block into the strip. The daily sparkline uses `uniqueMinutesByDate`. |
+| `time/grain-strips.ts` / `time/GrainStrips.tsx` | One equal cell per day, and per week when the window spans two Mondays. Color is the pen at the current display depth that owned the most minutes (`minuteMap`, so overlap votes once). Empty days stay white. A tie keeps the earlier pen in the palette. |
+| `time/tag-trends.ts` / `time/TagTrendBoard.tsx` | Monthly tag bars beside the weekly series from `tagWeekTrend`. Same union as `tagTotals`: a minute tagged in two scopes counts once. Zero buckets stay in the row. |
+| `time/block-search.ts` / `time/BlockSearch.tsx` | Find blocks on this surface. Matcher is `searchTracking` in `lib/tracking-search.ts` (display name, notes, project, primary pen, secondary pens, counts-as chains, action formats, and a mood reading’s word, body, vibe, shorthand, reframe, and about-that). A row jumps: switch scope, highlight the filmstrip segment, open `entry-dialog`. A date outside the shared window opens the block and says so — the window does not move. **Show matches in this view** reruns the Tracking measures on that set (`SEARCH_FILTER_LIMIT`). Other paint is omitted, not called untracked, and Show untracked is paused until Clear. |
+| `time/period-delta.ts` / `time/PeriodDeltaTable.tsx` | Pen minutes vs previous equal window from `previousAnalyticsWindow` (same stepper as the range bar). Ink ± deltas; "new" / "same". Renders as a tight four-column table in a scrollable white plot well (max ~320px). |
 | `analytics-atlas.css` | The atlas skin over `analytics-chrome.css`: same selectors, loaded after it (here and in `app/layout.tsx`). Re-points the `--an-*` tokens so boards and Tracking cuts follow, and adds `--at-*` (paper, ink, cobalt, steel, bearing, pearl, key rim). Keys that the house button lip in `app/win95.css` would repaint carry `:not(#at)` for id weight. The field-ring band (`public/analytics-atlas/field-lines.svg`) and the degree ruler are no longer drawn (2026-10-23); the SVG file stays on disk. |
-| `analytics-boards.css` | Tracking header, composition band, average-day, filmstrip, compact delta-table styles. Imported by the board components. |
-| `SleepAnalytics.tsx` | Nightly strip on 6pm→noon; `~` estimated, **est.** read off the grid; duration CV + lag-1; weekday ridgelines; **against the sun**; **all-nighters** (count, frequency, time, desktop vs text-pipeline/BIM source). |
-| `ScreenTimeView.tsx` | ActivityWatch-painted Screen Time: active vs untracked, top apps / categories, last-sync, alignment vs Activity occupancy. Empty sentence notes AW only records from when watchers run. `data-testid="screentime-view"`. |
-| `CircadianView.tsx` | Hour × day atlas (Activity default, Mood) + Cleveland weekday cycle plot. |
-| `PlacesView.tsx` | Location time-at-pen mosaic, plus repeated GPS pins (80 m) that can be named. Naming writes the Location pen. Not a geo map. |
-| `MoodFieldView.tsx` | Any painted mood name (mosaic), then **Same word**, **The water**, and **Marks**. **How to read this** sits under the title. A color with no card stays out of the averages. Logged wellbeing metrics stay a separate plate. |
-| `DiversityView.tsx` | Shannon entropy of pens/day + Gini of allocation + weekday vs weekend. |
-| `TransitionsView.tsx` | Markov matrix of Tracking pen changes + alluvial of switch counts. |
-| `ContextSwitchHeatmap.tsx` | Density calendar + hour-of-day; per-scope; Open in Lists for items with time logs. |
-| `TextPipelineView.tsx` | **Text events** (text-pipeline instants) and **Text spans** (currently/stopped/switched intervals); always labeled from text pipeline. A habit duration span (`generatedBy.id` starting `kw:`) is an ordinary tracking block, not a text-pipeline row. |
-| `LogEventsView.tsx` | **Log** (Time group): day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count, phase strip from `phaseForDate` (stored marks; the Tracking log cycle well stays hidden until Enable cycle tracking is on). Filter matches the kind string (`intake.food`, `intake.drink`, `intake.drug`, `intake`, or a slug such as left room). |
-| `log-event-stats.ts` | Pure counts by day and by kind, clock scatter (unknown excluded), phase strip. Tested in `log-event-stats.test.ts`. |
-| `CyclePhaseView.tsx` | **Cycle phase** (Time group): phase mix of the shared window from `assessCycleDay` (batched as `assessCycleRange`). Marked days and estimated days are counted apart. Means and medians are on marked days, with n. An estimated split stays labeled, keeps n, and is not a finding. `summarizeCycleEstimates().basisNote` is a quiet line. Unknown is its own bucket. Spotting is not a phase. Empty until a bleed or ovulation mark exists. Not a diagnosis. Accuracy → **Cycle** stays stall and pushes. The shell hides this canvas while Enable cycle tracking is on and `cycleDetailsOpen` is false. |
-| `cycle-phase-concealed.tsx` | Concealed stand-in for Time → Cycle phase. One line and **Show cycle**. Does not import `CyclePhaseView`. The gate is off when cycle tracking itself is off. |
-| `cycle-phase-stats.ts` | Pure phase counts split by marked and estimated, daily means, zero-fill, and phase comparisons on marked days. Tested in `cycle-phase-stats.test.ts`. |
-| `operation-debrief.ts` | Pure after-action summary for the shared window: mean execution, planning, and morale (integer 1–10 only), sum and mean of stored `hoursLogged`, and the written summary / what worked / what failed / lessons. Tested in `operation-debrief.test.tsx`. |
-| `OperationsAnalytics.tsx` | Stage/category mosaic + work/neglect heat, plus an after-action debrief for reports in the shared window (mean execution, planning, morale; sum and mean of stored `hoursLogged`; summary, what worked, what failed, lessons). Does not restyle the Operations module. |
-| `PlanVsReality.tsx` | Window ribbon (sortable, with median / best / worst) + plan bar with a thin actual bar inside; mirror split; truth barcode of planned items; calendar events as planned minutes; capacity vs waking window (`~` when inferred). Doc: `docs/analytics/accuracy-plan.md`. |
-| `CalibrationView.tsx` | Sentence + n + caveat; scatter with y = x and ±band lines; estimate barcode with band slider; P50/P80/P90 forecaster from your ratios; bias by task size; type/list breakdown when n clears the floor; folded PERT bands with hit count. Doc: `docs/analytics/accuracy-calibration.md`. |
-| `CycleView.tsx` | `daysPushed` distribution, done share by push count, most-pushed peaks, open important items, estimate confirmation, empirical survival of open stock, age beeswarm, open-stock unit grid with an importance slider. Doc: `docs/analytics/accuracy-cycle.md`. |
-| `RegretView.tsx` | Accrued cost of important items sitting undone. Regret clock with look-ahead slider, squares by list with an anchor, searchable sortable overdue table. Doc: `docs/analytics/accuracy-regret.md`. |
-| `GoalsAnalytics.tsx` | Objective contribution, neglected goals, progress, pace vs a straight line (filter, sort), work bubbles per goal, and which linked goals held the harder or more enjoyable work. Doc: `docs/analytics/accuracy-goals.md`. |
-| `Observatory.tsx` | Classical findings + linked Cross-section (`data-ui-name="Observatory"`, `#studio-views`). Thin overlap watermarked. |
-| `CrossSection.tsx` | Linked density (habits, tracking, sleep, completions, points, operations, regret, mood, joy, switches, places, goals, Screen Time occupancy). `data-ui-name="Cross-section"`, `#studio-views`. |
-| `cross-section.ts` | Pure series builders: missing stays missing. |
-| `MetricsTrends.tsx` | Small-multiples of all five wellbeing metrics + phosphor detail chart + **Log {name}**. |
-| `CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics + habit % / tracking / sleep / points). Click a cell → scatter. |
-| `SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
-| `ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
-| `InstagramView.tsx` / `instagram-view.css` | Sources → **Instagram**. Hosts the generated `report.html` in a frame. See **Instagram (Sources)** below. `data-testid="instagram-view"`. |
-| `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-16._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`). |
-| `ListsAreasView.tsx` | Size-by-items treemap (area ∝ count) + HHI + completion-rate toggle. |
-| `AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
-| `LibraryCuts.tsx` | Tags (treemap + UpSet combinations), Stages, Weight — fields already on items. |
+| `time/analytics-boards.css` | Tracking header, composition band, average-day, filmstrip, compact delta-table styles. Imported by the board components. |
+| `time/SleepAnalytics.tsx` | Nightly strip on 6pm→noon; `~` estimated, **est.** read off the grid; duration CV + lag-1; weekday ridgelines; **against the sun**; **all-nighters** (count, frequency, time, desktop vs text-pipeline/BIM source). |
+| `time/ScreenTimeView.tsx` | ActivityWatch-painted Screen Time: active vs untracked, top apps / categories, last-sync, alignment vs Activity occupancy. Empty sentence notes AW only records from when watchers run. `data-testid="screentime-view"`. |
+| `time/CircadianView.tsx` | Hour × day atlas (Activity default, Mood) + Cleveland weekday cycle plot. |
+| `time/PlacesView.tsx` | Location time-at-pen mosaic, plus repeated GPS pins (80 m) that can be named. Naming writes the Location pen. Not a geo map. |
+| `time/MoodFieldView.tsx` | Any painted mood name (mosaic), then **Same word**, **The water**, and **Marks**. **How to read this** sits under the title. A color with no card stays out of the averages. Logged wellbeing metrics stay a separate plate. |
+| `time/DiversityView.tsx` | Shannon entropy of pens/day + Gini of allocation + weekday vs weekend. |
+| `time/TransitionsView.tsx` | Markov matrix of Tracking pen changes + alluvial of switch counts. |
+| `time/ContextSwitchHeatmap.tsx` | Density calendar + hour-of-day; per-scope; Open in Lists for items with time logs. |
+| `time/TextPipelineView.tsx` | **Text events** (text-pipeline instants) and **Text spans** (currently/stopped/switched intervals); always labeled from text pipeline. A habit duration span (`generatedBy.id` starting `kw:`) is an ordinary tracking block, not a text-pipeline row. |
+| `time/LogEventsView.tsx` | **Log** (Time group): day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count, phase strip from `phaseForDate` (stored marks; the Tracking log cycle well stays hidden until Enable cycle tracking is on). Filter matches the kind string (`intake.food`, `intake.drink`, `intake.drug`, `intake`, or a slug such as left room). |
+| `time/log-event-stats.ts` | Pure counts by day and by kind, clock scatter (unknown excluded), phase strip. Tested in `time/log-event-stats.test.ts`. |
+| `time/CyclePhaseView.tsx` | **Cycle phase** (Time group): phase mix of the shared window from `assessCycleDay` (batched as `assessCycleRange`). Marked days and estimated days are counted apart. Means and medians are on marked days, with n. An estimated split stays labeled, keeps n, and is not a finding. `summarizeCycleEstimates().basisNote` is a quiet line. Unknown is its own bucket. Spotting is not a phase. Empty until a bleed or ovulation mark exists. Not a diagnosis. Accuracy → **Cycle** stays stall and pushes. The shell hides this canvas while Enable cycle tracking is on and `cycleDetailsOpen` is false. |
+| `time/cycle-phase-concealed.tsx` | Concealed stand-in for Time → Cycle phase. One line and **Show cycle**. Does not import `CyclePhaseView`. The gate is off when cycle tracking itself is off. |
+| `time/cycle-phase-stats.ts` | Pure phase counts split by marked and estimated, daily means, zero-fill, and phase comparisons on marked days. Tested in `time/cycle-phase-stats.test.ts`. |
+| `time/operation-debrief.ts` | Pure after-action summary for the shared window: mean execution, planning, and morale (integer 1–10 only), sum and mean of stored `hoursLogged`, and the written summary / what worked / what failed / lessons. Tested in `time/operation-debrief.test.tsx`. |
+| `time/OperationsAnalytics.tsx` | Stage/category mosaic + work/neglect heat, plus an after-action debrief for reports in the shared window (mean execution, planning, morale; sum and mean of stored `hoursLogged`; summary, what worked, what failed, lessons). Does not restyle the Operations module. |
+| `accuracy/PlanVsReality.tsx` | Window ribbon (sortable, with median / best / worst) + plan bar with a thin actual bar inside; mirror split; truth barcode of planned items; calendar events as planned minutes; capacity vs waking window (`~` when inferred). Doc: `docs/analytics/accuracy-plan.md`. |
+| `accuracy/CalibrationView.tsx` | Sentence + n + caveat; scatter with y = x and ±band lines; estimate barcode with band slider; P50/P80/P90 forecaster from your ratios; bias by task size; type/list breakdown when n clears the floor; folded PERT bands with hit count. Doc: `docs/analytics/accuracy-calibration.md`. |
+| `accuracy/CycleView.tsx` | `daysPushed` distribution, done share by push count, most-pushed peaks, open important items, estimate confirmation, empirical survival of open stock, age beeswarm, open-stock unit grid with an importance slider. Doc: `docs/analytics/accuracy-cycle.md`. |
+| `accuracy/RegretView.tsx` | Accrued cost of important items sitting undone. Regret clock with look-ahead slider, squares by list with an anchor, searchable sortable overdue table. Doc: `docs/analytics/accuracy-regret.md`. |
+| `accuracy/GoalsAnalytics.tsx` | Objective contribution, neglected goals, progress, pace vs a straight line (filter, sort), work bubbles per goal, and which linked goals held the harder or more enjoyable work. Doc: `docs/analytics/accuracy-goals.md`. |
+| `meta/Observatory.tsx` | Classical findings + linked Cross-section (`data-ui-name="Observatory"`, `#studio-views`). Thin overlap watermarked. |
+| `meta/CrossSection.tsx` | Linked density (habits, tracking, sleep, completions, points, operations, regret, mood, joy, switches, places, goals, Screen Time occupancy). `data-ui-name="Cross-section"`, `#studio-views`. |
+| `meta/cross-section.ts` | Pure series builders: missing stays missing. |
+| `meta/MetricsTrends.tsx` | Small-multiples of all five wellbeing metrics + phosphor detail chart + **Log {name}**. |
+| `meta/CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics + habit % / tracking / sleep / points). Click a cell → scatter. |
+| `meta/SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
+| `library/ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
+| `sources/InstagramView.tsx` / `sources/instagram-view.css` | Sources → **Instagram**. Hosts the generated `report.html` in a frame. See **Instagram (Sources)** below. `data-testid="instagram-view"`. |
+| `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-28._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`; _2026-11-01:_ **Read the vault for written links** adds `extractProposals` rows, **Find repeating chains** adds `mineChainRules` rule proposals at the floor of 7, and a list counts accepted and dismissed per source from the inbox and `brain2-graph-usage`). Two chips add the Taxonomy pack and the Lexical pack; a pack already on does nothing. |
+| `library/ListsAreasView.tsx` | Size-by-items treemap (area ∝ count) + HHI + completion-rate toggle. |
+| `library/AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
+| `library/LibraryCuts.tsx` | Tags (treemap + UpSet combinations), Stages, Weight — fields already on items. |
+| `library/GraphGapsView.tsx` | Library → Graph. Missing and uncertain facts in one slice. A suggestion stays labeled missing; a recorded link stays recorded. |
+| `atlas/GraphAtlasView.tsx` | _Last mapped: 2026-11-01._ Library → **Atlas**. The only file here that reads stores. It builds the whole-vault graph (`buildKnowledgeGraph`, with derived edges) and the schema category (`schemaCategory`). Node size is PageRank and node tint is the community, both read from recorded and observed edges only (`lib/graph/insights.ts`). A "What the graph shows" plate lists `insightSentences` (n, subset, range; mined chains in italics as inferred) and, per enabled rule, up to five places where the chain holds and the head link is not written (`checkEquation`). Nothing writes. |
+| `atlas/GraphAtlas.tsx` | _Last mapped: 2026-11-01._ The whole-vault graph as one SVG plate (KG-V). Takes a `KnowledgeGraph` as a prop. Chips hide node kinds or edge orders, or keep one relation family; each chip shows its count. Orders as stroke (KG-V3): recorded solid ink, observed cobalt, derived dashed, inferred dotted. The 150 / 300 / 1000 nodes with the most edges are placed, and the plate says "Showing N of M nodes". **Find** focuses a node: 1 or 2 hops stay lit, the rest dims. A click opens a readout: label, kind, type, degree, and in / out edges with `relationLabel`. Drag pans, the wheel and + / − zoom, **Fit** resets; all move the viewBox. Optional `insights` (id → score) sizes nodes; optional `communities` (id → key) groups nodes into cells and tints them with six of the room's inks (`atlas-c0`…`atlas-c5`). `GraphAtlasView.tsx` passes both. |
+| `atlas/SchemaCategoryDiagram.tsx` | _Last mapped: 2026-11-01._ Types and address kinds as boxes, relations as labelled arrows from domain to codomain, layered by `topologicalRanks`. Identity arrows (`id:…`) are left out. Arrows that share both ends are one arrow labelled "first +N". A click lists each relation in it with its domain and codomain. |
+| `atlas/atlas.css` | Atlas furniture: paper well, order strokes, community tones, the ruled readout. Loaded by the two plates. |
 
 ### Shell loading
 
@@ -203,7 +245,7 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | **Accuracy** | **Plan vs Reality** | plan, events, capacity, sleep | Ribbon + events as planned minutes + waking capacity. Grain includes Season (`YYYY-Qn`). |
 | | **Calibration** | tasks | Sentence + n; type/list when floor clears; PERT when present. |
 | | **Cycle** | pushes, estimates | Stall distribution + confirmation rate + survival + age beeswarm of open important items. |
-| | **Regret** | `regret-store` | Accrued / outstanding. Rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening UTC key can still sit on the next civil day. |
+| | **Regret** | `regret-store` | Accrued / outstanding. Rows are local `YYYY-MM-DD`, same as the Data window. An old evening UTC key can still sit on the next civil day. |
 | | **Goals** | `goals-store` | Progress, neglected, contributing completions, and the hard / joyful texture of linked work. |
 | **Meta** | **Observatory** | aligned series | Pearson findings + Cross-section (includes Activity vs Screen Time occupancy). Thin overlap withheld. |
 | | **Cross-section** | many stores | Linked density; extra series: mood, joy, switches, places, goals, Screen Time. |
@@ -226,7 +268,7 @@ missing nights stay blank; empty rows say so.
 
 _Last mapped: 2026-10-22_
 
-Group **Texts**, view **Report** (`TextsReportView.tsx`). It frames the texts report drawn by `scripts/texts-analysis/` and served on loopback by `electron/texts-report.js`. The report keeps its own look on purpose: the studio skin does not apply inside the frame (allie, 2026-10-22). The view adds only a title, the last update, and **Update now**. It does not use the shared window. It refreshes weekly after Sunday 21:00. The web build shows a sentence instead. Renderer bridge: `lib/texts-report.ts`. _Last mapped: 2026-10-23:_ the view also posts People I Know into the frame and takes link, unlink and open-person requests from it (own frame and origin only, `readReportRequest`), so a relationship page can link its chat to a Person. _2026-10-23:_ it also creates a Person from a chat (`create-person`), keeps the frame's person cards for Person → View text analytics (`writeTextsIndex`), opens a card on request, and reloads when the frame starts an update. **Open in window** shows the view alone at `/popout/?view=texts` (`app/popout/page.tsx`; `electron/main.js` allows only that view name). _2026-10-23:_ in the main window the frame sends its sections (`sections`, `section`) and hides its own nav. `AnalyticsNav` lists them under **Sections** below Views (`lib/texts-report-nav.ts`, `.an-section-bar` in `analytics-atlas.css`); a click sends `goto`. The pop-out keeps the report's nav. Week and month comparisons, notes, and on-demand AI reads are **Planned** in [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md).
+Group **Texts**, view **Report** (`TextsReportView.tsx`). It frames the texts report drawn by `scripts/texts-analysis/` and served on loopback by `electron/texts-report.js`. The report keeps its own look on purpose: the studio skin does not apply inside the frame (allie, 2026-10-22). The view adds only a title, the last update, and **Update now**. _2026-11-02:_ a failed update shows why in place of the date (`textsErrorSentence`); a refused `chat.db` read asks for Full Disk Access. It does not use the shared window. It refreshes daily after 04:00. The web build shows a sentence instead. Renderer bridge: `lib/texts-report.ts`. _Last mapped: 2026-10-23:_ the view also posts People I Know into the frame and takes link, unlink and open-person requests from it (own frame and origin only, `readReportRequest`), so a relationship page can link its chat to a Person. _2026-10-23:_ it also creates a Person from a chat (`create-person`), keeps the frame's person cards for Person → View text analytics (`writeTextsIndex`), opens a card on request, and reloads when the frame starts an update. **Open in window** shows the view alone at `/popout/?view=texts` (`app/popout/page.tsx`; `electron/main.js` allows only that view name). _2026-10-23:_ in the main window the frame sends its sections (`sections`, `section`) and hides its own nav. `AnalyticsNav` lists them under **Sections** below Views (`lib/texts-report-nav.ts`, `.an-section-bar` in `analytics-atlas.css`); a click sends `goto`. The pop-out keeps the report's nav. Week and month comparisons, notes, and on-demand AI reads are **Planned** in [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md).
 
 ## Pure libraries
 
@@ -242,11 +284,16 @@ Group **Texts**, view **Report** (`TextsReportView.tsx`). It frames the texts re
 - `lib/sleep-log.ts` / `lib/sleep-inference.ts` — nightly model + `resolveNights`.
 - `lib/metrics.ts` — classical stats (Pearson r, trend, change-points, Shannon
   entropy, Gini, HHI, autocorrelation, periodogram, CV, survival).
-- `components/Analytics/studio-plot-stats.ts` — KDE, histogram, horizon bands,
+- `components/Analytics/studio/studio-plot-stats.ts` — KDE, histogram, horizon bands,
   beeswarm, alluvial layout, UpSet intersections, weekday ridges.
 - `lib/overcommitment.ts` — day-push reconstruction + logged minutes.
-- `lib/regret-store.ts` — accrued cost of important overdue items. Rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening UTC key can still sit on the next civil day.
+- `lib/regret-store.ts` — accrued cost of important overdue items. Rows are local `YYYY-MM-DD`, same as the Data window. An old evening UTC key can still sit on the next civil day.
 - `lib/operations.ts` — `buildHeatmap` for operations minutes.
+- `lib/graph/atlas-layout.ts` — _Last mapped: 2026-11-01._ Atlas placement.
+  Caps by degree (`capByDegree`, ties by id, a focused node always kept), then
+  one seeded `forceishLayout` (`lib/graph-layout.ts`) with fixed passes, or one
+  cell per community packed in rows. `hopsFrom` gives the 1–2 hop focus.
+  Pairwise repulsion; Barnes-Hut is not needed under about 2k nodes.
 - `lib/habit-accomplishment.ts` — Good days.
 - `lib/incremental-habits.ts` — climb targets (not re-derived here).
 - Habit % from `calculateDayPercentageAV` (`lib/calculations.ts`).
@@ -265,12 +312,12 @@ second clock.
 `scripts/capture-screenshots.mjs` (`captureAnalytics`) clicks the **group** tab
 then the **view** tab (`role="tab"`). Manifest chrome is `ANALYTICS_CHROME` in
 `scripts/screenshot-manifest.mjs`. Recapture `docs/screenshots/07-analytics*` with
-`COGS_FRESH=0` on a loaded vault so empty theater is not product truth. Do not run
+`BRAIN2_FRESH=0` on a loaded vault so empty theater is not product truth. Do not run
 a full-repo screenshot pass while other tabs are in flight.
 
 ## Instagram (Sources)
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-25_
 
 Sources → **Instagram** shows the person's Instagram report: the page that
 `build_report.py` writes from an Instagram data export. Brain2 does not redraw
@@ -288,7 +335,7 @@ last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`)
 **Pipeline** (`electron/instagram-report.js`, Electron main only):
 
 1. Scan `~/Downloads`, an optional folder ("Watch a folder…") and, while `watchGoogleDrive` is on, each Google Drive `My Drive` (`googleDriveDirs` via `watchedDirs`) at start, on folder changes, and every minute. Match `instagram-<account>-<YYYY-MM-DD>-<id>` as a zip (several parts are grouped) or an unzipped folder with `your_instagram_activity/`. Skip `.crdownload`, `.download`, `.part`. A zip must hold still for 10 s. Other accounts are ignored.
-2. Copy or unzip into `<userData>/instagram/exports/<date>-<id>/`. Downloads is never changed.
+2. Copy or unzip into `<userData>/instagram/exports/<date>-<id>/`. Downloads is never changed. A Google Drive folder is copied by reading each file (`copyExportTree`). Drive's file provider cancels `copyfile` (`ECANCELED`) on a streamed, online-only file, which used to abort the whole day on one DM photo. A read is what makes Drive download the file. A photo or video that still will not download after retries is skipped and counted on `current.skipped`; a JSON file that will not download fails the copy, and that failure is tried again after 10 min (`COPY_RETRY_MS`) even when the folder has not changed. The Meta folder stays in Drive. It does not need to be available offline, and it is not in iCloud.
 3. Write the view's manual DM matches to `matches.json`.
 4. Run `analyze.py` then `build_report.py` with the configured Python and `-I`, into a new `builds/<stamp>/` (`IG_OUT`). Last run's thumbs are copied in first.
 5. Only when both succeed, `state.json` points at the new build. The old build and its export stay until then, so thumbs and media never break. On failure the old report stays and `lastError` holds the step and stderr.
@@ -326,19 +373,20 @@ Do not fill them with made-up numbers:
 - Comments have no link to their post.
 - Time active is an estimate. Before the recent view-log window it is a floor.
 
-**Google Drive scheduled export.** _Last mapped: 2026-10-23_ Meta writes
-each scheduled export into My Drive as `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`.
-`parseMetaFolderName` reads the date from it. `scanMetaFolder` takes, inside
-it, an unzipped export, `instagram-…` zips or folders, or plain zips as the
-parts of one export. The name has no account, so the username is read from
+**Google Drive scheduled export.** _Last mapped: 2026-10-25_ Meta keeps one
+folder in My Drive, `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`, and adds each
+day's export inside it as an unzipped `instagram-<account>-<date>-<id>`
+folder. `scanMetaFolder` returns each of those as its own export. It also
+takes the folder itself as one unzipped export, or plain zips as the parts of
+one export (dated by `parseMetaFolderName`). A Drive export with no files yet
+is skipped; one with files must hold still for 15 min (`DRIVE_STABLE_MS`). The name has no account, so the username is read from
 `personal_information.json` after unzipping (`exportAccount`); another
-account's export is skipped. A `meta-…` folder must hold still (file count,
-size, newest mtime) for 10 s, since Drive may still be syncing it. The newest
+account's export is skipped. The newest
 export builds the report. Every other export not yet archived is unzipped,
 archived and its copy removed (`archiveOnly`); a failed one is retried hourly,
-or at once if it changes. The view says **Google Drive watched** when a Drive
-folder is found. Not checked yet: the contents of a real Drive export (the
-first one was still empty). See `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER".
+or at once if it changes. A copy canceled by Drive is retried after 10 min
+even if the folder's fingerprint has not changed. The view says **Google Drive watched** when a Drive
+folder is found. The first real export (2026-10-22) has the same top folders as a device export, media included. Copying it with `copyfile` failed on 2026-10-23 (`ECANCELED` on one DM photo) and left the report on that Oct 22 export. Drive stays in stream mode; Brain2 reads each file instead. See `docs/INSTAGRAM_AUTO_UPDATE.md`.
 
 ### Export archive (every export, merged)
 
@@ -388,15 +436,17 @@ _Last mapped: 2026-10-23_
 
 `InstagramView.tsx` hosts the report frame. A Person's **View Instagram data ↗** stores the handle (`openInstagramFor`, `lib/instagram-report.ts`), switches to this tab, and on the frame's `load` the view posts `{ brain2Instagram: "open-account", handle }` into it. The bridge script that `injectBridge` (`electron/instagram-report.js`) puts in the report calls the report's own `openAcct(handle)`. An account not in the export opens an empty card.
 
-_Last mapped: 2026-10-23_ **Account card ↔ Person.** The report's per-account card (`openAcct`: follow state, DM threads sent vs got, likes, saves, comments, rankings, timeline) is the Instagram relationship card. The bridge adds an **Attach to Person** bar to its header (`ACCOUNT_BAR` in `electron/instagram-report.js`): pick a Person, **New person**, or when linked, **Open** and **Unlink**. The frame posts `{ brain2Instagram: "account", action }`; `InstagramView` answers with `person-state` and writes `personProfile.instagram` through `lib/instagram-person-links.ts` (one account, one person). **Open** and the texts report's open-person now open the Person as a popup over Analytics (`openItemDetailPopup`, `lib/points-ledger-nav.ts`; the shell listens in `app/page.tsx`). The Points ledger still opens the item page. The pop-out has no shell, so the texts report there still alerts.
+_Last mapped: 2026-10-23_ **Account card ↔ Person.** The report's per-account card (`openAcct`: follow state, DM threads sent vs got, likes, saves, comments, rankings, timeline) is the Instagram relationship card. The bridge adds an **Attach to Person** bar to its header (`ACCOUNT_BAR` in `electron/instagram-report.js`): pick a Person, **New person**, or when linked, **Open** and **Unlink**. The frame posts `{ brain2Instagram: "account", action }`; `InstagramView` answers with `person-state` and writes `personProfile.instagram` through `lib/instagram-person-links.ts` (one account, one person). **Open** and the texts report's open-person now open the Person as a popup over Data (`openItemDetailPopup`, `lib/points-ledger-nav.ts`; the shell listens in `app/page.tsx`). The Points ledger still opens the item page. The pop-out has no shell, so the texts report there still alerts.
 
 ## Browser history (`browser`)
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-27_
 
-**Kept rows only grow.** The view stores merged visits in IndexedDB key `visits` (union by time+url), so a later export that has lost the old 90 days never removes them. **Screen Time:** `lib/chrome-sessions.ts` paints each site stretch on the Screen Time scope (pen = site name, local servers by page title, sites under 3 visits in `Other sites`, notes start `logged from chrome browser data`, YouTube notes list minutes per video). It merges through `mergeSessionEntries`, so edits and deleted ids win. The backlog is ~3,500 blocks (~1.2 MB); watch the localStorage quota. It may overlap blocks from the ActivityWatch Screen Time sync.
+**Kept rows only grow.** The view stores merged visits in IndexedDB key `visits`. A later file adds visits that are not already here (same URL and millisecond, or the same second when CSV or Excel has dropped the milliseconds). A shorter export never removes older visits, including months Chrome itself has dropped. **Screen Time:** `lib/chrome-sessions.ts` paints each site stretch on the Screen Time scope (pen = site name, local servers by page title, sites under 3 visits in `Other sites`, notes start `logged from chrome browser data`, YouTube notes list minutes per video). It merges through `mergeSessionEntries`, so edits and deleted ids win. The backlog is ~3,500 blocks (~1.2 MB); watch the localStorage quota. It may overlap blocks from the ActivityWatch Screen Time sync.
 
-`BrowserHistoryView.tsx` (Sources → Browser) takes Chrome "Quick Chrome History Export" JSON files, one per profile, through a file picker. Files are kept in IndexedDB (`brain2-browser-history`) because they are too big for localStorage. All analysis is `lib/browser-history.ts` (pure, tested in `lib/browser-history.test.ts`): merge and dedupe by time+url, site kinds, sessions (30 min gap), Google searches, YouTube videos.
+_Last mapped: 2026-11-01_ **Live.** The phone hub reads every Chrome profile's own `History` file every 15 minutes (`lib/chrome-history-reader.ts`) and drops new visits in the same inbox, so the page stays current through the day without the extension. The extension still works; the merge drops visits both sent. Safari is not read.
+
+`BrowserHistoryView.tsx` (Sources → Browser) takes one file per Chrome profile and merges them. The Brain2 extension (`extensions/chrome-history/README.md`) exports yesterday at 12:05am local and posts it to `/api/chrome-history`. While the app is open on localhost:3000, `hooks/use-chrome-history-inbox.ts` merges that day into the same IndexedDB and paints the new visits. A JSON copy also lands in `Downloads/Brain2 Chrome/`. Quick Chrome History Export still works: JSON, CSV, or Excel, and every profile downloads as `history.json` (or `.csv` / `.xlsx`), so the file name is the profile name — rename each file before adding (`Work.json`, `Phone.json`). Several files can be chosen at once or dropped on the page. A row missing a URL is skipped; it does not reject the file. Google Takeout `Browser History` JSON (`time_usec`) is read too. The extension’s envelope (`brain2: "chrome-history"`, `profile`, `day`, `visits`) is read by `historyFileFromPayload`. Files are kept in IndexedDB (`brain2-browser-history`, `lib/browser-history-store.ts`) because they are too big for localStorage. Picking the same file again still runs, and only new visits are stored. All analysis is `lib/browser-history.ts` (pure, tested in `lib/browser-history.test.ts`): merge, site kinds, sessions (30 min gap), Google searches, YouTube videos.
 
 - YouTube topic is a keyword guess from the title (`TOPICS` in the lib). The export has no channel or description. **Planned:** fetch channel and category by oEmbed if the user opts in.
 - Active time is session span plus one minute per page. An estimate.

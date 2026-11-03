@@ -30,6 +30,14 @@ import { useItemTypeStore } from "@/lib/item-type-store"
 import { getBuiltinItemTypes, getItemType } from "@/lib/item-types"
 import { formatDateDisplay } from "@/lib/date-utils"
 import { searchItems, displayTitle, type SearchResult } from "@/lib/search"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { answerHouseQuestion } from "@/lib/graph/pattern-questions"
+import { projectVault } from "@/lib/graph/vault-graph"
+import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { useReviewsStore } from "@/lib/reviews-store"
+import { useSecretsStore } from "@/lib/secrets-store"
+import { SecretsToggle } from "@/components/Secrets/SecretsToggle"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Item, Task, List, Folder, ItemTypeDefinition } from "@/lib/types"
 import "./search-chrome.css"
 import { withoutStepItems } from "@/lib/step-item-guard"
@@ -160,8 +168,14 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
   const [includeItems, setIncludeItems] = React.useState(true)
   const [includeHidden, setIncludeHidden] = React.useState(false)
   const [titleOnly, setTitleOnly] = React.useState(false)
+  const includeSecrets = useSecretsStore((s) => s.unlocked && s.include.search)
 
   const listRef = React.useRef<HTMLUListElement>(null)
+  const rules = useItemTypeStore((s) => s.relationRules)
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const scopes = useTimeTrackingStore((s) => s.scopes)
+  const reviews = useReviewsStore((s) => s.reviews)
+  const events = useIngestStore((s) => s.events)
 
   const [items, setItems] = React.useState<Item[]>([])
   const [categories, setLists] = React.useState<List[]>([])
@@ -193,7 +207,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
   }, [open])
 
   const { results, hiddenOnly } = React.useMemo(() => {
-    const opts = { titleOnly }
+    const opts = { titleOnly, includeSecrets }
     const combined: CombinedResult[] = []
 
     if (includeFolders) {
@@ -230,11 +244,27 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
     }
 
     return { results: combined.slice(0, Math.max(0, limit)), hiddenOnly: hiddenMatches > 0 }
-  }, [query, items, categories, folders, includeFolders, includeLists, includeItems, includeHidden, titleOnly, limit])
+  }, [query, items, categories, folders, includeFolders, includeLists, includeItems, includeHidden, titleOnly, includeSecrets, limit])
+
+  const spine = React.useMemo(
+    () => projectVault({ entries, scopes, items: items as Task[], reviews, events }),
+    [entries, scopes, items, reviews, events],
+  )
+  const pattern = React.useMemo(() => {
+    const asked = query.trim()
+    if (!asked) return null
+    return answerHouseQuestion(asked, {
+      graph: spine,
+      asOf: formatLocalDateKey(new Date()),
+      impact: { items: items as Task[], lists: categories, pens: scopes.flatMap((scope) => scope.pens) },
+      items: items as Task[],
+      rules,
+    })
+  }, [query, spine, items, categories, scopes, rules])
 
   // A new query or filter lands on the best hit. Same query with a new catalog
   // (vault hydration) only clamps the highlight into range.
-  const highlightKey = `${query}\0${includeFolders}\0${includeLists}\0${includeItems}\0${includeHidden}\0${titleOnly}`
+  const highlightKey = `${query}\0${includeFolders}\0${includeLists}\0${includeItems}\0${includeHidden}\0${titleOnly}\0${includeSecrets}`
   const highlightKeyRef = React.useRef(highlightKey)
   React.useEffect(() => {
     if (highlightKeyRef.current !== highlightKey) {
@@ -257,6 +287,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
 
   const onPaletteKeyDown = React.useCallback(
     (event: React.KeyboardEvent) => {
+      if (pattern) return
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         if (results.length === 0) return
         event.preventDefault()
@@ -272,7 +303,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
       event.preventDefault()
       select(activeIndex)
     },
-    [results.length, activeIndex, select],
+    [pattern, results.length, activeIndex, select],
   )
 
   React.useEffect(() => {
@@ -343,13 +374,29 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
                   <CheckOption label="Title only" checked={titleOnly} onChange={setTitleOnly} />
                   <CheckOption label="Include hidden items" checked={includeHidden} onChange={setIncludeHidden} />
                 </div>
+                <SecretsToggle surface="search" />
               </div>
             </CollapsibleContent>
           </Collapsible>
         </div>
 
         <div className="b2-search-well">
-          {queryEmpty ? (
+          {pattern ? (
+            <div data-testid="pattern-answer" role="status">
+              <p className="b2-search-empty">{pattern.sentence ?? pattern.quiet}</p>
+              {pattern.lines.length ? (
+                <ul className="b2-search-list" aria-label="Triples">
+                  {pattern.lines.map((row) => (
+                    <li key={row} className="b2-search-row" style={{ cursor: "default" }}>
+                      <span className="b2-search-lamp" aria-hidden />
+                      <span className="b2-search-title">{row}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="b2-search-empty">{pattern.pattern}</p>
+            </div>
+          ) : queryEmpty ? (
             <p className="b2-search-empty" role="status">
               {promptCopy(includeFolders, includeLists, includeItems)}
             </p>
@@ -392,7 +439,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
 
         <div className="b2-search-status">
           <span>↑↓ navigate · ↵ open · esc close</span>
-          <span>{queryEmpty ? "" : `${results.length} shown`}</span>
+          <span>{pattern ? pattern.pattern : queryEmpty ? "" : `${results.length} shown`}</span>
         </div>
       </DialogContent>
     </Dialog>

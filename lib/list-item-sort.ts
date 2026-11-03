@@ -7,7 +7,7 @@
  * energy, source, confidence…) can order its rows. Missing values always sink
  * to the bottom, whatever the direction. Ties keep stored order.
  *
- * Search: one list's caption search (`enhanced-list-view.tsx`). Name only by
+ * Search: one list's caption search (`components/Lists/hooks/useOpenListItems.ts`). Name only by
  * default; "All fields" also reads description, notes, body, why, consequences,
  * context, tags, subtasks, and every attribute value (file names and their
  * extracted text included).

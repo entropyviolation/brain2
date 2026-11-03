@@ -747,9 +747,9 @@ function writePeriodHabit(menu: MenuState, habit: WeeklyTask, value: string, now
     patch = { value: v, goal: habit.goal ?? 0, ...(num ? {} : { completed: true }) }
     label = `${v}${habit.unit ? ` ${habit.unit}` : ""}`
   }
-  if (menu.period === "week") s.updateWeeklyHabitCompletion(habit.id, anchor, patch)
-  else if (menu.period === "month") s.updateMonthlyHabitCompletion(habit.id, anchor, patch)
-  else s.updateQuarterlyHabitCompletion(habit.id, anchor, patch)
+  if (menu.period === "week") s.updateWeeklyHabitCompletion(habit.id, anchor, patch, "auto-link")
+  else if (menu.period === "month") s.updateMonthlyHabitCompletion(habit.id, anchor, patch, "auto-link")
+  else s.updateQuarterlyHabitCompletion(habit.id, anchor, patch, "auto-link")
   void now
   return `${habit.name}: ${label}`
 }

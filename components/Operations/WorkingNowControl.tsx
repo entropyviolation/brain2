@@ -19,6 +19,9 @@ import { stopTaskClock } from "@/lib/task-clock"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import {
   formatElapsedClock,
+  isSessionPaused,
+  pauseWorkingOnOperation,
+  resumeWorkingOnOperation,
   sessionElapsedMs,
   stopWorkingOnOperation,
   tickWorkSession,
@@ -28,6 +31,7 @@ import {
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { ItemPicker } from "@/components/Lists/item-picker"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { usePauseReason } from "@/components/Home/Tracking/pause-reason-dialog"
 import { offerPenDebrief, reviewWorkStop } from "@/lib/session-debrief"
 import { activeNowObjectives } from "@/lib/now-objective"
 
@@ -82,35 +86,51 @@ export function WorkingNowControl({
   const workStop = useUnfinishedStop(live ? activeNowObjectives(session?.nowObjectives).length : 0, (park) =>
     reviewWorkStop(park),
   )
+  const pauseAsk = usePauseReason()
+  const paused = live && session ? isSessionPaused(session) : false
   const taskStop = useUnfinishedStop(activeNowObjectives(penObjectives).length, (park) => {
     const ended = stopTaskClock(namedTask?.id, new Date(), park ? { parkUnfinished: true } : undefined)
     if (ended) offerPenDebrief(ended)
   })
 
   return (
-    <span className="ops-menubar-now">
+    <span className="ops-menubar-now b2-now">
       {live && <span className="ops-now-led live" aria-hidden />}
       {elapsed && (
         <span className="ops-now-elapsed" aria-live="polite">
           {elapsed}
         </span>
       )}
+      {live ? (
+        <button
+          type="button"
+          className="todo-cap"
+          onClick={() => {
+            if (paused) resumeWorkingOnOperation()
+            else void pauseAsk.ask().then((reason) => {
+              if (reason) pauseWorkingOnOperation(new Date(), reason)
+            })
+          }}
+        >
+          {paused ? `Resume ${operationName}` : `Pause ${operationName}`}
+        </button>
+      ) : null}
       <button
         type="button"
-        className={`ops-btn ops-btn-now${live ? " live" : ""}`}
+        className={`todo-cap${live ? "" : " is-primary"}`}
         onClick={() => (live ? workStop.request() : toggleWorkingOnOperation(operationId))}
       >
         {live ? `Stop working on ${operationName}` : "Working on this now"}
       </button>
       {namedTask ? (
-        <button type="button" className="ops-btn ops-btn-now live" onClick={() => taskStop.request()}>
+        <button type="button" className="todo-cap" onClick={() => taskStop.request()}>
           Stop {namedTask.name}
         </button>
       ) : tasks.length > 0 ? (
         <span className="ops-task-pick">
           <button
             type="button"
-            className="ops-btn"
+            className="todo-cap is-mod"
             aria-expanded={taskOpen}
             onClick={() => setTaskOpen((open) => !open)}
           >
@@ -139,6 +159,7 @@ export function WorkingNowControl({
       {taskClock.picker}
       {workStop.dialog}
       {taskStop.dialog}
+      {pauseAsk.dialog}
     </span>
   )
 }

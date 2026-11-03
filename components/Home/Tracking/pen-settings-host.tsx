@@ -13,6 +13,7 @@
 
 import { useEffect, useState, type ComponentType } from "react"
 import { subscribePenSettings, type PenSettingsTarget } from "@/components/Home/Tracking/open-pen-settings"
+import { subscribeTimegridReveal } from "@/components/Home/Tracking/timegrid-reveal"
 
 type PenSettingsGateProps = {
   target: PenSettingsTarget
@@ -32,6 +33,8 @@ export function PenSettingsHost() {
   const target = trail.stops[trail.at] ?? null
   const [Gate, setGate] = useState<ComponentType<PenSettingsGateProps> | null>(null)
 
+  useEffect(() => subscribeTimegridReveal(() => setTrail({ stops: [], at: -1 })), [])
+
   useEffect(
     () =>
       subscribePenSettings((next) =>
@@ -48,7 +51,7 @@ export function PenSettingsHost() {
   useEffect(() => {
     if (!target || Gate) return
     let cancelled = false
-    void import("./pen-settings-gate").then((mod) => {
+    void import("./pen-settings/pen-settings-gate").then((mod) => {
       if (!cancelled) setGate(() => mod.PenSettingsGate)
     })
     return () => {

@@ -4,7 +4,7 @@
  * `open` holds every draft and parked session, plus at most one running or in
  * review (`admitSession` parks the old one when another goes live).
  * `focusId` is the one the popup shows. `history` keeps every closed session
- * (an append log: Analytics reads estimate pace and tier hit rate from it,
+ * (an append log: Data reads estimate pace and tier hit rate from it,
  * never from `open`). `kept` are lines a review chose to keep for the next
  * session; the next new draft starts with them. `templates` are the person's
  * saved session shapes (built-ins live in code, `BUILT_IN_TEMPLATES`); old
@@ -15,7 +15,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { createCogsJSONStorage } from "@/lib/persist-storage"
+import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import {
   admitSession,
@@ -28,6 +28,7 @@ import {
   type SessionTemplate,
   type SessionTier,
 } from "@/lib/session-plan"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface KeptSessionRef {
   tier: SessionTier
@@ -172,3 +173,6 @@ export function parkLiveSession(now = new Date(), futureNote?: string): SessionP
   store.put(parked, now)
   return parked
 }
+
+registerPhoneWindowStore(useSessionPlanStore)
+registerPersistRehydrator(persistKey("session-plans"), () => useSessionPlanStore.persist.rehydrate())

@@ -6,8 +6,9 @@ const e = (o: Partial<TimeEntry>) => ({ id: "x", date: "2026-10-20", scopeId: "l
 
 describe("entry edges", () => {
   it("derives block certainty from the worse end", () => {
-    expect(certaintyPatch("exact", "exact")).toMatchObject({ clockCertainty: undefined, precision: undefined })
-    expect(certaintyPatch("exact", "unknown")).toMatchObject({ endCertainty: "unknown", clockCertainty: "unknown", precision: "estimated" })
+    expect(certaintyPatch("exact", "exact")).toMatchObject({ clockCertainty: undefined })
+    expect(certaintyPatch("exact", "unknown")).toMatchObject({ endCertainty: "unknown", clockCertainty: "unknown" })
+    expect(certaintyPatch("exact", "unknown")).not.toHaveProperty("precision")
   })
   it("finds the next block and gap", () => {
     const a = e({ id: "a", startMin: 0, endMin: 60 })

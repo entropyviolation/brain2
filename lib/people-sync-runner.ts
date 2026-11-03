@@ -69,7 +69,7 @@ export function syncPeopleNow(): void {
           if (task) useTaskStore.getState().updateTask(withCompanyPen(task, row.penId))
         }
         for (const row of items.create) {
-          useTaskStore.getState().addTask(withCompanyPen(createPerson(row.name, listId), row.penId))
+          useTaskStore.getState().addTask(row.penIds.reduce((task, penId) => withCompanyPen(task, penId), createPerson(row.name, listId)))
         }
       }
       // Phone pens wear the name of the person whose number they are (`lib/phone-sync/person-links.ts`).

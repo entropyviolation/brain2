@@ -382,3 +382,34 @@
   .tidy .stuck-clock{font-size:48px}
   .tidy-planlayer .plan-sheet{width:calc(100vw - 16px);padding:16px}
 }
+
+@media (max-width: 767px) {
+  .tidy {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .tidy .rowbtns,
+  .tidy li.task > .row .rowbtns,
+  .tidy li.need .rowbtns {
+    opacity: 1;
+  }
+  .tidy li.task > .row,
+  .tidy li.need {
+    flex-wrap: wrap;
+  }
+  .tidy .rowbtns button,
+  .tidy .btn,
+  .tidy .play,
+  .tidy .check {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .tidy-stucklayer .stuck-card,
+  .tidy-stucklayer .stuck-card.subarea-card,
+  .tidy-planlayer .plan-sheet {
+    width: min(100%, calc(100% - 16px));
+    max-width: calc(100% - 16px);
+    max-height: calc(100dvh - 24px);
+    box-sizing: border-box;
+  }
+}

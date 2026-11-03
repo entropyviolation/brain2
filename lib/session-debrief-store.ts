@@ -1,10 +1,11 @@
 /**
  * lib/session-debrief-store.ts — Sitting reviews and notes for next time
  *
- * The review sheet is `pending` until Done or Close. Saved reviews stay for
- * analysis. A handoff is the note the next Working-on-now start shows for
- * that task, that pen, or both. A newer note for the same task or pen
- * replaces the older one.
+ * The reflection sheet is `pending` until Save or Skip. Saved reviews stay
+ * for the next time that task is on the clock, and for analysis. A handoff
+ * is the note the next Working-on-now start shows for that task, that pen,
+ * or both. A newer note for the same task or pen replaces the older one.
+ * This store is not the completion reflection.
  */
 "use client"
 
@@ -12,6 +13,8 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import type { WorkPauseSpan } from "@/lib/work-pause"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export type SittingEnergy = "low" | "steady" | "high"
 
@@ -78,6 +81,8 @@ export interface SessionDebriefDraft {
   trackingEntryIds: string[]
   timeLogIds: string[]
   note: string
+  /** Reasons for pausing this sitting, copied onto a log the sheet has to create. */
+  pauseSpans?: WorkPauseSpan[]
   taskCompleted: boolean
   taskEstimate: number | null
   steps: DebriefStep[]
@@ -138,6 +143,21 @@ export const useSessionDebriefStore = create<SessionDebriefState>()(
   ),
 )
 
+/** The newest saved session reflection for this task or operation. */
+export function latestReviewFor(
+  reviews: readonly SittingReview[],
+  target: { taskId?: string; operationId?: string },
+): SittingReview | undefined {
+  let best: SittingReview | undefined
+  for (const row of reviews) {
+    const task = Boolean(target.taskId && (row.taskId === target.taskId || row.operationId === target.taskId))
+    const operation = Boolean(target.operationId && (row.operationId === target.operationId || row.taskId === target.operationId))
+    if (!task && !operation) continue
+    if (!best || row.endedAt > best.endedAt) best = row
+  }
+  return best
+}
+
 /** Notes waiting for this task, this pen, or both. One record can match either. */
 export function handoffsFor(
   rows: readonly SessionHandoff[],
@@ -155,3 +175,5 @@ export function handoffsFor(
   }
   return out
 }
+
+registerPhoneWindowStore(useSessionDebriefStore)
