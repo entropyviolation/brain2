@@ -5,7 +5,7 @@
  * pooled onto the game's pixel grid and stamps it. `homeart.ts` remains the 1× fallback.
  */
 
-import { houseRgba, HOUSE_W, type HouseSpec } from "./housegen"
+import { houseRgba, HOUSE_GROUND, HOUSE_W, type HouseSpec } from "./housegen"
 import { onGrid } from "./pixelsnap"
 
 type Ctx = CanvasRenderingContext2D
@@ -37,5 +37,5 @@ export function homeCanvas(spec: HouseSpec, key: string, lit: boolean | boolean[
 export function drawHomeHi(ctx: Ctx, spec: HouseSpec, key: string, baseX: number, baseY: number, lit: boolean | boolean[]) {
   const img = homeCanvas(spec, key, lit)
   const w = img.width / 2
-  ctx.drawImage(img, onGrid(ctx, baseX - w / 2), onGrid(ctx, baseY - 92), w, w)
+  ctx.drawImage(img, onGrid(ctx, baseX - w / 2), onGrid(ctx, baseY - HOUSE_GROUND - 3), w, w)
 }

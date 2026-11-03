@@ -287,3 +287,5 @@ Every friend with a book on their shelf is slowly writing a manifesto. Why: read
 - **Planned.** Friends who finish a manifesto write back to the author; revising a finished manifesto after talks; caching embeddings in the attachment store (they are in memory today).
 
 _Homes (2026-11-03):_ `homes.ts` has `BLOCKS`: friends who share a building (`Home.block`). A tenant keeps its own door, bed and name; tenants stand two tiles apart on the block's row. Footing is one tile either side of each home (`world.ts`), so keep homes four tiles apart.
+
+_Homes (later 2026-11-03):_ six blocks of three friends (`BLOCKS`), six single homes; footing is two tiles either side of a single home, one either side of each tenant, so keep singles six tiles from their neighbours.

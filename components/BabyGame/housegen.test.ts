@@ -11,7 +11,7 @@ describe("housegen", () => {
       expect([...a]).toEqual([...buildHouse(specFor(kind, "fox"), false)])
       const rows = new Set<number>()
       a.forEach((c, i) => c !== -1 && rows.add(Math.floor(i / HOUSE_W)))
-      expect(Math.max(...rows)).toBeGreaterThan(85)
+      expect(Math.max(...rows)).toBeGreaterThan(110)
       expect(Math.min(...rows)).toBeGreaterThanOrEqual(0)
     }
   })

@@ -13,7 +13,7 @@ const [out = "houses.png", litArg, ...rest] = process.argv.slice(2)
 const lit = litArg === "lit"
 const ids = rest.length ? rest : ["chick", "bunny", "fox", "otter"]
 const KINDS: HomeKind[] = ["hutch", "stall", "nest", "burrow", "den", "hollow", "lodge", "igloo", "flat"]
-const S = 3
+const S = 2
 const cw = HOUSE_W * S
 const W = cw * KINDS.length
 const H = cw * ids.length

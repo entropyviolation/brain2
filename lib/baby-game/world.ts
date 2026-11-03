@@ -118,23 +118,23 @@ export type GameNode = { id: string; kind: NodeKind; x: number; y: number }
 // fish nodes sit on water tiles (a test checks it); move one and the ripple and shadow stay in the pond
 const nodeList: Array<[NodeKind, number, number]> = [
   // orchard
-  ["berry", 4, 7], ["berry", 7, 10], ["berry", 12, 6], ["berry", 3, 11],
-  ["acorn", 9, 4], ["acorn", 12, 11], ["acorn", 4, 9],
+  ["berry", 3, 8], ["berry", 7, 10], ["berry", 11, 4], ["berry", 3, 11],
+  ["acorn", 12, 4], ["acorn", 12, 11], ["acorn", 4, 9],
   ["reed", 8, 12], ["reed", 14, 13], ["reed", 11, 15],
   ["clover", 8, 13], ["clover", 11, 11], ["feather", 7, 8], ["dig", 4, 16],
   // meadow
   ["clover", 22, 18], ["clover", 29, 23], ["clover", 20, 24], ["clover", 27, 15],
   ["berry", 29, 15], ["pebble", 18, 23], ["pebble", 28, 24], ["dig", 22, 24],
   // pond and cove
-  ["reed", 34, 15], ["reed", 33, 18], ["reed", 41, 24], ["reed", 43, 13],
-  ["shell", 34, 17], ["shell", 36, 24], ["shell", 45, 18], ["fish", 37, 18], ["fish", 38, 18], ["fish", 43, 18],
-  ["pebble", 34, 12], ["pebble", 39, 4], ["shell", 43, 8], ["dig", 35, 11],
+  ["reed", 34, 15], ["reed", 33, 18], ["reed", 41, 24], ["reed", 42, 13],
+  ["shell", 34, 17], ["shell", 35, 24], ["shell", 45, 18], ["fish", 37, 18], ["fish", 38, 18], ["fish", 43, 18],
+  ["pebble", 34, 12], ["pebble", 38, 3], ["shell", 41, 6], ["dig", 35, 11],
   // hill
-  ["dig", 3, 26], ["dig", 9, 30], ["dig", 12, 27], ["dig", 3, 31], ["dig", 12, 35], ["dig", 13, 32],
-  ["mushroom", 5, 31], ["mushroom", 9, 34], ["mushroom", 13, 34], ["pebble", 3, 27], ["pebble", 11, 33],
+  ["dig", 9, 28], ["dig", 9, 30], ["dig", 12, 26], ["dig", 9, 29], ["dig", 12, 35], ["dig", 13, 32],
+  ["mushroom", 9, 31], ["mushroom", 9, 34], ["mushroom", 13, 34], ["pebble", 11, 34], ["pebble", 11, 33],
   ["acorn", 9, 27], ["berry", 14, 36],
   // barn yard
-  ["clover", 34, 34], ["clover", 42, 29], ["berry", 44, 32], ["dig", 33, 29], ["dig", 42, 33], ["dig", 36, 33],
+  ["clover", 34, 34], ["clover", 42, 29], ["berry", 44, 32], ["dig", 33, 29], ["dig", 43, 32], ["dig", 35, 32],
   ["pebble", 44, 31], ["feather", 38, 37], ["mushroom", 35, 36],
   // aspen highlands
   ["berry", 52, 7], ["berry", 60, 9], ["clover", 53, 15], ["clover", 58, 17], ["feather", 55, 6], ["feather", 61, 14],
@@ -145,9 +145,9 @@ const nodeList: Array<[NodeKind, number, number]> = [
   ["shell", 60, 44], ["pebble", 52, 28], ["pebble", 60, 28], ["clover", 50, 27], ["clover", 61, 46], ["dig", 49, 33], ["dig", 61, 34],
   ["dig", 52, 47], ["berry", 61, 29], ["mushroom", 49, 46], ["feather", 56, 27],
   // wood
-  ["mushroom", 18, 5], ["mushroom", 27, 5], ["mushroom", 22, 10], ["mushroom", 25, 3],
-  ["acorn", 18, 9], ["acorn", 29, 10], ["acorn", 22, 3], ["acorn", 27, 11],
-  ["feather", 20, 7], ["feather", 25, 10], ["dig", 18, 6], ["dig", 28, 5], ["pebble", 23, 8], ["berry", 30, 8],
+  ["mushroom", 18, 5], ["mushroom", 28, 4], ["mushroom", 22, 10], ["mushroom", 28, 3],
+  ["acorn", 18, 9], ["acorn", 29, 11], ["acorn", 20, 3], ["acorn", 27, 11],
+  ["feather", 20, 7], ["feather", 25, 11], ["dig", 18, 6], ["dig", 28, 5], ["pebble", 23, 8], ["berry", 29, 5],
   // cobalt glow marsh
   ["reed", 6, 44], ["reed", 13, 48], ["reed", 24, 45], ["reed", 9, 55], ["reed", 21, 57],
   ["fish", 9, 48], ["fish", 17, 53], ["fish", 24, 49], ["mushroom", 4, 50], ["mushroom", 15, 58], ["mushroom", 27, 54],
@@ -174,14 +174,14 @@ export type PropKind =
 export const PROPS: Array<{ kind: PropKind; x: number; y: number }> = [
   { kind: "mailbox", x: 18, y: 18 },
   { kind: "firewood", x: 20, y: 23 },
-  { kind: "well", x: 17, y: 28 },
+  { kind: "well", x: 18, y: 27 },
   { kind: "signpost", x: 30, y: 18 },
   { kind: "birdbath", x: 26, y: 14 },
   { kind: "blanket", x: 18, y: 25 },
   { kind: "beehive", x: 14, y: 11 },
   { kind: "scarecrow", x: 22, y: 29 },
   { kind: "wheelbarrow", x: 22, y: 32 },
-  { kind: "haybale", x: 36, y: 34 },
+  { kind: "haybale", x: 35, y: 33 },
   { kind: "haybale", x: 34, y: 36 },
   { kind: "rowboat", x: 47, y: 40 },
   { kind: "orb", x: 21, y: 21 },
@@ -190,17 +190,17 @@ export const PROPS: Array<{ kind: PropKind; x: number; y: number }> = [
   { kind: "library", x: 18, y: 22 },
   { kind: "thrift", x: 27, y: 22 },
   { kind: "collage", x: 27, y: 17 },
-  { kind: "fireworks", x: 42, y: 32 },
+  { kind: "fireworks", x: 44, y: 33 },
   { kind: "clock", x: 17, y: 22 },
   { kind: "pendulum", x: 33, y: 24 },
   { kind: "ducklings", x: 34, y: 24 },
-  { kind: "sprinkler", x: 17, y: 30 },
-  { kind: "microscope", x: 11, y: 30 },
-  { kind: "fossil", x: 7, y: 31 },
-  { kind: "romanesco", x: 14, y: 6 },
+  { kind: "sprinkler", x: 17, y: 32 },
+  { kind: "microscope", x: 12, y: 33 },
+  { kind: "fossil", x: 9, y: 35 },
+  { kind: "romanesco", x: 13, y: 4 },
   { kind: "slime", x: 20, y: 10 },
-  { kind: "wasps", x: 30, y: 7 },
-  { kind: "kitten", x: 36, y: 32 },
+  { kind: "wasps", x: 30, y: 5 },
+  { kind: "kitten", x: 34, y: 33 },
   // the far reaches
   { kind: "orb", x: 12, y: 50 },
   { kind: "slime", x: 23, y: 53 },
@@ -380,8 +380,8 @@ export function buildWorld(reserved: Array<[number, number]> = []): World {
   for (const h of Object.values(HOMES)) {
     hold(h.x, h.y, 2)
     hold(...homeDoor(h), 1)
-    // a house is about four tiles wide, so its footing is solid one tile either side of the middle one (the art overhangs a little; keep homes four tiles apart so the row stays passable); a flat's tenants stand two apart, so the same covers the block
-    const reach = 1
+    // a house is about four tiles wide, so its footing is solid two tiles either side of the middle one (keep homes six tiles apart so the row stays passable); a flat's tenants stand two apart, so one tile either side of each covers the block
+    const reach = h.block ? 1 : 2
     for (let dx = -reach; dx <= reach; dx++) stationSolid.add(tileIndex(h.x + dx, h.y))
   }
   for (const n of NODES) hold(n.x, n.y, 2)

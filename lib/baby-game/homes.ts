@@ -57,13 +57,13 @@ export const homeKindFor = (species: string): HomeKind => SPECIES_HOME[species] 
 const PLACED: Record<string, [number, number, string?]> = {
   chick: [6, 6, "The Eggcup"],
   bunny: [13, 5, "Snooze Hole"],
-  gosling: [5, 15, "The Guardhouse Nest"],
+  gosling: [13, 9, "The Guardhouse Nest"],
   fawn: [13, 10, "The Fern Hollow"],
   duckling: [35, 22, "Puddle Nest"],
   otter: [40, 22, "Skipstone Lodge"],
-  capybara: [38, 12, "The Still Lodge"],
+  capybara: [36, 23, "The Still Lodge"],
   penguin: [42, 5, "The Perfect Igloo"],
-  blackduck: [44, 12, "The Dark Reed Nest"],
+  blackduck: [43, 23, "The Dark Reed Nest"],
   seal: [45, 22, "The Round Igloo"],
   mouse: [4, 30, "Crumb Cellar"],
   hedgehog: [6, 30, "The Soft Burrow"],
@@ -77,15 +77,18 @@ const PLACED: Record<string, [number, number, string?]> = {
   cub: [41, 36, "The Gentle Den"],
   skunk: [19, 4, "The Perfumery"],
   crow: [29, 4, "The Shiny Nest"],
-  owl: [24, 7, "The Song Archive"],
+  owl: [28, 10, "The Song Archive"],
   wolf: [27, 9, "The Spark Den"],
 }
 
 /** Friends who share a building. Tenants stand two tiles apart on the block's row, left to right. */
 export const BLOCKS: Record<string, Block> = {
-  crumb: { name: "Crumb Court", x: 6, y: 30, tenants: ["mouse", "hedgehog", "kitten"] },
+  terrace: { name: "Orchard Terrace", x: 6, y: 7, tenants: ["chick", "bunny", "fawn"] },
+  puddle: { name: "Puddle Flats", x: 41, y: 12, tenants: ["duckling", "otter", "seal"] },
+  crumb: { name: "Crumb Court", x: 5, y: 30, tenants: ["mouse", "hedgehog", "kitten"] },
+  possums: { name: "Possum Stack", x: 5, y: 36, tenants: ["possum", "possum2", "possum3"] },
   barn: { name: "Barn Flats", x: 39, y: 36, tenants: ["puppy", "foal", "cub"] },
-  possums: { name: "Possum Stack", x: 6, y: 36, tenants: ["possum", "possum2", "possum3"] },
+  thistle: { name: "Thistle Terrace", x: 24, y: 5, tenants: ["skunk", "crow", "wolf"] },
 }
 
 export const HOMES: Record<string, Home> = {

@@ -82,7 +82,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "bunny", name: "Pilgrim", title: "Oversleeper of the burrows", zone: "orchard", act: 1,
     wants: ["hatchling-bell", "crown"], gives: "dewdrop-locket", gate: 3, condition: "played", likes: ["green", "sweet"], hates: "fishy",
-    day: [11, 6], social: true,
+    day: [9, 8], social: true,
     bio: "Has overslept every morning since the Hush. Blames the quiet.",
     hello: "Oh! A visitor! Sorry, I was asleep. It is... is it noon?",
     quest: "I keep sleeping through everything. I need a little bell to wake me, and a Clover Crown so I feel important about it.",
@@ -114,7 +114,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "fawn", name: "Daria", title: "Keeper of quiet things", zone: "orchard", act: 1,
     wants: ["tin-key", "crown"], gives: "lamp-wick", gate: 5, condition: "sneak", likes: ["soft", "cozy"], hates: "crunchy",
-    day: [9, 7], social: false,
+    day: [8, 10], social: false,
     bio: "Speaks softly, writes everything down, and wears something braided.",
     hello: "...oh. Hello. I didn't hear you come. That's a good thing.",
     quest: "My diary's lock is missing its key. If you find it, and bring a Clover Crown for the page I'm on, I'll tell you a secret.",
@@ -131,7 +131,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "duckling", name: "Mathilda", title: "Puddle enthusiast", zone: "pond", act: 2,
     wants: ["chime"], gives: "puddle-charm", gate: 3, condition: "rain", likes: ["watery", "musical"], hates: "crunchy", rainLover: true,
-    day: [35, 19], social: true,
+    day: [34, 18], social: true,
     bio: "Wears a teal scarf in every weather. Has opinions about puddles.",
     hello: "Quack! Splash! Hello! Did you bring puddles?",
     quest: "The pond used to ring like a bell. Bring me a Shell Chime and I'll show it how.",
@@ -179,7 +179,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "penguin", name: "Hofstadter", title: "Chilly perfectionist", zone: "cove", act: 2,
     wants: ["yuzu-charm", "brooch"], gives: "frost-feather", gate: 5, condition: "fed", likes: ["fishy", "shiny"], hates: "cozy", rainLover: true,
-    day: [41, 8], social: false,
+    day: [39, 6], social: false,
     bio: "Fuzzy, grey, and absolutely certain he is a very serious bird.",
     hello: "State your purpose. Be brief. I'm cold. I'm always cold.",
     quest: "A Yuzu Charm to warm my flipper and a Button Brooch to look dignified. In that order.",
@@ -195,7 +195,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "blackduck", name: "Pynchon", title: "The little black duckling", zone: "pond", act: 2,
     wants: ["reed", "button"], gives: "midnight-feather", gate: 4, condition: "rain", likes: ["watery", "fishy"], hates: "crunchy",
-    day: [41, 13], social: true, rainLover: true,
+    day: [40, 13], social: true, rainLover: true,
     bio: "Hatched black as a button among cream-colored siblings, and has decided that is the best color to be.",
     hello: "Peep. Yes, I'm the dark one. It's very good for being found in the rain. Hello.",
     quest: "One River Reed to chew on and one Shiny Button for my collection. I'm told I'm too small for opinions. I have a few.",
@@ -244,7 +244,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "hedgehog", name: "Johnston", title: "Prickly, but soft inside", zone: "hill", act: 3,
     wants: ["crumb-charm", "lamp"], gives: "leaf-mitten", gate: 4, condition: "sneak", likes: ["cozy", "green"], hates: "shiny",
-    day: [11, 29], social: false,
+    day: [13, 26], social: false,
     bio: "Rolls into a ball when startled. Is startled easily and often.",
     hello: "...*rustle*... oh. A person. I'm fine. I'm a ball. It's fine.",
     quest: "A Crumb Charm for the little thing in my chest, and a Moss Lamp so my burrow isn't so dark.",
@@ -276,7 +276,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "possum", name: "Ernst", title: "Eldest of the possum three", zone: "hill", act: 3,
     wants: ["basket"], gives: "pouch-stone", gate: 4, condition: "sneak", likes: ["soft", "cozy"], hates: "musical",
-    day: [3, 32], social: true,
+    day: [4, 37], social: true,
     bio: "Faints when startled. Is working on it. Rides his sisters' backs when the grass is tall.",
     hello: "Oh! Hi. Sorry. If I fall over, I'm fine. It's a possum thing. Hello.",
     quest: "A Reed Basket, please. For the three of us to sleep in. We've been sharing one leaf and it is not a good leaf.",
@@ -308,7 +308,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "possum3", name: "Kaufman", title: "Youngest, loudest, smallest", zone: "hill", act: 3,
     wants: ["crown", "pie"], gives: "lullaby-twig", gate: 5, condition: "fed", likes: ["green", "sweet"], hates: "bookish",
-    day: [12, 32], social: true,
+    day: [13, 33], social: true,
     bio: "Third out of three. Has never once been quiet. Tiny, white, and unstoppable.",
     hello: "HI! Hi hi hi! Are you the Center of The World? Can I ride on you? ...No? Okay! Hi!",
     quest: "A Clover Crown to be tall and a Minnow Pie to eat! Crown first! Pie second! Pie also first!",
@@ -373,7 +373,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "cub", name: "Lynch", title: "Gentle giant, mostly", zone: "barn", act: 4,
     wants: ["silver-horseshoe", "jam", "pie"], gives: "lamp-frame", gate: 6, condition: "fed", likes: ["sweet", "cozy"], hates: "bookish",
-    day: [36, 35], social: true,
+    day: [35, 34], social: true,
     bio: "Sits on things. Doesn't know it's a problem.",
     hello: "Oh! Hi! Did you bring snacks? You can tell me. I won't judge.",
     quest: "A Silver Horseshoe for luck, plus Jam AND Pie. I have a lot of feelings and they're all in my stomach.",
@@ -406,7 +406,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "crow", name: "Gaultier", title: "Collector of the shiny", zone: "wood", act: 5,
     wants: ["moss-perfume", "brooch"], gives: "black-pearl", gate: 6, condition: "fed", likes: ["shiny", "musical"], hates: "soft",
-    day: [26, 3], social: false,
+    day: [29, 3], social: false,
     bio: "Keeps a hoard. Is very proud of it. Has named each piece.",
     hello: "Caw! You have a button on you. I can feel it. Give it? ...No? Hello then.",
     quest: "A Moss Perfume to make my nest smell expensive and a Button Brooch. Shiny, shiny, shiny.",
@@ -438,7 +438,7 @@ export const RESIDENTS: Resident[] = [
   {
     id: "wolf", name: "Vonnegut", title: "Keeper of the last spark", zone: "wood", act: 5,
     wants: ["song-page", "lamp"], gives: "lamp-spark", gate: 8, condition: "alone", likes: ["earthy", "cozy"], hates: "shiny",
-    day: [28, 10], social: false, sleeps: [6, 14],
+    day: [26, 11], social: false, sleeps: [6, 14],
     bio: "Quiet and watchful. Has been carrying something warm since the Hush.",
     hello: "...Center of The World. I've been expecting you. Not quickly. Slowly. As things should be.",
     quest: "Wallace's Song Page, so I remember the words. And a Moss Lamp, because the dark is still the dark.",
