@@ -1,0 +1,167 @@
+{
+  "id": "budget",
+  "name": "Budget",
+  "version": "1",
+  "description": "Accounts, payments, debts, and expected spend — with optional-inclusion rollups.",
+  "slots": [
+    {
+      "role": "accounts",
+      "name": "Accounts",
+      "policy": "create",
+      "description": "Where your money sits. Toggle each into the liquid / net-worth totals.",
+      "color": "#22c55e",
+      "itemLabel": "account",
+      "attributes": [
+        { "id": "balance", "name": "Balance", "type": "number", "unit": "$", "allowFloat": true },
+        {
+          "id": "atype",
+          "name": "Type",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["Checking", "Savings", "Cash", "Investment"]
+        },
+        { "id": "liquid", "name": "Liquid?", "type": "boolean", "booleanDisplay": "checkbox" },
+        { "id": "netWorth", "name": "Count in net worth?", "type": "boolean", "booleanDisplay": "checkbox" }
+      ],
+      "displayedAttributes": ["balance", "atype", "liquid", "netWorth"],
+      "defaultAttributeValues": { "liquid": true, "netWorth": true }
+    },
+    {
+      "role": "payments",
+      "name": "Monthly Payments",
+      "policy": "create",
+      "description": "Recurring bills — check off as paid; toggle which count toward the monthly total.",
+      "color": "#f97316",
+      "itemLabel": "payment",
+      "attributes": [
+        { "id": "amount", "name": "Amount", "type": "number", "unit": "$", "allowFloat": true },
+        { "id": "dueDay", "name": "Due day", "type": "number" },
+        { "id": "paid", "name": "Paid", "type": "boolean", "booleanDisplay": "checkbox" },
+        { "id": "include", "name": "Count?", "type": "boolean", "booleanDisplay": "checkbox" }
+      ],
+      "displayedAttributes": ["amount", "dueDay", "paid", "include"],
+      "defaultAttributeValues": { "paid": false, "include": true }
+    },
+    {
+      "role": "debts",
+      "name": "Debts",
+      "policy": "create",
+      "description": "What you owe — subtracted from net worth when counted.",
+      "color": "#ef4444",
+      "itemLabel": "debt",
+      "attributes": [
+        { "id": "balance", "name": "Balance", "type": "number", "unit": "$", "allowFloat": true },
+        { "id": "apr", "name": "APR", "type": "number", "unit": "%", "allowFloat": true },
+        { "id": "netWorth", "name": "Count in net worth?", "type": "boolean", "booleanDisplay": "checkbox" }
+      ],
+      "displayedAttributes": ["balance", "apr", "netWorth"],
+      "defaultAttributeValues": { "netWorth": true }
+    },
+    {
+      "role": "expected",
+      "name": "Expected Spend",
+      "policy": "create",
+      "description": "Upcoming discretionary spend — toggle items in/out of the forecast.",
+      "color": "#a855f7",
+      "itemLabel": "line",
+      "attributes": [
+        { "id": "amount", "name": "Amount", "type": "number", "unit": "$", "allowFloat": true },
+        {
+          "id": "category",
+          "name": "Category",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["Travel", "Gifts", "Home", "Fun", "Other"]
+        },
+        { "id": "include", "name": "Count?", "type": "boolean", "booleanDisplay": "checkbox" }
+      ],
+      "displayedAttributes": ["amount", "category", "include"],
+      "defaultAttributeValues": { "include": true }
+    }
+  ],
+  "views": [
+    {
+      "title": "Overview",
+      "kind": "dashboard",
+      "config": {
+        "cards": [
+          {
+            "id": "liquid",
+            "label": "Liquid total",
+            "categoryId": "accounts",
+            "attrId": "balance",
+            "fn": "sum",
+            "includeAttrId": "liquid",
+            "unit": "$"
+          },
+          {
+            "id": "net-worth",
+            "label": "Net worth",
+            "categoryId": "accounts",
+            "attrId": "balance",
+            "fn": "sum",
+            "includeAttrId": "netWorth",
+            "unit": "$",
+            "subtract": { "categoryId": "debts", "attrId": "balance", "includeAttrId": "netWorth" }
+          },
+          {
+            "id": "expected-spend",
+            "label": "Expected spend",
+            "categoryId": "expected",
+            "attrId": "amount",
+            "fn": "sum",
+            "includeAttrId": "include",
+            "unit": "$"
+          },
+          {
+            "id": "monthly-payments",
+            "label": "Monthly payments",
+            "categoryId": "payments",
+            "attrId": "amount",
+            "fn": "sum",
+            "includeAttrId": "include",
+            "unit": "$"
+          },
+          {
+            "id": "total-debts",
+            "label": "Total debts",
+            "categoryId": "debts",
+            "attrId": "balance",
+            "fn": "sum",
+            "unit": "$"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Accounts",
+      "kind": "spreadsheet",
+      "slot": "accounts",
+      "config": { "categoryId": "accounts" }
+    },
+    {
+      "title": "Monthly Payments",
+      "kind": "spreadsheet",
+      "slot": "payments",
+      "config": { "categoryId": "payments" }
+    },
+    {
+      "title": "Payments by status",
+      "kind": "summary",
+      "slot": "payments",
+      "config": { "categoryId": "payments", "groupAttrId": "paid", "valueAttrId": "amount" }
+    },
+    {
+      "title": "Debts",
+      "kind": "spreadsheet",
+      "slot": "debts",
+      "config": { "categoryId": "debts" }
+    },
+    {
+      "title": "Expected Spend",
+      "kind": "spreadsheet",
+      "slot": "expected",
+      "config": { "categoryId": "expected" }
+    }
+  ]
+}

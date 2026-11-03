@@ -15,6 +15,7 @@ import {
   sanitizeHomeWeatherPlace,
   type HomeWeatherPlace,
 } from "@/lib/home-weather"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 interface HomeWeatherState extends HomeWeatherPlace {
   setPlace: (patch: Partial<HomeWeatherPlace>) => void
@@ -58,3 +59,5 @@ export const useHomeWeatherStore = create<HomeWeatherState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useHomeWeatherStore)

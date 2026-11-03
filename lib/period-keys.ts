@@ -2,7 +2,7 @@
  * lib/period-keys.ts — Canonical period-key identity
  *
  * Day / week / month / quarter / year keys used by Objectives, To Do marks,
- * Analytics windows, and Plan-vs-Reality. Lives beside `date-utils` (not inside
+ * Data windows, and Plan-vs-Reality. Lives beside `date-utils` (not inside
  * it) because quarter keys need `seasons.quarterKey`, and `seasons` already
  * imports date-utils — putting both in one file would cycle.
  *

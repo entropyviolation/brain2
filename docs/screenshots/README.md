@@ -8,16 +8,18 @@ product is meant to feel like a vintage machine that is also a painting —
 motif (brain, light bulb, and graph-node connections used as much as
 possible), luminous contents, and room for one impossible motion. Rooms can
 keep arriving. The global header is a pinned full-width mill title bar:
-navy **BRAIN2** caption, today’s-friend jewel (click for a Stardew Next Action bubble; Esc / × / outside to close), Friend / Review / System / Capture groupboxes. The **Now** word key sits in Capture with Inbox and Quick Add. The **now** well lives in Capture only while a Working session is live (name, elapsed, Stop, Pause↔Resume; idle → hidden). **Names** is the System question mark and latches in place; tooltip **Names help mode** while on.
+navy **BRAIN2** caption, today’s-friend jewel (click for a Stardew Next Action bubble; Esc / × / outside to close), Friend / Review / System / Capture groupboxes. The **Now** word key sits in Capture with Inbox and Quick Add. The **now** well lives in Capture only while a Working session is live (name, elapsed, Stop, Pause↔Resume; idle → hidden). **Names** is the System question mark and latches in place; tooltip **Names help mode** while on. While Names is on, **CODE DOCUMENTATION** appears beside it and opens this `docs/` folder in the app.
 
-**Re-capture:** with `npm run dev` (or `electron:dev`) running on port 3000:
+Gallery refresh is a doc sync (`.cursor/rules/doc-sync.mdc`), not part of every code change. Use `BRAIN2_ONLY` for the views whose source changed (`npm run screenshot-targets` reads the manifest). A full 97-shot recapture is a gallery day.
+
+**Re-capture:** with `npm run dev` (or `electron:dev`) already running on port 3000:
 
 ```bash
 npm run capture-screenshots
 ```
 
-Set `COGS_ONLY=…` / `COGS_FRESH=0` / `COGS_URL=…` (historical env names) to limit files, keep localStorage, or point at another origin.
-Set `COGS_URL=http://localhost:3000` if the dev server uses a different port.
+Set `BRAIN2_ONLY=…` / `BRAIN2_FRESH=0` / `BRAIN2_URL=…` to limit files, keep localStorage, or point at another origin. A `COGS_` name for the same setting still works.
+Set `BRAIN2_URL=http://localhost:3000` if the dev server uses a different port.
 
 The capture browser is a fresh headless Chrome context. It does not read the
 Electron vault. Before the app boots, init scripts write throwaway Zustand
@@ -131,41 +133,41 @@ table uses.
 | `06-scheduler-dependencies.png` | 2026-10-24 | fresh | Scheduler → Dependencies |
 | `06-scheduler-gantt.png` | 2026-10-24 | fresh | Scheduler → Gantt |
 | `06-scheduler.png` | 2026-10-24 | fresh | Scheduler → Funnel → Always |
-| `07-analytics-attributes.png` | 2026-10-24 | fresh | Analytics → Attributes |
-| `07-analytics-calibration.png` | 2026-10-24 | fresh | Analytics → Calibration |
-| `07-analytics-circadian.png` | 2026-10-24 | fresh | Analytics → Circadian |
-| `07-analytics-context-switch.png` | 2026-10-24 | fresh | Analytics → Context switch |
-| `07-analytics-correlation.png` | 2026-10-24 | fresh | Analytics → Correlation |
-| `07-analytics-cross-section.png` | 2026-10-24 | fresh | Analytics → Cross-section |
-| `07-analytics-cycle.png` | 2026-10-24 | fresh | Analytics → Cycle |
-| `07-analytics-diversity.png` | 2026-10-24 | fresh | Analytics → Diversity |
-| `07-analytics-goals.png` | 2026-10-24 | fresh | Analytics → Goals |
-| `07-analytics-item-types.png` | 2026-10-24 | fresh | Analytics → Item Types |
-| `07-analytics-lists-areas.png` | 2026-10-24 | fresh | Analytics → Lists & areas |
-| `07-analytics-metrics.png` | 2026-10-24 | fresh | Analytics → Metrics |
-| `07-analytics-mood-field.png` | 2026-10-24 | fresh | Analytics → Mood field |
-| `07-analytics-observatory.png` | 2026-10-24 | fresh | Analytics → Observatory |
-| `07-analytics-operations.png` | 2026-10-24 | fresh | Analytics → Operations |
-| `07-analytics-overcommit.png` | 2026-10-24 | fresh | Analytics → Overcommit |
-| `07-analytics-places.png` | 2026-10-24 | fresh | Analytics → Places |
-| `07-analytics-plan-vs-reality.png` | 2026-10-24 | fresh | Analytics → Plan vs Reality |
-| `07-analytics-points.png` | 2026-10-24 | fresh | Analytics → Points |
-| `07-analytics-reflection.png` | 2026-10-24 | fresh | Analytics → Reflection |
-| `07-analytics-regret.png` | 2026-10-24 | fresh | Analytics → Regret |
-| `07-analytics-reviews.png` | 2026-10-24 | fresh | Analytics → Reviews |
-| `07-analytics-screentime.png` | 2026-10-24 | fresh | Analytics → Screen Time |
-| `07-analytics-sleep.png` | 2026-10-24 | fresh | Analytics → Sleep |
-| `07-analytics-spectrum.png` | 2026-10-24 | fresh | Analytics → Spectrum |
-| `07-analytics-stages.png` | 2026-10-24 | fresh | Analytics → Stages |
-| `07-analytics-streaks.png` | 2026-10-24 | fresh | Analytics → Streaks |
-| `07-analytics-tags.png` | 2026-10-24 | fresh | Analytics → Tags |
-| `07-analytics-tracking-breakdown.png` | 2026-10-24 | fresh | Analytics → Tracking pen drill-down |
-| `07-analytics-tracking-tag.png` | 2026-10-24 | fresh | Analytics → Tracking tag drill-down |
-| `07-analytics-tracking.png` | 2026-10-24 | fresh | Analytics → Tracking |
-| `07-analytics-transitions.png` | 2026-10-24 | fresh | Analytics → Transitions |
-| `07-analytics-velocity.png` | 2026-10-24 | fresh | Analytics → Velocity |
-| `07-analytics-weight.png` | 2026-10-24 | fresh | Analytics → Weight |
-| `07-analytics.png` | 2026-10-24 | fresh | Analytics → Habits |
+| `07-analytics-attributes.png` | 2026-10-24 | fresh | Data → Attributes |
+| `07-analytics-calibration.png` | 2026-10-24 | fresh | Data → Calibration |
+| `07-analytics-circadian.png` | 2026-10-24 | fresh | Data → Circadian |
+| `07-analytics-context-switch.png` | 2026-10-24 | fresh | Data → Context switch |
+| `07-analytics-correlation.png` | 2026-10-24 | fresh | Data → Correlation |
+| `07-analytics-cross-section.png` | 2026-10-24 | fresh | Data → Cross-section |
+| `07-analytics-cycle.png` | 2026-10-24 | fresh | Data → Cycle |
+| `07-analytics-diversity.png` | 2026-10-24 | fresh | Data → Diversity |
+| `07-analytics-goals.png` | 2026-10-24 | fresh | Data → Goals |
+| `07-analytics-item-types.png` | 2026-10-24 | fresh | Data → Item Types |
+| `07-analytics-lists-areas.png` | 2026-10-24 | fresh | Data → Lists & areas |
+| `07-analytics-metrics.png` | 2026-10-24 | fresh | Data → Metrics |
+| `07-analytics-mood-field.png` | 2026-10-24 | fresh | Data → Mood field |
+| `07-analytics-observatory.png` | 2026-10-24 | fresh | Data → Observatory |
+| `07-analytics-operations.png` | 2026-10-24 | fresh | Data → Operations |
+| `07-analytics-overcommit.png` | 2026-10-24 | fresh | Data → Overcommit |
+| `07-analytics-places.png` | 2026-10-24 | fresh | Data → Places |
+| `07-analytics-plan-vs-reality.png` | 2026-10-24 | fresh | Data → Plan vs Reality |
+| `07-analytics-points.png` | 2026-10-24 | fresh | Data → Points |
+| `07-analytics-reflection.png` | 2026-10-24 | fresh | Data → Reflection |
+| `07-analytics-regret.png` | 2026-10-24 | fresh | Data → Regret |
+| `07-analytics-reviews.png` | 2026-10-24 | fresh | Data → Reviews |
+| `07-analytics-screentime.png` | 2026-10-24 | fresh | Data → Screen Time |
+| `07-analytics-sleep.png` | 2026-10-24 | fresh | Data → Sleep |
+| `07-analytics-spectrum.png` | 2026-10-24 | fresh | Data → Spectrum |
+| `07-analytics-stages.png` | 2026-10-24 | fresh | Data → Stages |
+| `07-analytics-streaks.png` | 2026-10-24 | fresh | Data → Streaks |
+| `07-analytics-tags.png` | 2026-10-24 | fresh | Data → Tags |
+| `07-analytics-tracking-breakdown.png` | 2026-10-24 | fresh | Data → Tracking pen drill-down |
+| `07-analytics-tracking-tag.png` | 2026-10-24 | fresh | Data → Tracking tag drill-down |
+| `07-analytics-tracking.png` | 2026-10-24 | fresh | Data → Tracking |
+| `07-analytics-transitions.png` | 2026-10-24 | fresh | Data → Transitions |
+| `07-analytics-velocity.png` | 2026-10-24 | fresh | Data → Velocity |
+| `07-analytics-weight.png` | 2026-10-24 | fresh | Data → Weight |
+| `07-analytics.png` | 2026-10-24 | fresh | Data → Habits |
 | `08-home-tracking-activity.png` | 2026-10-24 | fresh | Home → Tracking → Activity Log |
 | `08-home-tracking-block.png` | 2026-10-24 | fresh | Home → Tracking → block editor |
 | `08-home-tracking-daylog.png` | 2026-10-24 | fresh | Home → Tracking → Day Log |
@@ -218,7 +220,7 @@ Rendered by `app/page.tsx`:
 | Nav | `components/header-nav-buttons.tsx` | Back / Forward through in-app screens (tabs, Lists folders, full-page item detail). Disabled at stack edges. |
 | Today's friend | `components/baby-animal-nest.tsx` | Photograph in a chrome + black-mirror jewel on the pin bar. Persists until Monday or a manual change (`brain2-friend-worn`; reads prefer `brain2-*`). Returning friends may say Hi again. Click the photograph for details. The chat button above Gallery asks for a Stardew line (daily habit / today's To Do / Next Action, species bias). Click the **line** (no bevel) for the mission sheet: the task opens item detail on top; Accept until the end of the day; Decline asks for smaller tasks, then a first step, then a reason. **Escape**, ×, or a click outside closes the bubble. **Gallery** holds the preapproved `animalsrcs/` pack (unnamed until you name them) — the only picture sources are that pack and your own uploads. Name field, equal cards, confirm-before-delete (dismissed stay gone); **navy** text-field focus (never orange). Pictures in IndexedDB `idb:friend_<id>` (gallery JSON holds `friend:<id>`) or `/friend-pack/`. Plan: [`docs/FRIEND_COMPANION.md`](../FRIEND_COMPANION.md). |
 | Names | `components/AppHeader.tsx` | System-group latch. Caption stays **Names**; sunken + `aria-pressed` while on (tooltip **Stop naming**). |
-| now | `components/header-now-box.tsx` | Optional groupbox inside Capture. Live Operations / pen-color Working sessions (name, tabular elapsed, Objectives, **Card** when a task is on the pen clock, **Task** when the clock is still waiting for one, Stop, Pause↔Resume). **Card** opens that task's To Do card. The pen clock's name opens that task when one is on it. Absent when idle. |
+| now | `components/header-now-box.tsx` | Optional groupbox inside Capture. Live open work sessions (Operations Working on this now, or the pen Working on right now) (name, tabular elapsed, Objectives, **Card** when a task is on the pen clock, **Task** when the clock is still waiting for one, Stop, Pause↔Resume). **Card** opens that task's To Do card. The pen clock's name opens that task when one is on it. Absent when idle. |
 | Review (badge) | `components/Reviews/reviews.tsx` | Rituals menu (day sun/moon; week–year Start / Review) |
 | Morning | `components/Reviews/MorningReview.tsx` | Day morning ritual (wake, dream, intentions, affirmations, postpone) |
 | Settings | `components/Settings/SettingsDialog.tsx` | Home city, assumed finish time, backup, sync, **message ingest** (grocery pin, always-on hub, shortcuts, iPhone Notes / Screen Time / Call / Text Shortcut AirDrop), **Screen Time** (ActivityWatch), item types, Second Brain |
@@ -231,7 +233,7 @@ Rendered by `app/page.tsx`:
 | Phone Notes | `components/iphone-notes-store.tsx` | On My iPhone notes dumped via Telegram Shortcut → iPhone Notes Store / Parked; same bulk-add headers |
 | Quick Add | `components/quick-add.tsx` | Colon paths (a name may end in a number, `brain2`), live chips (new list), Plain / `-p`, optional skip Inbox |
 
-**Top-level tabs (7):** milled fascia — brushed bay, raised silver keys, the active key a CRT with a round power lamp ([`DESIGN_STYLE.md`](../DESIGN_STYLE.md#milled-fascia)). Home · Lists · Docs · Scheduler · Operations · Modules · Analytics. The Home date plate uses the same language: weekday in a CRT, calendar date on a nameplate, Widgets as a raised key.
+**Top-level tabs (7):** milled fascia — brushed bay, raised silver keys, the active key a CRT with a round power lamp ([`DESIGN_STYLE.md`](../DESIGN_STYLE.md#milled-fascia)). Home · Lists · Docs · Scheduler · Operations · Modules · Data. The Home date plate uses the same language: weekday in a CRT, calendar date on a nameplate, Widgets as a raised key.
 
 **Shortcuts:** Cmd/Ctrl+K → global search · quick-capture hotkey → Quick Add
 
@@ -309,7 +311,7 @@ folder Icons / velvet capture.
 ### Capture mechanics
 
 Sidecars are rewritten from `scripts/screenshot-manifest.mjs` on every run
-(`COGS_ONLY` limits that to listed files). A rewritten sidecar is not a new
+(`BRAIN2_ONLY` limits that to listed files). A rewritten sidecar is not a new
 PNG — file dates and freshness stay in the status table. Plan capture clicks
 `.plan95` **Month / Week / Day** tabs (not the old “Month View” labels).
 
@@ -330,7 +332,7 @@ not collide with Tracking’s selected-pen Settings or Habits Settings.
 | `12-docs.png` | Docs homepage — folders and recent documents |
 | `12-docs-reading.png` | An open document (Coast weekend plan) |
 
-### Analytics (`components/Analytics/`)
+### Data (`components/Analytics/`)
 
 **Heart of the app** — collection, presentation, and analysis of the vault.
 Light instrument studio with Lists title bar + status bar. Groups on a left
@@ -409,7 +411,7 @@ table above.
 
 | Area | Why / how to reach |
 |------|-------------------|
-| Full-screen item detail (`ItemDetailPage`) | Same editor as the popup tabs (`21-item-detail-*`); opened via Operations `onOpenItem` or the legacy full-screen route |
+| Full-screen item detail (`ItemDetailPage`) | Same editor as the popup tabs (`21-item-detail-*`); opened from Lists and the other desks that call the shell's `onTaskSelect`. Operations opens `TaskDetailPopup` over the operation instead. |
 | List/folder dialogs (New List, Settings, CSV import, Orb picker) | Open from Lists toolbar — same chrome as `05-lists.png`. Completed / Missed Opportunities are lists under Next Actions, not toolbar dialogs. |
 | Module builder chooser | Momentary step before `09-modules-workspace.png` |
 | Module/widget config dialogs | Open from Modules dashboard |
@@ -417,7 +419,7 @@ table above.
 | Sheet pop-out (`/popout/?sheet=…`) | Separate Electron/window route |
 | Module pop-out (`/popout/?module=…`) | Separate Electron/window route |
 | Affirmations sub-dialog | Inside Morning review |
-| Item Types editor (full) | Settings → Manage Item Types, or Analytics → Library → Item Types → Edit type. Catalog types persist; system Task/Item/Note/Operation are locked. |
+| Item Types editor (full) | Settings → Manage Item Types, or Data → Library → Item Types → Edit type. Catalog types persist; system Task/Item/Note/Operation are locked. |
 | From Notes dialog | Header **From Notes** — this Mac + Notes.app (Electron or localhost `/api/notes`); Playwright without macOS Notes will not list live notes |
 | Phone Notes dialog | Header **Phone Notes** — queue of Telegram Shortcut dumps and unmatched texts on **iPhone Notes Store** / **Parked**; empty state is AirDrop `Dump iPhone Notes to Brain2.shortcut` |
 

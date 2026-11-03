@@ -10,11 +10,11 @@ The table in section 2 is a jsdom benchmark of `cogsStateStorage().setItem` on s
 
 ## Where the time goes
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
 ### 1. The app always runs in dev mode
 
-- `npm run electron:dev` starts `scripts/cogs-dev-server.mjs` with `next({ dev: true })`. Electron loads `http://localhost:3000` (`electron/main.js:~115`).
+- `npm run electron:dev` starts `scripts/cogs-dev-server.mjs` with `next({ dev, hostname, port, turbopack: true })` when `NODE_ENV` is not `production`. Dev now requests Turbopack. `experimental.optimizePackageImports` still applies. Turbopack ignores the webpack watch-ignore hook, so hub writes under `data/` refreshing the skin is the regression to watch. Electron loads `http://localhost:3000` (`electron/main.js:~115`).
 - Dev React is several times slower than production. Next compiles chunks on demand on each reload. The script sets `--max-old-space-size=8192`, and `next.config.mjs` comments describe heap OOMs and `ChunkLoadError` stalls.
 - The vault lives in the `localhost:3000` origin's localStorage. The packaged build loads `app://local/`, a different origin, so the user stays on dev to keep their data.
 - `next build` fails today on the 368 type errors (`ignoreBuildErrors: false`). There is no production build to switch to.
@@ -50,7 +50,9 @@ So a task edit blocks the UI for about 200 ms before any network. The 48 ms coal
 
 ### 4. Timers keep the save path busy
 
-- A running work session or pen session checks the grid every 15 s (`WORK_SESSION_TICK_MS`, `lib/operation-work-session.ts`). Since Step 4, `liveEntryUpToDate` skips the write when the painted block already ends at the active minute. The block still grows about once a minute, and that growth takes the full timegrid save. Typing an objective takes that same save on every character (see the 2026-10-24 note). Hub posts are one per edit after Step 1, not two.
+_Last mapped: 2026-10-27_
+
+- A running work session or pen session checks the grid every 15 s (`WORK_SESSION_TICK_MS`, `lib/operation-work-session.ts`). Since Step 4, `liveEntryUpToDate` skips the write when the painted block already ends at the active minute. The block still grows about once a minute, and that growth takes the full timegrid save. Typing an objective used to take that same save on every character (2026-10-24 note). `GrowText` now waits 400 ms, and flushes on blur and unmount, so a burst of typing is one save. Hub posts are one per edit after Step 1, not two.
 - In a browser tab (not the Electron desktop ingest), `hooks/useMessageIngest.ts:~179` polls the hub every 1 s with 2–3 fetches to the same dev server.
 - With the phone hub up, `pushVault` PUTs the whole vault every 60 s.
 
@@ -58,13 +60,13 @@ So a task edit blocks the UI for about 200 ms before any network. The 48 ms coal
 
 In Electron, `getItem` races a hub GET against an 800 ms cap (`PERSIST_HUB_WAIT_MS`) for every missing or seed-sized key, and always for plan-text keys. The GET returns the whole double-stored file.
 
-What is fine: store subscriptions use selectors (two whole-store hooks, both in `components/Home/Plan/settings-dialog.tsx`). Tabs are `lazy()` in `app/page.tsx`.
+What is fine: store subscriptions use selectors (two whole-store hooks, both in `components/Home/Plan/dialogs/settings-dialog.tsx`). Tabs are `lazy()` in `app/page.tsx`.
 
 ---
 
 ## Observed on the live vault (2026-10-24)
 
-_Last mapped: 2026-10-24_
+_Last mapped: 2026-10-27_
 
 While a pen-color **Working on right now** session was open, the whole window lagged: closing a popup, typing, and clicking a button. The same lag may also be attributable to the computer being overloaded at the time. The seams below are in the code either way.
 
@@ -77,7 +79,9 @@ The vault beside that small session is large. Read from the Electron localStorag
 | Tasks | 6.4 MB | 12.8 MB | 11,853 tasks |
 | Time grid | 3.6 MB | 7.1 MB | 9,566 entries, 691 pens |
 
-Typing in an objective is the expensive app path. `GrowText` in `now-objectives-list.tsx` calls `onEditText` on every change. For the pen clock that is `editPenColorNowObjectiveText`, which mirrors the list onto the painted block through `updateEntry`. `updateEntry` maps the whole `entries` array. About 48 ms later `createCogsJSONStorage` stringifies `brain2-timegrid-store` and writes it. The Operations clock uses the same editor and the same mirror (`editWorkNowObjectiveText`). Dozens of views select `s.entries` (the time grid, the dash faces, the home tiles, and others) and re-render when that array changes. A task-store edit stringifies the 6.4 MB task blob the same way.
+Typing in an objective was the expensive app path that day. `GrowText` in `now-objectives-list.tsx` called `onEditText` on every change. For the pen clock that is `editPenColorNowObjectiveText`, which mirrors the list onto the painted block through `updateEntry`. `updateEntry` maps the whole `entries` array. About 48 ms later `createCogsJSONStorage` stringifies `brain2-timegrid-store` and writes it. The Operations clock uses the same editor and the same mirror (`editWorkNowObjectiveText`). Dozens of views select `s.entries` (the time grid, the dash faces, the home tiles, and others) and re-render when that array changes. A task-store edit stringifies the 6.4 MB task blob the same way.
+
+That typing path is now debounced in `GrowText` (`components/Home/Tracking/now-objectives-list.tsx`). The field keeps the letters locally. `onEditText` — pen `editPenColorNowObjectiveText`, Operations `editWorkNowObjectiveText`, and the block editor, since they share this list — runs after a 400 ms pause, immediately on blur, and on unmount so the last characters are kept. One pause still takes the full timegrid save.
 
 The dev window in that session was `npm run electron:dev`, compiling on the order of 9,000 modules, with full reloads. That matches section 1.
 
@@ -149,31 +153,33 @@ _Last mapped: 2026-10-25_ — **Done.**
 
 - Done: `tickWorkSession` and `tickPenColorSession` skip the write when the live Tracking block already ends at the rounded active end (`liveEntryUpToDate` in `lib/operation-work-session.ts`). A moved or missing block still repaints.
 - Done: `hooks/useMessageIngest.ts` browser hub poll is a self-scheduling timeout: 1 s while messages arrive, 5 s when the queue is empty, paused while the tab is hidden, and snapped to an immediate poll when it becomes visible.
-- Done: hidden-tab guards added to the 1 s tick in `components/Home/ToDo/SessionPlanner.tsx`, the 15 s tick in `components/header-reminder-bell.tsx`, and the 2 min poll in `hooks/use-screentime-sync.ts`.
+- Done: hidden-tab guards added to the 1 s tick in `useNow` (`components/Home/ToDo/session-planner/use-now.ts`, loaded through `SessionPlanner.tsx`), the 15 s tick in `components/header-reminder-bell.tsx`, and the 2 min poll in `hooks/use-screentime-sync.ts`.
 - Left alone (cheap or intentional): `components/Home/home-dashboard.tsx` 60 s clock (only with Follow the clock), `TidyView.tsx` 1 s tick (returns early unless a timer runs), `JustStartMode.tsx` 1 s (focus screen), Settings face fields at 200 ms (only on that screen), `dash-faces.tsx`, the 15-60 s clocks in `append-log`, `home-days-until`, `home-solar-tile`, `home-moon-tile`, `home-overview`, `day-view`, `agenda-grid`, `time-grid`, `week-grid`, `trk-time-markers`, `FriendDetailsPanel`. Each re-renders one component, but none pause while hidden. Candidates for a shared `useNow` hook that pauses when hidden.
 
 ### Later — Stop rewriting whole stores (**Do not start** without a design pass)
 
-The root cost is one localStorage blob per store, rewritten whole on every edit. Typing an objective is one case: each character rewrites `brain2-timegrid-store` (see the 2026-10-24 note). Moving `task-storage` and `timegrid-store` to IndexedDB with per-record writes would make an edit cost one record, not the vault. That changes backup (`lib/data/backup.ts`), the hub sync, and every vault guard. It needs its own redesign doc.
+_Last mapped: 2026-10-27_
+
+The root cost is one localStorage blob per store, rewritten whole on every edit. Typing an objective is one case: after the 400 ms pause in `GrowText` (or on blur or unmount), that edit still rewrites `brain2-timegrid-store` whole (see the 2026-10-24 note). Moving `task-storage` and `timegrid-store` to IndexedDB with per-record writes would make an edit cost one record, not the vault. That changes backup (`lib/data/backup.ts`), the hub sync, and every vault guard. It needs its own redesign doc.
 
 ---
 
 ## Render and load audit
 
-_Last mapped: 2026-10-20_
+_Last mapped: 2026-10-27_
 
-Static read of the React side. No profile taken. Short version: rendering is mostly healthy (tab panels lazy, Analytics views lazy, selectors used, `todo-panel.tsx` memoizes its period lists). The slow feel is dominated by dev mode and the save path above, not React.
+Static read of the React side. No profile taken. Short version: rendering is mostly healthy (tab panels lazy, Data views lazy, selectors used, `use-todo-desk-board.ts` memoizes its period lists). The slow feel is dominated by dev mode and the save path above, not React.
 
 ### Fixed in this pass
 
-- `components/Home/Plan/settings-dialog.tsx`: it destructured the whole `useTaskStore()` and `useEventStore()` and scanned every `localStorage` key on each render. It is mounted always (`plan-panel.tsx:~310`), so every task edit re-rendered it. Now it subscribes to counts only, reads full arrays via `getState()` on export, and counts plan keys in a `useMemo` only while open.
-- `next.config.mjs`: added `experimental.optimizePackageImports` for `lucide-react` (127 importing files), `date-fns`, `recharts`, and three Radix packages. Cuts dev compile time and chunk size. Payoff: medium in dev, small in prod.
+- `components/Home/Plan/dialogs/settings-dialog.tsx`: it destructured the whole `useTaskStore()` and `useEventStore()` and scanned every `localStorage` key on each render. It is mounted always (`plan-panel.tsx:~310`), so every task edit re-rendered it. Now it subscribes to counts only, reads full arrays via `getState()` on export, and counts plan keys in a `useMemo` only while open.
+- `next.config.mjs`: added `experimental.optimizePackageImports` for `lucide-react` (127 importing files), `date-fns`, `recharts`, and three Radix packages. It still applies with Turbopack. Cuts dev compile time and chunk size. Payoff: medium in dev, small in prod.
 
 ### Not fixed, ranked by payoff
 
 1. **Dev mode** (section 1 above) remains the largest cost. Estimated payoff: large.
-2. **Clock dial PNGs** (`components/ui/clock-picker/clock-dials.ts:~11`): 17 PNGs, about 13 MB, all statically imported. Next emits URLs, not inlined data, so they load only when painted, but the dev compiler still processes them and the picker may preload. Resize or convert to WebP, and import only the chosen dial. Payoff: medium (dev compile, memory).
-3. **`katex`** is statically imported in `components/Home/Habits/willpower-gems.tsx:39` with its CSS. Habits is already lazy, so it only costs on opening Habits. Switch to `import("katex")` inside the render helper if Habits open feels slow. Payoff: small.
+2. **Clock dial PNGs** (`components/ui/clock-picker/clock-dials.ts`): the 17 PNGs, about 13 MB, are no longer statically imported. `loadDial` dynamic-imports the selected dial, so the dev compiler does not walk every painting with this module. Resize or convert to WebP is still open. Payoff of that resize: memory. The compile cost of importing every dial here is done.
+3. **`katex`** is statically imported in `components/Home/Habits/panel/willpower-gems.tsx:39` with its CSS. Habits is already lazy, so it only costs on opening Habits. Switch to `import("katex")` inside the render helper if Habits open feels slow. Payoff: small.
 4. **129 files subscribe to `s.tasks`** (`useTaskStore((s) => s.tasks)`). Each task edit re-renders all mounted ones. Fine while only one tab is mounted. Item detail keeps the tab desk mounted (hidden) (`app/page.tsx` header), so hidden tabs still re-render. Consider unmounting or `Activity`/deferring hidden tabs. Payoff: medium, needs care (scroll and state restore).
 5. **`app/page.tsx` eager imports**: `PenSettingsHost`, `TagSettingsHost`, `StepItemStack`, `CaptureDoorHost` load on first paint. Convert the settings hosts to `lazy` mounted on first open. Payoff: small to medium on first load.
 6. **Startup idle hooks** (`useSystemHomeListPins`, `usePeopleIKnowList`, instagram lists) run after `brain2-nav-ready`, each scanning task and list arrays. Merge into one idle pass. Payoff: small.

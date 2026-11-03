@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/LogEventsView.tsx`. Math: `log-event-stats.ts` (by day, by kind, clock scatter, phase strip) and `time-flow-stats.ts` (`kindRhythms`, `circularClock`). Classification: `components/Home/Tracking/tracking-log-model.ts` (`classifyLogInstant`). Styles: `time-flow.css`.
+File: `components/Analytics/time/LogEventsView.tsx`. Math: `log-event-stats.ts` (by day, by kind, clock scatter, phase strip) and `time-flow-stats.ts` (`kindRhythms`, `circularClock`). Classification: `components/Home/Tracking/tracking-log-model.ts` (`classifyLogInstant`). Styles: `time-flow.css`.
 
 ## Inventory
 

@@ -1,0 +1,443 @@
+/**
+ * components/ItemDetail/tabs/time/item-pen-time.css — Pens and tracked time bay (`ItemPenTime.tsx`)
+ *
+ * Chips for linked pens, a quiet pen search, a thin est-vs-tracked bar, and
+ * the counted blocks as a ruled list. Diagram grammar, no new palette.
+ */
+
+.ipt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-chip,
+.ipt-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: var(--r-2, 4px);
+  font-size: 12px;
+  background: var(--id-face, transparent);
+  color: inherit;
+}
+
+.ipt-add {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.ipt-clock {
+  border: 0;
+  padding: 0 2px;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ipt-clock[aria-pressed="true"] {
+  text-decoration: none;
+  font-weight: 600;
+  cursor: default;
+}
+
+.ipt-chip.is-clock {
+  box-shadow: inset 0 0 0 1px #209e82;
+}
+
+.ipt-x {
+  display: inline-flex;
+  margin-left: 2px;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.ipt-x:hover,
+.ipt-x:focus-visible {
+  opacity: 1;
+}
+
+.ipt-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.ipt-quiet {
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+.ipt-actuals {
+  margin: 2px 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-actuals ul {
+  margin: 0;
+  padding: 0 0 0 1rem;
+  list-style: none;
+}
+
+.ipt-picker {
+  margin-top: 6px;
+  max-width: 320px;
+}
+
+.ipt-search {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: var(--r-2, 4px);
+  background: var(--background, #fff);
+  color: inherit;
+  font-size: 13px;
+}
+
+.ipt-options {
+  margin-top: 4px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: var(--r-2, 4px);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ipt-options li > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.ipt-options li > button:hover,
+.ipt-options li > button:focus-visible {
+  background: var(--accent, rgba(0, 0, 128, 0.08));
+}
+
+.ipt-options > li.ipt-quiet {
+  padding: 5px 8px;
+}
+
+.ipt-time {
+  display: grid;
+  gap: 6px;
+}
+
+.ipt-total {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-bar {
+  height: 6px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ipt-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--id-blue, #000080);
+}
+
+.ipt-bar.is-over > span {
+  background: var(--destructive, #a33);
+}
+
+.ipt-blocks {
+  display: grid;
+  font-size: 12px;
+}
+
+.ipt-blocks > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-block-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ipt-ledger {
+  display: grid;
+  gap: 8px;
+}
+
+.ipt-blocks-edit {
+  gap: 10px;
+}
+
+.ipt-blocks-edit > li,
+.ipt-block {
+  display: grid;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 0;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: var(--id-sunken, inset 0 0 0 1px rgba(0, 0, 0, 0.2));
+}
+
+.ipt-block-head,
+.ipt-block-id,
+.ipt-span,
+.ipt-obj-main,
+.ipt-obj-time,
+.ipt-obj-step,
+.ipt-obj-add,
+.ipt-add-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ipt-block-head {
+  justify-content: space-between;
+}
+
+.ipt-block-id {
+  flex: 1;
+}
+
+.ipt-where {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a3e42;
+  white-space: nowrap;
+}
+
+.ipt-fields {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  gap: 6px 8px;
+  align-items: center;
+}
+
+.ipt-k,
+.ipt-obj-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a3e42;
+}
+
+.ipt-fields .ipt-text,
+.ipt-fields .ipt-step {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.ipt-obj-step .ipt-step {
+  flex: 1;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.ipt-mode {
+  flex: none;
+  white-space: nowrap;
+}
+
+.ipt-clock,
+.ipt-date,
+.ipt-text,
+.ipt-mins,
+.ipt-step {
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  background: var(--id-highlight, #fff);
+  box-shadow: var(--id-field, inset 0 0 0 1px rgba(0, 0, 0, 0.35));
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-clock,
+.ipt-mins {
+  width: 4.4rem;
+}
+
+.ipt-text {
+  flex: 1;
+  min-width: 8rem;
+  font-variant-numeric: normal;
+}
+
+textarea.ipt-text.ipt-note {
+  height: auto;
+  min-height: 26px;
+  padding: 4px 6px;
+  resize: vertical;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+
+.ipt-step {
+  max-width: 16rem;
+}
+
+.ipt-label-line span,
+.ipt-kind {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a3e42;
+}
+
+.ipt-objs {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(128, 128, 128, 0.35);
+}
+
+.ipt-objs ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ipt-objs li {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px dotted rgba(128, 128, 128, 0.45);
+}
+
+.ipt-objs li.is-done .ipt-text {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.ipt-mode,
+.ipt-x.is-sure {
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ipt-logs h3 {
+  margin: 4px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ipt-add-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: var(--id-sunken, inset 0 0 0 1px rgba(0, 0, 0, 0.2));
+}
+
+.ipt-add-form label {
+  display: grid;
+  gap: 2px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ipt-add-wide {
+  grid-column: 1 / -1;
+}
+
+.ipt-add-span2 {
+  grid-column: span 2;
+}
+
+.ipt-add-form .clock-picker,
+.ipt-add-form .ipt-mins,
+.ipt-add-form .ipt-step {
+  width: 100%;
+  max-width: none;
+}
+
+.ipt-add-objs {
+  display: grid;
+  gap: 6px;
+}
+
+.ipt-add-objs > span {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ipt-add-objs ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ipt-add-objs li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-ask p {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+.ipt-add-check {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+
+.ipt-add-actions,
+.ipt-add-form .ipt-quiet {
+  grid-column: 1 / -1;
+}

@@ -1,5 +1,9 @@
 # `components/Docs/` — Docs tab
 
+_Last mapped: 2026-10-28._
+
+On a phone (`max-width: 767px`) the window fits the width, fields are 16px, and the link sheet scrolls inside the screen. Desktop chrome is unchanged.
+
 Top-level **Docs** workspace in **Brain2**: Windows 95 chrome around a single-pane WYSIWYG
 editor (Notion / Google Docs style). Outer window caption, menubar keys, and status
 counts are a whisper of the house [milled fascia](../../docs/DESIGN_STYLE.md#milled-fascia);

@@ -4,7 +4,7 @@
  * A painted pen is always the leaf ("Balboa Park"). These buttons pick which
  * ancestor's color and name you see: Country, Area, Place, or Exact. Hidden
  * when the palette is flat — there is nothing to zoom. Same control on the
- * Time Grid and on the Analytics Tracking tab so they cannot disagree about
+ * Time Grid and on the Data Tracking tab so they cannot disagree about
  * what the rungs are called.
  */
 "use client"

@@ -5,6 +5,9 @@ import {
   addNowObjective,
   compactNowObjectives,
   editNowObjectiveText,
+  formatObjectiveWhen,
+  moveNowObjectiveToNext,
+  moveNowObjectiveToNow,
   objectiveWorkedMs,
   removeNowObjective,
   sameNowObjectives,
@@ -22,6 +25,8 @@ describe("now-objective", () => {
     expect(activeNowObjectives(list)).toHaveLength(2)
     expect(list[0].text).toBe("ship the nest")
     expect(list[0].addedAt).toBe(AT.toISOString())
+    expect(list[0].lane).toBe("next")
+    expect(list[0].stintStartedAt).toBeUndefined()
     expect(list[0].completedAt).toBeUndefined()
   })
 
@@ -58,6 +63,7 @@ describe("now-objective", () => {
     const a: NowObjective[] = [{ id: "1", text: "x", addedAt: AT.toISOString() }]
     expect(sameNowObjectives(a, a)).toBe(true)
     expect(sameNowObjectives(a, [{ ...a[0], text: "y" }])).toBe(false)
+    expect(sameNowObjectives(a, [{ ...a[0], lane: "next" }])).toBe(false)
     expect(compactNowObjectives([])).toBeUndefined()
     expect(compactNowObjectives(undefined)).toBeUndefined()
     expect(compactNowObjectives([{ id: "1", text: "  hi  ", addedAt: AT.toISOString() }])).toEqual([
@@ -66,11 +72,12 @@ describe("now-objective", () => {
   })
 
   it("banks a stint, and an unknown start has no duration", () => {
-    const list = addNowObjective(undefined, "draft", AT)
+    const list = addNowObjective(undefined, "draft", AT, { lane: "now" })
     const doneAt = new Date(AT.getTime() + 60_000)
     const completed = toggleNowObjectiveComplete(list, list[0].id, doneAt)
     expect(completed[0].workedMs).toBe(60_000)
-    expect(completed[0].stintStartedAt).toBeUndefined()
+    expect(completed[0].stintStartedAt).toBe(AT.toISOString())
+    expect(completed[0].lane).toBeUndefined()
 
     const parkedGap = {
       ...completed[0],
@@ -84,5 +91,61 @@ describe("now-objective", () => {
     expect(logged[0].addedAt).toBe(AT.toISOString())
     expect(logged[0].completedAt).toBe(doneAt.toISOString())
     expect(objectiveWorkedMs(logged[0])).toBeUndefined()
+  })
+
+  it("walks Delete all junk mail through Next and Now", () => {
+    const clock = (iso: string) => {
+      const date = new Date(iso)
+      const hour24 = date.getHours()
+      const hour = hour24 % 12 || 12
+      const minute = String(date.getMinutes()).padStart(2, "0")
+      const suffix = hour24 >= 12 ? "PM" : "AM"
+      return `${hour}:${minute} ${suffix}`
+    }
+    const at = (hour: number, minute: number) => new Date(2026, 9, 27, hour, minute, 0, 0)
+    const one = at(13, 0)
+    const five = at(13, 5)
+    const ten = at(13, 10)
+    const thirty = at(13, 30)
+    const thirtyFive = at(13, 35)
+
+    let list = addNowObjective(undefined, "Delete all junk mail", one, { lane: "next" })
+    expect(list[0]).toMatchObject({ addedAt: one.toISOString(), lane: "next" })
+    expect(list[0].stintStartedAt).toBeUndefined()
+
+    list = moveNowObjectiveToNow(list, list[0].id, five)
+    expect(list[0]).toMatchObject({ lane: "now", stintStartedAt: five.toISOString() })
+
+    list = moveNowObjectiveToNext(list, list[0].id, ten)
+    expect(list[0]).toMatchObject({ lane: "next", workedMs: 5 * 60_000 })
+    expect(list[0].stintStartedAt).toBeUndefined()
+
+    list = moveNowObjectiveToNow(list, list[0].id, thirty)
+    expect(list[0].stintStartedAt).toBe(thirty.toISOString())
+    expect(list[0].workedMs).toBe(5 * 60_000)
+    const open = formatObjectiveWhen(list[0], thirtyFive, clock)
+    expect(open).toContain("past 5m")
+    expect(open).toContain("working on since")
+    expect(open).toBe("added 1:00 PM past 5m working on since 1:30 PM")
+
+    const done = toggleNowObjectiveComplete(list, list[0].id, thirtyFive)
+    expect(done[0].stintStartedAt).toBe(thirty.toISOString())
+    expect(done[0].workedMs).toBe(10 * 60_000)
+    expect(done[0].completedAt).toBe(thirtyFive.toISOString())
+    expect(done[0].lane).toBeUndefined()
+    expect(objectiveWorkedMs(done[0], thirtyFive)).toBe(10 * 60_000)
+    expect(formatObjectiveWhen(done[0], thirtyFive, clock)).toBe("1:00 PM → 1:30 PM · 10m")
+
+    const straight = addNowObjective(undefined, "straight", thirtyFive, { lane: "now" })
+    expect(straight[0].stintStartedAt).toBe(straight[0].addedAt)
+
+    const legacy = {
+      id: "old",
+      text: "old",
+      addedAt: one.toISOString(),
+      completedAt: thirtyFive.toISOString(),
+    }
+    expect(objectiveWorkedMs(legacy)).toBe(thirtyFive.getTime() - one.getTime())
+    expect(formatObjectiveWhen(legacy, thirtyFive, clock)).toBe("1:00 PM → 1:35 PM · 35m")
   })
 })

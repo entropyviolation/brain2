@@ -6,6 +6,9 @@ Goal: BIM stores every text even with your computer off, nothing readable by
 Oracle, an alert when it goes down, and a clean move to your own device later.
 Design and threat table: [`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md).
 Alternatives: [`BIM_HOSTING_OPTIONS.md`](BIM_HOSTING_OPTIONS.md).
+_2026-10-31:_ Oracle is a **temporary** relay. The interim phone and desktop
+sync plan, and how it retires when the home server arrives, is
+[`ORACLE_INTERIM_SYNC.md`](ORACLE_INTERIM_SYNC.md).
 
 Decisions so far: Oracle Free VM as a sealed capture box · Healthchecks.io
 messages Telegram when pings stop · **Tailscale** for the VM↔Mac link (no public port)
@@ -13,7 +16,7 @@ messages Telegram when pings stop · **Tailscale** for the VM↔Mac link (no pub
 
 ## Done
 
-- Vault API bearer token (`COGS_PHONE_HUB_TOKEN`)
+- Vault API bearer token (`BRAIN2_PHONE_HUB_TOKEN`)
 - Sealed box crypto, capture box, key generator, device drain in `phone:hub`
 - Healthchecks ping from the box
 
@@ -21,7 +24,7 @@ messages Telegram when pings stop · **Tailscale** for the VM↔Mac link (no pub
 
 | # | Stream | Owns | Done when |
 | --- | --- | --- | --- |
-| A | Box hardening: require `COGS_CAPTURE_CHAT_IDS` (opt-out only by an explicit flag); bind address `COGS_CAPTURE_BIND` for the tailnet IP | `scripts/capture-box.mjs`, new `scripts/capture-filter.mjs` + test | Box refuses to start without chat ids; filter unit-tested |
+| A | Box hardening: require `BRAIN2_CAPTURE_CHAT_IDS` (opt-out only by an explicit flag); bind address `BRAIN2_CAPTURE_BIND` for the tailnet IP | `scripts/capture-box.mjs`, new `scripts/capture-filter.mjs` + test | Box refuses to start without chat ids; filter unit-tested |
 | B | Tailscale: setup steps, close public 8788, systemd bound to the tailnet IP, env example, README of the VM side | `docs/ORACLE_CAPTURE_BOX.md`, `deploy/oracle/*` | A reader can go from blank VM to working tailnet queue |
 | C | Drain quality: late-reply policy for old texts; drain heartbeat (second Healthchecks check) so a dead Mac drain alerts you | `scripts/phone-hub.ts`, new `lib/ingest/drain-*.ts` + tests | Old texts are applied with a clear reply policy; heartbeat pings |
 | D | Backup: nightly copy of `data/` and the private key reminder, via launchd on the Mac | new `scripts/backup-data.mjs`, `deploy/mac/*`, `docs/BIM_BACKUP.md` | Backup runs, keeps N copies, tested |

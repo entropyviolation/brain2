@@ -111,6 +111,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     keywords: "telegram bim pairing grocery cheat sheet simulate shortcut message",
   },
   {
+    id: "settings-nfc",
+    groupId: "imports",
+    title: "NFC tags",
+    keywords: "nfc sticker tag dose quantity adderall door shower vitamin shortcut",
+  },
+  {
     id: "settings-phone-sync",
     groupId: "imports",
     title: "Phone sync",

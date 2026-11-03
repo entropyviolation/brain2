@@ -221,11 +221,29 @@ export function filterTasksByHiddenGlobalFolders(
   for (const id of hiddenFolderIds) {
     for (const descId of getFolderDescendantIds(folders, id)) hidden.add(descId)
   }
+  // list id → folders that claim it. Built once, so a task costs one lookup per
+  // list it sits on, not a nested-list walk per folder. With tens of thousands
+  // of items the per-task walk kept the renderer pinned at 100% CPU.
+  const foldersByList = new Map<string, string[]>()
+  const claim = (listId: string, folderId: string) => {
+    const claimed = foldersByList.get(listId)
+    if (!claimed) foldersByList.set(listId, [folderId])
+    else if (!claimed.includes(folderId)) claimed.push(folderId)
+  }
+  for (const f of folders) {
+    claim(folderAllItemsCategoryId(f.id), f.id)
+    for (const listId of folderListCategoryIdsDeep(f, categories)) claim(listId, f.id)
+  }
   return tasks.filter((t) => {
     if (hideUncategorized && isTaskUncategorizedGlobally(t)) return false
-    const inFolders = folders.filter((f) => taskInFolder(t, f, categories))
-    if (inFolders.length === 0) return true
-    return inFolders.some((f) => !hidden.has(f.id))
+    let inAnyFolder = false
+    for (const listId of t.lists ?? []) {
+      const claimed = foldersByList.get(listId)
+      if (!claimed) continue
+      inAnyFolder = true
+      for (const folderId of claimed) if (!hidden.has(folderId)) return true
+    }
+    return !inAnyFolder
   })
 }
 

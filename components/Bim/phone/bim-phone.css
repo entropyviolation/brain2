@@ -1,0 +1,219 @@
+/* components/Bim/phone/bim-phone.css — BIM Chat text terminal on the iPhone shell. */
+
+.bim-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #6e7378;
+  border-radius: 6px;
+  background: rgba(232, 236, 238, 0.92);
+}
+
+.bim-phone-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bim-phone-title {
+  font: 12px/1.2 var(--bim-pixel, ui-monospace);
+  letter-spacing: 0.12em;
+}
+
+.bim-phone-sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 12px/1.3 ui-monospace, "SF Mono", Menlo, monospace;
+  color: #4d5459;
+}
+
+.bim-phone-screen {
+  min-height: 46vh;
+  max-height: 58vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px;
+  border-radius: 6px;
+  color: var(--bim-ink);
+  text-shadow: var(--bim-glow);
+  font: 15px/1.5 var(--bim-mono);
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 90% at 50% 30%, var(--bim-glass-2) 0%, var(--bim-glass) 72%);
+  box-shadow: inset 0 0 0 1px var(--bim-line), inset 0 0 24px rgba(0, 0, 0, 0.7);
+}
+
+.bim-phone-line {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bim-phone-line b {
+  display: block;
+  font: 7px/1.6 var(--bim-pixel);
+  letter-spacing: 0.16em;
+  color: var(--bim-legend);
+  text-shadow: none;
+}
+
+.bim-phone-line.is-you {
+  color: var(--bim-lcd);
+  text-shadow: 0 0 6px rgba(205, 238, 255, 0.3);
+  text-align: right;
+}
+
+.bim-phone-line.is-error {
+  color: var(--bim-fault);
+  text-shadow: none;
+}
+
+.bim-phone-line.is-wait {
+  opacity: 0.6;
+}
+
+/* LLM mode: the route under a BIM line, and the evidence it read. */
+.bim-phone-route {
+  display: block;
+  margin: -6px 0 10px;
+  font: 10px/1.4 var(--bim-mono);
+  color: var(--bim-violet);
+  text-shadow: none;
+  opacity: 0.85;
+}
+
+.bim-phone-ev {
+  margin: -6px 0 10px;
+  font: 12px/1.45 var(--bim-mono);
+  color: var(--bim-ink-2);
+}
+
+.bim-phone-ev summary {
+  color: var(--bim-legend);
+}
+
+.bim-phone-ev p {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* LLM mode switch in the header. Off reads as a plain key; on carries the phosphor lamp. */
+.bim-phone-llm.is-on::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f4fff8, #7dffc4 55%, #0b4a32);
+  box-shadow: 0 0 5px #7dffc4;
+}
+
+.bim-phone-cursor {
+  display: inline-block;
+  width: 9px;
+  height: 16px;
+  background: var(--bim-ink);
+  box-shadow: var(--bim-glow);
+  vertical-align: text-bottom;
+  animation: bim-phone-blink 1s steps(1) infinite;
+}
+
+@keyframes bim-phone-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bim-phone-cursor {
+    animation: none;
+  }
+}
+
+.bim-phone-compose {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.bim-phone-compose textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background: #fff;
+  color: #111;
+  font: 16px/1.35 ui-monospace, "SF Mono", Menlo, monospace;
+  resize: vertical;
+}
+
+.bim-phone-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bim-phone-keys .m-keycap {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  text-transform: none;
+}
+
+/* Photo attach: the key sits left of the text well; thumbnails take a full row above. */
+.bim-phone-compose {
+  flex-wrap: wrap;
+}
+
+.bim-phone-photos {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bim-phone-photo {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bim-phone-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bim-phone-photo button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: rgba(17, 17, 17, 0.7);
+  color: #fff;
+  font-size: 12px;
+}
+
+.bim-phone-photo-error {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--bim-fault);
+  font: 13px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.bim-phone-attach {
+  flex: 0 0 auto;
+  min-width: 44px;
+}

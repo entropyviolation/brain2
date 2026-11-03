@@ -25,6 +25,7 @@ import { useStarLordStore } from "@/lib/star-lord-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { useModuleDefinitionsStore } from "@/lib/module-definitions"
 import { useModuleHtmlStore } from "@/lib/module-html-store"
+import { useModulePackageAppStore } from "@/lib/module-package-app-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useMetricsStore } from "@/lib/metrics-store"
@@ -36,6 +37,8 @@ import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
+import { useKitchenDayNotes } from "@/lib/kitchen-day-note"
+import { useKitchenStore } from "@/lib/kitchen-store"
 
 const { SHRINK_PROTECTED, VAULT_RECORD_FIELDS, vaultRecordCount } = require("./vault-guard.js") as {
   SHRINK_PROTECTED: Set<string>
@@ -57,6 +60,7 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-theme-store": "window gray, plate, hues — appearanceRev decides these",
   "cogs-user-settings": "one settings object",
   "cogs-links-view": "Links tab switch and muted suggestion sources",
+  "cogs-graph-usage": "capped visit and accept/dismiss counters; the caps drop the oldest on purpose",
   "cogs-graph-inbox": "a review queue of proposals; Clear closed and the 500 cap shrink it on purpose",
   "cogs-lists-ui": "window layout and filters; Deselect all empties them on purpose",
   "cogs-screentime-prefs": "app allow/deny lists the user curates",
@@ -73,6 +77,8 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-ui-names": "overlay mode string",
   "cogs-log-keywords": "saved log phrases the person can empty; not tracker rows",
   "cogs-count-statuses": "named tallies the person can delete; ticks ride on the definition, not tracker rows",
+  "cogs-wardrobe": "outfits and pieces the person can delete; the photo bytes stay in the attachment store",
+  "cogs-kitchen-needs": "one body profile for nutrient needs; clearing the form empties it on purpose",
 }
 
 /** Live default state, shaped like the persisted blob the guard reads. */
@@ -87,6 +93,7 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-modules-store": () => useModulesStore.getState(),
   "cogs-module-definitions": () => useModuleDefinitionsStore.getState(),
   "cogs-module-html": () => useModuleHtmlStore.getState(),
+  "cogs-module-package-app": () => useModulePackageAppStore.getState(),
   "cogs-workflows-store": () => useWorkflowsStore.getState(),
   "cogs-item-types-store": () => useItemTypeStore.getState(),
   "cogs-metrics-store": () => useMetricsStore.getState(),
@@ -99,6 +106,8 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-session-plans": () => useSessionPlanStore.getState(),
   "cogs-affirmation-log": () => useAffirmationLogStore.getState(),
   "cogs-telegram-feed": () => useTelegramFeedStore.getState(),
+  "cogs-kitchen": () => useKitchenStore.getState(),
+  "cogs-kitchen-day-note": () => useKitchenDayNotes.getState(),
 }
 
 describe("vault coverage", () => {

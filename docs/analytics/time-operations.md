@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/OperationsAnalytics.tsx`. Math: `lib/operations.ts` (`buildHeatmap`, `neglectedDays`), `operation-debrief.ts`, `time-flow-stats.ts` (`operationNeglect`, `debriefPoints`). Styles: `time-flow.css`.
+File: `components/Analytics/time/OperationsAnalytics.tsx`. Math: `lib/operations.ts` (`buildHeatmap`, `neglectedDays`), `operation-debrief.ts`, `time-flow-stats.ts` (`operationNeglect`, `debriefPoints`). Styles: `time-flow.css`.
 
 ## Inventory
 

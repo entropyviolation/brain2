@@ -15,9 +15,11 @@ import {
 } from "@/lib/default-view-prefs"
 import { getItemType } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
+import { instagramProfileKeyHandle } from "@/lib/instagram-account-type"
 import { itemTitle } from "@/lib/item-utils"
 import { reminderRowCaption } from "@/lib/reminders"
 import type { AttributeDefinition, List, Task } from "@/lib/types"
+import { InstagramProfileKey } from "./InstagramProfileKey"
 import { ItemSelectCheckbox, activateListItem } from "./item-select"
 import type { ListContentDefaultProps } from "./types"
 import { useWindowedSlice } from "./use-windowed-slice"
@@ -87,6 +89,10 @@ export function ListContentDefault({
   const rowPx = density === "compact" ? 28 : 40
   const { ref, start, end } = useWindowedSlice(tasks.length, rowPx)
   const visible = tasks.slice(start, end)
+  const listDefs = useMemo(
+    () => (openCategory ? listAttributeSchema(openCategory, types) : null),
+    [openCategory, types],
+  )
 
   return (
     <div
@@ -97,9 +103,7 @@ export function ListContentDefault({
     >
       {start > 0 ? <div style={{ height: start * rowPx }} aria-hidden /> : null}
       {visible.map((task) => {
-        const defs = openCategory
-          ? listAttributeSchema(openCategory, types)
-          : mergeListAttributes(categories, task.lists, types)
+        const defs = listDefs ?? mergeListAttributes(categories, task.lists, types)
         const itemDefs = [...defs, ...(task.itemAttributeDefinitions ?? [])]
         const byId = new Map<string, AttributeDefinition>()
         for (const d of itemDefs) {
@@ -129,6 +133,7 @@ export function ListContentDefault({
         const type = show.type ? typeLabel(task, openCategory, types) : ""
         const reminderWhen = reminderRowCaption(task)
         const when = reminderWhen || (show.date && task.scheduledDate ? safeDateFormat(task.scheduledDate) : "")
+        const igUser = instagramProfileKeyHandle(task, openCategory)
         return (
           <div
             key={task.id}
@@ -192,6 +197,7 @@ export function ListContentDefault({
                 </span>
               ))}
             </div>
+            {igUser ? <InstagramProfileKey handle={igUser} /> : null}
           </div>
         )
       })}

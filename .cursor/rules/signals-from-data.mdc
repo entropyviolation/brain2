@@ -1,0 +1,14 @@
+---
+description: When building BIM prompts or flows, learn facts from the person's own data first (BIM signals playbook)
+alwaysApply: false
+---
+
+# Signals from data
+
+Before writing a prompt that asks a model to guess something about the
+person (activity, company, sleep, mood, place), check whether their own data
+already shows it. Follow `docs/BIM_SIGNALS_PLAYBOOK.md`: find ground truth they
+made, measure a cheap signal against a baseline on the real files, ship the
+winner as a counted fact in `Evidence.facts` (constants learned at run time,
+`null` when there are too few cases), and add the result, good or bad, to the
+playbook's table. Texts older than a few weeks are not evidence of the present.

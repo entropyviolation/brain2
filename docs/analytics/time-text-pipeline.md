@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/TextPipelineView.tsx` (`TextEventsView`, `TextSpansView`). Math: `time-flow-stats.ts` (`spanStats`). Styles: `time-flow.css`.
+File: `components/Analytics/time/TextPipelineView.tsx` (`TextEventsView`, `TextSpansView`). Math: `time-flow-stats.ts` (`spanStats`). Styles: `time-flow.css`.
 
 These are **not** the Texts report (`texts-report`, out of scope). They read Tracking entries that the phone text pipeline stamped with `generatedBy.kind === "text"`. Logged-span stamps are left out (`isLoggedSpanStamp`).
 

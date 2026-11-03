@@ -8,7 +8,7 @@ _Last mapped: 2026-10-22_
 
 _Last mapped: 2026-10-22_
 
-**Built:** `lib/phone-sync/calls.ts` and `lib/phone-sync/calls-reader.ts`, with tests. The reader reads `ZCALLRECORD` read-only through `node:sqlite` (`process.getBuiltinModule`, so bundlers leave it alone), 1000 rows a run. `COGS_CALLS_DB` points it at another file.
+**Built:** `lib/phone-sync/calls.ts` and `lib/phone-sync/calls-reader.ts`, with tests. The reader reads `ZCALLRECORD` read-only through `node:sqlite` (`process.getBuiltinModule`, so bundlers leave it alone), 1000 rows a run. `BRAIN2_CALLS_DB` points it at another file.
 
 - An outgoing call often keeps `ZANSWERED` at 0 after it connects. Any `ZDURATION` above 0 counts as answered.
 - `service` is `phone`, `facetime-audio`, `facetime-video`, or the VoIP app's bundle id from `ZSERVICE_PROVIDER`. `ZNAME`, `ZCALLTYPE` and `ZSERVICE_PROVIDER` are read only when the table has them.
@@ -33,7 +33,7 @@ Read the call history the Mac receives from the iPhone, and pick up iOS call rec
 ## Read
 
 - Table `ZCALLRECORD`: `ZADDRESS` (number), `ZNAME`, `ZDATE` (seconds since 2001-01-01), `ZDURATION`, `ZORIGINATED` (outgoing), `ZANSWERED`, `ZCALLTYPE` (phone, FaceTime audio/video), `ZUNIQUE_ID`.
-- Id (`sourceId`): `ZUNIQUE_ID`. Cursor: the pair `(ZDATE, ZUNIQUE_ID)`, stored as `"<ZDATE>|<ZUNIQUE_ID>"`. Read `WHERE ZDATE > :d OR (ZDATE = :d AND ZUNIQUE_ID > :id) ORDER BY ZDATE, ZUNIQUE_ID`, so two calls with the same timestamp are neither skipped nor read twice.
+- Id (`sourceId`): `ZUNIQUE_ID`. Cursor: the row key, stored as `"pk:<Z_PK>"`. Read `WHERE Z_PK > :pk ORDER BY Z_PK`. Not `ZDATE`: iPhone calls reach the Mac late and out of order, and a time cursor skipped them (fixed 2026-11-02).
 - Missed calls are instants. Answered calls are intervals of `ZDURATION`.
 - A call is company time for the matched person.
 

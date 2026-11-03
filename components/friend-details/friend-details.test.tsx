@@ -33,13 +33,13 @@ describe("FriendDetailsPanel", () => {
     const onClose = vi.fn()
     render(<FriendDetailsPanel photo={photo} onClose={onClose} />)
 
-    const save = screen.getByRole("button", { name: "Save personality" })
-    expect(save).toBeDisabled()
+    expect(screen.queryByRole("button", { name: "Save personality" })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("tab", { name: "Personality" }))
     await user.type(screen.getByLabelText("Add a title love"), "reading")
     await user.keyboard("{Enter}")
     expect(screen.getByRole("button", { name: "Remove reading" })).toBeInTheDocument()
+    const save = screen.getByRole("button", { name: "Save personality" })
     expect(save).toBeEnabled()
 
     await user.click(screen.getByRole("checkbox", { name: "Add to Garden" }))
@@ -49,7 +49,7 @@ describe("FriendDetailsPanel", () => {
     expect(stored?.titleLoves).toContain("reading")
     expect(stored?.listBias.garden).toBe(50)
     expect(onClose).not.toHaveBeenCalled()
-    expect(screen.getByRole("button", { name: "Save personality" })).toBeDisabled()
+    expect(screen.queryByRole("button", { name: "Save personality" })).not.toBeInTheDocument()
     expect(screen.getByText("Saved")).toBeInTheDocument()
   })
 
@@ -82,7 +82,7 @@ describe("FriendDetailsPanel", () => {
     await user.click(screen.getByRole("button", { name: "Open mission Brush fur" }))
     expect(screen.getByRole("dialog", { name: "Mission from Little Baby Hedgehog" })).toBeInTheDocument()
     expect(screen.getByText("Tick Brush fur today.")).toBeInTheDocument()
-    expect(screen.getAllByRole("button", { name: "Accept" }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole("button", { name: "Accept mission" }).length).toBeGreaterThan(0)
     expect(screen.getByRole("button", { name: "Something smaller" })).toBeInTheDocument()
   })
 

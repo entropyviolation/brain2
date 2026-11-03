@@ -15,7 +15,7 @@ NOTE: PNG not recaptured in this pass. This sidecar matches the Tracking log UI.
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar. Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Pinned full-width mill title bar. Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Data.
   Home sub-tabs: Habits · Plan · To Do · Goals · Tracking.
 
 VIEW-SPECIFIC
@@ -27,4 +27,4 @@ Spent: Amount (dollars and cents, a $ in the sunken field), On (what it was spen
 
 The Spent shelf is the first list. A sunken ledger shows the day’s total, then each source, and each thing when more than one thing was bought. A row is the clock, the amount, what, and the source. A known clock opens the block editor, which edits amount, spent on, and source. An unknown clock has Edit and Remove.
 
-Food, Drink, and Drugs stay their own shelves. An empty shelf says what is quiet (Nothing eaten this day, and the same voice for the others). A filled shelf shows its count. Events, Thought process, and Switch follow. Counts sits under the composer. Cycle stays hidden until Enable cycle tracking is on.
+Food, Drink, and Drugs stay their own shelves. An empty shelf says what is quiet (Nothing eaten this day, and the same voice for the others). A filled shelf shows its count. Events, Notes, and Thought process are the steel shelves. Switch follows when a switch exists. The composer opens on Note. Counts sits under the composer. Cycle stays hidden until Enable cycle tracking is on. PNG not recaptured for the Notes shelf.

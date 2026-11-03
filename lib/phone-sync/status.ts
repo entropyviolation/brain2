@@ -39,7 +39,7 @@ export const PHONE_SYNC_ROWS: readonly PhoneSyncRow[] = [
   {
     id: "health",
     title: "Health",
-    needs: "The iPhone app, HealthKit. Not built yet.",
+    needs: "The iPhone app. Apple Health, read only. Import all history on the phone. The Mac hub does not read Health.",
     switchable: false,
   },
   {

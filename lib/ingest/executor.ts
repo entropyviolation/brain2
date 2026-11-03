@@ -4,7 +4,7 @@
  * Pairing and allowlist live here so adapters only deliver payloads.
  * Simulate skips pairing. Unknown senders get no reply. Photos and PDFs
  * go through `ingestIncomingAsync`. Matching precedence: dedupe → help/pair
- * → explicit commands → habit/discrete triggers → everything else.
+ * → explicit commands → `nfc:` / habit/discrete triggers → everything else.
  * A message whose first token is a link goes to Inbox → Links
  * (`apply-link.ts`) before anything else reads it.
  * Text with no verb, no list path, and no capture flag is a `log:` line,
@@ -12,20 +12,25 @@
  * also files the message in Inbox after it lands wherever it was going.
  * An open morning review skips that ladder until the message is exactly STOP.
  * Blank text waits. Live Location is dropped while any text ritual is open
- * and resumes on the next edit after that ritual ends.
+ * and resumes on the next edit after that ritual ends. When the iOS app has
+ * shared location, a Live Location update stays quiet (`location-share-order.ts`).
+ * A typed `gps:` still paints. An open photo question answers only
+ * journal / outfit / log / skip (or 1 / 2 / 3). Live Location and every other
+ * text run as themselves and leave the photo waiting. They do not ask again.
  */
+import { withItemWriteSource } from "@/lib/item-write-source"
 import { INGEST_HELP } from "./help"
 import { BIM_PAIR_OK } from "./bim"
 import { tryApplyGlossary } from "./apply-glossary"
 import { holdMorningReview, isMorningVoiceAdvance, isTelegramLocationPin } from "./apply-morning-gm"
 import { UNPAIRED_SUMMARY, pairingCodeValid } from "./pairing"
-import { intakeClassFromMessage, looksLikeVerb, parseMessage } from "./parse-message"
+import { intakeClassFromMessage, looksLikeQuestion, looksLikeVerb, parseMessage } from "./parse-message"
 import { applyCycle } from "./apply-cycle"
 import { expandIngestText } from "./expand"
 import { applyNowCapture } from "./apply-now"
 import { applyQuicklists } from "./apply-quicklists"
 import { claimIngestDedupeKeys, ingestDedupeKey, ingestDedupeKeys } from "./dedupe"
-import { peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history"
+import { isRestoring, peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history"
 import { parseSmartCapture } from "@/lib/smart-parse"
 import {
   isReplayableWrite,
@@ -90,13 +95,16 @@ import { applyIphoneNotes } from "./apply-iphone-notes"
 import { applyPlanForNow, applyReadPlanToday } from "./apply-plan-text"
 import { applyDoNext, applyReadTodoToday, applyTodoPinReply, applyTodoToday } from "./apply-todos"
 import { applyGps } from "./apply-gps"
+import { bimLocationUpdateShouldApply } from "@/lib/phone-sync/location-share-order"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { advanceRitual, startMorningReview, startNightRitual, startPeriodReview, startReviewsBoard } from "./apply-ritual"
 import { advanceMenu, menuClaims, menuPeriodFromText, openMenu } from "./apply-menu"
 import { applyPin } from "./apply-pin"
 import { applyInventory } from "./apply-inventory"
 import { applyReceiptAnswer, applyReceiptText } from "./apply-receipt"
-import { applyJournalText, applyMedia } from "./apply-media"
+import { applyJournalText, applyMedia, releaseMediaHold, resolveMediaChoice } from "./apply-media"
 import { isGpsTrackingLogEvent, useGpsIngestLog } from "./gps-log"
+import { applyNfcScan } from "./apply-nfc"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import type { ApplyResult, IncomingMessage, IngestEvent, IngestIntent, PendingClarify } from "./types"
@@ -115,6 +123,7 @@ const PRIORITY_EXPLICIT = new Set<IngestIntent["kind"]>([
   "thought-process",
   "log-categories",
   "habit-trigger",
+  "nfc",
   "intake",
   "cycle",
   "switch",
@@ -192,7 +201,10 @@ function recordInFeed(message: IncomingMessage, now: Date): void {
   }
 }
 
-function markFeedOutcome(message: IncomingMessage, outcome: { kind: string; status: IngestEvent["status"]; summary: string }): void {
+function markFeedOutcome(
+  message: IncomingMessage,
+  outcome: { kind: string; status: IngestEvent["status"]; summary: string; entryId?: string },
+): void {
   try {
     const row = feedRowFromIncoming(message)
     if (row) useTelegramFeedStore.getState().markOutcome(row.id, outcome)
@@ -201,7 +213,12 @@ function markFeedOutcome(message: IncomingMessage, outcome: { kind: string; stat
   }
 }
 
+/** BIM writes (capture, links, lists, notes, reminders) share this frame. Node leaves client off. */
 export function ingestIncoming(message: IncomingMessage, now = new Date()): ApplyResult {
+  return withItemWriteSource({ surface: "bim" }, () => ingestIncomingBody(message, now))
+}
+
+function ingestIncomingBody(message: IncomingMessage, now = new Date()): ApplyResult {
   recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
@@ -214,6 +231,16 @@ export function ingestIncoming(message: IncomingMessage, now = new Date()): Appl
 }
 
 export async function ingestIncomingAsync(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
+  return withItemWriteSource({ surface: "bim" }, () => ingestIncomingAsyncBody(message, now))
+}
+
+/** A write while an undo/restore settles is dropped by the stores. Wait it out (up to 5s) before applying. */
+async function untilSettled(): Promise<void> {
+  for (let i = 0; i < 50 && isRestoring(); i += 1) await new Promise((resolve) => setTimeout(resolve, 100))
+}
+
+async function ingestIncomingAsyncBody(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
+  await untilSettled()
   recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
@@ -237,6 +264,11 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
     return finishIngest(message, advanceRitual(pending, raw, when))
   }
 
+  if (pending?.kind === "media" && !message.attachments?.length) {
+    const choice = await resolveMediaChoice(pending, String(message.text ?? ""), when)
+    if (choice) return finishIngest(message, choice)
+  }
+
   if (message.attachments?.length) {
     const onlyVoice = message.attachments.every((a) => a.kind === "voice" || a.kind === "audio")
     if (onlyVoice) {
@@ -248,6 +280,7 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
         summary: "Voice note (no ritual)",
       })
     }
+    if (pending?.kind === "media") await releaseMediaHold(pending)
     const result = await applyMedia(message, when)
     return finishIngest(message, result)
   }
@@ -277,7 +310,7 @@ function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | n
     return {
       status: "ignored",
       kind: "unknown",
-      summary: "Duplicate Telegram update",
+      summary: source.channel === "hub" ? "Duplicate scan" : "Duplicate Telegram update",
     }
   }
 
@@ -291,6 +324,18 @@ function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | n
 
   const intent = parseMessage(text, now)
   const isPair = intent.kind === "pair"
+
+  // The bearer token on POST /api/scan is the check. A hub line is not a Telegram chat.
+  if (source.channel === "hub") {
+    if (isPair) {
+      return logAndReturn(message, {
+        status: "ignored",
+        kind: "pair",
+        summary: "Scan door accepts nfc: only",
+      })
+    }
+    return null
+  }
 
   if (source.channel !== "simulate") {
     const allowed =
@@ -429,13 +474,13 @@ function alsoFileInInbox(message: IncomingMessage, text: string, primary: ApplyR
 function applyNamedText(message: IncomingMessage, now: Date, text: string): ApplyResult {
   const store = useIngestStore.getState()
   const { source } = message
+  const pending = store.getPending(source.channel, source.chatId)
   // A message that starts with a link is a saved link, ahead of clarify answers and pin replies.
   if (!message.attachments?.length) {
     const link = applyLink(text, { now, origin: telegramCaptureOrigin(message, text) })
     if (link) return link
   }
-  const pending = store.getPending(source.channel, source.chatId)
-  if (pending && !message.attachments?.length) {
+  if (pending && pending.kind !== "media" && !message.attachments?.length) {
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {
       return resolveDuplicateClarify(pending, text, now)
     }
@@ -481,8 +526,21 @@ function applyNamedText(message: IncomingMessage, now: Date, text: string): Appl
 
 /** `now` is the send time (`message.date`), so a backlog is not stamped when the poller woke up. */
 function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Date): ApplyResult {
+  // A lone `x` with no grocery line to check off is a one-letter log, not "Got what?".
+  if (intent.kind === "bought" && !intent.payload.trim() && /^x$/i.test((intent.raw ?? "").trim())) {
+    const logged = applyDiscreteLog("x", now, { keywordQuery: false })
+    if (logged.status === "ok") return logged
+  }
   if (intent.kind === "capture") {
     const raw = intent.raw || intent.payload
+    if (isDefaultLogText(raw, now) && looksLikeQuestion(raw)) {
+      return {
+        status: "ignored",
+        kind: "capture",
+        summary: "Question, not filed",
+        reply: "That reads as a question, so I did not log it. Questions about your data need BIM chat with LLM on. To log it anyway, send log: and the line.",
+      }
+    }
     if (isDefaultLogText(raw, now)) {
       const logged = applyDiscreteLog(raw, now, { keywordQuery: false })
       if (logged.status === "ok") return logged
@@ -493,7 +551,10 @@ function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Dat
       origin: telegramCaptureOrigin(message, raw),
     })
   }
-  return dispatch(intent, now)
+  if (intent.kind === "gps" && message.locationUpdate && !bimLocationUpdateShouldApply(now, useTimeTrackingStore.getState().entries)) {
+    return { status: "ignored", kind: "gps", summary: "iOS app is sharing location" }
+  }
+  return dispatch(intent, now, message.source.channel === "simulate" && message.source.chatId === "bim-chat")
 }
 
 /**
@@ -527,9 +588,13 @@ function finishIngest(message: IncomingMessage, result: ApplyResult): ApplyResul
     }
   }
   const keepRitual = prev?.kind === "ritual" && "summary" in result && result.summary === "Undo refused during ritual"
+  const photoSettled = (next.status === "ok" || next.status === "error") && next.mediaSettled === true
+  const replacedPhoto = message.attachments?.some((row) => row.kind === "photo" || row.kind === "pdf") ?? false
+  const keepMedia = prev?.kind === "media" && !replacedPhoto && next.status !== "needs_clarify" && !photoSettled
   if (next.status === "needs_clarify") {
+    if (prev?.kind === "media" && next.pending.kind !== "media") void releaseMediaHold(prev)
     store.setPending(message.source.channel, message.source.chatId, next.pending)
-  } else if (keepRitual) {
+  } else if (keepRitual || keepMedia) {
     store.setPending(message.source.channel, message.source.chatId, prev)
   } else {
     store.setPending(message.source.channel, message.source.chatId, null)
@@ -559,7 +624,7 @@ function handlePair(message: IncomingMessage, intent: IngestIntent, now: Date): 
   })
 }
 
-function dispatch(intent: IngestIntent, now: Date): ApplyResult {
+function dispatch(intent: IngestIntent, now: Date, chat = false): ApplyResult {
   switch (intent.kind) {
     case "help":
       return { status: "ok", kind: "help", reply: INGEST_HELP, summary: "Help" }
@@ -567,6 +632,8 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
       return applyBulk(intent.payload, { sendToInbox: false, now })
     case "habit":
       return applyHabit(intent.payload, now)
+    case "nfc":
+      return applyNfcScan(intent.payload, now)
     case "habit-trigger":
       return (
         tryApplyHabitTrigger(intent.payload, now) ?? {
@@ -618,7 +685,7 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
     case "thought-process":
       return applyThoughtProcess(intent.payload, now)
     case "info":
-      return applyInfo()
+      return applyInfo(chat)
     case "read":
       return applyRead(intent.payload, now)
     case "lists":
@@ -751,7 +818,7 @@ function resolveClarify(pending: PendingClarify, text: string, now: Date): Apply
 
   if (lower === "new" || lower === "create") {
     if (!pending.createName || !pending.scopeId) {
-      return { status: "error", kind: pending.kind, reply: "Nothing to create." }
+      return { status: "error", kind: pending.kind === "media" ? "unknown" : pending.kind, reply: "Nothing to create." }
     }
     return createAndApplyPen(pending.kind, pending.scopeId, pending.createName, pending.remainder ?? "", now)
   }
@@ -831,6 +898,12 @@ function logAndReturn(message: IncomingMessage, result: ApplyResult): ApplyResul
   // or rewrite the persist hub on every Live Location tick.
   if (isGpsTrackingLogEvent(event)) useGpsIngestLog.getState().push(event)
   else useIngestStore.getState().appendEvent(event)
-  markFeedOutcome(message, { kind: result.kind, status, summary })
+  const entryId = result.status === "ok" ? result.itemIds?.[0] : undefined
+  markFeedOutcome(message, {
+    kind: result.kind,
+    status,
+    summary,
+    ...(entryId ? { entryId } : {}),
+  })
   return result
 }

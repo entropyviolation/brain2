@@ -10,7 +10,7 @@
  * 2. Biography grid: Full name, Nicknames (chips, `person-nicknames.tsx`),
  *    Phone numbers (the Phone Number attribute, every number they have had),
  *    Emails,
- *    Relation, Date met + Est., Instagram, Address.
+ *    Relation, Date met + Est., Instagram, Wikidata, ORCID, ISBN, URL, Address.
  * 3. Time together. 4. The host's `pipelines` slot (Company pens).
  * 5. Interactions (`person-log.tsx`; feeds Last seen).
  * 6. The Gift ideas key → a small popup with the list and quick notes
@@ -27,15 +27,16 @@
 "use client"
 
 import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { normalizeExternalId, type ExternalIdKind } from "@/lib/graph/external-ids"
 import { openInstagramFor } from "@/lib/instagram-report"
 import { openTextsFor, readTextsIndex, subscribeTextsIndex, textsCardFor } from "@/lib/texts-report"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { AddressSuggestInput } from "@/components/ui/address-suggest-input"
 import { iconFor } from "@/components/Icons/Icon"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
-import { GiftIdeasKey } from "@/components/People/person-gift-ideas"
-import { Log } from "@/components/People/person-log"
-import { NicknameField } from "@/components/People/person-nicknames"
+import { GiftIdeasKey } from "@/components/People/detail/person-gift-ideas"
+import { Log } from "@/components/People/detail/person-log"
+import { NicknameField } from "@/components/People/detail/person-nicknames"
 import { splitHandles, unlinkedPhoneHandles } from "@/lib/phone-sync/person-links"
 import { phonePeople } from "@/lib/phone-sync/write"
 import { syncPhonePersonLinks, takeHandlesFromOthers } from "@/lib/phone-person-links"
@@ -46,7 +47,7 @@ import { COMPANY_SCOPE_ID, personPhoneNumbers, personTimePenIds } from "@/lib/pe
 import { formatHandle } from "@/lib/phone-sync/handles"
 import { personMinuteMasks } from "@/lib/person-time"
 import { contactSentence, personContact } from "@/lib/person-contact"
-import { PersonTimeTogether } from "@/components/People/person-time-together"
+import { PersonTimeTogether } from "@/components/People/detail/person-time-together"
 import {
   addressPlaceholder,
   addressPrecisionLabel,
@@ -286,7 +287,7 @@ export function PersonDetail({
             type="button"
             className="person-readout person-readout-link"
             data-testid="person-view-instagram"
-            title={`Open @${profile.instagram} in Analytics → Sources → Instagram`}
+            title={`Open @${profile.instagram} in Data → Sources → Instagram`}
             onClick={() => openInstagramFor(profile.instagram!)}
           >
             View Instagram analytics ↗
@@ -297,7 +298,7 @@ export function PersonDetail({
             type="button"
             className="person-readout person-readout-link"
             data-testid="person-view-texts"
-            title={`Open ${textsCard.name} in Analytics → Texts`}
+            title={`Open ${textsCard.name} in Data → Texts`}
             onClick={() => openTextsFor(handles)}
           >
             View text analytics ↗
@@ -437,6 +438,19 @@ export function PersonDetail({
             ) : null}
           </span>
         </label>
+        {(["wikidata", "orcid", "isbn", "url"] as const).map((key) => (
+          <IdentifierField
+            key={key}
+            kind={key}
+            value={profile?.[key] ?? ""}
+            onLive={(value) => liveProfile({ ...current(), [key]: value })}
+            onCommit={(value) => {
+              const trimmed = value.trim()
+              const canonical = normalizeExternalId(key, trimmed)
+              writeProfile({ ...current(), [key]: (canonical ?? trimmed) || undefined })
+            }}
+          />
+        ))}
         <div className="person-field person-address">
           <span>Address</span>
           <div className="person-address-row">
@@ -558,5 +572,25 @@ export function PersonDetail({
         }}
       />
     </section>
+  )
+}
+
+function IdentifierField({
+  kind,
+  value,
+  onLive,
+  onCommit,
+}: {
+  kind: ExternalIdKind
+  value: string
+  onLive: (value: string) => void
+  onCommit: (value: string) => void
+}) {
+  const label = kind === "wikidata" ? "Wikidata" : kind === "orcid" ? "ORCID" : kind === "isbn" ? "ISBN" : "URL"
+  return (
+    <label className="person-field">
+      {label}
+      <IsolatedInput type="text" aria-label={label} value={value} onLiveChange={onLive} onCommit={onCommit} />
+    </label>
   )
 }

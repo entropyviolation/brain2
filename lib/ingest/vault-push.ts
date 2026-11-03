@@ -59,11 +59,21 @@ export async function pushVaultToHub(baseUrl: string, token = ""): Promise<{ ok:
   }
 }
 
+/** A hub that refused a connection is not asked again for this long. */
+export const HUB_OFFLINE_BACKOFF_MS = 60_000
+const hubDownUntil = new Map<string, number>()
+
+/** Tests start from a clean slate. */
+export function resetHubOfflineBackoff(): void {
+  hubDownUntil.clear()
+}
+
 export async function fetchPhoneHubStatus(
   baseUrl: string,
 ): Promise<{ ok: boolean; polling?: boolean; hub?: boolean; error?: string }> {
   const origin = normalizeHubUrl(baseUrl)
   if (!origin) return { ok: false }
+  if ((hubDownUntil.get(origin) ?? 0) > Date.now()) return { ok: false, error: "hub offline" }
   try {
     const res = await fetch(`${origin}/api/ingest/status`, { cache: "no-store" })
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
@@ -74,6 +84,9 @@ export async function fetchPhoneHubStatus(
       hub: Boolean(data.hub),
     }
   } catch (err) {
+    // The browser logs every refused request as a console error, and the
+    // ingest poll asks every 1-5 s. Back off instead of asking a dead hub.
+    hubDownUntil.set(origin, Date.now() + HUB_OFFLINE_BACKOFF_MS)
     return { ok: false, error: err instanceof Error ? err.message : "hub offline" }
   }
 }

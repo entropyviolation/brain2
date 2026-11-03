@@ -1,7 +1,7 @@
 /**
  * components/Modules/workspace/ModuleBuilderDialog.tsx — New module chooser
  *
- * The entry point for building a module. Four paths:
+ * The entry point for building a module. Five paths:
  *   1. **From scratch** — author a brand-new `ModuleDefinition` (name, bound
  *      lists, views, plan-sync) in `ModuleSettingsDialog`, then instantiate it
  *      into a runnable workspace.
@@ -9,7 +9,10 @@
  *      scaffolds the supporting lists + views in one click.
  *   3. **Upload HTML file** — any `.html` page runs as a module in a sandboxed
  *      frame, optionally attached to lists (`html/HtmlUploadDialog.tsx`).
- *   4. **Dashboard widget** — a classic single card.
+ *   4. **Install package** — a JSON module package (`ModulePackageInstallDialog.tsx`).
+ *      Create-only and `nativeTemplate` files call `installModulePackage`.
+ *      `policy: "bind"` is scored first and installs only on a unique match.
+ *   5. **Dashboard widget** — a classic single card.
  *
  * Saved definitions can also be re-instantiated into a fresh workspace.
  */
@@ -18,7 +21,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap, FileCode } from "lucide-react"
+import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap, FileCode, Package, Brush } from "lucide-react"
 import { MODULE_TEMPLATES, instantiateModuleTemplate, type ModuleTemplateId } from "@/lib/module-templates"
 import type { ModuleDefinition } from "@/lib/types"
 import {
@@ -29,6 +32,7 @@ import {
 import { ModuleSettingsDialog } from "./ModuleSettingsDialog"
 import { itemTitle } from "@/lib/item-utils"
 import { HtmlUploadDialog } from "./html/HtmlUploadDialog"
+import { ModulePackageInstallDialog } from "./ModulePackageInstallDialog"
 
 // Partial map (+ fallback) so templates added by sibling workstreams still render.
 const TEMPLATE_ICONS: Partial<Record<ModuleTemplateId, React.ComponentType<{ className?: string }>>> = {
@@ -38,6 +42,7 @@ const TEMPLATE_ICONS: Partial<Record<ModuleTemplateId, React.ComponentType<{ cla
   "book-tasting": FilePlus2,
   filmrecs: Clapperboard,
   gradsearch: GraduationCap,
+  sweep: Brush,
   blank: FilePlus2,
 }
 
@@ -56,9 +61,16 @@ export function ModuleBuilderDialog({
   const addModuleDefinition = useModuleDefinitionsStore((s) => s.addModuleDefinition)
   const [draftDef, setDraftDef] = useState<ModuleDefinition | null>(null)
   const [uploadingHtml, setUploadingHtml] = useState(false)
+  const [installingPackage, setInstallingPackage] = useState(false)
 
   const chooseTemplate = (id: ModuleTemplateId) => {
     const moduleId = instantiateModuleTemplate(id)
+    onClose()
+    onOpenWorkspace(moduleId)
+  }
+
+  const openInstalledPackage = (moduleId: string) => {
+    setInstallingPackage(false)
     onClose()
     onOpenWorkspace(moduleId)
   }
@@ -84,7 +96,7 @@ export function ModuleBuilderDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="mod95-dialog sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Build a module</DialogTitle>
           </DialogHeader>
@@ -117,6 +129,20 @@ export function ModuleBuilderDialog({
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Bring any HTML page (a data tool, a lesson, a game) and run it as a module. Optionally attach it to your lists.
+              </p>
+            </button>
+
+            {/* Install a JSON package. Create-only; template cards stay on instantiateModuleTemplate. */}
+            <button
+              onClick={() => setInstallingPackage(true)}
+              className="w-full text-left border rounded-lg p-3 hover:border-primary hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex items-center gap-2 font-medium">
+                <Package className="h-4 w-4 shrink-0" />
+                Install package
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Choose a JSON module package. A create-only file makes new lists. A bind uses one clear list you already have.
               </p>
             </button>
 
@@ -193,6 +219,12 @@ export function ModuleBuilderDialog({
       </Dialog>
 
       <HtmlUploadDialog open={uploadingHtml} onClose={() => setUploadingHtml(false)} onOpenWorkspace={onOpenWorkspace} />
+
+      <ModulePackageInstallDialog
+        open={installingPackage}
+        onClose={() => setInstallingPackage(false)}
+        onInstalled={openInstalledPackage}
+      />
 
       {draftDef && (
         <ModuleSettingsDialog

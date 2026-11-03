@@ -6,6 +6,8 @@
  * `log` prefix is not matched here.
  */
 
+import { escapeRegExp } from "@/lib/string-utils"
+
 export function normalizeLogKeyword(raw: string): string {
   return raw.trim().replace(/\s+/g, " ")
 }
@@ -18,10 +20,6 @@ export function formatLogKeywordList(keywords: readonly string[]): string {
   if (keywords.length === 0) return "No log keywords saved."
   const lines = keywords.map((phrase, index) => `${index + 1}. ${phrase}`)
   return ["Log keywords", ...lines].join("\n")
-}
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
 export interface SavedLogKeywordHit {

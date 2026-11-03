@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-File: `components/Analytics/ContextSwitchHeatmap.tsx`. Math: `lib/metrics.ts` (`contextSwitchSeries`, `trend`), `hour-day.ts` (`switchCountsByHour`), `time-flow-stats.ts` (`hourlyRate`, `wakingRate`, `weekdayMeans`). Styles: `time-flow.css`.
+File: `components/Analytics/time/ContextSwitchHeatmap.tsx`. Math: `lib/metrics.ts` (`contextSwitchSeries`, `trend`), `hour-day.ts` (`switchCountsByHour`), `time-flow-stats.ts` (`hourlyRate`, `wakingRate`, `weekdayMeans`). Styles: `time-flow.css`.
 
 ## Inventory
 

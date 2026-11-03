@@ -20,6 +20,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 /** `"help"` / `"inspect"` join this union later; unknown values fall to off. */
 export const UI_MODES = ["off", "names"] as const
@@ -62,3 +63,5 @@ export const useUiNamesStore = create<UiNamesState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useUiNamesStore)

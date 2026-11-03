@@ -157,10 +157,10 @@ function writeCoverage(
 function applyPeriodCompletion(task: WeeklyTask, periodKey: string, anchor: Date, completion: TaskCompletion): void {
   const frequency = task.frequency || "daily"
   const store = useHabitsStore.getState()
-  if (frequency === "weekly") store.updateWeeklyHabitCompletion(task.id, anchor, completion)
-  else if (frequency === "monthly") store.updateMonthlyHabitCompletion(task.id, anchor, completion)
-  else if (frequency === "quarterly") store.updateQuarterlyHabitCompletion(task.id, anchor, completion)
-  else store.updateCompletion(task.id, anchor, completion)
+  if (frequency === "weekly") store.updateWeeklyHabitCompletion(task.id, anchor, completion, "auto-tracking")
+  else if (frequency === "monthly") store.updateMonthlyHabitCompletion(task.id, anchor, completion, "auto-tracking")
+  else if (frequency === "quarterly") store.updateQuarterlyHabitCompletion(task.id, anchor, completion, "auto-tracking")
+  else store.updateCompletion(task.id, anchor, completion, "auto-tracking")
   void periodKey
 }
 
@@ -227,7 +227,7 @@ function syncDailyFloorHabits(dateKeys?: string[]): void {
       const next = applyLinkedFlag(previous, "dailyFloorCompleted", met)
       if (!next) continue
       const monday = dates[0]
-      habits.updateWeeklyHabitCompletion(task.id, monday, next)
+      habits.updateWeeklyHabitCompletion(task.id, monday, next, "auto-link")
     }
   }
 }

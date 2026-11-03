@@ -112,7 +112,7 @@
   border: none;
   border-radius: var(--r-2, 2px);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fascia-key-face);
   box-shadow: var(--fascia-key-ring);
   pointer-events: none;
@@ -141,7 +141,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fascia-key-face);
   box-shadow: var(--fascia-key-ring);
   cursor: pointer;
@@ -161,13 +161,13 @@
 .docs95 .docs-btn:active:not(:disabled),
 .docs95 .docs-btn[aria-pressed="true"] {
   box-shadow: var(--fascia-key-pressed);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
   filter: none;
 }
 
 .docs95 .docs-btn:disabled {
   color: var(--chrome-lo);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-shadow: none;
   cursor: default;
   filter: none;
 }
@@ -319,6 +319,10 @@
   box-shadow: var(--d-field);
 }
 
+.docs95 .docs-folder-field {
+  width: 140px;
+}
+
 .docs95 .docs-save-pill {
   padding: 2px 8px;
   font-size: 11px;
@@ -392,7 +396,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   cursor: pointer;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
@@ -670,9 +674,113 @@
   white-space: nowrap;
 }
 
-@media (max-width: 720px) {
+/* Phone. The milled window above stays on a wide screen. */
+@media (max-width: 767px) {
+  .docs95,
+  .docs95 .docs-window,
+  .docs95 .docs-body,
+  .docs95 .docs-sidebar,
+  .docs95 .docs-main,
+  .docs95 .docs-home,
+  .docs95 .docs-editor-wrap {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .docs95 {
+    height: auto;
+    min-height: 0;
+  }
+
+  .docs95 .docs-window {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    padding-left: max(3px, env(safe-area-inset-left, 0px));
+    padding-right: max(3px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(3px, env(safe-area-inset-bottom, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .docs95 .docs-title-bar-controls {
+    display: none;
+  }
+
   .docs95 .docs-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: 180px 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 34dvh) minmax(0, 1fr);
+  }
+
+  .docs95 .docs-body:has(.docs-editor-wrap) {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .docs95 .docs-body:has(.docs-editor-wrap) .docs-sidebar {
+    display: none;
+  }
+
+  .docs95 .docs-sidebar,
+  .docs95 .docs-home,
+  .docs95 .docs-folder-list,
+  .docs95 .docs-doc-list {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .docs95 .docs-btn,
+  .docs95 .docs-milled-key,
+  .docs95 .docs-folder-item,
+  .docs95 .docs-doc-item,
+  .docs95 .docs-home-search-clear {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .docs95 .docs-folder-item,
+  .docs95 .docs-doc-item {
+    min-width: 0;
+  }
+
+  .docs95 .docs-meta-row,
+  .docs95 .docs-home-recent-head,
+  .docs95 .docs-statusbar {
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .docs95 .docs-title-input,
+  .docs95 .docs-folder-field,
+  .docs95 .docs-home-search {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    min-height: 44px;
+    margin-left: 0;
+  }
+
+  .docs95 .docs-home-search input {
+    padding-right: 48px;
+  }
+
+  .docs95 .docs-home-search-clear {
+    right: 0;
+    width: 44px;
+    height: 44px;
+  }
+
+  .docs95 .docs-status-field,
+  .docs95 .docs-status-hint {
+    white-space: normal;
+    min-width: 0;
+    height: auto;
+  }
+
+  body.win95-app .docs95 :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px;
+    min-height: 44px;
+    height: auto;
+    max-width: 100%;
   }
 }

@@ -21,6 +21,10 @@ import {
   trackedDates,
   untrackedRanges,
   wrappingSlices,
+  applySpanEdit,
+  calendarDaysBetween,
+  readSpanClock,
+  writeSpanClock,
   assignedPenIds,
   entryDisplayName,
   normalizeSecondaryPenIds,
@@ -520,6 +524,56 @@ describe("event kind and clock certainty", () => {
     let result = paint([], { startMin: 540, endMin: 600, eventKind: "left room" })
     result = paint(result, { startMin: 600, endMin: 660, eventKind: "coffee" })
     expect(result).toHaveLength(2)
+  })
+
+  it("holds the locked end of a span and follows with the free one", () => {
+    expect(applySpanEdit({ lock: "end", start: 9 * 60, end: 11 * 60, edit: "duration", value: 60 })).toEqual({
+      start: 10 * 60,
+      end: 11 * 60,
+    })
+    expect(applySpanEdit({ lock: "start", start: 9 * 60, end: 10 * 60, edit: "end", value: 12 * 60 })).toEqual({
+      start: 9 * 60,
+      end: 12 * 60,
+    })
+    expect(applySpanEdit({ lock: "duration", start: 9 * 60, end: 10 * 60, edit: "end", value: 12 * 60 })).toEqual({
+      start: 11 * 60,
+      end: 12 * 60,
+    })
+    expect(applySpanEdit({ lock: "duration", start: 9 * 60, end: 10 * 60, edit: "duration", value: 30 })).toEqual({
+      start: 9 * 60,
+      end: 9 * 60 + 30,
+    })
+  })
+
+  it("writes a midnight end as 00:00 on the same day and a wrap onto the next", () => {
+    expect(readSpanClock(DATE, 23 * 60, DATE, 0)).toEqual({ start: 23 * 60, end: 24 * 60 })
+    expect(writeSpanClock(DATE, 9 * 60, 24 * 60)).toEqual({
+      from: "09:00",
+      fromDate: DATE,
+      to: "00:00",
+      toDate: DATE,
+    })
+    expect(writeSpanClock(DATE, 23 * 60, 25 * 60)).toEqual({
+      from: "23:00",
+      fromDate: DATE,
+      to: "01:00",
+      toDate: "2026-09-18",
+    })
+    expect(calendarDaysBetween(DATE, "2026-09-18")).toBe(1)
+  })
+
+  it("does not merge adjacent blocks that disagree on the span lock or an estimated length", () => {
+    const day = DATE
+    const scopeId = "activity"
+    const a = entry({ startMin: 540, endMin: 600, spanLock: "duration" })
+    const b = entry({ startMin: 600, endMin: 660 })
+    expect(mergeAdjacent([a, b], day, scopeId)).toHaveLength(2)
+    const guessed = entry({ id: "g", startMin: 540, endMin: 600, durationEstimated: true })
+    const plain = entry({ id: "p", startMin: 600, endMin: 660 })
+    expect(mergeAdjacent([guessed, plain], day, scopeId)).toHaveLength(2)
+    const held = entry({ id: "h1", startMin: 540, endMin: 600, spanLock: "start" })
+    const omitted = entry({ id: "h2", startMin: 600, endMin: 660 })
+    expect(mergeAdjacent([held, omitted], day, scopeId)).toHaveLength(1)
   })
 
   it("still merges identical blocks that omit the new fields", () => {

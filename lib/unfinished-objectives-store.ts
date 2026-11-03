@@ -15,6 +15,7 @@ import {
   type ParkedObjective,
   type UnfinishedHome,
 } from "@/lib/unfinished-objectives"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 interface UnfinishedObjectivesState {
   rows: ParkedObjective[]
@@ -49,3 +50,5 @@ export const useUnfinishedObjectivesStore = create<UnfinishedObjectivesState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useUnfinishedObjectivesStore)

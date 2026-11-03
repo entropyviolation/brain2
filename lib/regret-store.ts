@@ -27,6 +27,7 @@ import { priorityDateOf } from "@/lib/scheduling"
 import { pointsRuleValue } from "@/lib/points-rules-live"
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
 import type { Task, BlockedReason } from "@/lib/types"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface RegretEntry {
   date: string // YYYY-MM-DD
@@ -247,3 +248,5 @@ export const useRegretStore = create<RegretStore>()(
     { name: "regret-store", storage: createCogsJSONStorage() },
   ),
 )
+
+registerPhoneWindowStore(useRegretStore)

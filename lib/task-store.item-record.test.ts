@@ -35,7 +35,12 @@ describe("ItemRecord aliases (slice 1)", () => {
     useTaskStore.getState().addItem(row({ id: "u", description: "old" }))
     const created = useTaskStore.getState().tasks.find((t) => t.id === "u")!
     useTaskStore.getState().updateItem({ ...created, description: "new" })
-    expect(useTaskStore.getState().tasks.find((t) => t.id === "u")?.description).toBe("new")
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "u")
+    expect(saved?.description).toBe("new")
+    expect(saved?.modifiedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    const stamped = saved!.modifiedAt
+    useTaskStore.getState().updateItem({ ...saved! })
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "u")?.modifiedAt).toBe(stamped)
   })
 
   it("deleteItem removes from tasks", () => {

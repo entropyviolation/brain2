@@ -5,6 +5,8 @@
  * search (Open-Meteo geocoding), NOAA beach picker, human forecast, rain
  * plate, week strip — phosphor / metal / Win95 navy, never orange. Last pin
  * lives in `cogs-home-weather`; Settings home city is fallback only.
+ * Find-in-page matches use a raw style tag (`::highlight`); Lightning CSS
+ * rejects that pseudo-element, so it cannot live in `home-chrome.css`.
  */
 "use client"
 
@@ -43,6 +45,15 @@ import {
   type HomeWeekDay,
 } from "@/lib/weather-client"
 import { cn } from "@/lib/utils"
+
+/** Chromium find-in-page names. Kept out of home-chrome.css: Lightning CSS rejects ::highlight(). */
+const WEATHER_FIND_HIGHLIGHT = `
+.home95.home-weather-dialog ::highlight(search-text),
+.home95.home-weather-dialog ::highlight(target-text) {
+  background-color: color-mix(in srgb, var(--hab-crt-green, #7dffc4) 50%, #040a08);
+  color: #fff;
+}
+`
 
 export function WeatherTile({
   currentDate,
@@ -495,6 +506,7 @@ function WeatherDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="home95 home-weather-dialog home-widget-dialog home-widget-instrument" aria-describedby={undefined} hideClose>
+        <style>{WEATHER_FIND_HIGHLIGHT}</style>
         <KeycapClose className="home-widget-dismiss" label="Close" onClick={() => onOpenChange(false)} />
         <DialogHeader className="home-weather-dialog-title home-widget-caption">
           <span className="home-widget-power" aria-hidden="true" />

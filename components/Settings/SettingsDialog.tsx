@@ -47,61 +47,64 @@ function groupById(id: (typeof SETTINGS_GROUPS)[number]["id"]) {
 }
 
 const BabyAnimalFriendField = lazy(() =>
-  import("@/components/Settings/BabyAnimalFriendField").then((m) => ({ default: m.BabyAnimalFriendField })),
+  import("@/components/Settings/you/BabyAnimalFriendField").then((m) => ({ default: m.BabyAnimalFriendField })),
 )
 const KeyboardShortcutsPanel = lazy(() =>
   import("@/components/Settings/KeyboardShortcutsPanel").then((m) => ({ default: m.KeyboardShortcutsPanel })),
 )
 const HomeLocationField = lazy(() =>
-  import("@/components/Settings/HomeLocationField").then((m) => ({ default: m.HomeLocationField })),
+  import("@/components/Settings/you/HomeLocationField").then((m) => ({ default: m.HomeLocationField })),
 )
 const BirthdayField = lazy(() =>
-  import("@/components/Settings/BirthdayField").then((m) => ({ default: m.BirthdayField })),
+  import("@/components/Settings/you/BirthdayField").then((m) => ({ default: m.BirthdayField })),
 )
 const DayAnchorField = lazy(() =>
-  import("@/components/Settings/DayAnchorField").then((m) => ({ default: m.DayAnchorField })),
+  import("@/components/Settings/you/DayAnchorField").then((m) => ({ default: m.DayAnchorField })),
 )
 const ChromeFaceField = lazy(() =>
-  import("@/components/Settings/ChromeFaceField").then((m) => ({ default: m.ChromeFaceField })),
+  import("@/components/Settings/appearance/ChromeFaceField").then((m) => ({ default: m.ChromeFaceField })),
 )
 const PcbBackdropField = lazy(() =>
-  import("@/components/Settings/PcbBackdropField").then((m) => ({ default: m.PcbBackdropField })),
+  import("@/components/Settings/appearance/PcbBackdropField").then((m) => ({ default: m.PcbBackdropField })),
 )
 const BoubaKikiField = lazy(() =>
-  import("@/components/Settings/BoubaKikiField").then((m) => ({ default: m.BoubaKikiField })),
+  import("@/components/Settings/appearance/BoubaKikiField").then((m) => ({ default: m.BoubaKikiField })),
 )
 const PointAllocationField = lazy(() =>
-  import("@/components/Settings/PointAllocationField").then((m) => ({ default: m.PointAllocationField })),
+  import("@/components/Settings/points/PointAllocationField").then((m) => ({ default: m.PointAllocationField })),
 )
 const DataProfileField = lazy(() =>
-  import("@/components/Settings/DataProfileField").then((m) => ({ default: m.DataProfileField })),
+  import("@/components/Settings/data/DataProfileField").then((m) => ({ default: m.DataProfileField })),
 )
 const BackupRestore = lazy(() =>
   import("@/components/Settings/BackupRestore").then((m) => ({ default: m.BackupRestore })),
 )
 const MobileSyncPanel = lazy(() =>
-  import("@/components/Settings/MobileSyncPanel").then((m) => ({ default: m.MobileSyncPanel })),
+  import("@/components/Settings/data/MobileSyncPanel").then((m) => ({ default: m.MobileSyncPanel })),
 )
 const CaptureDoorButtons = lazy(() =>
   import("@/components/capture-doors").then((m) => ({ default: m.CaptureDoorButtons })),
 )
 const MessageIngestPanel = lazy(() =>
-  import("@/components/Settings/MessageIngestPanel").then((m) => ({ default: m.MessageIngestPanel })),
+  import("@/components/Settings/imports/MessageIngestPanel").then((m) => ({ default: m.MessageIngestPanel })),
+)
+const NfcTagsPanel = lazy(() =>
+  import("@/components/Settings/imports/NfcTagsPanel").then((m) => ({ default: m.NfcTagsPanel })),
 )
 const PhoneSyncPanel = lazy(() =>
-  import("@/components/Settings/PhoneSyncPanel").then((m) => ({ default: m.PhoneSyncPanel })),
+  import("@/components/Settings/imports/PhoneSyncPanel").then((m) => ({ default: m.PhoneSyncPanel })),
 )
 const ScreenTimePanel = lazy(() =>
-  import("@/components/Settings/ScreenTimePanel").then((m) => ({ default: m.ScreenTimePanel })),
+  import("@/components/Settings/imports/ScreenTimePanel").then((m) => ({ default: m.ScreenTimePanel })),
 )
 const InstagramImportPanel = lazy(() =>
-  import("@/components/Settings/InstagramImportPanel").then((m) => ({ default: m.InstagramImportPanel })),
+  import("@/components/Settings/imports/InstagramImportPanel").then((m) => ({ default: m.InstagramImportPanel })),
 )
 const InstagramAccountsPanel = lazy(() =>
-  import("@/components/Settings/InstagramAccountsPanel").then((m) => ({ default: m.InstagramAccountsPanel })),
+  import("@/components/Settings/imports/InstagramAccountsPanel").then((m) => ({ default: m.InstagramAccountsPanel })),
 )
 const SpotifyAccountsPanel = lazy(() =>
-  import("@/components/Settings/SpotifyAccountsPanel").then((m) => ({ default: m.SpotifyAccountsPanel })),
+  import("@/components/Settings/imports/SpotifyAccountsPanel").then((m) => ({ default: m.SpotifyAccountsPanel })),
 )
 const ItemTypeList = lazy(() =>
   import("@/components/ItemTypes/ItemTypeList").then((m) => ({ default: m.ItemTypeList })),
@@ -264,6 +267,7 @@ export function SettingsDialog({
                     </div>
                   ) : null}
                   {selected.id === "settings-messages" ? <MessageIngestPanel /> : null}
+                  {selected.id === "settings-nfc" ? <NfcTagsPanel /> : null}
                   {selected.id === "settings-phone-sync" ? <PhoneSyncPanel /> : null}
                   {selected.id === "settings-screen" ? <ScreenTimePanel /> : null}
                   {selected.id === "settings-instagram" ? <InstagramImportPanel /> : null}

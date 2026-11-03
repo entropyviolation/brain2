@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { afterPersistHydrated } from "./use-persist-hydrated"
+import { afterPersistHydrated, persistHydratedSnapshot } from "./use-persist-hydrated"
 
 describe("afterPersistHydrated", () => {
   it("runs immediately when the store is already hydrated", () => {
@@ -31,5 +31,17 @@ describe("afterPersistHydrated", () => {
     listener?.()
     expect(fn).toHaveBeenCalledTimes(1)
     stop()
+  })
+})
+
+describe("persistHydratedSnapshot", () => {
+  it("stays true while a later rehydrate re-reads", () => {
+    let flag = false
+    const gate = { hasHydrated: () => flag, onFinishHydration: () => () => {} }
+    expect(persistHydratedSnapshot(gate)).toBe(false)
+    flag = true
+    expect(persistHydratedSnapshot(gate)).toBe(true)
+    flag = false
+    expect(persistHydratedSnapshot(gate)).toBe(true)
   })
 })

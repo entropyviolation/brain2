@@ -2,8 +2,8 @@
 /**
  * Optional always-on Telegram poller for Brain2 message ingest.
  *
- *   gitignored `.env.local` with COGS_TELEGRAM_BOT_TOKEN, or
- *   COGS_TELEGRAM_BOT_TOKEN=… npm run ingest
+ *   gitignored `.env.local` with BRAIN2_TELEGRAM_BOT_TOKEN, or
+ *   BRAIN2_TELEGRAM_BOT_TOKEN=… npm run ingest
  *
  * Writes pending messages to data/message-ingest.json. The renderer (with
  * `npm run dev`) drains /api/ingest/pending. Do not run this at the same time
@@ -16,6 +16,8 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { readIngestStore, writeIngestStore, ingestDataPath } from "./ingest-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
+import { chunkTelegramText } from "../electron/telegram-message.mjs"
+import { brain2Env, brain2EnvLine } from "../lib/brain2-env.mjs"
 import {
   allowedUpdatesParam,
   callbackQueryToIncoming,
@@ -23,17 +25,14 @@ import {
 } from "../lib/ingest/telegram-ui.mjs"
 
 function tokenFromEnvFiles() {
-  const fromEnv = String(process.env.COGS_TELEGRAM_BOT_TOKEN || "").trim()
+  const fromEnv = String(brain2Env("TELEGRAM_BOT_TOKEN") || "").trim()
   if (fromEnv) return fromEnv
   const root = join(dirname(fileURLToPath(import.meta.url)), "..")
   for (const name of [".env.local", ".env"]) {
     const file = join(root, name)
     if (!existsSync(file)) continue
     try {
-      const text = readFileSync(file, "utf8")
-      const line = text.split(/\r?\n/).find((row) => row.startsWith("COGS_TELEGRAM_BOT_TOKEN="))
-      if (!line) continue
-      const value = line.slice("COGS_TELEGRAM_BOT_TOKEN=".length).trim().replace(/^["']|["']$/g, "")
+      const value = brain2EnvLine(readFileSync(file, "utf8"), "TELEGRAM_BOT_TOKEN")
       if (value) return value
     } catch {
       /* ignore */
@@ -44,7 +43,7 @@ function tokenFromEnvFiles() {
 
 const TOKEN = tokenFromEnvFiles()
 if (!TOKEN) {
-  console.error("[cogs-ingest] Set COGS_TELEGRAM_BOT_TOKEN or gitignored .env.local")
+  console.error("[brain2-ingest] Set BRAIN2_TELEGRAM_BOT_TOKEN or gitignored .env.local")
   process.exit(1)
 }
 
@@ -69,23 +68,6 @@ async function api(method, params = {}) {
   return data.result
 }
 
-function chunkTelegramText(text, max = 3900) {
-  const source = String(text || "")
-  if (!source) return []
-  if (source.length <= max) return [source]
-  const chunks = []
-  let rest = source
-  while (rest.length > max) {
-    let cut = rest.lastIndexOf("\n", max)
-    if (cut < max * 0.45) cut = rest.lastIndexOf(" ", max)
-    if (cut < max * 0.45) cut = max
-    chunks.push(rest.slice(0, cut).replace(/[ \t]+$/g, ""))
-    rest = rest.slice(cut).replace(/^\n+/, "")
-  }
-  if (rest) chunks.push(rest)
-  return chunks.filter((part) => part.length > 0)
-}
-
 async function flushReplies() {
   const store = readIngestStore()
   if (!store.replies.length) return
@@ -102,7 +84,7 @@ async function flushReplies() {
         })
       }
     } catch (err) {
-      console.warn("[cogs-ingest] reply failed:", err.message)
+      console.warn("[brain2-ingest] reply failed:", err.message)
       leftover.push(reply)
     }
   }
@@ -112,10 +94,10 @@ async function flushReplies() {
 try {
   for (const call of commandMenuRegistration()) await api(call.method, call.params)
 } catch (err) {
-  console.warn("[cogs-ingest] commands", err.message)
+  console.warn("[brain2-ingest] commands", err.message)
 }
 
-console.log(`[cogs-ingest] polling Telegram → ${ingestDataPath()}`)
+console.log(`[brain2-ingest] polling Telegram → ${ingestDataPath()}`)
 writeIngestStore({ ...readIngestStore(), polling: true })
 
 process.on("SIGINT", () => {
@@ -160,7 +142,7 @@ while (true) {
     writeIngestStore({ ...store, pending, polling: true })
     await flushReplies()
   } catch (err) {
-    console.warn("[cogs-ingest]", err.message)
+    console.warn("[brain2-ingest]", err.message)
     await new Promise((r) => setTimeout(r, 1000))
   }
 }

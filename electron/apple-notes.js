@@ -44,9 +44,11 @@ function classifyError(err, stderr) {
       error: "Notes.app could not be opened. Install or open Notes, wait for iCloud to finish syncing, then retry.",
     }
   }
+  const raw = (stderr || (err && err.message) || "Failed to read Apple Notes.").trim()
+  const redacted = raw.replace(/\/Users\/[^\s:'"]+/g, "…").replace(/[A-Za-z]:\\[^\s:'"]+/g, "…")
   return {
     code: "osascript",
-    error: (stderr || (err && err.message) || "Failed to read Apple Notes.").trim().slice(0, 400),
+    error: redacted.slice(0, 240),
   }
 }
 

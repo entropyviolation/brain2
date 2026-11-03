@@ -7,6 +7,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { useReviewsStore } from "@/lib/reviews-store"
 import { useTaskStore } from "@/lib/task-store"
 import { getWeekString } from "@/lib/date-utils"
+import { MorningReviewDialog } from "./MorningReview"
 import { StartRitualDialog } from "./StartRitualDialog"
 
 describe("StartRitualDialog steps", () => {
@@ -59,5 +60,39 @@ describe("StartRitualDialog look ahead", () => {
     expect(useTaskStore.getState().tasks.find((t) => t.id === "m")?.scheduledWeek).toBe(week)
     fireEvent.click(screen.getByRole("button", { name: /^Go to Overdue/ }))
     expect(screen.getByText("Renew passport")).toBeInTheDocument()
+  })
+
+  it("lists a month task once when Do today moves it onto the day", () => {
+    const day = new Date(2026, 8, 17, 9, 0, 0)
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(day)
+    try {
+      useTaskStore.getState().addTask({
+        id: "taxes",
+        description: "File taxes",
+        stage: "scheduled",
+        createdAt: day,
+        completed: false,
+        lists: [],
+        scheduledMonth: "2026-09",
+        importance: 5,
+      } as never)
+      render(<MorningReviewDialog open onClose={() => {}} date={day} />)
+      fireEvent.click(screen.getByRole("button", { name: /^Go to Week and month/ }))
+      expect(screen.getAllByText("File taxes")).toHaveLength(1)
+      expect(screen.getByText("This week (1)")).toBeInTheDocument()
+      expect(screen.getByText("This month (0)")).toBeInTheDocument()
+      fireEvent.click(screen.getByRole("button", { name: "Do today" }))
+      expect(screen.getAllByText("File taxes")).toHaveLength(1)
+      expect(screen.getByText("On today")).toBeInTheDocument()
+      expect(useTaskStore.getState().tasks.filter((task) => task.id === "taxes")).toHaveLength(1)
+      fireEvent.click(screen.getByRole("button", { name: /^Go to Due within a week/ }))
+      expect(screen.queryByText("File taxes")).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole("button", { name: /^Go to Week and month/ }))
+      expect(screen.queryByText("File taxes")).not.toBeInTheDocument()
+      expect(useTaskStore.getState().tasks.filter((task) => task.id === "taxes")).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

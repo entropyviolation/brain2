@@ -1,8 +1,8 @@
 # Habits analytics — what the tab should be
 
-This is a product vision for an Analytics surface that reads **Habits only**. It is grounded in the live data model (`WeeklyTask`, `TaskCompletion`, the four completion maps, and the grade functions in `lib/calculations.ts`). It describes what the tab should compute and show. It does not describe any Analytics screen that already exists.
+This is a product vision for an Data surface that reads **Habits only**. It is grounded in the live data model (`WeeklyTask`, `TaskCompletion`, the four completion maps, and the grade functions in `lib/calculations.ts`). It describes what the tab should compute and show. It does not describe any Data screen that already exists.
 
-Habits already score themselves. Analytics should not invent a second grade. It should keep the app’s percents, curves, floors, and point rules, then ask the questions those numbers were never given room to answer: which habits carry the week, where a miss actually breaks a streak, whether a bad week was visible on Tuesday, and whether “doing the hard thing” is the same as “filling the cell.”
+Habits already score themselves. Data should not invent a second grade. It should keep the app’s percents, curves, floors, and point rules, then ask the questions those numbers were never given room to answer: which habits carry the week, where a miss actually breaks a streak, whether a bad week was visible on Tuesday, and whether “doing the hard thing” is the same as “filling the cell.”
 
 The store is `brain2-habits-store` (`useHabitsStore`, persist version 26). Completions are not rows in the task database. A habit is a `WeeklyTask`. A day, week, month, or season is one `TaskCompletion` inside a date-keyed map.
 
@@ -131,7 +131,7 @@ Week percent for a daily-cadence climb is **not** the mean of the seven capped d
 
 ### 1.5 Two readers, and they disagree on purpose
 
-Analytics must label which reader it used.
+Data must label which reader it used.
 
 **Reader A — the grade.** `calculateDayPercentageAV`, `calculateTaskPercentage`, `calculateWeekToDateGrade`, `calculateWeekToDateOutputGrade`, and the period analogs. They read `completed`, `value`, `text`, and the climb log. They do not read `missedOpportunity`, `handCompleted`, or the trust list.
 
@@ -245,7 +245,7 @@ Any progress (ratio > 0, not merely “met”) breaks the run. The star is a dif
 
 **Good day.** Raw day percent (or the blended day score, if `goodDaysUsePriority`) is ≥ the threshold **and** > 0. Default 80. The curve is not consulted. A good week, month, or season is the mean of raw day percents across that span — elapsed days while the period is open, all days once it is finished, empty days as 0 — at or above the same line.
 
-**Points written into the points ledger** (ids are stable, so Analytics can join them without re-deriving, but re-deriving is the check):
+**Points written into the points ledger** (ids are stable, so Data can join them without re-deriving, but re-deriving is the check):
 
 | Ledger id | Amount | When |
 |---|---|---|
@@ -426,7 +426,7 @@ In this app a **habit** is a `WeeklyTask`. A **task** is a `Task` in the task st
 | `listLink` | N next actions completed that day | The habit is a quota on a list, not a behavior of its own. |
 | `rewardValue` | one shot on the met edge | Separate from the 50 × ratio, which pays partial credit every day even when the goal is not met. |
 
-**Partial-credit points** = 50 × cell ratio, including a 40% day. **Met bonus** = `rewardValue` only on the crossing. A goal habit can earn 20 points on a half day and then 50 + `rewardValue` on the day it clears. Analytics should stack those ledgers instead of calling either one “the habit score.”
+**Partial-credit points** = 50 × cell ratio, including a 40% day. **Met bonus** = `rewardValue` only on the crossing. A goal habit can earn 20 points on a half day and then 50 + `rewardValue` on the day it clears. Data should stack those ledgers instead of calling either one “the habit score.”
 
 Text habits have no partial points: empty is 0, any text is 50. Climb daily can earn a fraction of 50 on a small gain and 0 on a flat or falling log, even though the log still moves tomorrow’s target.
 
@@ -578,7 +578,7 @@ Define a **bad week** in the app’s own threshold: Sunday raw week mean &lt; `a
 - Share of Monday–Tuesday cells whose trust winner was `manual` (engagement) versus empty
 - For climb: count of weekly-cadence habits already unable to reach 4 hits (too many misses already banked)
 
-The prior-7 and prior-30 means are **already** the app’s leading context: the bonuses pay when today beats them. Analytics should show the gap in percentage points, the same gap the good-day sheet shows, for every past day — not only today. Then “a bad week was visible on Tuesday” is a measured hit rate, not a story.
+The prior-7 and prior-30 means are **already** the app’s leading context: the bonuses pay when today beats them. Data should show the gap in percentage points, the same gap the good-day sheet shows, for every past day — not only today. Then “a bad week was visible on Tuesday” is a measured hit rate, not a story.
 
 Do not use Thursday’s data to “predict” a week that ended Sunday if the claim is about an early warning.
 
@@ -594,7 +594,7 @@ The store’s real events:
 | Window change | `habitWeekWindow`, `habitMonthWindow`, birthday | These change span grade without any cell changing. A chart of “span grade over time” must freeze the window or it will jump when the person picks “4 weeks.” |
 | Tolerance change | `gradeTolerance`, `outputGradeTolerance` | Same warning. Plot raw underneath, always. |
 
-**Not in the store, and this is the hard gap:** edits to `goal`, `increment`, `startValue`, `threshold`, `grace`, `floorPercent`, `trackingLink.mode`, and `completionSources` overwrite the habit. Historical percents recompute under the new line. A retarget from 10 pages to 5 pages rewrites every past day from 50% to 100% if the value was 5. Analytics cannot see the old goal.
+**Not in the store, and this is the hard gap:** edits to `goal`, `increment`, `startValue`, `threshold`, `grace`, `floorPercent`, `trackingLink.mode`, and `completionSources` overwrite the habit. Historical percents recompute under the new line. A retarget from 10 pages to 5 pages rewrites every past day from 50% to 100% if the value was 5. Data cannot see the old goal.
 
 Until a snapshot exists, the honest changepoint for a retarget is: **you cannot date it.** What you can do:
 
@@ -757,17 +757,17 @@ Do not put physics controls in this area.
 
 ## 7. Edge cases
 
-**Skipped versus failed.** The grade cannot tell them apart. A missing cell and an explicit unmet Yes/No both contribute 0 once any habit has data. `missedOpportunity` is the only “this was a failure I name” bit, and scorers ignore it. Analytics should show three counts: blank, named miss, met. Never relabel a blank as failed.
+**Skipped versus failed.** The grade cannot tell them apart. A missing cell and an explicit unmet Yes/No both contribute 0 once any habit has data. `missedOpportunity` is the only “this was a failure I name” bit, and scorers ignore it. Data should show three counts: blank, named miss, met. Never relabel a blank as failed.
 
 **Partial credit.** Goal and climb cell percents and the 50-point ratio use it, capped at 100% / 50 points. Yes/No and text do not. Overshoot survives in `value`. The day average and the week grade throw it away. The far-right span keeps it until the span reaches 100%. Week grade’s AV mean gives a 50% day half a vote, not a miss and not a hit. Good day uses the day mean against a threshold, so a day of partials can be “good” without any single habit being met, and a day of a few perfect habits can fail the threshold because empty siblings sit in the denominator.
 
 **Zero stays zero.** No tolerance, blend, or bonus curve lifts a 0. A vacant (all-exempt) day is omitted, which is kinder than a zero. Do not draw those the same.
 
-**Archived habits.** There is no archive. Delete strips cells and exemptions. Historical grades that included the habit cannot be reconstructed after delete. If Analytics caches a grade, it must recompute from the live store or it will disagree with the tubes. Orphan cells should not exist after `deleteTask`; if a backup still has cells whose id is gone from `tasks`, ignore them.
+**Archived habits.** There is no archive. Delete strips cells and exemptions. Historical grades that included the habit cannot be reconstructed after delete. If Data caches a grade, it must recompute from the live store or it will disagree with the tubes. Orphan cells should not exist after `deleteTask`; if a backup still has cells whose id is gone from `tasks`, ignore them.
 
 **Retroactive edits.** `updatedAt` is the last write. The previous `value` is gone. Undo may exist in the session (`rememberWorld` on habit writes) but it is not a queryable history. A cell edited on Friday for Monday counts fully in Monday’s grade. The measurement audit should list late `updatedAt`s. Text edits can be “quiet” and skip undo; they still change a text habit’s 0/1.
 
-**No history yet.** No cells, or only auto-exempt periods: week grade has no open days or every day is vacant → grade 0 with `daysIncluded` 0. `averageWeekGradeAcrossWeeksWithData` returns null, not 0. Streaks are 0. Prior-7 mean of a brand-new store is 0 because empty days count as 0 — which will make the first real day “beat” the average and pay `weeklyAverageBeatBonus` if that day rounds above 0. Call that out; it is the formula, not a triumph. Auto priority does not accumulate for periods before the habit existed if those periods are exempt and therefore not “empty progress” in the same way — check ratio, which is 0 on an exempt day only if the scorer still reads the cell. Exemption removes the day from **grade** denominators. `autoPriorityWeight` uses `habitCellRatio` and does **not** skip exempt days. A waived day with no progress still looks empty to neglect. Analytics should compute neglect both ways and default to “required days only” when explaining a red wash, while noting the live wash counts empty exempt weeks too.
+**No history yet.** No cells, or only auto-exempt periods: week grade has no open days or every day is vacant → grade 0 with `daysIncluded` 0. `averageWeekGradeAcrossWeeksWithData` returns null, not 0. Streaks are 0. Prior-7 mean of a brand-new store is 0 because empty days count as 0 — which will make the first real day “beat” the average and pay `weeklyAverageBeatBonus` if that day rounds above 0. Call that out; it is the formula, not a triumph. Auto priority does not accumulate for periods before the habit existed if those periods are exempt and therefore not “empty progress” in the same way — check ratio, which is 0 on an exempt day only if the scorer still reads the cell. Exemption removes the day from **grade** denominators. `autoPriorityWeight` uses `habitCellRatio` and does **not** skip exempt days. A waived day with no progress still looks empty to neglect. Data should compute neglect both ways and default to “required days only” when explaining a red wash, while noting the live wash counts empty exempt weeks too.
 
 **Seed habits.** Ids `task-1` and friends have no `createdAt` parseable as a birthday from the id. They are never auto-exempt. Their history starts at the first cell, and the days before that are ordinary zeros if you average a calendar that predates the first log. Prefer “since first cell” as the default start for a habit that has no creation key.
 

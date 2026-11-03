@@ -115,7 +115,7 @@ Limits, stated plainly:
 - iOS will pause it if Telegram is not allowed to use location in the
   background, or if Low Power Mode is aggressive.
 - The pin is coordinates. Without a venue name the pen is labeled from the
-  rounded lat,lon until you name that repeated place on Analytics → Places
+  rounded lat,lon until you name that repeated place on Data → Places
   (a second visit, within 80 meters). The Shortcut above can still attach
   the name “Home” on the message itself.
 

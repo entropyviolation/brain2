@@ -752,7 +752,7 @@ function BudgetFace(props: DashFaceProps) {
       ? `${budgetShort(face.aheadAll)} with maybes`
       : `earned ${formatSpendAmount(face.earned)} · spent ${formatSpendAmount(face.spent)}`
   return (
-    <DashFace props={props} legend="Budget" picto="budget" lit={face.net !== 0} foot={foot}>
+    <DashFace props={props} legend="Money" picto="budget" lit={face.net !== 0} foot={foot}>
       <DashReading text={budgetShort(face.net)} />
     </DashFace>
   )

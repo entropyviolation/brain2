@@ -1,0 +1,9 @@
+---
+globs: components/Modules/**
+alwaysApply: false
+---
+# Modules files stay long
+
+_Last mapped: 2026-10-27._
+
+Files under `components/Modules` are allowed to be long: they are ported workspace apps (Tidy, itinerary, grad search, and the other module bodies), length there is expected, and they should not be split for line count alone. Why: `components/Modules/README.md`.

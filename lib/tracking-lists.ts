@@ -5,12 +5,19 @@
  * already named Thought Process or Log is adopted the first time, so the
  * Quick Add list that colon-capture used to open is the same list.
  *
- * Each Tracking log row of those two kinds is also one item here. The item
- * id is `tracking-entry-` plus the time-entry id. A delete stays deleted
- * (`removedTaskIds`). Intake, notes, switches, and spends are not copied.
+ * A log row the classifier accepts is also one pointer. Thought process and
+ * log events sit on those two lists. Food, drink, drug, intake, notes,
+ * switches, and spends use the subtype as `type` and `lists: []`. The item
+ * id is `tracking-entry-` plus the time-entry id. One count is
+ * `count-item-` plus the count id (`trackingEntryId` holds that id). A
+ * delete stays deleted (`removedTaskIds`). A removed Shower is not recreated.
+ * Painted intervals are not items. The time-grid row stays the source.
  */
 import { createListItem } from "@/lib/item-utils"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
+import { SHOWER_COUNT_ID, useCountStatusesStore } from "@/lib/count-statuses"
+import { LOG_COUNT_TYPE_ID } from "@/lib/log-item-types"
+import { countItemId, logItemTypeIdForEntry, type LogItemTypeId } from "@/lib/log-item-role"
 import { entryClockCertainty, minutesToLabel, type TimeEntry } from "@/lib/time-entries"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -253,6 +260,91 @@ function itemFromEntry(entry: TimeEntry, role: "thought-process" | "log", listId
   }
 }
 
+function pointerAttributes(entry: TimeEntry, entryId: string): NonNullable<Task["attributes"]> {
+  return {
+    [TRACKING_ITEM_ATTR.when]: whenLabel(entry),
+    [TRACKING_ITEM_ATTR.clock]: entryClockCertainty(entry),
+    [TRACKING_ITEM_ATTR.eventKind]: entry.eventKind ?? "",
+    [TRACKING_ITEM_ATTR.entryId]: entryId,
+  }
+}
+
+/** Subtype pointer. Not placed on the Log or Thought Process list. */
+function itemFromSubtype(entry: TimeEntry, typeId: LogItemTypeId): Task {
+  const title = (entry.title ?? "").trim() || "Untitled"
+  const base = createListItem(title, [])
+  const [year, month, day] = entry.date.split("-").map(Number)
+  const createdAt =
+    year && month && day
+      ? new Date(year, month - 1, day, Math.floor(entry.startMin / 60), entry.startMin % 60, 0, 0)
+      : new Date()
+  const note = userNote(entry.notes)
+  return {
+    ...base,
+    id: trackingItemId(entry.id),
+    type: typeId,
+    title,
+    description: title,
+    createdAt,
+    rewardValue: 0,
+    lists: [],
+    ...(note ? { notes: note } : {}),
+    attributes: pointerAttributes(entry, entry.id),
+  }
+}
+
+/** One count. Ticks stay in the count store. */
+function itemFromCount(count: { id: string; name: string }): Task {
+  const title = count.name.trim()
+  const base = createListItem(title, [])
+  return {
+    ...base,
+    id: countItemId(count.id),
+    type: LOG_COUNT_TYPE_ID,
+    title,
+    description: title,
+    rewardValue: 0,
+    lists: [],
+    attributes: {
+      [TRACKING_ITEM_ATTR.entryId]: count.id,
+    },
+  }
+}
+
+function entryPointerWanted(entry: TimeEntry): LogItemTypeId | null {
+  if (entry.kind !== "instant") return null
+  if (!(entry.title ?? "").trim()) return null
+  return logItemTypeIdForEntry(entry, penName(entry))
+}
+
+/** A new grid row this sync would file. An interval or a non-log instant is false. */
+export function newEntriesNeedPointers(prev: readonly TimeEntry[], next: readonly TimeEntry[]): boolean {
+  if (prev === next) return false
+  const seen = new Set(prev.map((entry) => entry.id))
+  for (const entry of next) {
+    if (seen.has(entry.id)) continue
+    if (entryPointerWanted(entry)) return true
+  }
+  return false
+}
+
+/** A new count this sync would file. A tick on an existing count is false. */
+export function newCountsNeedPointers(
+  prev: readonly { id: string; name: string }[],
+  next: readonly { id: string; name: string }[],
+  showerRemoved: boolean,
+): boolean {
+  if (prev === next) return false
+  const seen = new Set(prev.map((count) => count.id))
+  for (const count of next) {
+    if (seen.has(count.id)) continue
+    if (!count.name.trim()) continue
+    if (showerRemoved && count.id === SHOWER_COUNT_ID) continue
+    return true
+  }
+  return false
+}
+
 /** File one new tracking row onto Thought Process or Log. A deleted copy stays gone. */
 export function mirrorTrackingEntry(entryId: string, role: "thought-process" | "log"): void {
   const entry = useTimeTrackingStore.getState().entries.find((row) => row.id === entryId)
@@ -274,8 +366,8 @@ export function dropMirroredTrackingEntry(entryId: string): void {
 }
 
 /**
- * Add list items for thought-process and log rows that are not on the lists
- * yet. Does not rewrite an item that is already there.
+ * Add pointers for log rows and counts that are not items yet. An existing
+ * item keeps its type and lists. A painted interval is not an item.
  */
 export function syncTrackingLists(): number {
   const { thoughtListId, logListId } = ensureTrackingLists()
@@ -284,11 +376,25 @@ export function syncTrackingLists(): number {
   const have = new Set(state.tasks.map((task) => task.id))
   const add: Task[] = []
   for (const entry of useTimeTrackingStore.getState().entries) {
-    const role = trackingListRole(entry)
-    if (!role || !(entry.title ?? "").trim()) continue
+    const typeId = entryPointerWanted(entry)
+    if (!typeId) continue
     const id = trackingItemId(entry.id)
     if (have.has(id) || removed.has(id)) continue
-    add.push(itemFromEntry(entry, role, role === "thought-process" ? thoughtListId : logListId))
+    if (typeId === THOUGHT_PROCESS_TYPE_ID || typeId === LOG_TYPE_ID) {
+      const role = typeId === THOUGHT_PROCESS_TYPE_ID ? "thought-process" : "log"
+      add.push(itemFromEntry(entry, role, role === "thought-process" ? thoughtListId : logListId))
+    } else {
+      add.push(itemFromSubtype(entry, typeId))
+    }
+    have.add(id)
+  }
+  const showerRemoved = useCountStatusesStore.getState().builtins.shower === "removed"
+  for (const count of useCountStatusesStore.getState().counts) {
+    if (!count.name.trim()) continue
+    if (showerRemoved && count.id === SHOWER_COUNT_ID) continue
+    const id = countItemId(count.id)
+    if (have.has(id) || removed.has(id)) continue
+    add.push(itemFromCount(count))
     have.add(id)
   }
   if (add.length > 0) useTaskStore.getState().setTasks([...useTaskStore.getState().tasks, ...add])
