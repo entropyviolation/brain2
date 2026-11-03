@@ -1,6 +1,6 @@
 # Accuracy → Plan vs Reality
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/accuracy/PlanVsReality.tsx`. Math: `lib/plan-vs-reality.ts` (`computePlanVsReality`). New plates: `accuracy/accuracy-views.css`, `quantile` from `accuracy-stats.ts`.
 
@@ -15,7 +15,7 @@ File: `components/Analytics/accuracy/PlanVsReality.tsx`. Math: `lib/plan-vs-real
 - Planned vs actual bars. **Fixed:** actual used to cover the plan bar when it ran over. Actual is now a thin bar inside the wide plan bar. Legend swatches now match the real fills.
 - **New, ribbon order:** By date or Best aligned first, plus median alignment, best and worst period, and the longest run at ≥ 70%. Shown when 2+ periods have a plan.
 - **New, mirror split** (IIB *Left vs Right*): plan grows left, reality right, one row per measure, with the attainment math written out.
-- **New, truth barcode** (IIB *Based on a True True Story*): one cell per planned item. Done, pushed at least once and still open, or open. Click a cell to open it.
+- **New, truth barcode** (IIB *Based on a True True Story*): one cell per planned item. Done, pushed at least once and still open, or open. Click a cell to jump to its first list in Lists (All Items when it has none). Lists does not select the item yet.
 
 ## Research notes
 - Planning fallacy: people plan for the best case and ignore past runs (Kahneman & Tversky 1979; Buehler, Griffin & Ross 1994). The ribbon and truth barcode put past periods in view.

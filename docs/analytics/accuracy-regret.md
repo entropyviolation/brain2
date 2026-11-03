@@ -1,6 +1,6 @@
 # Accuracy → Regret
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/accuracy/RegretView.tsx`. Math: `lib/regret-store.ts` (`regretCost`, `daysOverdue`, `dailyRegretIncrement`, ledger by local `YYYY-MM-DD`). New plates use `squareSide` from `accuracy-stats.ts`.
 
@@ -10,7 +10,7 @@ File: `components/Analytics/accuracy/RegretView.tsx`. Math: `lib/regret-store.ts
 
 ## Plates
 - Daily accrual bars (**fixed:** every other tick crowded long windows; ticks now thin out), heaviest regrets, by reason.
-- **New, regret clock** (IIB *Senseless*, rate clock): regret accruing per day and per waking hour (÷ 16), and a look-ahead slider (1–60 days) for "if nothing moves".
+- **New, regret clock** (IIB *Senseless*, rate clock): regret accruing per day and per waking hour (÷ 16), and a look-ahead slider (1–60 days) for "if nothing moves". The look-ahead uses `projectedRegret` at the horizon, so items that fall due inside it count too.
 - **New, outstanding regret by list** (IIB *Billion Dollar-o-Gram*): square area ∝ cost, with an outlined anchor of one day of the heaviest item.
 - **New, every overdue item:** search, sort by days late / per day / cost, folds above 12 rows.
 - The three new plates show whenever something is overdue, even when the ledger window is too thin for a finding.

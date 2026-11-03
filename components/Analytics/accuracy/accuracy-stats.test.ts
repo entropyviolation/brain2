@@ -95,4 +95,25 @@ describe("accuracy-stats", () => {
     expect(yearly.elapsed).toBeCloseTo(0.5, 1)
     expect(yearly.daysLeft).toBe(183)
   })
+
+  it.each([
+    ["day", new Date(2026, 2, 4, 12), 1],
+    ["week", new Date(2026, 2, 4, 12), 5],
+    ["month", new Date(2026, 2, 4, 12), 28],
+    ["quarter", new Date(2026, 2, 4, 12), 28],
+  ] as const)("paces a date-free %s goal by its period", (periodKind, now, daysLeft) => {
+    const pace = goalPace({ target: 4, current: 1, createdAt: new Date(2020, 0, 1), periodKind }, now)
+    expect(pace.elapsed).toBeGreaterThan(0)
+    expect(pace.elapsed).toBeLessThan(1)
+    expect(pace.daysLeft).toBe(daysLeft)
+  })
+
+  it("keeps one day left in the final hour of a day goal", () => {
+    const pace = goalPace(
+      { target: 3, current: 1, createdAt: new Date(2026, 2, 4), periodKind: "day" },
+      new Date(2026, 2, 4, 23, 30),
+    )
+    expect(pace.daysLeft).toBe(1)
+    expect(pace.neededPerDay).toBe(2)
+  })
 })

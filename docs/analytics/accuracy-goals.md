@@ -1,6 +1,6 @@
 # Accuracy → Goals
 
-_Last mapped: 2026-10-25_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/accuracy/GoalsAnalytics.tsx`, plus `GoalTexturePlate` from `CompletionReviewPlates.tsx` (shared with Reflection, not changed here). Math: `lib/objectives.ts` (`goalProgressPercent`, `goalsNeedingAttention`), `accuracy-stats.ts` (`goalPace`).
 
@@ -13,7 +13,7 @@ File: `components/Analytics/accuracy/GoalsAnalytics.tsx`, plus `GoalTexturePlate
 ## Plates
 - Readouts, progress bars (now titled), neglected list (now titled), Open in Lists, hard / joyful texture plate.
 - **New, on pace?** (IIB *When Sea Levels Attack*, step heights): per goal, progress bar with a tick where a straight line from start to deadline says you should be, gap in points, days left, needed per day. Filter by period, sort by most behind, most progress, or ending soonest.
-- **New, where the work went** (IIB *20th Century Death*, size by cause): one bubble per open goal, area ∝ contributing completions in the window. Grey or orange when nothing was linked (orange = also neglected).
+- **New, where the work went** (IIB *20th Century Death*, size by cause): one bubble per open goal, area ∝ completed items linked to the goal in the window (44 px floor so empty goals stay clickable). Grey or orange when nothing was linked (orange = also neglected).
 
 ## Math
 - Elapsed = (now − start) ÷ (end − start). Start = `startDate` or `createdAt`; end = `deadline` or `endDate`. With no end date, a day / week (Monday start) / month / season / year goal is paced across the current calendar period (`periodSpan`). Custom and aspirational goals without dates show —.

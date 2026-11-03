@@ -16,6 +16,7 @@ import { BeeswarmChart } from "../studio/studio-plots"
 import { openItemAges } from "../signal-stats"
 import { openItemsInLists } from "../studio/open-in-lists"
 import { itemTitle } from "@/lib/item-utils"
+import { useLiveToday } from "@/lib/use-current-date"
 import { AGE_BANDS, ageBandIndex, doneRateByPushes } from "./accuracy-stats"
 import "./accuracy-views.css"
 
@@ -89,8 +90,8 @@ export function CycleView() {
   )
   const peakMax = peaks[0]?.daysPushed ?? 1
   const doneByPushes = useMemo(() => doneRateByPushes(tasks), [tasks])
+  const today = useLiveToday()
   const unitStock = useMemo(() => {
-    const today = new Date()
     const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
     return tasks
       .filter((t) => !t.completed && (t.importance ?? 0) >= minImportance)
@@ -100,7 +101,7 @@ export function CycleView() {
         return { id: t.id, name: itemTitle(t), age, band: ageBandIndex(age) }
       })
       .sort((a, b) => a.age - b.age)
-  }, [tasks, minImportance])
+  }, [tasks, minImportance, today])
 
   const weeks = tasks.filter((t) => (t.weeksPushed ?? 0) > 0).length
   const months = tasks.filter((t) => (t.monthsPushed ?? 0) > 0).length

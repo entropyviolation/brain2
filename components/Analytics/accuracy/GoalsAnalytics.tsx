@@ -95,7 +95,7 @@ export function GoalsAnalytics() {
     () =>
       activeGoals
         .map((g) => {
-          const ids = served.filter((t) => t.contributesToGoalIds?.includes(g.id)).map((t) => t.id)
+          const ids = served.filter((t) => t.completed && t.contributesToGoalIds?.includes(g.id)).map((t) => t.id)
           return { goal: g, ids }
         })
         .sort((a, b) => b.ids.length - a.ids.length),
@@ -130,7 +130,7 @@ export function GoalsAnalytics() {
           ) : (
             <StudioBars rows={rows} max={100} />
           )}
-          {paceRows.length > 0 && (
+          {activeGoals.length > 0 && (
             <div className="an-acc-plate">
               <p className="an-canvas-title">On pace?</p>
               <div className="an-acc-tools">
@@ -202,7 +202,8 @@ export function GoalsAnalytics() {
               <p className="an-canvas-title">Where the work went ({label})</p>
               <div className="an-acc-bubbles" role="list">
                 {bubbles.map(({ goal, ids }) => {
-                  const d = 56 + Math.sqrt(ids.length / bubbleMax) * 72
+                  // Diameter ∝ √count keeps area ∝ count; a 44 px floor keeps empty goals clickable.
+                  const d = Math.max(44, 128 * Math.sqrt(ids.length / bubbleMax))
                   return (
                     <button
                       key={goal.id}
@@ -228,7 +229,7 @@ export function GoalsAnalytics() {
                 <span><i style={{ background: "#173a7a" }} />Has linked work</span>
                 <span><i style={{ background: "#c2571a" }} />Nothing in window, neglected 14+ days</span>
                 <span><i style={{ background: "#8b939d" }} />Nothing in window</span>
-                <span>Area ∝ contributing completions</span>
+                <span>Area ∝ contributing completions (44 px floor)</span>
               </div>
             </div>
           )}

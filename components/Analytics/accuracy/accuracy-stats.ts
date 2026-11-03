@@ -229,7 +229,9 @@ export function goalPace(
   }
   const elapsed = Math.min(1, Math.max(0, (now.getTime() - start) / (end - start)))
   // Less one hour so a DST shift inside the span does not add a day.
-  const daysLeft = Math.max(0, Math.ceil((end - now.getTime()) / DAY_MS - 1 / 24))
+  // Any time left counts as at least one day, so the final hour still has a pace.
+  const remainingMs = end - now.getTime()
+  const daysLeft = remainingMs > 0 ? Math.max(1, Math.ceil(remainingMs / DAY_MS - 1 / 24)) : 0
   const remaining = Math.max(0, goal.target - goal.current)
   return {
     elapsed,

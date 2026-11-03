@@ -18,7 +18,7 @@ import {
   CartesianGrid,
 } from "recharts"
 import { useTaskStore } from "@/lib/task-store"
-import { useRegretStore, regretCost, daysOverdue, dailyRegretIncrement } from "@/lib/regret-store"
+import { useRegretStore, regretCost, daysOverdue, dailyRegretIncrement, projectedRegret } from "@/lib/regret-store"
 import { itemTitle } from "@/lib/item-utils"
 import { parseLocalDate } from "@/lib/date-utils"
 import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
@@ -60,11 +60,13 @@ export function RegretView() {
   }, [])
 
   const now = new Date()
+  // Day key so the memos below recompute on the first render after midnight.
+  const today = now.toDateString()
 
   const outstanding = useMemo(
     () => tasks.reduce((total, t) => total + regretCost(t, now), 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tasks, regretHistory],
+    [tasks, regretHistory, today],
   )
 
   const inWindow = useMemo(
@@ -109,10 +111,13 @@ export function RegretView() {
         }))
         .filter((r) => r.cost > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tasks, regretHistory],
+    [tasks, regretHistory, today],
   )
   const ratePerDay = overdue.reduce((s, r) => s + r.perDay, 0)
-  const projected = outstanding + ratePerDay * aheadDays
+  const horizon = new Date(now)
+  horizon.setDate(horizon.getDate() + aheadDays)
+  // Counts items that pass their due date inside the horizon too.
+  const projected = projectedRegret(tasks, horizon)
   const listName = useMemo(() => new Map(lists.map((l) => [l.id, l.name])), [lists])
   const byList = useMemo(() => {
     const groups = new Map<string, number>()

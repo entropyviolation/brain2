@@ -1,6 +1,6 @@
 # Accuracy → Cycle (stall and pushes)
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-11-03_
 
 File: `components/Analytics/accuracy/CycleView.tsx`. Not the menstrual Cycle phase view (that is Time → Cycle phase). Math: `signal-stats.ts` (`openItemAges`, survival curve), `accuracy-stats.ts` (`doneRateByPushes`, `AGE_BANDS`).
 
@@ -13,7 +13,7 @@ File: `components/Analytics/accuracy/CycleView.tsx`. Not the menstrual Cycle pha
 - Readouts, items by days pushed (title was the code name `daysPushed`), age readouts, share-still-open trace, age beeswarm, Open in Lists.
 - **New, does a push still get done?** Done share per push bucket (0, 1–2, 3–6, 7+), all time.
 - **New, most-pushed items** (IIB *Mountains Out of Molehills*): named peaks, height = day pushes, done peaks faded. Slider for 3–20 peaks.
-- **New, open stock unit grid** (IIB *Plane Truth*): one square per open item, colored by age band (< 1 wk, 1–4 wk, 1–3 mo, 3 mo +). Importance slider 0–5. Click a square to open it.
+- **New, open stock unit grid** (IIB *Plane Truth*): one square per open item, colored by age band (< 1 wk, 1–4 wk, 1–3 mo, 3 mo +). Importance slider 0–5. Click a square to jump to its first list in Lists (All Items when it has none). Lists does not select the item yet. Ages refresh at local midnight.
 
 ## Research notes
 - Procrastination grows with delay and low value (Steel 2007, temporal motivation theory). If done share falls as pushes rise, a push is a quiet drop.
