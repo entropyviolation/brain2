@@ -353,7 +353,16 @@ function DebriefQuadrant({
   const size = 240
   const span = size - pad * 2
   const pos = (v: number) => pad + ((v - 1) / 9) * span
-  const maxH = Math.max(1, ...points.map((p) => p.hours ?? 0))
+  // Reports that share a score pair share one circle: its area sums their hours and its tooltip lists each one.
+  const cells = [...points
+    .reduce((m, p) => {
+      const key = `${p.morale}-${p.execution}`
+      const cell = m.get(key) ?? { key, morale: p.morale, execution: p.execution, rows: [] as typeof points }
+      cell.rows.push(p)
+      return m.set(key, cell)
+    }, new Map<string, { key: string; morale: number; execution: number; rows: typeof points }>())
+    .values()]
+  const maxH = Math.max(1, ...cells.map((g) => g.rows.reduce((sum, p) => sum + (p.hours ?? 0), 0)))
   const corners = [
     { x: pad + 4, y: pad + 10, a: "start", t: "Grind" },
     { x: size - pad - 4, y: pad + 10, a: "end", t: "Smooth run" },
@@ -376,19 +385,32 @@ function DebriefQuadrant({
       <text x={10} y={size / 2} fontSize={9} textAnchor="middle" transform={`rotate(-90 10 ${size / 2})`}>
         execution →
       </text>
-      {points.map((p) => (
-        <circle
-          key={p.id}
-          cx={pos(p.morale)}
-          cy={size - pos(p.execution)}
-          r={3 + Math.sqrt((p.hours ?? 0) / maxH) * 14}
-          fill="#0f766e"
-          fillOpacity={0.45}
-          stroke="#0f766e"
-        >
-          <title>{`${titleOf(p.operationId)} · morale ${p.morale} · execution ${p.execution}${p.hours != null ? ` · ${p.hours}h` : ""}`}</title>
-        </circle>
-      ))}
+      {cells.map((g) => {
+        const hours = g.rows.reduce((sum, p) => sum + (p.hours ?? 0), 0)
+        return (
+          <g key={g.key}>
+            <circle
+              cx={pos(g.morale)}
+              cy={size - pos(g.execution)}
+              r={3 + Math.sqrt(hours / maxH) * 14}
+              fill="#0f766e"
+              fillOpacity={0.45}
+              stroke="#0f766e"
+            >
+              <title>
+                {g.rows
+                  .map((p) => `${titleOf(p.operationId)} · morale ${p.morale} · execution ${p.execution}${p.hours != null ? ` · ${p.hours}h` : ""}`)
+                  .join("\n")}
+              </title>
+            </circle>
+            {g.rows.length > 1 ? (
+              <text x={pos(g.morale)} y={size - pos(g.execution) + 3} fontSize={9} textAnchor="middle" pointerEvents="none">
+                {g.rows.length}
+              </text>
+            ) : null}
+          </g>
+        )
+      })}
     </svg>
   )
 }
