@@ -3,7 +3,7 @@
  *
  * Display name, notes, pen names, secondary pens, counts-as chains,
  * action-format templates, and a mood reading (word, body, vibe, shorthand,
- * reframe, about-that). Local and pure: the tracker and Analytics both
+ * reframe, about-that). Local and pure: the tracker and Data both
  * call this and then jump to the block they already know how to open.
  */
 import { ancestorChains } from "@/lib/pen-tree"

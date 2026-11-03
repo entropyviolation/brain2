@@ -15,21 +15,26 @@
  * An empty array means the user cleared the preset. Weekly and monthly
  * ignore log blocks. An explicit require (`false`) beats a log block.
  *
+ * A paused habit (`lib/habit-pause.ts`) is exempt on every day, week, month,
+ * and season that overlaps a pause span. Pause beats both overrides: a wand
+ * click on a paused period stores nothing.
+ *
  * Scoring drops an exempt period from both sides of the fraction: three daily
  * habits with one waived divide by two; a week with one waived day divides by
  * six. The waived day is not a completion.
  */
 import type { HabitFrequency, HabitLogDay, HabitLogExemption, HabitLogSignal, WeeklyTask } from "./types"
 import { addCalendarDays, formatLocalDateKey, parseLocalDate } from "./date-utils"
+import { pausedOverlaps } from "./habit-pause"
 
 /** period key → habit id → explicit override. `true` waives, `false` requires. */
 export type ExemptionBook = Record<string, Record<string, boolean>>
 
 export type ExemptionBooks = Record<HabitFrequency, ExemptionBook>
 
-export type ExemptionKind = "required" | "auto" | "waved" | "logged"
+export type ExemptionKind = "required" | "auto" | "waved" | "logged" | "paused"
 
-export type ExemptionTask = Pick<WeeklyTask, "id" | "createdAt" | "name" | "frequency" | "logExemptions">
+export type ExemptionTask = Pick<WeeklyTask, "id" | "createdAt" | "name" | "frequency" | "logExemptions" | "pauses">
 
 /** Nights already logged as all-nighters, keyed by morning date. */
 export type ExemptionContext = {
@@ -132,7 +137,7 @@ export function notifyAllNighterLogged(morningKey: string) {
 }
 
 export function isExemptKind(kind: ExemptionKind | null | undefined): boolean {
-  return kind === "auto" || kind === "waved" || kind === "logged"
+  return kind === "auto" || kind === "waved" || kind === "logged" || kind === "paused"
 }
 
 function resolveContext(ctx?: ExemptionContext): ExemptionContext {
@@ -188,6 +193,7 @@ export function exemptionRestLabel(
   logDay: HabitLogDay | null,
 ): string {
   if (kind === "auto") return `${name} ${periodLabel} exempt — before this habit was created`
+  if (kind === "paused") return `${name} ${periodLabel} exempt — paused`
   if (kind === "logged") return `${name} ${periodLabel} exempt — ${loggedPhrase(logDay)}`
   if (kind === "waved") return `${name} ${periodLabel} exempt`
   return `${name} ${periodLabel}`
@@ -199,6 +205,7 @@ export function exemptionWandTitle(kind: ExemptionKind, noun: "day" | "week" | "
       ? "Exempt — this day is before the habit was created. Click to require it."
       : `Exempt — this ${noun} ended before the habit was created. Click to require it.`
   }
+  if (kind === "paused") return `Exempt — this habit was paused this ${noun}. Unpause it in the habit's settings.`
   if (kind === "logged") return `Exempt — ${loggedPhrase(logDay)}. Click to require this ${noun}.`
   if (kind === "waved") return `Exempt. Click to require this ${noun} again.`
   return `Required. Click to exempt this ${noun}.`
@@ -207,6 +214,7 @@ export function exemptionWandTitle(kind: ExemptionKind, noun: "day" | "week" | "
 export function exemptionHeatTitle(name: string, kind: ExemptionKind, logDay: HabitLogDay | null): string {
   if (!isExemptKind(kind)) return `${name} · required`
   if (kind === "auto") return `${name} · exempt before it was created`
+  if (kind === "paused") return `${name} · exempt — paused`
   if (kind === "logged") return `${name} · exempt — ${loggedPhrase(logDay)}`
   return `${name} · exempt`
 }
@@ -309,6 +317,14 @@ export function isAutoExempt(task: Pick<WeeklyTask, "id" | "createdAt">, periodS
   return periodEndKey(periodStart, frequency) < created
 }
 
+/** Some day of this period falls inside a pause span. */
+export function isPausedPeriod(task: Pick<WeeklyTask, "pauses">, periodKey: string, frequency: HabitFrequency): boolean {
+  if (!Array.isArray(task.pauses) || task.pauses.length === 0) return false
+  const start = periodStartFromKey(frequency, periodKey)
+  if (!start) return false
+  return pausedOverlaps(task, formatLocalDateKey(start), periodEndKey(start, frequency))
+}
+
 export function exemptionKind(
   task: ExemptionTask,
   periodKey: string,
@@ -316,6 +332,7 @@ export function exemptionKind(
   books: ExemptionBooks,
   ctx?: ExemptionContext,
 ): ExemptionKind {
+  if (isPausedPeriod(task, periodKey, frequency)) return "paused"
   const override = books[frequency]?.[periodKey]?.[task.id]
   if (override === true) return "waved"
   if (override === false) return "required"
@@ -351,6 +368,7 @@ export function withExemptionOverride(
   exempt: boolean,
   ctx?: ExemptionContext,
 ): ExemptionBooks {
+  if (isPausedPeriod(task, periodKey, frequency)) return books
   const start = periodStartFromKey(frequency, periodKey)
   const auto =
     (start ? isAutoExempt(task, start, frequency) : false) ||

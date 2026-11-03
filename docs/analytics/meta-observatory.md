@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-`components/Analytics/Observatory.tsx`, math in `observatory-findings.ts` and `meta-math.ts`, plot in `meta-plots.tsx` (`ForestPlot`), skin in `analytics-meta.css`.
+`components/Analytics/meta/Observatory.tsx`, math in `observatory-findings.ts` and `meta-math.ts`, plot in `meta-plots.tsx` (`ForestPlot`), skin in `analytics-meta.css`.
 
 ## Information
 - Daily series built in the view: habit % (`calculateDayPercentageAV`), tracked minutes, sleep minutes (`resolveNights`), points, Activity context switches, mean joy reading per day (`dailyMeans`), Activity and Screen Time occupancy.

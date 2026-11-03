@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-`components/Analytics/SpectrumView.tsx`. Math in `lib/metrics.ts` (`autocorrelation`, `periodogram`, `coefficientOfVariation`) and `meta-math.ts` (`acf`, `whiteNoiseBand`, `spreadMinutes`). Plots `Correlogram` and `LogPeriodogram` in `meta-plots.tsx`.
+`components/Analytics/meta/SpectrumView.tsx`. Math in `lib/metrics.ts` (`autocorrelation`, `periodogram`, `coefficientOfVariation`) and `meta-math.ts` (`acf`, `whiteNoiseBand`, `spreadMinutes`). Plots `Correlogram` and `LogPeriodogram` in `meta-plots.tsx`.
 
 ## Information
 Habit % per day, sleep minutes and bedtime per night (`sleepStats`), tracked minutes per day (new, painted days only). Floor `SAMPLE_FLOORS.spectrum = 14`.

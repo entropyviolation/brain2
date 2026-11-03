@@ -93,3 +93,47 @@ describe("ReminderQuickAdd", () => {
     expect(repeat).toHaveTextContent("Every year")
   })
 })
+
+const iosBridge = vi.hoisted(() => ({
+  available: false,
+  add: vi.fn(async () => ({ ok: true, id: "ek-1" })),
+}))
+vi.mock("@/lib/mobile/reminders-bridge", () => ({
+  iosRemindersAvailable: () => iosBridge.available,
+  addIosReminder: iosBridge.add,
+}))
+
+describe("ReminderQuickAdd iPhone Reminders", () => {
+  beforeEach(() => {
+    resetAllStores()
+    iosBridge.add.mockClear()
+  })
+
+  it("hides the iPhone option outside the iPhone app", () => {
+    iosBridge.available = false
+    render(<ReminderQuickAdd onCancel={() => {}} />)
+    expect(screen.queryByRole("checkbox", { name: /iPhone Reminders/ })).toBeNull()
+  })
+
+  it("adds to iPhone Reminders only when the box is ticked", async () => {
+    iosBridge.available = true
+    render(<ReminderQuickAdd onCancel={() => {}} />)
+    const box = await screen.findByRole("checkbox", { name: /iPhone Reminders/ })
+    expect(box).not.toBeChecked()
+    fireEvent.click(box)
+    fireEvent.change(screen.getByLabelText("New reminder"), { target: { value: "Call mom" } })
+    fireEvent.change(screen.getByLabelText("Reminder time"), { target: { value: "2026-10-09T15:30" } })
+    fireEvent.click(screen.getByRole("button", { name: "Add reminder" }))
+    expect(iosBridge.add).toHaveBeenCalledWith(expect.objectContaining({ title: "Call mom", repeat: "once" }))
+  })
+
+  it("does not call the bridge when the box is left off", async () => {
+    iosBridge.available = true
+    render(<ReminderQuickAdd onCancel={() => {}} />)
+    await screen.findByRole("checkbox", { name: /iPhone Reminders/ })
+    fireEvent.change(screen.getByLabelText("New reminder"), { target: { value: "Call mom" } })
+    fireEvent.change(screen.getByLabelText("Reminder time"), { target: { value: "2026-10-09T15:30" } })
+    fireEvent.click(screen.getByRole("button", { name: "Add reminder" }))
+    expect(iosBridge.add).not.toHaveBeenCalled()
+  })
+})

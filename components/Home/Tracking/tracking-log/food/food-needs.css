@@ -1,0 +1,85 @@
+.trk-food-dialog .trk-food-needs {
+  margin: 8px 0 12px;
+}
+
+.trk-food-dialog .trk-food-needs h4 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+}
+
+.trk-food-dialog .trk-food-needs-lead,
+.trk-food-dialog .trk-food-needs-cite {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.trk-food-dialog .trk-food-needs-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+
+.trk-food-dialog .trk-food-needs-measure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 6px;
+}
+
+.trk-food-dialog .trk-food-needs-measure label {
+  flex: 1 1 72px;
+}
+
+.trk-food-dialog .trk-food-needs-sex > span {
+  display: block;
+  margin: 6px 0 2px;
+  font-size: 13px;
+}
+
+.trk-food-dialog .trk-food-needs .trk-food-caps {
+  margin: 0 0 6px;
+}
+
+.trk-food-dialog .trk-food-needs-figures section > p {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk-food-dialog .trk-food-needs dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 16px;
+  margin: 0 0 8px;
+}
+
+.trk-food-dialog .trk-food-needs dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trk-food-dialog .trk-food-needs dt,
+.trk-food-dialog .trk-food-needs dd {
+  margin: 0;
+}
+
+@media (max-width: 767px) {
+  .trk-food-dialog .trk-food-needs-fields,
+  .trk-food-dialog .trk-food-needs dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trk-food-dialog .trk-food-needs input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .trk-food-dialog .trk-food-needs button.trk-keycap {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

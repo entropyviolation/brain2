@@ -4,9 +4,10 @@ import { readListsNavigation, writeListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT 
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { openTargetFromEntry, openTargetKey, openTargetReducer } from "@/components/Lists/open-target"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
+import { ITEM_TYPES_LOCATION } from "@/lib/item-type-lists"
 import type { GridEntry, OpenTarget } from "@/components/Lists/types"
 
-const ROOT_LOCATIONS = new Set(["home", "all"])
+const ROOT_LOCATIONS = new Set(["home", "all", ITEM_TYPES_LOCATION])
 
 export function useListsNavigation(categories: List[], folders: Folder[]) {
   const [location, setLocation] = useState<string>(() => readListsNavigation().location)
@@ -60,6 +61,12 @@ export function useListsNavigation(categories: List[], folders: Folder[]) {
 
   const openFolderAll = useCallback((folderId: string) => {
     dispatchOpenTarget({ type: "OPEN_FOLDER_ALL", folderId })
+  }, [])
+
+  const openItemType = useCallback((typeId: string) => {
+    setLocation(ITEM_TYPES_LOCATION)
+    dispatchOpenTarget({ type: "OPEN_ITEM_TYPE", id: typeId })
+    setActiveIconId(null)
   }, [])
 
   const openEntry = useCallback(
@@ -136,6 +143,7 @@ export function useListsNavigation(categories: List[], folders: Folder[]) {
     openHabits,
     openObjectives,
     openFolderAll,
+    openItemType,
     activeIconId,
     setActiveIconId,
     isHome,

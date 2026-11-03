@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react"
+import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -63,7 +63,20 @@ describe("PenColorNowStrip", () => {
     expect(screen.getByText(/Location · since /)).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Pause Work" }))
+    expect(usePenColorSessionStore.getState().session?.pausedAt).toBeUndefined()
+    await user.click(within(screen.getByTestId("pause-reason-dialog")).getByRole("button", { name: "Cancel" }))
+    expect(usePenColorSessionStore.getState().session?.pausedAt).toBeUndefined()
+
+    await user.click(screen.getByRole("button", { name: "Pause Work" }))
+    await user.click(within(screen.getByTestId("pause-reason-dialog")).getByRole("button", { name: "Pause" }))
+    expect(usePenColorSessionStore.getState().session?.pausedAt).toBeUndefined()
+
+    await user.click(screen.getByRole("button", { name: "Pause Work" }))
+    const pauseDialog = screen.getByTestId("pause-reason-dialog")
+    await user.type(within(pauseDialog).getByRole("textbox", { name: "Reason for pausing" }), "coffee")
+    await user.click(within(pauseDialog).getByRole("button", { name: "Pause" }))
     expect(usePenColorSessionStore.getState().session?.pausedAt).toBeTruthy()
+    expect(usePenColorSessionStore.getState().session?.pauseSpans?.[0].reason).toBe("coffee")
     expect(screen.getByRole("button", { name: "Resume Work" })).toHaveAttribute("data-dvd-mark", "play")
     expect(screen.getByRole("button", { name: "Resume Work" }).querySelector("polygon")).toBeTruthy()
 
@@ -71,7 +84,7 @@ describe("PenColorNowStrip", () => {
     await user.click(screen.getByTestId("now-objectives-trigger"))
     expect(screen.getByTestId("now-objectives-pop")).toBeInTheDocument()
     await user.type(screen.getByRole("textbox", { name: "Add objective" }), "ship it")
-    await user.click(screen.getByRole("button", { name: "Add objective" }))
+    await user.click(screen.getByRole("button", { name: "Now" }))
     expect(usePenColorSessionStore.getState().session?.nowObjectives?.[0].text).toBe("ship it")
 
     await user.click(screen.getByRole("button", { name: "Stop working on Work" }))

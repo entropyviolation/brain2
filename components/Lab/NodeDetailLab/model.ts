@@ -2,7 +2,7 @@
  * components/Lab/NodeDetailLab/model.ts — One node, as data, plus every verb
  *
  * The four mockups are skins over this. It reads the same helpers as
- * `components/Home/ToDo/TaskCardSide.tsx` (points rule, needs kinds, locks,
+ * `components/Home/ToDo/task-card/TaskCardSide.tsx` (points rule, needs kinds, locks,
  * notes) so behavior matches the real right bar. Node = a step, or the whole
  * task when no step is picked.
  */

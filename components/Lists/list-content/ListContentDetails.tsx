@@ -2,18 +2,21 @@
 
 import { useMemo } from "react"
 import { formatAttributeValue, listAttributeSchema } from "@/components/Lists/attribute-editor"
+import { useSpreadsheetCatalog } from "@/components/spreadsheet/use-spreadsheet-catalog"
 import { itemTitle, listIsNextActions } from "@/lib/item-utils"
 import { isFolderAllItemsCategoryId, isTaskUncategorizedGlobally, isTaskUncategorizedInFolder } from "@/lib/folder-all-items"
+import { instagramProfileKeyHandle } from "@/lib/instagram-account-type"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
 import {
-  buildSpreadsheetCatalog,
   readBuiltinField,
   type SheetColumnCandidate,
 } from "@/lib/spreadsheet-catalog"
 import { resolveDetailsColumnIds } from "@/lib/details-columns"
 import type { AttributeDefinition, Folder, List, Task } from "@/lib/types"
+import { InstagramProfileKey } from "./InstagramProfileKey"
 import type { ListContentDetailsProps } from "./types"
+import { useWindowedSlice } from "./use-windowed-slice"
 
 export type { ListContentDetailsProps } from "./types"
 
@@ -106,17 +109,16 @@ export function ListContentDetails({
     (tableCat && listIsNextActions(tableCat.id, folders)) ||
     (openFolderAll && tasks.some((t) => listIsNextActions(t.lists?.[0] || "", folders)))
 
-  const catalog = useMemo(
-    () =>
-      buildSpreadsheetCatalog({
-        list: tableCat ?? undefined,
-        lists: categories,
-        types,
-        listItems: tasks,
-        vaultItems,
-      }),
-    [tableCat, categories, types, tasks, vaultItems],
-  )
+  const catalog = useSpreadsheetCatalog({
+    list: tableCat ?? undefined,
+    lists: categories,
+    types,
+    listItems: tasks,
+    vaultItems,
+  })
+  const rowPx = 32
+  const { ref, start, end } = useWindowedSlice<HTMLTableSectionElement>(tasks.length, rowPx)
+  const visible = tasks.slice(start, end)
 
   const columnIds = resolveDetailsColumnIds(
     tableCat?.detailsColumns,
@@ -137,6 +139,7 @@ export function ListContentDetails({
     listNameById,
     openFolderAll,
   )
+  const span = (selectMode ? 1 : 0) + 1 + (openFolderAll ? 1 : 0) + cols.length + 1
 
   return (
     <table className="fm-table">
@@ -151,8 +154,13 @@ export function ListContentDetails({
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody>
-        {tasks.map((task) => (
+      <tbody ref={ref}>
+        {start > 0 ? (
+          <tr aria-hidden style={{ height: start * rowPx }}>
+            <td colSpan={span} />
+          </tr>
+        ) : null}
+        {visible.map((task) => (
           <tr
             key={task.id}
             className={selectMode && selected.has(task.id) ? "selected" : undefined}
@@ -200,9 +208,18 @@ export function ListContentDetails({
               >
                 Open
               </button>
+              {(() => {
+                const handle = instagramProfileKeyHandle(task, tableCat)
+                return handle ? <InstagramProfileKey handle={handle} /> : null
+              })()}
             </td>
           </tr>
         ))}
+        {end < tasks.length ? (
+          <tr aria-hidden style={{ height: (tasks.length - end) * rowPx }}>
+            <td colSpan={span} />
+          </tr>
+        ) : null}
       </tbody>
     </table>
   )

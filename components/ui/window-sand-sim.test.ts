@@ -100,6 +100,39 @@ describe("window sand", () => {
     expect(countState(world, SAND_SOLID)).toBe(0)
   })
 
+  it("blows the dune into the screen, not off to the right", () => {
+    const world = createSandWorld(geom, null, { grain: 2, frontMs: 400, windAt: 1600 })
+    run(world, 1500)
+    let meanS = 0
+    let meanZ = 0
+    let settled = 0
+    for (let i = 0; i < world.n; i++) {
+      if (world.state[i] !== SAND_SETTLED) continue
+      meanS += world.x[i] + world.z[i] * 0.42
+      meanZ += world.z[i]
+      settled++
+    }
+    meanS /= settled || 1
+    meanZ /= settled || 1
+
+    beginWind(world, 1500, true)
+    run(world, 1500 + 700)
+    let meanS2 = 0
+    let meanZ2 = 0
+    let left = 0
+    for (let i = 0; i < world.n; i++) {
+      if (world.state[i] === SAND_EMPTY) continue
+      meanS2 += world.x[i] + world.z[i] * 0.42
+      meanZ2 += world.z[i]
+      left++
+    }
+    meanS2 /= left || 1
+    meanZ2 /= left || 1
+    expect(meanZ2).toBeLessThan(meanZ - 12)
+    expect(Math.abs(meanS2 - geom.width * 0.5)).toBeLessThan(Math.abs(meanS - geom.width * 0.5) + 24)
+    expect(countState(world, SAND_EMPTY)).toBeGreaterThan(0)
+  })
+
   it("frees any grain the wind reaches so a solid frame cannot stay behind", () => {
     const world = createSandWorld(geom, null, { grain: 2, frontMs: 5000, windAt: WINDOW_SAND_WIND_AT })
     run(world, 200)

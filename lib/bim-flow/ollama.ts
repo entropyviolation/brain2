@@ -1,0 +1,128 @@
+/**
+ * lib/bim-flow/ollama.ts — Structured calls to the local Ollama daemon
+ *
+ * `127.0.0.1:11434` only. Every call sends a JSON schema in `format`, so the
+ * model can only answer in that shape. Arrays carry `maxItems`: a small model
+ * under a grammar will otherwise repeat items until it runs out of tokens.
+ * `num_ctx` stays fixed, because a new value reloads the model (about 25s).
+ */
+
+import { archive } from "./archive"
+
+export const OLLAMA_URL = "http://127.0.0.1:11434"
+
+/**
+ * Where model calls go. The Mac asks its own daemon. The iPhone app has no
+ * daemon, so BIM chat points this at the Mac's `/api/ollama` proxy
+ * (`scripts/persist-api.mjs`) with the hub token (`lib/bim-flow/chat-models.ts`).
+ */
+export interface ModelEndpoint {
+  base: string
+  headers?: Record<string, string>
+}
+
+let endpoint: ModelEndpoint = { base: OLLAMA_URL }
+
+export function setModelEndpoint(next: ModelEndpoint | null): void {
+  endpoint = next ?? { base: OLLAMA_URL }
+}
+export const DEFAULT_MODEL = "qwen2.5:14b-instruct"
+const NUM_CTX = 4096
+
+export type ModelCall = (req: {
+  /** An Ollama model for this call alone; omitted = the model the call was bound to. */
+  model?: string
+  system: string
+  user: string
+  schema: Record<string, unknown>
+  maxTokens?: number
+}) => Promise<unknown>
+
+const cache = new Map<string, unknown>()
+
+/** A `ModelCall` bound to one Ollama model. Identical prompts are answered from memory, unless `fresh` (a test run: real timings, every call archived). */
+export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: boolean } = {}): ModelCall {
+  return async ({ model: only, system, user, schema, maxTokens = 200 }) => {
+    const model = only || bound
+    const key = JSON.stringify([model, system, user, schema])
+    if (!opts.fresh && cache.has(key)) return cache.get(key)
+    const res = await fetch(`${endpoint.base}/api/chat`, {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json", ...endpoint.headers },
+      body: JSON.stringify({
+        model,
+        stream: false,
+        format: schema,
+        // qwen3 thinks by default and spends `num_predict` on it, leaving `content` empty. Others ignore the flag.
+        think: false,
+        keep_alive: "15m",
+        options: { temperature: 0, num_ctx: NUM_CTX, num_predict: maxTokens },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    })
+    if (!res.ok) throw new Error(`Ollama ${res.status}`)
+    const body = (await res.json()) as { message?: { content?: string }; done_reason?: string }
+    const content = body.message?.content?.trim() ?? ""
+    if (!content) throw new Error(`${model} gave no JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(content)
+    } catch {
+      throw new Error(`${model} gave cut-off JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
+    }
+    cache.set(key, parsed)
+    archive("model-call", { model, system, user, schema, maxTokens, output: parsed })
+    return parsed
+  }
+}
+
+/** Installed model names, or `null` when the daemon does not answer. */
+export async function listOllamaModels(): Promise<string[] | null> {
+  try {
+    const res = await fetch(`${endpoint.base}/api/tags`, { headers: endpoint.headers, signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return null
+    const body = (await res.json()) as { models?: { name: string }[] }
+    return (body.models ?? []).map((m) => m.name)
+  } catch {
+    return null
+  }
+}
+
+export const EMBED_MODEL = "nomic-embed-text"
+const vectors = new Map<string, number[]>()
+
+/**
+ * Cosine scores of `texts` against `query`, or null when the embedding model
+ * is not installed or the daemon does not answer. Never pulls a model.
+ */
+export async function embedScores(query: string, texts: string[], signal?: AbortSignal): Promise<number[] | null> {
+  try {
+    const need = [query, ...texts].filter((t, i, a) => !vectors.has(t) && a.indexOf(t) === i)
+    for (let i = 0; i < need.length; i += 64) {
+      const batch = need.slice(i, i + 64)
+      const res = await fetch(`${OLLAMA_URL}/api/embed`, {
+        method: "POST",
+        signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: EMBED_MODEL, input: batch.map((t) => t.slice(0, 400)) }),
+      })
+      if (!res.ok) return null
+      const body = (await res.json()) as { embeddings?: number[][] }
+      batch.forEach((t, j) => body.embeddings?.[j] && vectors.set(t, body.embeddings[j]!))
+    }
+    const q = vectors.get(query)
+    if (!q) return null
+    const norm = (v: number[]) => Math.sqrt(v.reduce((a, x) => a + x * x, 0)) || 1
+    const qn = norm(q)
+    return texts.map((t) => {
+      const v = vectors.get(t)
+      return v ? v.reduce((a, x, i) => a + x * q[i]!, 0) / (norm(v) * qn) : 0
+    })
+  } catch {
+    return null
+  }
+}

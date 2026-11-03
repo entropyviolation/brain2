@@ -57,6 +57,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     keywords: "assumed finish time bedtime sleep day anchor evening",
   },
   {
+    id: "settings-secrets",
+    groupId: "you",
+    title: "Secrets",
+    keywords: "secret private passphrase password lock hide medical crush conceal",
+  },
+  {
     id: "settings-window-gray",
     groupId: "appearance",
     title: "Window gray",
@@ -109,6 +115,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     groupId: "imports",
     title: "Message ingest",
     keywords: "telegram bim pairing grocery cheat sheet simulate shortcut message",
+  },
+  {
+    id: "settings-nfc",
+    groupId: "imports",
+    title: "NFC tags",
+    keywords: "nfc sticker tag dose quantity adderall door shower vitamin shortcut",
   },
   {
     id: "settings-phone-sync",

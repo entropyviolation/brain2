@@ -1,0 +1,9 @@
+---
+description: Do not merge the three task editors
+globs: components/Home/ToDo/**,components/ItemDetail/**
+alwaysApply: false
+---
+
+# Do not merge the three task editors
+
+Item detail → Subtasks, the To do drawer and the To do task card all edit one task on purpose. They have different jobs, so they keep different UI and components. Do not merge them or make one mirror another without allie's yes. Why: `components/Home/ToDo/README.md` → "Three ways to edit a task stay separate".

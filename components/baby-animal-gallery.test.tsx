@@ -40,11 +40,12 @@ describe("BabyAnimalFriendGallery", () => {
     fireEvent.change(name, { target: { value: "tiny baby skunk" } })
     fireEvent.blur(name)
     expect(useBabyAnimalsStore.getState().displayName).toBe("tiny baby skunk")
-    fireEvent.click(within(skunkCard()).getByRole("button", { name: "Remove" }))
+    fireEvent.click(within(skunkCard()).getByRole("button", { name: "Details" }))
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }))
     expect(useBabyAnimalsStore.getState().photos.some((p) => p.id === "p1")).toBe(true)
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
     expect(useBabyAnimalsStore.getState().photos.some((p) => p.id === "p1")).toBe(true)
-    fireEvent.click(within(skunkCard()).getByRole("button", { name: "Remove" }))
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }))
     expect(screen.getByText(/Are you sure you want to delete tiny baby skunk/i)).toBeTruthy()
     fireEvent.click(screen.getByRole("button", { name: "Delete" }))
     expect(useBabyAnimalsStore.getState().photos.some((p) => p.id === "p1")).toBe(false)
@@ -85,8 +86,9 @@ describe("BabyAnimalFriendGallery", () => {
   it("uploads a replacement picture for a gallery card", async () => {
     const { uploadFriendPicture } = await import("@/lib/baby-animal-friend")
     render(<BabyAnimalFriendGallery />)
+    fireEvent.click(within(skunkCard()).getByRole("button", { name: "Details" }))
     const file = new File(["png"], "skunk.png", { type: "image/png" })
-    const input = skunkCard().querySelector("input[type=file]") as HTMLInputElement
+    const input = document.querySelector(".friend-instrument input[type=file]") as HTMLInputElement
     fireEvent.change(input, { target: { files: [file] } })
     expect(uploadFriendPicture).toHaveBeenCalledWith(file, "p1")
   })
@@ -94,6 +96,7 @@ describe("BabyAnimalFriendGallery", () => {
   it("offers no web picture search — pack cards and uploads only", () => {
     render(<BabyAnimalFriendGallery />)
     expect(screen.queryByRole("button", { name: /find another picture/i })).toBeNull()
-    expect(within(skunkCard()).getByRole("button", { name: "Change picture" })).toBeTruthy()
+    fireEvent.click(within(skunkCard()).getByRole("button", { name: "Details" }))
+    expect(screen.getByRole("button", { name: "Change picture" })).toBeTruthy()
   })
 })

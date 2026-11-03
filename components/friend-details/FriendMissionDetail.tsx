@@ -2,14 +2,17 @@
  * components/friend-details/FriendMissionDetail.tsx — Mission detail card
  *
  * Sits over the instrument. The journal and today’s strip both open it.
- * The task loads item detail on top when an item id is opened, so a refresh
- * does not parse that module with the instrument. Accept, and the
+ * The task loads item detail on top through `use-item-detail-popup.ts` when an
+ * item id is opened, so a refresh does not parse that module with the instrument. Accept, and the
  * smaller-task walk, live here.
  */
 "use client"
 
-import { useEffect, useRef, useState, type ComponentType } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useItemDetailPopup } from "@/components/friend-details/use-item-detail-popup"
 import { friendSourceLabel } from "@/lib/friend-copy"
+import { matchTaskIcon } from "@/lib/pixel-icon-match"
+import { PixelIcon } from "@/components/friend-details/PixelIcon"
 import {
   friendMissionItemId,
   friendMissionLogSentence,
@@ -22,30 +25,6 @@ import { formatCountdown, formatExactTime, formatRelativeTime, journalLogEntries
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 
 type Ladder = "offer" | "smaller" | "first" | "why"
-
-type ItemPopup = ComponentType<{
-  taskId: string | null
-  open: boolean
-  onClose: () => void
-  stackAbove?: boolean
-}>
-
-function useItemDetailPopup(itemId: string | null) {
-  const [Popup, setPopup] = useState<ItemPopup | null>(null)
-
-  useEffect(() => {
-    if (!itemId) return
-    let live = true
-    void import("@/components/ItemDetail/ItemDetailPopup").then((mod) => {
-      if (live) setPopup(() => mod.TaskDetailPopup)
-    })
-    return () => {
-      live = false
-    }
-  }, [itemId])
-
-  return Popup
-}
 
 export function FriendMissionDetail({
   mission,
@@ -96,12 +75,13 @@ export function FriendMissionDetail({
   return (
     <div className="friend-mission-pop" role="dialog" aria-modal="true" aria-labelledby="friend-mission-pop-title">
       <p className="friend-mission-pop-kicker">
+        <PixelIcon name={matchTaskIcon(title, mission.source)} />
         {friendMissionStatusLabel(mission.status)}
         {mission.source ? ` · ${friendSourceLabel(mission.source)}` : ""}
       </p>
       <h3 id="friend-mission-pop-title">Mission from {friendName}</h3>
       {itemId ? (
-        <button type="button" className="friend-mission-pop-task" aria-label={`Open ${mission.title}`} onClick={() => setOpenItemId(itemId)}>
+        <button type="button" className="friend-mission-pop-task" data-no95="" aria-label={`Open ${mission.title}`} onClick={() => setOpenItemId(itemId)}>
           {title}
         </button>
       ) : (
@@ -116,10 +96,10 @@ export function FriendMissionDetail({
 
       {mission.status === "offered" && actionable && phase === "offer" ? (
         <div className="friend-mission-actions">
-          <button type="button" className="friend-key is-on" onClick={() => accept()}>
-            Accept
+          <button type="button" className="friend-key is-primary" data-no95="" onClick={() => accept()}>
+            Accept mission
           </button>
-          <button type="button" className="friend-key" onClick={() => setPhase("smaller")}>
+          <button type="button" className="friend-key" data-no95="" onClick={() => setPhase("smaller")}>
             Something smaller
           </button>
         </div>
@@ -130,7 +110,8 @@ export function FriendMissionDetail({
           <p>Break this into smaller tasks?</p>
           <button
             type="button"
-            className="friend-key is-on"
+            className="friend-key is-primary"
+            data-no95=""
             onClick={() => {
               const lines = splitFriendTask(mission.taskId, mission.title)
               const detail = lines.length ? lines.join(" · ") : "Already one small step."
@@ -144,6 +125,7 @@ export function FriendMissionDetail({
           <button
             type="button"
             className="friend-key"
+            data-no95=""
             onClick={() => {
               useBabyAnimalsStore.getState().noteMission(mission.taskId, "breakdown-no")
               setPhase("first")
@@ -159,7 +141,8 @@ export function FriendMissionDetail({
           <p>Just the first step?</p>
           <button
             type="button"
-            className="friend-key is-on"
+            className="friend-key is-primary"
+            data-no95=""
             onClick={() => {
               const step = ensureFriendFirstStep(mission.taskId, mission.title)
               useBabyAnimalsStore.getState().noteMission(mission.taskId, "first-step-yes", step?.stepTitle ?? mission.title)
@@ -171,6 +154,7 @@ export function FriendMissionDetail({
           <button
             type="button"
             className="friend-key"
+            data-no95=""
             onClick={() => {
               useBabyAnimalsStore.getState().noteMission(mission.taskId, "first-step-no")
               setPhase("why")
@@ -193,14 +177,15 @@ export function FriendMissionDetail({
           }}
         >
           <label htmlFor="friend-mission-pop-why">Why decline?</label>
-          <input
+          <textarea
             id="friend-mission-pop-why"
-            className="friend-bead-input"
+            className="baby-friend-decline-why"
             value={why}
+            rows={3}
             onChange={(event) => setWhy(event.target.value)}
             required
           />
-          <button type="submit" className="friend-key" disabled={!why.trim()}>
+          <button type="submit" className="friend-key" data-no95="" disabled={!why.trim()}>
             Decline
           </button>
         </form>
@@ -208,7 +193,7 @@ export function FriendMissionDetail({
 
       {mission.status === "accepted" && mission.kind === "whim" ? (
         <div className="friend-mission-actions">
-          <button type="button" className="friend-key is-on" onClick={() => useBabyAnimalsStore.getState().completeMission(mission.taskId)}>
+          <button type="button" className="friend-key is-primary" data-no95="" onClick={() => useBabyAnimalsStore.getState().completeMission(mission.taskId)}>
             I did it
           </button>
         </div>
@@ -226,7 +211,7 @@ export function FriendMissionDetail({
           ))}
         </ol>
       ) : null}
-      <button ref={closeRef} type="button" className="friend-key" onClick={onClose}>
+      <button ref={closeRef} type="button" className="friend-key" data-no95="" onClick={onClose}>
         Close mission
       </button>
       {ItemPopup ? (

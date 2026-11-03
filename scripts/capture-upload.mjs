@@ -9,7 +9,7 @@
  * Plain Node, no npm install. `capture-box.mjs` mounts it:
  *
  *   import { createUploadRoutes } from "./capture-upload.mjs"
- *   const uploads = createUploadRoutes({ dir: DIR, uploadToken: env("COGS_CAPTURE_UPLOAD_TOKEN"), pullToken: TOKEN })
+ *   const uploads = createUploadRoutes({ dir: DIR, uploadToken: env("BRAIN2_CAPTURE_UPLOAD_TOKEN"), pullToken: TOKEN })
  *   if (await uploads.handle(req, res, url)) return   // first line inside the request handler's try
  *
  * Routes:

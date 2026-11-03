@@ -28,7 +28,6 @@
 body.win95-app .home95 .home-overview {
   --face-ink: #1d2126;
   --face-ink-soft: #464c54;
-  --face-engrave-hi: rgba(255, 255, 255, 0.85);
   --face-glass: #050b0a;
   --face-glass-2: #0b1714;
   --face-bezel: #1f2327;
@@ -194,10 +193,7 @@ body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-caption {
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--face-ink-soft);
-  /* engraved: dark cut with a lit lower lip */
-  text-shadow:
-    0 1px 0 var(--face-engrave-hi),
-    0 -0.5px 0 rgba(0, 0, 0, 0.18);
+  text-shadow: 0 -0.5px 0 rgba(0, 0, 0, 0.18);
 }
 
 body.win95-app .home95 .home-overview .home-tile .hab-score-caption > span {
@@ -349,7 +345,7 @@ body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-sub {
   line-height: 1.25;
   letter-spacing: 0.03em;
   color: var(--face-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   -webkit-line-clamp: 2;
 }
 
@@ -373,7 +369,7 @@ body.win95-app .home95 .home-overview .home-tile .home-review-actions button.hom
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--face-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  text-shadow: none;
   background-color: var(--chrome-key-mid, #d4d6d8);
   background-image:
     radial-gradient(ellipse 80% 70% at 50% 25%, rgba(255, 255, 255, 0.85), transparent 70%),
@@ -517,7 +513,7 @@ body.win95-app .hab95 .home95 .home-overview .home-tile .hab-score-caption {
   font-size: 10px;
   letter-spacing: 0.14em;
   color: #24282d;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0, rgba(255, 255, 255, 0.15) 45%, rgba(0, 0, 0, 0.06) 100%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 3px),

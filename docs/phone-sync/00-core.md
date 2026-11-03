@@ -4,7 +4,7 @@ _Last mapped: 2026-10-25_
 
 **Wave 0.** Lands before every other agent starts.
 
-**Status: built 2026-10-22.** The Settings panel landed 2026-10-25 (`components/Settings/PhoneSyncPanel.tsx`). As built: [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md). Two changes from the brief below: message bodies live in `data/phone-sync/messages.jsonl`, not a persist key (localStorage is ~5 MB for every key together); and `lib/vault-guard.js` needed no edit, because tracking entries already union by id and the stamp id is per record. On/off is `data/phone-sync/enabled.json` (a missing key stays on), read by the hub each tick. The panel is loopback only and does not show message bodies.
+**Status: built 2026-10-22.** The Settings panel landed 2026-10-25 (`components/Settings/imports/PhoneSyncPanel.tsx`). As built: [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md). Two changes from the brief below: message bodies live in `data/phone-sync/messages.jsonl`, not a persist key (localStorage is ~5 MB for every key together); and `lib/vault-guard.js` needed no edit, because tracking entries already union by id and the stamp id is per record. On/off is `data/phone-sync/enabled.json` (a missing key stays on), read by the hub each tick. The panel is loopback only and does not show message bodies.
 
 ## Job
 
@@ -22,7 +22,7 @@ The shared plumbing every source uses: record types, ids, stamps, people matchin
 
 ## Message storage
 
-Message bodies are kept (decided 2026-10-22). A message is a vault record with body, thread id, direction, and attachment paths. It also paints an `iphone-texts` instant so Tracking and Analytics see it. Full bodies live on disk in `data/phone-sync/messages.jsonl`, not in a persist key (see the status note above), so they do not bloat the tracking store or the ~5 MB localStorage.
+Message bodies are kept (decided 2026-10-22). A message is a vault record with body, thread id, direction, and attachment paths. It also paints an `iphone-texts` instant so Tracking and Data see it. Full bodies live on disk in `data/phone-sync/messages.jsonl`, not in a persist key (see the status note above), so they do not bloat the tracking store or the ~5 MB localStorage.
 
 ## Done
 

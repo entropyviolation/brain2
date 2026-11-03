@@ -1,0 +1,30 @@
+/* components/Home/ToDo/task-card/priority-star.css — silver chrome task-card star.
+   Outranks the green prioritized keycap in task-card.css. Shine is --tc-star-shine (0–1). */
+
+body.win95-app .task-card button.task-card-jewel.is-prioritized.is-icon.tc-star.task-card-keycap[aria-pressed="true"],
+.task-card button.task-card-jewel.is-prioritized.is-icon.tc-star.task-card-keycap[aria-pressed="true"] {
+  color: #3e4650;
+  background-color: #e2e6eb;
+  background-image: linear-gradient(160deg, #fbfcfd 0%, #e6eaee 46%, #c5ccd4 100%);
+  border-color: #8d969f;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.95),
+    inset -1px -1px 0 rgba(62, 70, 80, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.65);
+  text-shadow: none;
+}
+
+.task-card button.tc-star .tc-star-face {
+  display: block;
+  overflow: visible;
+}
+
+.task-card button.tc-star[aria-pressed="true"] .tc-star-face {
+  filter:
+    drop-shadow(0 0.6px 0 rgba(255, 255, 255, calc(0.3 + var(--tc-star-shine, 1) * 0.7)))
+    drop-shadow(
+      0 calc(0.35px + var(--tc-star-shine, 1) * 0.9px) calc(var(--tc-star-shine, 1) * 1.8px)
+      rgba(28, 34, 42, calc(0.18 + var(--tc-star-shine, 1) * 0.42))
+    );
+}

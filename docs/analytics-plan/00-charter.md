@@ -1,6 +1,8 @@
-# Charter — perfecting the Analytics tab
+# Charter — perfecting the Data tab
 
-This folder holds **build briefs** for a later pass that perfects the Analytics tab. The source of what the vault can honestly show is the inventories already written under `docs/analytics-vision/`. This pass does not audit those inventories by rewriting them. A brief may point at them, quote a law they already state, and say where a shipped view must move. It does not replace them, and it does not invent a column they say is missing.
+This folder holds **build briefs** for a later pass that perfects the analysis studio inside the Data tab. The source of what the vault can honestly show is the inventories already written under `docs/analytics-vision/`. This pass does not audit those inventories by rewriting them. A brief may point at them, quote a law they already state, and say where a shipped view must move. It does not replace them, and it does not invent a column they say is missing.
+
+_Last mapped: 2026-10-28._ The person’s intention for the tab is wider than these briefs. Analytics, combined analysis, visualization, and stats are this folder’s job. Searchable spreadsheet libraries, adding and updating sources (Instagram, texts, browser history), and screens whose job is to clean, annotate, correct, or confirm the data are stated in `components/Analytics/README.md`. These briefs do not absorb that work and do not drop it.
 
 The inventories:
 
@@ -21,11 +23,11 @@ A **shell / charter agent** owns this file on the later build. That agent checks
 
 ## Binding laws
 
-These laws bind every later brief and every later edit of Analytics.
+These laws bind every later brief and every later edit of Data.
 
 ### Keep every existing view id
 
-`components/Analytics/analytics-tabs.ts` is the list of ids. Tests, the persisted last-view, and screenshot capture click those ids. A rebuild may change labels, group membership, plate order, and which room paints first. It may not rename, drop, or alias away an id.
+`components/Analytics/chrome/analytics-tabs.ts` is the list of ids. Tests, the persisted last-view, and screenshot capture click those ids. A rebuild may change labels, group membership, plate order, and which room paints first. It may not rename, drop, or alias away an id.
 
 Groups that exist today: `behavior`, `time`, `accuracy`, `meta`, `library`.
 
@@ -47,7 +49,7 @@ Each view’s numbers and its pure helpers stay. A redesign **moves and composes
 
 Helpers already named on the studio — including the pure modules beside the views (`cross-section.ts`, `hour-day.ts`, `observatory-findings.ts`, `signal-stats.ts`, and the board stats that Tracking, Log, Cycle phase, and Operations already test) — remain the owners of those numbers. New composition calls them. It does not fork a second occupancy, a second habit grade, or a second Pearson.
 
-Analytics reads the vault. It does not become the writer of tasks, habits, or tracking. Clicking a series still opens the underlying items in Lists where that jump already exists. Derived numbers stay marked `~` / **est.** Interpretive sentences name the subset, the dates, and the share left out. They describe events. The `regret` id stays; the prose does not call the person regretful.
+Data reads the vault. It does not become the writer of tasks, habits, or tracking. Clicking a series still opens the underlying items in Lists where that jump already exists. Derived numbers stay marked `~` / **est.** Interpretive sentences name the subset, the dates, and the share left out. They describe events. The `regret` id stays; the prose does not call the person regretful.
 
 ### Honesty of the measures
 
@@ -63,7 +65,7 @@ These rules come from the shared spine in `ANALYTICS_VISION.md` and from the pro
 
 Shell, groups, plate order, and new rooms may be rebuilt. The Day landing below is the new first paint. Existing views remain reachable by the ids above. Default remembered view may change only if persistence and tests are updated in the same wave; the ids themselves do not.
 
-Do not restyle Lists, Habits, Plan, or Tracking outside Analytics. Do not restyle the Operations module to match this studio. Analytics still sits in Brain2 beside Lists: keep the `.fm98` title bar and status bar. Range and the left index use the house milled fascia. The canvases are the light instrument studio, not a theme pushed onto the rest of the app.
+Do not restyle Lists, Habits, Plan, or Tracking outside Data. Do not restyle the Operations module to match this studio. Data still sits in Brain2 beside Lists: keep the `.fm98` title bar and status bar. Range and the left index use the house milled fascia. The canvases are the light instrument studio, not a theme pushed onto the rest of the app.
 
 ### Studio kit
 
@@ -78,7 +80,7 @@ Beauty is composition and the existing kit, not a new theme.
 
 ### Language readings are guesses
 
-Sentiment, machine learning, language models, embeddings, and word clouds are specified as an **intention** in `docs/analytics-vision/06-language.md`. They read sentences the person already stored (task why, why an action was not taken, gratitude, day / week / month / season plan text, and the other prose that file names). A reading is labeled a guess. It never becomes a pen, a mood, a grade, a phase, a completion, or a plan entry. It does not write a model sentence back as if the person had typed it. Classical counts of that same prose stay the record. No new store.
+Sentiment, machine learning, language models, embeddings, and word clouds are specified as an **intention** in `docs/analytics-vision/06-language.md`. They read sentences the person already stored (task why, why an action was not taken, gratitude, day / week / month / season plan text, and the other prose that file names). A reading is labeled a guess. It never becomes a pen, a mood, a grade, a phase, a completion, or a plan entry. It does not write a model sentence back as if the person had typed it. Classical counts of that same prose stay the record. No new store. _Last mapped: 2026-10-28._ Models are local only. The first grouping of why-it-wasn't-done notes is [`13-local-readings.md`](13-local-readings.md).
 
 ## Day landing
 

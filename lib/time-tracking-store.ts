@@ -42,7 +42,7 @@
  *   `lib/habit-tracking-sync.ts` writes the result).
  *
  * A stroke is **certain** unless the block is marked `precision: "estimated"`.
- * Analytics can drop assumed time. Done items and imports that are already
+ * Data can drop assumed time. Done items and imports that are already
  * estimated confirm into a normal block; the hatch is the assumption.
  *
  * Persisted to localStorage under `brain2-timegrid-store`. Persist **v15**
@@ -98,6 +98,7 @@ import {
   type GridStep,
   type PaintRangeInput,
   type TimeEntry,
+  type TimeEntryCreator,
   type TrackingPrecision,
   type WeekStep,
 } from "@/lib/time-entries"
@@ -121,6 +122,7 @@ import { normalizeTag } from "@/lib/links"
 import { compactMoodReading } from "@/lib/mood-reading"
 import { compactNowObjectives } from "@/lib/now-objective"
 import { compactSpend } from "@/lib/spend"
+import { currentItemWriteClient, peekItemWriteAttribution } from "@/lib/item-write-source"
 
 export type { PenLink, CompanionTarget } from "@/lib/entry-links"
 
@@ -283,6 +285,8 @@ interface TimeTrackingState {
    * still there on the Activity Log and Day Log for the same date.
    */
   dayNotes: Record<string, string>
+  /** Dates (or period keys) whose day note is private (`lib/secrets.ts`). Kept in the timegrid blob, not with the note text. */
+  secretDayNotes?: Record<string, true>
   /** Cell size the grid draws and paints with. Storage stays minute-accurate. */
   gridStep: GridStep
   /** Whether the grid shows one day or a whole week. Purely a way of looking. */
@@ -363,6 +367,7 @@ interface TimeTrackingState {
 
   /** Replace the plaintext notes for one local calendar day. Empty text drops the key. */
   setDayNotes: (date: string, text: string) => void
+  setDayNoteSecret: (date: string, secret: boolean) => void
   /**
    * Notes on an untracked gap (Activity Log). Keyed by date|scope|start|end.
    * Empty text drops the key.
@@ -436,9 +441,22 @@ interface TimeTrackingState {
 
   updateEntry: (id: string, patch: Partial<Omit<TimeEntry, "id">>, wrapEndDate?: string) => void
   removeEntry: (id: string) => void
+  /**
+   * Adds blocks without clearing what they cover, and drops `removeIds`, in one step.
+   * Only autodetected LLM blocks use it: two of them may overlap until someone sets the true bounds.
+   * Returns the new ids.
+   */
+  layerEntries: (add: Omit<TimeEntry, "id">[], removeIds?: string[]) => string[]
   splitEntryAt: (id: string, atMin: number) => void
   moveEntryTo: (id: string, startMin: number, endMin: number) => void
   entriesFor: (date: string, scopeId: string) => TimeEntry[]
+}
+
+/** Who is writing right now: the open write frame (BIM, LLM Accept), else a hand stroke on this shell. */
+function creatorNow(): TimeEntryCreator {
+  const frame = peekItemWriteAttribution()
+  const client = frame?.client ?? currentItemWriteClient()
+  return { surface: frame?.surface ?? "user", ...(client ? { client } : {}) }
 }
 
 const rid = (p: string) => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -642,6 +660,20 @@ export const IPHONE_TEXTS_SCOPE_ID = "iphone-texts"
 
 export function isIphoneTextsScope(scope: Pick<TrackScope, "id" | "name">): boolean {
   return scope.id === IPHONE_TEXTS_SCOPE_ID || normalizeName(scope.name) === "iphone texts"
+}
+
+/**
+ * Screen Time, iPhone Screen Time, iPhone Calls, and iPhone Texts arrive from
+ * a sync. The block editor shows a row only when one of those blocks already
+ * covers the window. It does not offer Attach.
+ */
+export function isImportedCompanionScope(scope: Pick<TrackScope, "id" | "name">): boolean {
+  return (
+    isScreenTimeScope(scope) ||
+    isIphoneScreenTimeScope(scope) ||
+    isIphoneCallsScope(scope) ||
+    isIphoneTextsScope(scope)
+  )
 }
 
 export function findIphoneTextsScope(scopes: TrackScope[]): TrackScope | undefined {
@@ -1029,8 +1061,17 @@ function mergeTrackedEntries(
 ): { entries: TimeEntry[]; removedEntryIds: string[] } {
   const live = new Set(currentEntries.map((entry) => entry.id))
   const tombstones = new Set((currentRemoved ?? []).filter((id) => !live.has(id)))
-  const base = persisted ?? currentEntries
-  const entries = tombstones.size === 0 ? base : base.filter((entry) => !tombstones.has(entry.id))
+  const persistedGone = new Set(persistedRemoved ?? [])
+  // The blob is the base, so a tombstoned undo stays gone even when the blob
+  // still holds that block. A live row the blob has not heard of yet stays
+  // too: a late rehydrate used to replace the grid with the older snapshot
+  // and drop a text that had just been logged.
+  const fromBlob = (persisted ?? currentEntries).filter((entry) => !tombstones.has(entry.id))
+  const have = new Set(fromBlob.map((entry) => entry.id))
+  const extras = currentEntries.filter(
+    (entry) => !have.has(entry.id) && !tombstones.has(entry.id) && !persistedGone.has(entry.id),
+  )
+  const entries = extras.length === 0 ? fromBlob : [...fromBlob, ...extras]
   const kept = new Set(entries.map((entry) => entry.id))
   const removed = new Set<string>([...(persistedRemoved ?? []), ...(currentRemoved ?? [])])
   for (const id of tombstones) removed.add(id)
@@ -1599,6 +1640,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               taskId: extras?.taskId,
               stepId: extras?.stepId,
               nowObjectives: extras?.nowObjectives,
+              createdBy: creatorNow(),
             },
             () => rid("te"),
           )
@@ -1652,16 +1694,27 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               next.intakeClass = patch.intakeClass
             } else delete next.intakeClass
           }
+          if ("spanLock" in patch) {
+            if (patch.spanLock === "start" || patch.spanLock === "end" || patch.spanLock === "duration") {
+              next.spanLock = patch.spanLock
+            } else delete next.spanLock
+          }
+          if ("durationEstimated" in patch) {
+            if (patch.durationEstimated) next.durationEstimated = true
+            else delete next.durationEstimated
+          }
           if ("clockCertainty" in patch) {
+            // Fuzzy edges (start/endCertainty) say how sure the clocks are. They never decide "assumed".
+            const edges = "startCertainty" in patch || "endCertainty" in patch
             if (patch.clockCertainty === "estimated") {
               next.clockCertainty = "estimated"
-              next.precision = "estimated"
+              if (!edges) next.precision = "estimated"
             } else if (patch.clockCertainty === "unknown") {
               next.clockCertainty = "unknown"
-              if (!("precision" in patch)) delete next.precision
+              if (!("precision" in patch) && !edges) delete next.precision
             } else {
               delete next.clockCertainty
-              if (!("precision" in patch)) delete next.precision
+              if (!("precision" in patch) && !edges) delete next.precision
             }
           }
           if ("moodReading" in patch) {
@@ -1769,6 +1822,18 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
         })
       },
 
+      layerEntries: (add, removeIds = []) => {
+        if (isRestoring() || (!add.length && !removeIds.length)) return []
+        rememberWorld("paint")
+        const added = add.map((entry) => ({ ...entry, id: rid("te"), createdBy: entry.createdBy ?? creatorNow() }))
+        const drop = new Set(removeIds)
+        set((state) => ({
+          ...dropping(state, [...state.entries.filter((e) => !drop.has(e.id)), ...added]),
+          scopes: added.reduce((scopes, e) => stampPenUse(scopes, e.scopeId, e.penId), state.scopes),
+        }))
+        return added.map((e) => e.id)
+      },
+
       removeEntry: (id) => {
         rememberWorld("delete block")
         set((state) => {
@@ -1795,6 +1860,13 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
       moveEntryTo: (id, startMin, endMin) => {
         rememberWorld("move block")
         set((state) => dropping(state, moveEntry(state.entries, id, startMin, endMin, () => rid("te"))))
+      },
+
+      setDayNoteSecret: (date, secret) => {
+        set((state) => {
+          const { [date]: _was, ...rest } = state.secretDayNotes ?? {}
+          return { secretDayNotes: secret ? { ...rest, [date]: true as const } : rest }
+        })
       },
 
       setDayNotes: (date, text) => {

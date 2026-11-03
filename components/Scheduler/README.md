@@ -1,6 +1,8 @@
 # `components/Scheduler/` — Scheduler (Period Funnel)
 
-The **Scheduler** top-level tab in **Brain2**. It sorts to-do lists into Always → Year → Month → Week → Day. A list that already has dates — a trip itinerary — is scheduled on its own and is not this tool unless **Send to Scheduler** is on.
+_Last mapped: 2026-10-28_
+
+The **Scheduler** top-level tab in **Brain2**. On a phone (`max-width: 767px`) the rail stacks above the days, bucket grids become one column, and fields are 16px. Desktop chrome is unchanged. It sorts to-do lists into Always → Year → Month → Week → Day. A list that already has dates — a trip itinerary — is scheduled on its own and is not this tool unless **Send to Scheduler** is on.
 
 ## Public door
 
@@ -10,17 +12,27 @@ Other rooms import:
 |--------|------|---------|
 | `EnhancedScheduler` | `enhanced-scheduler.tsx` | `app/page.tsx` (Scheduler tab) |
 | `getScheduleableCategoryIds` | `scheduler-utils.ts` | Item detail page and popup |
-| `isTaskScheduleable`, `nextTaskScheduleableFlag`, `taskInheritsScheduleableFromLists` | `scheduler-utils.ts` | `components/ItemDetail/ItemScheduleFlags.tsx` |
-| `navigateDate` | `scheduler-utils.ts` | `components/Home/ToDo/TodoPeriodNav.tsx` |
+| `isTaskScheduleable`, `nextTaskScheduleableFlag`, `taskInheritsScheduleableFromLists` | `scheduler-utils.ts` | `components/ItemDetail/tabs/scheduling/ItemScheduleFlags.tsx` |
+| `navigateDate` | `scheduler-utils.ts` | `components/Home/ToDo/fascia/TodoPeriodNav.tsx` |
 | `pushCardWorkingQueue` | `schedule-card-detail.ts` | `lib/ritual-push.ts` |
 
 Writes **task-store** (`updateTask`, `deleteTask`, and the scheduling, completion, and eventually-list services that persist on that store).
 
-**Interiors** stay in this folder: the funnel (`AlwaysTab`, `PeriodFunnelTab`, `DayTab`, `DayAgenda`, `PeriodCell`), `SchedulerTaskItem`, `SchedulerFilters`, `ScheduleCardDetail`, `GanttView`, `DependencyGraph`, and `project-network.ts`. The other helpers in `scheduler-utils.ts` and `schedule-card-detail.ts` stay here too.
+**Interiors** stay in this room: the funnel boards in `funnel/` (`AlwaysTab`, `PeriodFunnelTab`, `DayTab`, `DayAgenda`, `PeriodCell`), `SchedulerTaskItem`, `SchedulerFilters`, `ScheduleCardDetail`, `GanttView`, `DependencyGraph`, and `project-network.ts`. The other helpers in `scheduler-utils.ts` and `schedule-card-detail.ts` stay at the room root too. _Last mapped: 2026-10-27._
 
-The surface is a **milled fascia** window (`.sch95` in `scheduler-chrome.css`, kin to Plan): CRT title (`#070c0a` glass, phosphor `#7dffc4`), Funnel / Gantt / Dependencies as equal view keys (active = CRT + round power lamp), Always → Day as equal period keys in one bay, engraved Address / View / Period nameplates, raised metal toolbar keys. Funnel buckets, Gantt, and Dependencies documents keep their content chrome and meaning colors — looks only on the frame.
+The surface is a **milled fascia** window (`.sch95` in `scheduler-chrome.css`, kin to Plan): CRT title (`#070c0a` glass, phosphor `#7dffc4`), Funnel / Gantt / Dependencies as silver keycaps (the pressed one is CRT + green on-light), Always → Day as latching keycaps (`.b2-keycap-tab`) in the same face as those toolbar keys. _Last mapped: 2026-10-27._ Address / View / Period nameplates stay engraved, and their letters have no white halo. Period chevrons, Today, Open list, and the card actions (Push, Mark done, Dismiss, Missed, Unschedule) are the same silver keycap. The title-bar minimize and maximize marks are keycaps too. Funnel buckets, Gantt, and Dependencies documents keep their content chrome and meaning colors — looks only on the frame.
+
+## Folders
+
+_Last mapped: 2026-10-27_
+
+| Folder | Holds |
+|--------|--------|
+| `funnel/` | Always, Year/Month/Week, and Day boards: `AlwaysTab`, `PeriodFunnelTab`, `DayTab`, `DayAgenda`, `PeriodCell` |
 
 ## Files
+
+_Last mapped: 2026-10-27._
 
 The funnel was split (orchestrator pattern) so the orchestrator stays small and
 the period/filter logic is independently testable.
@@ -28,19 +40,19 @@ the period/filter logic is independently testable.
 | File | Purpose |
 |------|---------|
 | `enhanced-scheduler.tsx` | **Orchestrator**: window chrome, store wiring, task-item renderer; toolbar **Funnel / Gantt / Dependencies** (`schedulerView`) and period keys. View mode + calendar cursor persist across refresh / tab switch. |
-| `scheduler-chrome.css` | Milled fascia: CRT title, view/period key bays, Address nameplate, metal keys — scoped under `.sch95`. Funnel / Gantt / graph contents untouched. Also imported from `app/layout.tsx` so Fast Refresh cannot drop it. |
+| `scheduler-chrome.css` | Milled fascia: CRT title, view-mode keys, Always→Day latching keycaps, Address nameplate, metal keys — scoped under `.sch95`. _Last mapped: 2026-10-27._ Funnel / Gantt / graph contents untouched. Also imported from `app/layout.tsx` so Fast Refresh cannot drop it. |
 | `scheduler-utils.ts` | **Pure logic**: available/scheduleable filtering + sort (`isTaskScheduleable`, `nextTaskScheduleableFlag`), per-period queries, schedule/unschedule field updates, calendar grid builders, navigation (`navigateDate` clamps month and year onto the last real day, so the 31st and 29 Feb do not skip a period), overview-box assignment, `taskIdsForDragSchedule` (multi-drag selection payload). Unmet-dep check is `lib/available-tasks.ts`. Unit-tested in `scheduler-utils.test.ts`. To Do month Previous / Next uses the same stepper. |
 | `project-network.ts` | **Pure glue**: `buildProjectNetwork()` selects "project" tasks (any in a dependency relation, or scheduleable with a duration), derives precedence edges, and runs the CPM solver (`lib/critical-path`); `toLayoutEdges()` adapts edges for `lib/graph-layout`. Shared by the Gantt + Graph views |
 | `GanttView.tsx` | **Gantt document** (plain SVG): one row per task (orb + label), bars positioned by CPM earliest-start and sized by duration, dependency arrows, slack tracks, critical path. Click a row to open the task. Not editable |
 | `DependencyGraph.tsx` | **Dependency document** (plain SVG): tasks as nodes with orbs, `dependencies` precedence as directed edges, layered left→right layout (`lib/graph-layout`), critical path. Click a node to select/open |
-| `SchedulerTaskItem.tsx` | Draggable task row: photographed orb, title, duration/urgency/importance. Checkbox is outside other controls; × is a sibling (no button-inside-button). Used across funnel tabs |
-| `PeriodCell.tsx` | Droppable bucket. Funnel grids: empty = reserved one-line furniture. Always: `variant="card"` drop cards. The title opens Schedule Card Detail; the body still schedules a selection |
+| `SchedulerTaskItem.tsx` | Draggable task row: photographed orb, title, duration/urgency/importance. Checkbox is outside other controls (white face, ink border, no navy ring). × is a sibling keycap that shows only while the pointer or keyboard is on that row; hovering the × turns it brick. × unschedules — it takes the task off that list and does not delete it. A period cell opens item detail on click. A left-hand period list opens it on double-click. Used across funnel tabs |
+| `funnel/PeriodCell.tsx` | Droppable bucket. Funnel grids: empty = reserved one-line furniture. Always: `variant="card"` drop cards. The title opens Schedule Card Detail; the body still schedules a selection |
 | `schedule-card-detail.ts` | Pure rows for one card: at this grain, finer period, open Undone, and the hidden archive (`moved`, `pushed`, `dismissed`, `missed`). A past card uses the same open queue as the funnel cell. `pushCardWorkingQueue` / `dismissCardWorkingQueue` / `missCardWorkingQueue` / `unscheduleCardWorkingQueue` / `finishCardInPeriod` keep the placement. Push may stamp optional `missReason` on the card placement. Dismiss and Missed do not. Unit-tested in `schedule-card-detail.test.ts` |
-| `ScheduleCardDetail.tsx` | That card, full width, with × to close. **Open list** jumps to Lists on `To do 8/31-9/6` (the period's full list). A past card offers Push to this period, Mark done, Dismiss, Missed, and Unschedule. Four toggles, off each time the card opens, show moved-forward, pushed, dismissed, and missed rows |
-| `PeriodFunnelTab.tsx` | Generic Year/Month/Week tab (sidebar list + reserved child-period rows; Deselect / Delete / Mark complete when the shared selection is non-empty). Title opens the card; drop on the sidebar returns the task to the parent period |
-| `AlwaysTab.tsx` | Always tab: available list + two columns of drop cards (This Year … Tomorrow, Eventually / Later). Selection tools: Deselect all, Remove from Scheduler, Delete, Mark complete. Drop on Available Tasks clears the period |
-| `DayTab.tsx` | Day tab: day task sidebar + `DayAgenda`. The agenda title opens that day |
-| `DayAgenda.tsx` | 24-hour agenda; empty hours stay reserved; occupied hours hold orb rows |
+| `ScheduleCardDetail.tsx` | That card, full width. **Open list** and the triage keys are silver keycaps. × is the brick-on-hover keycap and closes the card. Each task has a minutes field: type a length, Enter saves it as that task's estimate and focuses the next field. `updateTask` appends `{ at, minutes }` on `estimateLog` (the user estimate at this moment). The same number again adds no row. **Open list** jumps to Lists on `To do 8/31-9/6` (the period's full list). A past card offers Push to this period, Mark done, Dismiss, Missed, and Unschedule. Four toggles, off each time the card opens, show moved-forward, pushed, dismissed, and missed rows |
+| `funnel/PeriodFunnelTab.tsx` | Generic Year/Month/Week tab (sidebar list + reserved child-period rows; Deselect / Delete / Mark complete when the shared selection is non-empty). Title opens the card; drop on the sidebar returns the task to the parent period |
+| `funnel/AlwaysTab.tsx` | Always tab: available list + two columns of drop cards (This Year … Tomorrow, Eventually / Later). Selection tools: Deselect all, Remove from Scheduler, Delete, Mark complete. Drop on Available Tasks clears the period |
+| `funnel/DayTab.tsx` | Day tab: day task sidebar + `DayAgenda`. The agenda title opens that day |
+| `funnel/DayAgenda.tsx` | 24-hour agenda; empty hours stay reserved; occupied hours hold orb rows |
 | `SchedulerFilters.tsx` | Collapsible "Filters & Sort" for the Always inbox |
 
 ### Scheduler views
@@ -100,12 +112,12 @@ Past days (Week tab), past weeks (Month tab), and past months (Year tab) render 
 ## UI structure
 
 1. **CRT title** — human caption (`Scheduler — Funnel` / Gantt / Dependencies) plus a title orb on black glass.
-2. **Toolbar** — equal **Funnel / Gantt / Dependencies** keys (active = CRT + power lamp). Period metal chevrons + nameplate date when the funnel is not on Always.
-3. **Address** — engraved nameplate + path well (`Funnel \ Always`, or Year/Month/Week/Day + the current period label). An open card appends its title.
-4. **Period keys** — Always, Year, Month, Week, Day in one equal-fill bay. Only on Funnel. Not a second view-mode row.
+2. **Toolbar** — equal **Funnel / Gantt / Dependencies** keycaps (active = CRT + power lamp). Period keycap chevrons + Today, and a nameplate date, when the funnel is not on Always. Black legends have no white text-shadow.
+3. **Address** — engraved nameplate + path well (`Funnel \ Always`, or Year/Month/Week/Day + the current period label). An open card appends its title. The Address label has no white halo.
+4. **Period keys** — Always, Year, Season, Month, Week, Day in one equal-fill bay, in the same type as Funnel / Gantt / Dependencies. Only on Funnel. Not a second view-mode row.
 5. **Available Tasks** — inbox of unscheduled work (not on the eventually list); drag into cards. With a selection: **N selected**, **Deselect all** (clears checks only), **Remove from Scheduler** (`scheduleable: false`), **Delete** (confirm + tombstone), **Mark complete** (quiet batch via completion service; no popup stack).
 6. **Always cards** — two columns (This Year, This Month, Next Month, This Week, Next Week, Today, Tomorrow, Eventually / Later). Empty cards say Empty. Today and Tomorrow show the real date under the title. Year / Month / Week grids stay one-line furniture. Dragging a selected task onto a card schedules the whole selection. Clicking the card body does the same. Each task that **changes** period bucket awards **1 point** (`lib/schedule-credit.ts`); Eventually / Later and same-bucket re-drops do not.
-7. **Schedule Card Detail** — the card title (and the Day agenda title) replaces the board to the right of the broader list. **Open list** opens Lists on that period's To do list (`To do 8/31-9/6` for the week of those dates; day is `To do 8/31`, month is `To do September 2026`). The file manager is on List view and the list opens in the full default item list. Eventually / Later has no list. × closes the card. A current card lists **At this period**, **Finer period**, and **Undone** (past work inside the span that is not completed, pushed, dismissed, or missed). A past card is that Undone queue, defaulting to rows still waiting: not already placed on a current or future day, week, or month, and not pushed, dismissed, or missed. **Push to this week/month/day** assigns the current period of that size, marks the placement pushed, and can store an optional why on that placement; Skip still pushes. **Mark done** completes it inside the period and is the action that leaves the Undone list. **Dismiss** and **Unschedule** mark `resolved: "clarified"`. **Missed** marks `resolved: "missed"` and keeps the live assignment. Unschedule clears the live period back to Always. **Show moved forward**, **Show pushed**, **Show dismissed**, and **Show missed opportunities** are off each time the card opens. Turning one on lists those rows with a label and without a second clear action. Drag from the detail onto the left list returns the task to the broader period (Always returns it to the unscheduled inbox) and does not delete the history. Drag onto the detail assigns the card's period. Changing period tab or the period date closes the card.
+7. **Schedule Card Detail** — the card title (and the Day agenda title) replaces the board to the right of the broader list. Every task row has a minutes field. Enter writes `estimatedDuration` and logs that user estimate on `estimateLog` at the current time, then focuses the next task. **Open list** opens Lists on that period's To do list (`To do 8/31-9/6` for the week of those dates; day is `To do 8/31`, month is `To do September 2026`). The file manager is on List view and the list opens in the full default item list. Eventually / Later has no list. × closes the card. A current card lists **At this period**, **Finer period**, and **Undone** (past work inside the span that is not completed, pushed, dismissed, or missed). A past card is that Undone queue, defaulting to rows still waiting: not already placed on a current or future day, week, or month, and not pushed, dismissed, or missed. **Push to this week/month/day** assigns the current period of that size, marks the placement pushed, and can store an optional why on that placement; Skip still pushes. **Mark done** completes it inside the period and is the action that leaves the Undone list. **Dismiss** and **Unschedule** mark `resolved: "clarified"`. **Missed** marks `resolved: "missed"` and keeps the live assignment. Unschedule clears the live period back to Always. **Show moved forward**, **Show pushed**, **Show dismissed**, and **Show missed opportunities** are off each time the card opens. Turning one on lists those rows with a label and without a second clear action. Drag from the detail onto the left list returns the task to the broader period (Always returns it to the unscheduled inbox) and does not delete the history. Drag onto the detail assigns the card's period. Changing period tab or the period date closes the card.
 8. **Status** — available / scheduled counts, or the open card's title.
 
 ## Drag behavior

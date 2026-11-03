@@ -18,7 +18,7 @@ import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { ItemTypeDefinition } from "@/lib/types"
 import { getBuiltinItemTypes, getItemType, mergeTypeRegistry } from "@/lib/item-types"
-import { withSecondBrainTypes } from "@/lib/second-brain-types"
+import { withSecondBrainTypes, withSourceIdentifierAttributes } from "@/lib/second-brain-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withFilmType } from "@/lib/film-types"
@@ -243,7 +243,7 @@ export const useItemTypeStore = create<ItemTypeState>()(
       // System types always come from code; catalog types keep persisted edits.
       onRehydrateStorage: () => (state) => {
         if (state) {
-          state.types = mergeTypeRegistry(state.types ?? [])
+          state.types = withSourceIdentifierAttributes(mergeTypeRegistry(state.types ?? []))
           state.relations = cleanRelations(state.relations)
           state.relationOverrides = cleanRelationOverrides(state.relationOverrides)
           state.relationRules = cleanRules(state.relationRules)

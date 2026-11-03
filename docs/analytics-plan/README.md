@@ -1,8 +1,10 @@
-# Analytics plan
+# Data plan
 
-Build briefs for a later redesign of the Analytics tab. They read the inventories in [`docs/analytics-vision/`](../analytics-vision/README.md) and the studio that already ships. This pass writes briefs only. It does not change view math, view ids, or the tab.
+Build briefs for a later redesign of the analysis studio inside the Data tab (formerly Analytics). They read the inventories in [`docs/analytics-vision/`](../analytics-vision/README.md) and the studio that already ships. This pass writes briefs only. It does not change view math, view ids, or the tab.
 
-The charter is the law: keep every working chart, move and compose freely, and leave a blocked metric as an empty frame. Language readings (sentiment, machine learning, language models, embeddings, word clouds) sit beside classical counts and never write a sentence back as if the person had typed it.
+_Last mapped: 2026-10-28._ The person’s intention for the tab is wider than this redesign: combined analysis over all vault data, plain spreadsheet libraries for viewing rows, sources such as Instagram, texts, and browser history, and screens that clean, annotate, correct, or confirm the data. That statement lives in [`components/Analytics/README.md`](../../components/Analytics/README.md). These briefs do not absorb that work, and they do not drop it.
+
+The charter is the law: keep every working chart, move and compose freely, and leave a blocked metric as an empty frame. Language readings (sentiment, machine learning, language models, embeddings, word clouds) sit beside classical counts and never write a sentence back as if the person had typed it. Models stay on this machine ([`13-local-readings.md`](13-local-readings.md)).
 
 | File | What it covers |
 | --- | --- |
@@ -19,6 +21,7 @@ The charter is the law: keep every working chart, move and compose freely, and l
 | [`10-language.md`](10-language.md) | `gratitude`, `why`, `why-not`, `plan-prose`, `other-prose`. Reviews and Regret stay |
 | [`11-viz.md`](11-viz.md) | New plates use the existing studio kit. The word cloud is the one new picture |
 | [`12-waves.md`](12-waves.md) | Later implementation waves, with file owners so agents do not collide |
+| [`13-local-readings.md`](13-local-readings.md) | Local-only groupings of stored prose. First: why-it-wasn't-done notes under the Reviews list. No hosted model |
 
 [`12-waves.md`](12-waves.md) is the schedule for the build. Wave A can run in parallel. Wave B is the joins, after the day card. Wave C is forecast and quality.
 

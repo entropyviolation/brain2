@@ -6,6 +6,7 @@ shared contract.
 
 | File | Purpose |
 |------|---------|
+| `use-spreadsheet-catalog.ts` | Column catalog for the grid and Details. A large open set or vault paints from list and type schemas first, then reads item payloads. |
 | `SheetGrid.tsx` | The grid: sticky A1 headers + row gutter, **centered padded headers** (`.sheet-th` / `.sheet-th-sort`, reserved caret slot, `.sheet-th-active`), frozen name column, click-to-sort (blanks always last), header menu (Sort, **Attribute settings**, hide / insert / move), filter, resize (persisted `columnWidths`), formula bar, range selection + Sum/Avg bar, fill handle, Delete to clear, TSV copy/paste, type-to-replace / arrows / Tab / Enter / Escape, numeric footer, add-row, add-column. Hide writes `List.sheetConfig.columnIds`. Attribute settings reuses `AttributeSettingsDialog` / `AttributeSchemaEditor` for that column’s attr id (name / built-in fields stay disabled). Column-level `formula` attrs are read-only; per-cell `=A1` formulas are editable. Complex types open the item. |
 | `sheet-chrome.css` | Header chrome: padding, centered labels, reserved caret slot, hairline borders, active-column highlight, capped column widths, pinned Add-column control. |
 | `AddColumnDialog.tsx` | Add a column: on-this-list attrs first, then vault, or create a new attribute and assign it to every item on the list. |

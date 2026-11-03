@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { Folder, List, Task } from "@/lib/types"
+import { getFolderDescendantIds } from "@/lib/folder-tree"
 import {
   filterTasksByHiddenFolderLists,
   folderAllItemsCategoryId,
@@ -9,6 +10,7 @@ import {
   foldersInGlobalAllForFilter,
   listsInFolderForFilter,
   filterTasksByHiddenGlobalFolders,
+  taskInFolder,
   isTaskUncategorizedGlobally,
   GLOBAL_ALL_ITEMS_LIST_ID,
   syncGlobalAllItemsList,
@@ -231,5 +233,63 @@ describe("isTaskUncategorizedGlobally", () => {
     expect(
       isTaskUncategorizedGlobally(task("a", "mixed", [folderAllItemsCategoryId("folder1"), "list-1"])),
     ).toBe(false)
+  })
+})
+
+describe("filterTasksByHiddenGlobalFolders at scale", () => {
+  // The first version asked every folder about every task. Keep that as the oracle.
+  const naive = (tasks: Task[], folders: Folder[], hiddenIds: string[], categories: List[]) => {
+    const hidden = new Set(hiddenIds)
+    for (const id of hiddenIds) for (const d of getFolderDescendantIds(folders, id)) hidden.add(d)
+    return tasks.filter((t) => {
+      const inFolders = folders.filter((f) => taskInFolder(t, f, categories))
+      if (inFolders.length === 0) return true
+      return inFolders.some((f) => !hidden.has(f.id))
+    })
+  }
+
+  it("matches the per-folder answer with nested lists and shared membership", () => {
+    let seed = 7
+    const rand = (n: number) => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) % n)
+    const lists: List[] = Array.from({ length: 40 }, (_, i) => ({
+      ...list(`l${i}`, `l${i}`),
+      parentListId: i >= 10 ? `l${rand(i)}` : undefined,
+    }))
+    const folders: Folder[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `f${i}`,
+      name: `f${i}`,
+      createdAt: new Date(),
+      listIds: [`__all-items__f${i}`, `l${rand(10)}`, `l${rand(10)}`],
+      parentFolderId: i > 3 ? `f${rand(4)}` : undefined,
+    }))
+    const tasks: Task[] = Array.from({ length: 600 }, (_, i) =>
+      task(
+        `t${i}`,
+        `t${i}`,
+        Array.from({ length: rand(4) }, () => (rand(8) === 0 ? `__all-items__f${rand(8)}` : `l${rand(44)}`)),
+      ),
+    )
+    for (const hidden of [["f0"], ["f1", "f2"], ["f5"], ["f0", "f1", "f2", "f3"]]) {
+      expect(filterTasksByHiddenGlobalFolders(tasks, folders, hidden, lists).map((t) => t.id)).toEqual(
+        naive(tasks, folders, hidden, lists).map((t) => t.id),
+      )
+    }
+  })
+
+  it("stays fast on a vault of 25,000 items", () => {
+    const lists: List[] = Array.from({ length: 300 }, (_, i) => ({
+      ...list(`l${i}`, `l${i}`),
+      parentListId: i >= 50 ? `l${i % 50}` : undefined,
+    }))
+    const folders: Folder[] = Array.from({ length: 260 }, (_, i) => ({
+      id: `f${i}`,
+      name: `f${i}`,
+      createdAt: new Date(),
+      listIds: [`__all-items__f${i}`, `l${i % 50}`],
+    }))
+    const tasks = Array.from({ length: 25000 }, (_, i) => task(`t${i}`, `t${i}`, [`l${i % 300}`]))
+    const started = performance.now()
+    filterTasksByHiddenGlobalFolders(tasks, folders, ["f1", "f2"], lists)
+    expect(performance.now() - started).toBeLessThan(500)
   })
 })

@@ -3,9 +3,11 @@
  *
  * These match the Tracking log rows already written by BIM, Quick Add, and
  * the Tracking log composer. A thought process is an Activity instant with
- * `eventKind` `thought-process` (title, note, clock). A log is an Activity
- * Text log event whose `eventKind` is the slug of the phrase (`left room`),
- * including a range. Intake, notes, switches, and spends stay off these types.
+ * `eventKind` `thought-process` (title, note, clock). The seed parents it
+ * under Log. A log is an Activity Text log event whose `eventKind` is the
+ * slug of the phrase (`left room`), including a range. Food, drink, drug,
+ * intake, log notes, switches, spends, and counts are subtypes in
+ * `lib/log-item-types.ts`. Timeblock is its own type in `lib/timeblock-types.ts`.
  *
  * Pure + serializable. Registered via `withTrackingItemTypes()` in
  * `lib/item-types.ts`.
@@ -43,6 +45,7 @@ export function getThoughtProcessTypeDefinition(): ItemTypeDefinition {
       "A guiding strand of this moment: why you are doing something, what you expect next, and how it lands. The same Text log instant as tp: / thought process:, eventKind thought-process.",
     builtin: true,
     kind: "catalog",
+    parentTypeId: LOG_TYPE_ID,
     color: "#3d6b8a",
     attributes: [WHEN, CLOCK, KIND, ENTRY],
     displayedAttributes: [TRACKING_ITEM_ATTR.when, TRACKING_ITEM_ATTR.clock],

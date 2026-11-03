@@ -1,0 +1,71 @@
+/* components/Lab/PlanBimby/plan-bimby.css — Plan BIMBY rows dressed as the To Do task card.
+   The keys, lamp and numbers come from `task-card.css`; this file is the paper, the header strip and the touch size. */
+
+.pb-card {
+  background: #eef0f3;
+  color: #1f2328;
+  border: 1px solid #5c6064;
+  border-radius: 6px;
+  font-size: 13px;
+  overflow: hidden;
+}
+.pb-card.is-running { border-color: #209e82; box-shadow: 0 0 0 1px #209e82; }
+.pb-card.is-closed { opacity: 0.7; }
+.pb-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px;
+  background: repeating-linear-gradient(0deg, #d7dade 0 1px, #dfe2e6 1px 2px);
+  border-bottom: 1px solid #9aa0a6;
+}
+.pb-name {
+  flex: 1 1 8rem; min-width: 0; margin: 0;
+  font: 600 18px/1.15 var(--font-fraunces), Georgia, serif; font-variation-settings: "SOFT" 100, "WONK" 1;
+  letter-spacing: -0.01em; overflow-wrap: anywhere;
+}
+.pb-name.is-done { text-decoration: line-through; }
+.pb-body { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; }
+.pb-card .pb-input {
+  min-height: 44px; padding: 2px 8px; border: 1px solid #8a9096; border-radius: 3px;
+  background: #fff; color: #1f2328; font: inherit; font-size: 16px;
+}
+.pb-card .pb-name-input { flex: 1 1 8rem; min-width: 0; font: 600 18px/1.15 var(--font-fraunces), Georgia, serif; }
+.pb-card .task-card-key { min-height: 44px; min-width: 44px; }
+.pb-card .task-card-lamp.is-running { background: #e2f7f1; color: #0c234a; }
+.pb-card .task-card-lamp.is-done { background: #d3ecdf; }
+.pb-card .task-card-lamp.is-skipped { background: #e6e6e6; }
+.pb-card .task-card-lamp.is-paused { background: #f1e9d6; }
+.pb-clock { font: 500 22px/1 var(--font-dm-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.pb-clock.is-over { color: #a12a2a; }
+.pb-sub { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.pb-effect { font-size: 12px; color: #12603f; }
+.pb-quiet { font-size: 12px; color: rgba(40, 48, 60, 0.65); }
+
+/* The chat shell: a header, a thread of bubbles, a composer pinned under it. */
+.pb-chat { display: flex; flex-direction: column; min-height: 0; background: #e6e9ed; color: #1f2328; }
+.pb-chat-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 12px; padding-right: 44px;
+  background: repeating-linear-gradient(0deg, #d7dade 0 1px, #dfe2e6 1px 2px); border-bottom: 1px solid #9aa0a6;
+}
+.pb-chat-icon { width: 20px; height: 20px; }
+.pb-chat-title { display: flex; flex-direction: column; line-height: 1.1; letter-spacing: 0.12em; font-size: 13px; }
+.pb-modes { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.pb-thread { display: flex; flex-direction: column; gap: 10px; padding: 12px; flex: 1; min-height: 0; }
+.pb-bubble { max-width: 100%; padding: 8px 12px; border-radius: 10px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pb-bubble.is-bimby { align-self: stretch; background: #eef0f3; border: 1px solid #9aa0a6; border-top-left-radius: 2px; }
+.pb-bubble.is-you { align-self: flex-end; max-width: 85%; background: #e2f7f1; border: 1px solid #209e82; border-top-right-radius: 2px; }
+.pb-bubble.is-bimby ol { white-space: normal; }
+.pb-composer {
+  position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom)); background: #eef0f3; border-top: 1px solid #9aa0a6;
+}
+.pb-composer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pb-check { display: flex; align-items: center; gap: 6px; }
+.pb-send { width: 16px; height: 16px; display: inline; vertical-align: -3px; }
+.pb-modes button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* The second look (`lib/critic-bimby/`): a strip when the plan may not match the sentence, a chip on the row it is about. */
+.pb-critic { border: 1px solid #a12a2a; background: #f3e4e4; color: #3a1414; padding: 8px 10px; font-size: 13px; }
+.pb-critic ul { margin: 4px 0 6px 18px; list-style: disc; }
+.pb-critic-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pb-critic-keys .task-card-key { min-height: 44px; }
+.pb-chip { margin: 4px 0 0 28px; padding: 2px 8px; border-left: 3px solid #7d8590; font-size: 12px; color: rgba(40, 48, 60, 0.8); }
+.pb-chip.is-certain { border-left-color: #a12a2a; color: #a12a2a; }

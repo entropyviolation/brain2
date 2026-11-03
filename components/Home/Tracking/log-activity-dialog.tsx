@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,7 +29,7 @@ import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-p
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
-import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
+import { PenSwatches } from "@/components/Home/Tracking/cabinet/pen-swatches"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { ClockTime } from "@/components/Home/Tracking/now-time-button"
 import "./tracking-chrome.css"
@@ -44,6 +44,8 @@ function OptionalClock({
   onDate,
   onToggleDate,
   estimateBasis,
+  hideDateToggle = false,
+  labelAdornment,
 }: {
   id: string
   label: string
@@ -55,11 +57,18 @@ function OptionalClock({
   onToggleDate: () => void
   /** When set, the clock wears ~ and a dashed est. chip (tooltip = basis). */
   estimateBasis?: string
+  /** The block editor draws one Date key for both clocks. */
+  hideDateToggle?: boolean
+  /** Sits beside the label (the span lock). */
+  labelAdornment?: ReactNode
 }) {
   return (
     <div className="trk-clock-field">
       <div className="trk-clock-head">
-        <Label htmlFor={id}>{label}</Label>
+        <span className="trk-clock-label">
+          <Label htmlFor={id}>{label}</Label>
+          {labelAdornment}
+        </span>
         <div className="trk-clock-head-trail">
           {estimateBasis ? (
             <span
@@ -69,9 +78,11 @@ function OptionalClock({
               est.
             </span>
           ) : null}
-          <button type="button" className="trk-date-toggle" aria-pressed={showDate} onClick={onToggleDate}>
-            {showDate ? "Hide date" : "Date"}
-          </button>
+          {hideDateToggle ? null : (
+            <button type="button" className="trk-date-toggle" aria-pressed={showDate} onClick={onToggleDate}>
+              {showDate ? "Hide date" : "Date"}
+            </button>
+          )}
         </div>
       </div>
       {showDate && (
@@ -107,7 +118,7 @@ export function LogActivityDialog({
   defaultStartMin: number
   defaultEndMin: number
   onClose: () => void
-  /** Extra DialogContent classes (e.g. Analytics `an-popup` for crisp titles). */
+  /** Extra DialogContent classes (e.g. Data `an-popup` for crisp titles). */
   contentClassName?: string
 }) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -222,7 +233,7 @@ export function LogActivityDialog({
     <>
     <Dialog open onOpenChange={guard.handleOpenChange}>
       <DialogContent
-        className={["trk95 trk-dialog sm:max-w-md max-h-[85vh] overflow-y-auto", contentClassName]
+        className={["trk95 trk-dialog trk-log-sheet sm:max-w-md max-h-[85vh] overflow-y-auto", contentClassName]
           .filter(Boolean)
           .join(" ")}
         data-ui-name="Log activity"
@@ -369,7 +380,7 @@ export function LogActivityDialog({
             <Switch id="log-assumed" checked={assumed} onCheckedChange={setAssumed} />
           </div>
           <p className="trk-help">
-            New blocks are certain unless you say otherwise. Assumed time can be hidden in Analytics.
+            New blocks are certain unless you say otherwise. Assumed time can be hidden in Data.
           </p>
 
           <Button className="w-full" onClick={save} disabled={!penId}>

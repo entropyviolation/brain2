@@ -43,3 +43,33 @@
   white-space: nowrap;
   opacity: 0.75;
 }
+
+@media (max-width: 767px) {
+  .address-suggest {
+    max-width: 100%;
+  }
+
+  .address-suggest-list {
+    position: fixed;
+    top: auto;
+    right: max(0.5rem, env(safe-area-inset-right));
+    bottom: max(0.5rem, env(safe-area-inset-bottom));
+    left: max(0.5rem, env(safe-area-inset-left));
+    max-height: min(16rem, 50dvh);
+    overflow-y: auto;
+  }
+
+  .address-suggest-option {
+    min-height: 44px;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .address-suggest-name,
+  .address-suggest-label {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: unset;
+    overflow-wrap: anywhere;
+  }
+}

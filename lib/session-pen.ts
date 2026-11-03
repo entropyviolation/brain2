@@ -14,6 +14,7 @@ import { allLines, pauseSession, resumeSession, stopLine, type SessionPlan } fro
 import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
 import { pausePenColorSession, resumePenColorSession } from "@/lib/pen-color-session"
+import { takeQueuedPauseReason } from "@/lib/work-pause"
 import { stopTaskClock } from "@/lib/task-clock"
 
 function paintsPen(plan: SessionPlan | undefined, pen: PenColorSession | null | undefined): plan is SessionPlan {
@@ -27,6 +28,12 @@ export function releasePenClock(plans: readonly SessionPlan[]): void {
 }
 
 const ticking = (plan: SessionPlan | undefined) => plan?.phase === "run" && !!plan.clock?.running
+
+/** True when pausing this plan will also pause the pen clock it is painting. */
+export function linkedPenIsRunning(plan: SessionPlan): boolean {
+  const pen = usePenColorSessionStore.getState().session
+  return paintsPen(plan, pen) && ticking(plan) && !pen?.pausedAt
+}
 
 let unlink: (() => void) | null = null
 
@@ -69,7 +76,11 @@ export function linkSessionAndPen(): () => void {
         if (!paintsPen(plan, pen)) continue
         const before = prev.open.find((p) => p.id === plan.id)
         if (!before) continue
-        if (ticking(before) && !ticking(plan) && !pen?.pausedAt) pausePenColorSession()
+        if (ticking(before) && !ticking(plan) && !pen?.pausedAt) {
+          const reason = takeQueuedPauseReason()
+          if (reason) pausePenColorSession(new Date(), reason)
+          else pausePenColorSession(new Date(), { hold: true })
+        }
         else if (!ticking(before) && ticking(plan) && pen?.pausedAt) resumePenColorSession()
       }
     }),

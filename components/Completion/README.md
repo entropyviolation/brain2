@@ -71,4 +71,4 @@ the Missed Opportunities list. Overlay / **×** / Escape still **Skip** (dismiss
 - Multiplier math + objectives/goals data: `lib/goals-store.ts`, `lib/objectives.ts`
 - Objectives/Goals UI: `components/Home/Goals/`
 - Usual-duration hint: `usualDurationMinutes` in `lib/estimated-values.ts`
-- Review clock, words, points, and the Analytics summary: `lib/completion-review.ts`
+- Review clock, words, points, and the Data summary: `lib/completion-review.ts`

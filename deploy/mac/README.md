@@ -2,7 +2,9 @@
 
 _Last mapped: 2026-10-20_
 
-launchd jobs: the nightly vault backup (`com.brain2.backup`, see `docs/BIM_BACKUP.md`) and the iPhone app reinstall (`com.brain2.ios-reinstall`, below).
+launchd jobs: the always-on installer (below), the nightly vault backup (`com.brain2.backup`, see `docs/BIM_BACKUP.md`) and the iPhone app reinstall (`com.brain2.ios-reinstall`, below).
+
+_Last mapped: 2026-10-31._ The Mac that runs `com.brain2.hub` and `com.brain2.awake` is the machine the iPhone reaches through Tailscale, and the one that drains the temporary Oracle relay. If it sleeps, away-from-home sync pauses. See [`docs/ORACLE_INTERIM_SYNC.md`](../../docs/ORACLE_INTERIM_SYNC.md).
 
 ## Install
 
@@ -44,13 +46,13 @@ rm ~/Library/LaunchAgents/com.brain2.backup.plist
 - The destination is your choice. An iCloud Drive folder or an external drive both work. An external drive must be mounted at 03:00. If it is not, the run fails and logs the error.
 - Under `~/Library/Mobile Documents/` or `~/Documents`, macOS may ask for file access. Allow `node` once.
 - A Mac that is asleep at 03:00 runs the job on wake.
-- Edit `COGS_BACKUP_KEEP` in the plist to change how many backups are kept.
+- Edit `BRAIN2_BACKUP_KEEP` in the plist to change how many backups are kept.
 
 ## iPhone app reinstall
 
 _Last mapped: 2026-10-22_
 
-A free Apple ID build stops opening after 7 days, and location stops with it. `scripts/ios-reinstall.mjs` keeps it alive. launchd runs it every 3 hours and at login. A run does nothing until the last good install is 4 days old (`COGS_IOS_REINSTALL_DAYS`). Then it builds the app and installs it on the iPhone over Wi-Fi or cable, and keeps trying every 3 hours until one works. From day 5 (`COGS_IOS_REMIND_DAYS`) it also reminds you, at most every 12 hours: a Mac notification, plus Telegram when `COGS_TELEGRAM_BOT_TOKEN` and `COGS_IOS_REMIND_CHAT_ID` are set in the plist. The Location card on the phone also warns when the app is 2 days from expiry. State lives in `~/.brain2/ios-reinstall.json`.
+A free Apple ID build stops opening after 7 days, and location stops with it. `scripts/ios-reinstall.mjs` keeps it alive. launchd runs it every 3 hours and at login. A run does nothing until the last good install is 4 days old (`BRAIN2_IOS_REINSTALL_DAYS`). Then it builds the app and installs it on the iPhone over Wi-Fi or cable, and keeps trying every 3 hours until one works. From day 5 (`BRAIN2_IOS_REMIND_DAYS`) it also reminds you, at most every 12 hours: a Mac notification, plus Telegram when `BRAIN2_TELEGRAM_BOT_TOKEN` and `BRAIN2_IOS_REMIND_CHAT_ID` are set in the plist. The Location card on the phone also warns when the app is 2 days from expiry. State lives in `~/.brain2/ios-reinstall.json`.
 
 **Once, with the phone plugged in:** Xcode → Window → Devices and Simulators → select the iPhone → tick **Connect via network**. After that, the phone installs over Wi-Fi when it is unlocked, on the same network, and the Mac is awake.
 
@@ -61,7 +63,7 @@ sed -e "s|__NODE_PATH__|$(command -v node)|" -e "s|__REPO_PATH__|$HOME/brain2|g"
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brain2.ios-reinstall.plist
 ```
 
-Install now to start the clock: `COGS_IOS_TEAM_ID=YOURTEAMID npm run ios:reinstall -- --force`. Check without building: `-- --dry-run`. Logs: `~/Library/Logs/brain2-ios-reinstall.log`.
+Install now to start the clock: `BRAIN2_IOS_TEAM_ID=YOURTEAMID npm run ios:reinstall -- --force`. Check without building: `-- --dry-run`. Logs: `~/Library/Logs/brain2-ios-reinstall.log`.
 
 Uninstall: `launchctl bootout gui/$(id -u)/com.brain2.ios-reinstall` and delete the plist.
 
@@ -69,3 +71,18 @@ Notes:
 - A build needs about 2 GB free (the cache lives in `~/Library/Caches/brain2-ios-build`).
 - The build runs `npm run build` and `npx cap sync ios`, so it installs whatever `~/brain2` has checked out.
 - `PATH` is baked into the plist at install time, so `npx`, `pod` and `xcodebuild` resolve under launchd. Reinstall the plist if you move Node or CocoaPods.
+
+## Always-on Mac (everything at once)
+
+_Last mapped: 2026-11-01_ Texts and calls need Full Disk Access for the `node` binary the hub plist names. Install the hub with the real path (`realpath "$(command -v node)"`, e.g. `/opt/homebrew/Cellar/node@24/24.16.0/bin/node`) and grant that file access. A `brew upgrade` of node changes the path: reinstall the plist and grant access again. The hub also syncs Chrome history every 15 minutes (`lib/chrome-history-reader.ts`), which needs no extra access.
+
+_Last mapped: 2026-10-30_
+
+`install-always-on.sh` installs node and Ollama with Homebrew (not ActivityWatch: the activity that matters is on the Mac you use), pulls `qwen2.5:14b-instruct`, `qwen2.5:3b-instruct` and `nomic-embed-text`, builds the app, and installs four launchd jobs: `com.brain2.web` (app and `/api` on :3000), `com.brain2.hub` (`phone:hub`), `com.brain2.awake` (`caffeinate`), and the nightly backup. Jobs restart when they die. Safe to run again.
+
+```bash
+bash deploy/mac/install-always-on.sh --dry-run
+bash deploy/mac/install-always-on.sh
+```
+
+Flags: `--skip-models`, `--skip-build`, `--no-backup`, `--uninstall`. Secrets stay in `.env.local`; the script never writes them. The Energy settings are by hand (the script prints them).

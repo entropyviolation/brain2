@@ -30,6 +30,7 @@ describe("settings index", () => {
       "Home location",
       "Birthday",
       "Default time of day",
+      "Secrets",
     ])
   })
 
@@ -41,7 +42,7 @@ describe("settings index", () => {
   it("matches title, group, and indexed labels", () => {
     expect(matchingSections("birthday").map((section) => section.id)).toEqual(["settings-birthday"])
     expect(matchingSections("star lord").map((section) => section.id)).toEqual(["settings-birthday"])
-    expect(matchingSections("you").map((section) => section.groupId)).toEqual(["you", "you", "you", "you"])
+    expect(matchingSections("you").map((section) => section.groupId)).toEqual(["you", "you", "you", "you", "you"])
     expect(matchingSections("window gray").map((section) => section.id)).toEqual(["settings-window-gray"])
     expect(sectionShown("settings-points", "goal focus")).toBe(true)
     expect(matchingSections("points").map((section) => section.id)).toEqual(["settings-points"])

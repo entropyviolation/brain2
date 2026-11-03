@@ -12,6 +12,7 @@
  * Spec: §7 (Scheduler period funnel).
  */
 import type { Task, SchedulePeriod, SchedulePlacementPeriod, StoredBlockedReason } from "@/lib/types"
+import { withItemWriteSource } from "@/lib/item-write-source"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
 import {
   scheduleFieldsForPeriod,
@@ -130,7 +131,7 @@ export function rollUpExpiredSchedules(
   for (const task of repo.getAll()) {
     const patch = rollUpScheduleFieldsCascaded(task, now)
     if (!patch) continue
-    repo.update({ ...task, ...patch })
+    withItemWriteSource({ surface: "schedule-rollover" }, () => repo.update({ ...task, ...patch }))
     rolled.push(task.id)
   }
   return rolled

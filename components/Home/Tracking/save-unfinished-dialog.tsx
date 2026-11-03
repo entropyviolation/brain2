@@ -4,11 +4,12 @@
  * Stop, with objectives still open, asks once whether to keep them for the
  * next time that pen, task, or subtask is tracked.
  * Yes closes and parks them. No closes without parking. Cancel leaves the
- * clock running.
+ * clock running. When the task card is open, this mounts inside that card
+ * so the card's modal does not hide it or swallow the click.
  */
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { createPortal } from "react-dom"
 
 export function SaveUnfinishedDialog({
@@ -33,10 +34,15 @@ export function SaveUnfinishedDialog({
     return () => window.removeEventListener("keydown", onKey, true)
   }, [onCancel])
 
-  if (typeof document === "undefined") return null
+  const [layer, setLayer] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    const found = document.querySelector("[data-ui-name='Task card']")
+    setLayer(found instanceof HTMLElement ? found : document.body)
+  }, [])
+  if (!layer) return null
   const noun = count === 1 ? "1 objective is still open." : `${count} objectives are still open.`
   return createPortal(
-    <div className="trk-now-obj-stop-back" role="presentation">
+    <div className="trk-now-obj-stop-back" data-task-card-pop="" role="presentation">
       <div className="trk-now-obj-stop b2-now" role="alertdialog" aria-label="Save unfinished objectives" data-testid="save-unfinished-dialog">
         <p>{noun} Save them for the next time you track this?</p>
         <div className="trk-now-obj-stop-actions">
@@ -52,7 +58,7 @@ export function SaveUnfinishedDialog({
         </div>
       </div>
     </div>,
-    document.body,
+    layer,
   )
 }
 

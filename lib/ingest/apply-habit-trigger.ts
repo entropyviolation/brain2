@@ -43,7 +43,7 @@ export function applyHabitTriggerMatch(hit: HabitTriggerMatch, now = new Date())
       goal,
       keywordLogged: true,
       keywordValue: (previous?.keywordValue ?? 0) + hit.value,
-    })
+    }, "auto-link")
     const note = fromTextMessageNote(now, hit.note)
     attachDoneNotes(habit, now, note)
     const unit = habit.unit ? ` ${habit.unit}` : ""
@@ -61,7 +61,7 @@ export function applyHabitTriggerMatch(hit: HabitTriggerMatch, now = new Date())
       goal,
       keywordLogged: true,
       keywordValue: hit.value,
-    })
+    }, "auto-link")
     const note = fromTextMessageNote(now, hit.note)
     attachDoneNotes(habit, now, note)
     return {
@@ -75,7 +75,7 @@ export function applyHabitTriggerMatch(hit: HabitTriggerMatch, now = new Date())
   const remainder = buildRemainder(habit, hit)
   const result = writeHabit(habit, remainder, now)
   if (result.status !== "ok") return { ...result, kind: "habit-trigger" }
-  useHabitsStore.getState().updateCompletion(habit.id, now, { keywordLogged: true })
+  useHabitsStore.getState().updateCompletion(habit.id, now, { keywordLogged: true }, "auto-link")
 
   const note = fromTextMessageNote(now, hit.note)
   attachDoneNotes(habit, now, note)
@@ -110,6 +110,6 @@ function attachDoneNotes(habit: WeeklyTask, date: Date, note: string): void {
   // Completion may still be writing — patch via a microtask-free re-read after
   // the store flush by updating completion text for TEXT habits, else notes later.
   if (habit.type === TaskType.TEXT) {
-    useHabitsStore.getState().updateCompletion(habit.id, date, { text: note, completed: true })
+    useHabitsStore.getState().updateCompletion(habit.id, date, { text: note, completed: true }, "auto-link")
   }
 }

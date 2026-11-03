@@ -5,7 +5,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { Subtask, Task } from "@/lib/types"
 import { TodoBreakdown } from "./TodoBreakdown"
-import { TaskPrereqDialog } from "./TaskPrereqDialog"
+import { TaskPrereqDialog } from "./ledger/TaskPrereqDialog"
 
 function s(id: string, extra: Partial<Subtask> = {}): Subtask {
   return { id, description: id, completed: false, ...extra }

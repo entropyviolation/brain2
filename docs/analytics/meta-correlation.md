@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-`components/Analytics/CorrelationExplorer.tsx`, helpers in `meta-math.ts`, fills in `meta-plots.tsx`.
+`components/Analytics/meta/CorrelationExplorer.tsx`, helpers in `meta-math.ts`, fills in `meta-plots.tsx`.
 
 ## Information
 Series: the five metrics (daily mean), habit %, tracked minutes, sleep minutes, points. Matrix of Pearson r for every pair, floor `SAMPLE_FLOORS.correlation`.

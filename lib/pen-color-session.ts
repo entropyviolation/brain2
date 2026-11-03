@@ -10,14 +10,20 @@
  * A task may ride the clock (`taskId` / `stepId`, set by `lib/task-clock.ts`).
  * Then the painted blocks carry the task and step, Stop logs the span on the
  * task (`lib/task-clock-log.ts`), and objectives tied to steps tick them.
+ * A step played while that task sitting is already up gets its own timer
+ * (`subclocks`). Stopping the step logs only that timer. Stopping the task
+ * logs every step timer, then the sitting.
  * Each painted block's notes say it was added from Working On Now, with the
  * task and the subtasks and objectives finished on this sitting. A note you
  * rewrote by hand is left as you wrote it.
  *
  * Only the header clock grows the block (`watchPenClockShown`). The Tracking
- * strip and the focus bar show the same sitting; they do not paint. If that
- * header clock is missing, or the page is going away, the sitting ends: the
- * block gets an end, and the task and step stay open.
+ * strip and the focus bar show the same sitting; they do not paint. The
+ * sitting is persisted, so a refresh keeps the clock, the objectives, and the
+ * task. A tick before the time grid has rehydrated does not drop a pen that
+ * is not in the seed set yet. If the header clock is on screen and then off
+ * screen, the sitting ends: the block gets an end, and the task and step stay
+ * open.
  */
 import type { TrackPen } from "@/lib/time-tracking-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -30,7 +36,7 @@ import {
   liveEntryUpToDate,
   type WorkDaySlice,
 } from "@/lib/operation-work-session"
-import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
+import { usePenColorSessionStore, type PenColorSession, type PenSubclock } from "@/lib/pen-color-session-store"
 import {
   addCompletedNowObjective,
   addNowObjective,
@@ -38,19 +44,24 @@ import {
   bankOpenStint,
   compactNowObjectives,
   editNowObjectiveText,
+  moveNowObjectiveToNext,
+  moveNowObjectiveToNow,
   parseObjectiveClock,
   removeNowObjective,
   setNowObjectiveCompletes,
   tieNowObjectiveToStep,
   toggleNowObjectiveComplete,
   type NowObjective,
+  type NowObjectiveLane,
 } from "@/lib/now-objective"
 import {
   createTaskForObjective,
+  fileObjectivesOnTask,
   homeForObjective,
   homesForPen,
   homesForTask,
   mergeResumed,
+  objectivesAttachedToTask,
   toParked,
 } from "@/lib/unfinished-objectives"
 import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
@@ -60,9 +71,20 @@ import {
   clockNoteField,
   logTaskClockSpan,
   matchStepForObjective,
+  retargetClockLogs,
+  WORKING_ON_NOW_NOTE_PREFIX,
   workingOnNowBlockNote,
 } from "@/lib/task-clock-log"
 import { sessionElapsedMs as elapsedMsOf } from "@/lib/operation-work-session"
+import {
+  appendPause,
+  closeOpenPause,
+  isHoldPause,
+  mergeSittingNote,
+  pauseReasonText,
+  resumeOpenPause,
+  type PauseRequest,
+} from "@/lib/work-pause"
 
 /** Block fields that follow the task on the clock. Empty for a plain pen clock. */
 function taskFields(session: Pick<PenColorSession, "taskId" | "stepId">): { taskId?: string; stepId?: string } {
@@ -76,21 +98,35 @@ export {
   sessionActiveEnd,
 } from "@/lib/operation-work-session"
 
-/** Title, task, objectives, and the Working On Now note. Skips a note you rewrote. */
+/** Title, task, objectives, the Working On Now note, and any pause timeline. A hand-written note keeps its words; a gap is appended under them. */
 function stampClockEntries(
-  session: Pick<PenColorSession, "title" | "taskId" | "stepId" | "nowObjectives">,
+  session: Pick<PenColorSession, "title" | "taskId" | "stepId" | "nowObjectives" | "pauseSpans" | "startedAt">,
   ids: string[],
+  clock?: { endedAt?: Date; stopped?: boolean },
 ): void {
   const tracking = useTimeTrackingStore.getState()
-  const note = workingOnNowBlockNote(session)
+  const base = workingOnNowBlockNote(session)
   const nowObjectives = compactNowObjectives(session.nowObjectives)
+  const spans = session.pauseSpans?.length ? session.pauseSpans.map((span) => ({ ...span })) : undefined
   for (const id of ids) {
     const entry = tracking.entries.find((row) => row.id === id)
+    const owned = !entry?.notes || entry.notes.startsWith(WORKING_ON_NOW_NOTE_PREFIX)
+    const notes = mergeSittingNote({
+      existing: entry?.notes,
+      base,
+      owned,
+      replaceOwned: true,
+      startedAt: session.startedAt,
+      endedAt: clock?.endedAt,
+      spans,
+      stopped: clock?.stopped,
+    })
     tracking.updateEntry(id, {
       title: session.title,
       nowObjectives,
       ...taskFields(session),
-      ...clockNoteField(entry?.notes, note),
+      ...(notes !== undefined ? { notes } : clockNoteField(entry?.notes, base) ?? {}),
+      ...(spans ? { pauseSpans: spans } : {}),
     })
   }
 }
@@ -234,9 +270,78 @@ export function startPenColorSession(penId: string, now = new Date()): PenColorS
 }
 
 /**
+ * Active milliseconds of one step timer.
+ * A timer that started with the sitting uses the sitting's pause total.
+ * A later timer subtracts only the gaps that overlap it.
+ */
+export function subclockActiveMs(
+  session: Pick<PenColorSession, "startedAt" | "pausedAt" | "pausedAccumMs" | "pauseSpans">,
+  startedAt: string,
+  nowMs = Date.now(),
+): number {
+  if (startedAt === session.startedAt) return elapsedMsOf(session, nowMs)
+  const start = new Date(startedAt).getTime()
+  if (Number.isNaN(start)) return 0
+  let paused = 0
+  for (const span of session.pauseSpans ?? []) {
+    const from = new Date(span.pausedAt).getTime()
+    const to = span.resumedAt
+      ? new Date(span.resumedAt).getTime()
+      : span.stoppedAt
+        ? new Date(span.stoppedAt).getTime()
+        : nowMs
+    const overlap = Math.min(nowMs, to) - Math.max(start, from)
+    if (overlap > 0) paused += overlap
+  }
+  if (session.pausedAt && !(session.pauseSpans ?? []).some((span) => span.pausedAt === session.pausedAt)) {
+    const overlap = nowMs - Math.max(start, new Date(session.pausedAt).getTime())
+    if (overlap > 0) paused += overlap
+  }
+  return Math.max(0, nowMs - start - paused)
+}
+
+function logSubclockSpan(session: PenColorSession, sub: PenSubclock, now: Date, entryIds: string[]): void {
+  if (!session.taskId) return
+  logTaskClockSpan(
+    {
+      taskId: session.taskId,
+      stepId: sub.stepId,
+      trackingEntryIds: entryIds,
+      nowObjectives: session.nowObjectives,
+      pauseSpans: session.pauseSpans,
+    },
+    new Date(sub.startedAt),
+    now,
+    subclockActiveMs(session, sub.startedAt, now.getTime()),
+  )
+}
+
+/**
+ * End one step timer. The task sitting keeps running.
+ * Returns false when that step has no timer of its own.
+ */
+export function stopPenSubclock(stepId: string, now = new Date()): boolean {
+  const live = usePenColorSessionStore.getState().session
+  if (!live?.taskId || !live.subclocks?.some((row) => row.stepId === stepId)) return false
+  return runAsAction("stop the step clock", () => {
+    const session = usePenColorSessionStore.getState().session
+    const sub = session?.subclocks?.find((row) => row.stepId === stepId)
+    if (!session?.taskId || !sub) return false
+    logSubclockSpan(session, sub, now, session.trackingEntryIds ?? [])
+    const rest = session.subclocks?.filter((row) => row.stepId !== stepId) ?? []
+    const next: PenColorSession = { ...session }
+    if (rest.length) next.subclocks = rest
+    else delete next.subclocks
+    usePenColorSessionStore.getState().setSession(next)
+    return true
+  })
+}
+
+/**
  * Close the live pen block at active end and leave the painted minutes editable.
  * `parkUnfinished` banks the open stints and copies still-open objectives onto
  * the unfinished list for this pen, task, or subtask. They stay on this block.
+ * Every step timer still running is logged first, then the sitting.
  */
 export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: boolean }): PenColorSession | null {
   return runAsAction("stop pen color", () => {
@@ -255,14 +360,23 @@ export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: 
       usePenColorSessionStore.getState().setSession(session)
     }
 
-    let ids = session.trackingEntryIds ?? []
+    const spans = closeOpenPause(session.pauseSpans, now)
+    session = spans ? { ...session, pauseSpans: spans } : session
+    const previousIds = session.trackingEntryIds ?? []
+    let ids = previousIds
     if (locatePen(session.penId)) {
       const slices = splitIntoDaySlices(new Date(session.startedAt), end)
       ids = paintSlices(slices, session)
+      if (spans?.length) stampClockEntries(session, ids, { endedAt: now, stopped: true })
       syncSliceDays(ids, slices)
     }
 
     usePenColorSessionStore.getState().clearSession()
+    if (session.taskId && session.subclocks?.length) {
+      for (const sub of session.subclocks) logSubclockSpan(session, sub, now, ids)
+      session = { ...session, subclocks: undefined }
+    }
+    if (session.taskId) retargetClockLogs(session.taskId, previousIds, ids)
     if (session.taskId) {
       logTaskClockSpan(
         {
@@ -270,6 +384,7 @@ export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: 
           stepId: session.stepId,
           trackingEntryIds: ids,
           nowObjectives: session.nowObjectives,
+          pauseSpans: spans,
         },
         new Date(session.startedAt),
         now,
@@ -296,9 +411,9 @@ export function penClockShouldStop(headerShown: boolean, unshownMs: number): boo
 
 /**
  * Grow the block only while `isShown` says the header clock is on screen.
- * After {@link PEN_CLOCK_UNSHOWN_GRACE_MS} off screen, or on `pagehide`, end
- * the sitting. Returns a dispose function. The label clocks elsewhere do not
- * call this.
+ * After {@link PEN_CLOCK_UNSHOWN_GRACE_MS} off screen, end the sitting.
+ * A refresh is not an end: the persisted session is what the next page reads.
+ * Returns a dispose function. The label clocks elsewhere do not call this.
  */
 export function watchPenClockShown(isShown: () => boolean, now = () => new Date()): () => void {
   let unshownSince: number | null = null
@@ -314,15 +429,10 @@ export function watchPenClockShown(isShown: () => boolean, now = () => new Date(
     if (unshownSince == null) unshownSince = at.getTime()
     if (penClockShouldStop(false, at.getTime() - unshownSince)) stopPenColorSession(at)
   }
-  const onPageHide = () => {
-    if (usePenColorSessionStore.getState().session) stopPenColorSession(now())
-  }
   check()
   const id = window.setInterval(check, 1_000)
-  window.addEventListener("pagehide", onPageHide)
   return () => {
     window.clearInterval(id)
-    window.removeEventListener("pagehide", onPageHide)
   }
 }
 
@@ -332,6 +442,9 @@ export function tickPenColorSession(now = new Date()): PenColorSession | null {
     const session = usePenColorSessionStore.getState().session
     if (!session || isRestoring()) return session ?? null
     if (!locatePen(session.penId)) {
+      // Seed scopes load before the vault. A refresh must not forget a pen
+      // that is only in the saved time grid.
+      if (useTimeTrackingStore.persist?.hasHydrated?.() === false) return session
       usePenColorSessionStore.getState().clearSession()
       return null
     }
@@ -345,28 +458,45 @@ export function tickPenColorSession(now = new Date()): PenColorSession | null {
   })
 }
 
-/** Freeze elapsed + paint; resume continues the same session. */
-export function pausePenColorSession(now = new Date()): PenColorSession | null {
+/**
+ * Freeze elapsed + paint. A Pause click passes the gap reason.
+ * Empty or missing reason does not pause. `{ hold: true }` freezes without a gap
+ * (end of sitting, a box timer, a linked plan that is parking).
+ */
+export function pausePenColorSession(now = new Date(), request?: PauseRequest): PenColorSession | null {
   return withoutUndo(() => {
     const session = usePenColorSessionStore.getState().session
     if (!session || session.pausedAt) return session
-    usePenColorSessionStore.getState().setSession({ ...session, pausedAt: now.toISOString() })
-    return tickPenColorSession(now)
+    const hold = isHoldPause(request)
+    const spans = hold ? session.pauseSpans : appendPause(session.pauseSpans, now, pauseReasonText(request))
+    if (!hold && !spans) return session
+    usePenColorSessionStore.getState().setSession({
+      ...session,
+      pausedAt: now.toISOString(),
+      ...(spans ? { pauseSpans: spans } : {}),
+    })
+    const ticked = tickPenColorSession(now)
+    const live = ticked ?? usePenColorSessionStore.getState().session
+    if (live?.pauseSpans?.length) stampClockEntries(live, live.trackingEntryIds ?? [])
+    return usePenColorSessionStore.getState().session
   })
 }
 
-/** Clear the open pause and fold its duration into `pausedAccumMs`. */
+/** Clear the open pause, record restarted-at, and fold the gap into `pausedAccumMs`. */
 export function resumePenColorSession(now = new Date()): PenColorSession | null {
   return withoutUndo(() => {
     const session = usePenColorSessionStore.getState().session
     if (!session?.pausedAt) return session
     const pauseMs = Math.max(0, now.getTime() - new Date(session.pausedAt).getTime())
+    const pauseSpans = resumeOpenPause(session.pauseSpans, now)
     const next: PenColorSession = {
       ...session,
       pausedAt: undefined,
       pausedAccumMs: (session.pausedAccumMs ?? 0) + pauseMs,
+      ...(pauseSpans ? { pauseSpans } : {}),
     }
     usePenColorSessionStore.getState().setSession(next)
+    if (pauseSpans?.length) stampClockEntries(next, next.trackingEntryIds ?? [])
     return next
   })
 }
@@ -385,12 +515,19 @@ export function togglePenColorSession(penId: string, now = new Date()): PenColor
  * (`NOW 847 …`, `8:47 …`) backdates it. With a task on the clock, a line that
  * names an open step is tied to that step; `stepId` ties it explicitly.
  */
-export function addPenColorNowObjective(text: string, now = new Date(), stepId?: string): PenColorSession | null {
+export function addPenColorNowObjective(
+  text: string,
+  now = new Date(),
+  stepId?: string,
+  lane: NowObjectiveLane = "next",
+): PenColorSession | null {
   const parsed: { text: string; at?: Date } = stepId ? { text } : parseObjectiveClock(text, now)
   const session = usePenColorSessionStore.getState().session
   const tied = stepId ?? (session?.taskId ? matchStepForObjective(session.taskId, parsed.text) : undefined)
   return withoutUndo(() =>
-    patchPenColorObjectives((list) => addNowObjective(list, parsed.text, now, { stepId: tied, addedAt: parsed.at })),
+    patchPenColorObjectives((list) =>
+      addNowObjective(list, parsed.text, now, { stepId: tied, addedAt: parsed.at, lane }),
+    ),
   )
 }
 
@@ -441,6 +578,7 @@ export function attachPenNowObjective(
     const next = patchPenColorObjectives((list) => attachNowObjective(list, id, { taskId: taskId!, stepId }))
     const row = next?.nowObjectives?.find((item) => item.id === id)
     if (row?.completedAt) applyObjectiveToStep({ taskId: row.taskId ?? next?.taskId, stepId: row.stepId }, row)
+    fileObjectivesOnTask(taskId, objectivesAttachedToTask(next?.nowObjectives, taskId))
     return next
   })
 }
@@ -482,6 +620,14 @@ export function setPenColorNowObjectiveCompletes(id: string, completes: boolean)
 
 export function editPenColorNowObjectiveText(id: string, text: string): PenColorSession | null {
   return withoutUndo(() => patchPenColorObjectives((list) => editNowObjectiveText(list, id, text)))
+}
+
+export function movePenColorNowObjectiveToNext(id: string, now = new Date()): PenColorSession | null {
+  return withoutUndo(() => patchPenColorObjectives((list) => moveNowObjectiveToNext(list, id, now)))
+}
+
+export function movePenColorNowObjectiveToNow(id: string, now = new Date()): PenColorSession | null {
+  return withoutUndo(() => patchPenColorObjectives((list) => moveNowObjectiveToNow(list, id, now)))
 }
 
 export function togglePenColorNowObjectiveComplete(id: string, now = new Date()): PenColorSession | null {

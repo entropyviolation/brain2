@@ -1,7 +1,7 @@
 /**
  * lib/tracking-summary.ts — One set of numbers for every tracking view
  *
- * The Time Grid footer, the Activity Log, and the Analytics Tracking tab all used
+ * The Time Grid footer, the Activity Log, and the Data Tracking tab all used
  * to total time their own way, so the same day could read differently depending on
  * where you looked. Every one of them now calls this module, so a disagreement is
  * a bug in one place rather than a discrepancy between three.
@@ -26,18 +26,18 @@
  * ## Categories and display depth
  *
  * Pens can nest (`parentId` / `parentIds`). `penTotals` uses the scope's
- * `displayDepth` so the Time Grid footer, Activity Log, Day Log and Analytics
+ * `displayDepth` so the Time Grid footer, Activity Log, Day Log and Data
  * Tracking tab all roll up the same way. **Show as** follows the display
  * parent only, so the grid keeps one color. At a collapsed depth, one pen
  * with several parents splits its minutes across the distinct ancestors at
  * that depth — those shares sum to the block, and an ancestor reached twice
- * is paid once. `penTotalsAtDepth` takes an explicit depth (Analytics' own
+ * is paid once. `penTotalsAtDepth` takes an explicit depth (Data' own
  * control). `childPenTotals` is the drill: minutes under a parent, grouped by
  * the next child, split the same way when two chains arrive through different
  * children.
  *
  * `withPrecision(entries, includeSpeculative)` drops `precision: "estimated"`
- * blocks when Analytics asks for observed time only.
+ * blocks when Data asks for observed time only.
  *
  * Pure: takes entries and pen definitions, touches no store.
  */
@@ -341,7 +341,7 @@ export function childPenTotals(
     .sort((a, b) => b.minutes - a.minutes)
 }
 
-/** Drop reconstructed blocks when Analytics asks for observed time only. */
+/** Drop reconstructed blocks when Data asks for observed time only. */
 export function withPrecision(entries: TimeEntry[], includeSpeculative: boolean): TimeEntry[] {
   if (includeSpeculative) return entries
   return entries.filter((e) => !isSpeculative(e))

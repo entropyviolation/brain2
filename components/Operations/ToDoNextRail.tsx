@@ -4,7 +4,8 @@
  * A compact side rail surfacing the next actionable tasks across an operation's
  * whole task tree (phases + parts), ranked by `lib/operations.selectToDoNext`
  * (incomplete, dependency-satisfied, deadline/importance ordered). Each row can
- * be marked done or opened.
+ * be marked done or opened. The row and the Open arrow both open the item.
+ * The host mounts item detail over the operation; this rail does not navigate.
  */
 "use client"
 
@@ -49,9 +50,26 @@ export function ToDoNextRail({
                   onChange={(e) => setTaskCompleted(task.id, e.target.checked)}
                   aria-label="Mark done"
                 />
-                <span className="min-w-0 flex-1 truncate text-sm">{itemTitle(task)}</span>
+                {onOpenItem ? (
+                  <button
+                    type="button"
+                    className="ops-item-hit truncate text-sm"
+                    data-no95=""
+                    onClick={() => onOpenItem(task.id)}
+                  >
+                    {itemTitle(task)}
+                  </button>
+                ) : (
+                  <span className="min-w-0 flex-1 truncate text-sm">{itemTitle(task)}</span>
+                )}
                 {onOpenItem && (
-                  <button type="button" className="ops-btn ops-icon-btn" title="Open" onClick={() => onOpenItem(task.id)}>
+                  <button
+                    type="button"
+                    className="ops-btn ops-icon-btn"
+                    title="Open"
+                    aria-label={`Open ${itemTitle(task)}`}
+                    onClick={() => onOpenItem(task.id)}
+                  >
                     ↗
                   </button>
                 )}

@@ -1,0 +1,30 @@
+/* components/Lab/Agents/agent-bench.css — the Agent bench room. Plain paper, one grid, no decoration. */
+.ab-lab { max-width: 860px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 20px; background: #f4f6f7; color: #1f2326; min-height: 100vh; }
+.ab-lab h1 { font-size: 1.25rem; margin: 0; }
+.ab-lab h2 { font-size: 0.95rem; margin: 0 0 8px; }
+.ab-note { margin: 0; opacity: 0.7; font-size: 0.85rem; }
+.ab-models, .ab-variants, .ab-cases { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ab-models li { display: flex; align-items: center; gap: 8px; }
+.ab-models span { flex: 1; }
+.ab-models b { min-width: 1.5em; text-align: center; }
+.ab-variants li { display: grid; gap: 1px; }
+.ab-cases li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: 0.85rem; }
+.ab-cases li.is-off .ab-in { opacity: 0.4; text-decoration: line-through; }
+.ab-in { flex: 1 1 280px; }
+.ab-tags { opacity: 0.55; }
+.ab-add { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ab-add input { flex: 1 1 220px; font: inherit; padding: 4px 6px; }
+.ab-card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 3px; margin-bottom: 6px; }
+.ab-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; width: 100%; text-align: left; padding: 6px 10px; background: none; border: 0; font: inherit; cursor: pointer; color: inherit; }
+.ab-score { font-variant-numeric: tabular-nums; font-weight: 700; }
+.ab-body { padding: 0 10px 10px; display: grid; gap: 6px; }
+.ab-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.ab-table th, .ab-table td { text-align: left; padding: 3px 6px; border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent); vertical-align: top; }
+.ab-table small, .ab-cmp small { display: block; opacity: 0.6; }
+.ab-table tr.is-miss td:first-child { color: #a3352b; font-weight: 700; }
+.ab-table tr.is-pass td:first-child { color: #2f6b45; }
+.ab-cmp { display: grid; gap: 4px; margin-top: 8px; }
+.ab-cmp p { margin: 0; }
+
+.ab-back { display: inline-block; margin-bottom: 0.5rem; font-size: 0.85rem; color: inherit; opacity: 0.7; text-decoration: none; }
+.ab-back:hover { opacity: 1; text-decoration: underline; }

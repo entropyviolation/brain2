@@ -4,15 +4,15 @@
  * Small seam so the executor can answer manuals without rewriting the command
  * switch. Unknown prefixes get a gentle hint listing known families.
  */
-import { BIM_MAIN_INFO, ALL_COMMANDS, glossaryCommandsFor, glossaryInfoFor, knownGlossaryPrefixes } from "./command-glossary"
+import { BIM_CHAT_INFO, BIM_MAIN_INFO, ALL_COMMANDS, glossaryCommandsFor, glossaryInfoFor, knownGlossaryPrefixes } from "./command-glossary"
 import type { ApplyResult } from "./types"
 
 function ok(kind: ApplyResult["kind"], reply: string, summary: string): ApplyResult {
   return { status: "ok", kind, reply, summary }
 }
 
-export function applyMainInfo(): ApplyResult {
-  return ok("info", BIM_MAIN_INFO, "Info")
+export function applyMainInfo(chat = false): ApplyResult {
+  return ok("info", chat ? BIM_CHAT_INFO : BIM_MAIN_INFO, "Info")
 }
 
 export function applyAllCommands(): ApplyResult {

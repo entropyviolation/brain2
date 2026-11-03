@@ -8,6 +8,8 @@ export interface BreadcrumbNavProps {
   isHome: boolean
   isAll: boolean
   currentFolderName?: string
+  /** Virtual Quick Access folder, not a stored folder. */
+  isItemTypes?: boolean
   /**
    * Ancestor list names from root → parent for a nested category (Feature 8),
    * excluding the open category itself. When present, they're inserted before
@@ -25,10 +27,12 @@ export function getBreadcrumb({
   isAll,
   currentFolderName,
   categoryAncestorNames,
+  isItemTypes,
 }: BreadcrumbNavProps): string {
   if (searchActive) return `Search: ${searchTerm}`
+  if (isItemTypes && !openTarget) return "Item Types"
   if (openTarget) {
-    const loc = isHome ? "Home" : isAll ? "All" : currentFolderName || "All"
+    const loc = isItemTypes ? "Item Types" : isHome ? "Home" : isAll ? "All" : currentFolderName || "All"
     const trail = (categoryAncestorNames ?? []).filter(Boolean)
     return [loc, ...trail, openName].join(" \\ ")
   }

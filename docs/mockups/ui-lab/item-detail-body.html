@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 Body tab UI Lab</title>
+<style>
+@font-face {
+  font-family: "w95fa";
+  src: url("/fonts/w95fa.woff") format("woff");
+  font-display: swap;
+}
+:root { --crt: #7dffc4; --bench: #1e2028; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 13px;
+  background: #12141a;
+  color: #e4e4ea;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (max-width: 920px) { body { grid-template-columns: 1fr; } }
+.bench {
+  background: var(--bench);
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 96vh;
+  overflow: auto;
+  font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: var(--crt);
+  opacity: .7;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #444;
+  border-radius: 3px;
+}
+.lab-sections a:hover { opacity: 1; }
+.lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  color: var(--crt);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.lede { margin: 0 0 8px; opacity: .78; line-height: 1.4; }
+.bench h2 {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin: 12px 0 6px;
+  color: var(--crt);
+  font-weight: 700;
+}
+.bench label { display: block; margin: 7px 0 2px; opacity: .88; }
+.bench select, .bench input[type="range"] { width: 100%; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.bench hr { border: none; border-top: 1px solid #3a3d48; margin: 10px 0; }
+.now { margin: 8px 0; }
+.now strong { color: var(--crt); font-weight: 700; }
+.presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.presets button, .plan summary {
+  font: inherit;
+  font-size: 10px;
+  color: #e8e8ec;
+  background: #2a2d36;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.presets button[aria-pressed="true"] {
+  background: #070c0a;
+  color: var(--crt);
+  border-color: var(--crt);
+}
+.plan { margin: 8px 0 4px; }
+.plan summary { display: inline-block; margin-bottom: 6px; }
+.plan-body { line-height: 1.45; opacity: .92; }
+.plan-body p { margin: 0 0 8px; }
+.plan-body h3 { margin: 10px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--crt); }
+.bench :focus-visible { outline: 2px solid var(--crt); outline-offset: 2px; }
+
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: .04em;
+  opacity: .8;
+}
+.stage-cap strong { color: var(--crt); font-weight: 650; }
+.stage-well {
+  flex: 1;
+  min-height: 420px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 28px 16px 40px;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    #3a3d40;
+}
+.stage[data-system="walnut"] .stage-well {
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 11px),
+    linear-gradient(180deg, #8a6244, #4a3020);
+}
+.stage[data-system="candy"] .stage-well {
+  background:
+    radial-gradient(circle at 12px 12px, rgba(255,180,210,.45) 2px, transparent 3px),
+    #fff0f6;
+  background-size: 28px 28px, auto;
+}
+.stage[data-system="blueprint"] .stage-well {
+  background:
+    linear-gradient(#c5d7ea 1px, transparent 1px),
+    linear-gradient(90deg, #c5d7ea 1px, transparent 1px),
+    #e7eef6;
+  background-size: 22px 22px, 22px 22px, auto;
+}
+.stage[data-system="dash"] .stage-well {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.45), transparent 28%),
+    #041012;
+}
+.stage[data-system="jewel"] .stage-well {
+  background: radial-gradient(ellipse at 50% 0%, #2a2440, #0c0a10 70%);
+}
+.stage[data-system="lacquer"] .stage-well {
+  background: radial-gradient(ellipse at 50% 20%, #2a2418, #0a0908 72%);
+}
+.stage[data-system="instrument"] .stage-well {
+  background:
+    linear-gradient(90deg, rgba(125,255,196,.05) 1px, transparent 1px),
+    #14171c;
+  background-size: 18px 18px, auto;
+}
+.stage[data-system="paper"] .stage-well { background: #e6e6e4; }
+.stage[data-layout="sheet"] .stage-well { padding: 0; justify-content: stretch; align-items: stretch; }
+.stage[data-layout="page"] .stage-well { align-items: stretch; }
+
+.frame { width: min(100%, calc(var(--panel) * 1px)); }
+.stage[data-layout="sheet"] .frame { min-height: 100%; display: flex; }
+.lab-note { margin: 0; font-size: 10px; opacity: .65; }
+
+.item {
+  --gap: calc(var(--space) * 1px);
+  --inner: calc(var(--rad) * 1px);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: min(86vh, 940px);
+  overflow: hidden;
+  background: var(--face);
+  color: var(--ink);
+  font-family: var(--ff);
+  font-size: calc(var(--type) * 1px);
+  line-height: 1.35;
+  border: calc(var(--bw) * 1px) solid var(--framec);
+  border-radius: calc(var(--rad) * 1px);
+  filter: contrast(var(--ctr)) saturate(var(--sat));
+}
+.item[data-density="compact"] { --gap: calc(var(--space) * .65px); }
+.item[data-density="airy"] { --gap: calc(var(--space) * 1.45px); }
+.item[data-corners="square"] { --inner: 0px; }
+.item[data-corners="fascia"] { --inner: min(calc(var(--rad) * 1px), 3px); }
+.item[data-corners="keycap"] { --inner: min(calc(var(--rad) * 1px), 6px); }
+.item[data-corners="soft"] { --inner: calc(var(--rad) * 1px); }
+.item[data-corners="pill"] { --inner: 999px; }
+.stage[data-layout="sheet"] .item {
+  max-height: none;
+  min-height: 100%;
+  border-radius: 0;
+}
+.item[data-shadow="milled"] {
+  box-shadow:
+    inset -1px -1px var(--framec),
+    inset 1px 1px var(--hi),
+    0 calc(var(--shade) * .4px) calc(var(--shade) * 1px) rgba(0,0,0,.28);
+}
+.item[data-shadow="flat"] { box-shadow: none; }
+.item[data-shadow="drop"] { box-shadow: 0 calc(var(--shade) * .7px) calc(var(--shade) * 1.6px) rgba(0,0,0,.28); }
+.item[data-shadow="lacquer"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -14px 28px rgba(0,0,0,.16),
+    0 calc(var(--shade) * .7px) calc(var(--shade) * 1.6px) rgba(0,0,0,.4);
+}
+.item[data-shadow="hard"] { box-shadow: calc(var(--shade) * .28px) calc(var(--shade) * .28px) 0 #111; }
+.item[data-shadow="brass"] {
+  box-shadow:
+    0 0 0 1px #e4c98a,
+    0 0 0 4px #6b4a22,
+    0 calc(var(--shade) * .35px) 0 #3a2414,
+    0 calc(var(--shade) * 1px) calc(var(--shade) * 1.2px) rgba(0,0,0,.35);
+}
+.item :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.item button, .item input, .item textarea { font: inherit; color: inherit; }
+
+.fascia {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: calc(var(--pad) * .6px) calc(var(--pad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.16) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--sheen), var(--face) 55%, var(--shadebg));
+  color: var(--ink);
+}
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 14rem;
+  min-height: 40px;
+  padding: 6px 12px 6px 8px;
+  border-radius: var(--inner);
+  background: var(--titlebg);
+  color: var(--titlefg);
+  box-shadow: inset 0 10px 14px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.45);
+}
+.power, .tab::before, .type-lamp, .save-lamp {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--accent) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 6px rgba(125,255,196,.65);
+}
+.orb {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  border: 0;
+  background:
+    radial-gradient(circle at 35% 30%, #f2d2b0, #c4784a 46%, #3a2418 78%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.55), 0 0 0 1px rgba(125,255,196,.2);
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--titlefg);
+  font-size: calc(var(--type) * 1.15px);
+  letter-spacing: .04em;
+  text-shadow: 0 0 3px var(--titlefg);
+}
+.title:focus { outline: 1px dotted var(--titlefg); outline-offset: 2px; }
+.window-keys { display: flex; gap: 4px; margin-left: auto; }
+.wkey {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--inner);
+  background: var(--key);
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 var(--hi), 0 0 0 1px var(--line);
+  cursor: default;
+}
+.meta { gap: 6px; }
+.type-plate, .chip, .save-flag, .key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--inner);
+  background: linear-gradient(180deg, var(--hi), var(--key));
+  color: var(--name);
+  box-shadow: inset 0 1px 0 var(--hi), 0 0 0 1px var(--line);
+  font-size: calc(var(--type) * .86px);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: default;
+}
+.type-lamp {
+  background: radial-gradient(circle at 35% 30%, #fff, #cbd5e1 50%, #5c6570);
+  box-shadow: 0 0 0 1px #1a1c1e;
+}
+.chip { letter-spacing: .1em; }
+.save-flag.is-unsaved .save-lamp {
+  background: radial-gradient(circle at 35% 30%, #ead0c8, #c56e74 42%, #4c2226 78%);
+  box-shadow: 0 0 0 1px #3a181c, 0 0 6px rgba(197,110,116,.5);
+}
+.key.danger { color: #800000; opacity: .72; }
+.key.quiet { opacity: .88; }
+.inert { pointer-events: none; }
+
+.sheet {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 4px 4px;
+}
+.bay {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 4px;
+  border-radius: var(--inner);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.16) 0 1px, transparent 1px 2px),
+    var(--bay);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.16), 0 0 0 1px var(--line);
+}
+.tab {
+  position: relative;
+  min-height: 32px;
+  padding: 4px 8px 4px 22px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  color: #1f2226;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255,255,255,.85),
+    0 1px 0 rgba(0,0,0,.35);
+  font-family: "DM Mono", ui-monospace, Menlo, monospace;
+  font-size: 10.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: default;
+}
+.tab::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  margin-top: -4px;
+  width: 7px;
+  height: 7px;
+  background: radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 60%);
+  box-shadow: 0 0 0 1px #1a1c1e;
+}
+.tab.secondary { min-height: 28px; font-size: 10px; opacity: .86; }
+.tab .count {
+  margin-left: 4px;
+  font-size: 9.5px;
+  letter-spacing: 0;
+}
+.tab[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--titlebg);
+  text-shadow: 0 0 3px var(--accent);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.45), 0 0 0 1px #1a3a2a;
+  transform: translateY(1px);
+}
+.tab[aria-selected="true"]::before {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--accent) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 6px var(--accent);
+}
+.item[data-tabs="words"] .tab::before,
+.item[data-tabs="line"] .tab::before,
+.item[data-tabs="spine"] .tab::before { display: none; }
+.item[data-tabs="words"] .tab,
+.item[data-tabs="line"] .tab { padding-left: 8px; text-transform: none; letter-spacing: .02em; font-family: var(--ff); }
+.item[data-tabs="line"] .tab { background: transparent; box-shadow: none; }
+.item[data-tabs="line"] .tab[aria-selected="true"] {
+  background: transparent;
+  color: var(--ink);
+  text-shadow: none;
+  box-shadow: inset 0 -2px 0 var(--accent);
+  transform: none;
+}
+.item[data-tabs="spine"] .sheet { flex-direction: row; gap: 8px; }
+.item[data-tabs="spine"] .bay {
+  grid-template-columns: 1fr;
+  width: 9.6rem;
+  flex: none;
+  align-content: start;
+  margin: 0;
+}
+.item[data-tabs="spine"] .tab { text-align: left; padding-left: 8px; font-family: var(--ff); text-transform: none; white-space: normal; line-height: 1.25; }
+
+.scroll { flex: 1; min-height: 0; overflow: auto; padding: 0 2px 6px; }
+.mode { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.mode button, .tool {
+  min-height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--inner);
+  background: var(--key);
+  color: var(--ink);
+  box-shadow: inset -1px -1px var(--framec), inset 1px 1px var(--hi);
+  cursor: pointer;
+  font-size: calc(var(--type) * .92px);
+}
+.mode button[aria-pressed="true"] { box-shadow: inset 1px 1px var(--framec), inset -1px -1px var(--hi); }
+.missing, .empty {
+  margin: 0;
+  min-height: 8rem;
+  color: var(--muted);
+  font-style: italic;
+  font-size: calc(var(--type) * 1px);
+}
+.prose {
+  min-height: 8rem;
+  padding: calc(var(--pad) * 1px);
+  white-space: pre-wrap;
+  font-size: calc(var(--ed) * 1px);
+  line-height: calc(var(--lh) / 100);
+  color: var(--fieldfg);
+  background: var(--paper);
+  box-shadow: inset 1px 1px var(--line), inset -1px -1px var(--hi);
+  max-width: var(--measure);
+}
+.source {
+  width: 100%;
+  max-width: var(--measure);
+  min-height: 22rem;
+  padding: calc(var(--pad) * 1px);
+  border: 0;
+  resize: vertical;
+  font-family: var(--ef);
+  font-size: calc(var(--ed) * 1px);
+  line-height: calc(var(--lh) / 100);
+  color: var(--fieldfg);
+  background: var(--paper);
+  box-shadow: inset 1px 1px var(--line), inset -1px -1px var(--hi);
+}
+.rte {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--measure);
+  border: 1px solid var(--line);
+  background: var(--face);
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--face);
+  box-shadow: inset -1px -1px var(--framec), inset 1px 1px var(--hi);
+}
+.tool {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+.tool svg { width: 14px; height: 14px; display: block; }
+.tool .w { display: none; }
+.item[data-toolbar="words"] .tool svg,
+.item[data-toolbar="stamps"] .tool svg { display: none; }
+.item[data-toolbar="words"] .tool .w,
+.item[data-toolbar="stamps"] .tool .w { display: inline; }
+.item[data-toolbar="stamps"] .tool {
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 10px;
+  border-radius: 2px;
+}
+.item[data-toolbar="quiet"] .toolbar { background: transparent; box-shadow: none; padding: 0 0 4px; }
+.item[data-toolbar="quiet"] .tool {
+  background: transparent;
+  box-shadow: none;
+  min-width: 0;
+  padding: 0 5px;
+  opacity: .8;
+}
+.item[data-toolbar="quiet"] .tool svg { display: none; }
+.item[data-toolbar="quiet"] .tool .w { display: inline; }
+.tool[data-act="ul"],
+.tool[data-act="ol"],
+.tool[data-act="quote"] { color: var(--tick); }
+.tool[aria-pressed="true"] { box-shadow: inset 1px 1px var(--framec), inset -1px -1px var(--hi); }
+.tool:disabled { opacity: .4; cursor: default; }
+.sep { width: 1px; align-self: stretch; margin: 2px 3px; background: var(--line); }
+.spacer { flex: 1; }
+.rte-body { display: flex; min-height: 280px; }
+.rte-body.is-split > .editor,
+.rte-body.is-split > .preview { width: 50%; }
+.editor, .preview {
+  flex: 1;
+  min-height: 280px;
+  width: 100%;
+  padding: calc(var(--pad) * 1px);
+  border: 0;
+  background: var(--paper);
+  color: var(--fieldfg);
+  box-shadow: inset 1px 1px var(--line), inset -1px -1px var(--hi);
+}
+.editor {
+  resize: vertical;
+  font-family: var(--ef);
+  font-size: calc(var(--ed) * 1px);
+  line-height: calc(var(--lh) / 100);
+}
+.preview {
+  overflow: auto;
+  font-family: var(--pf);
+  font-size: calc(var(--ed) * 1px);
+  line-height: calc(var(--lh) / 100);
+}
+.preview.empty { color: var(--muted); font-style: italic; }
+.split-bar { width: max(2px, calc(var(--gutter) * .15px)); background: var(--line); flex: none; }
+.preview h1, .preview h2, .preview h3 { margin: .6em 0 .3em; line-height: 1.2; font-weight: 700; }
+.preview h1 { font-size: calc(1.5em * var(--hscale) / 100); }
+.preview h2 { font-size: calc(1.3em * var(--hscale) / 100); }
+.preview h3 { font-size: calc(1.15em * var(--hscale) / 100); }
+.preview p { margin: 0 0 .6em; }
+.preview ul, .preview ol { margin: 0 0 .6em; padding-left: calc(1.2em + var(--gutter) * .4px); }
+.preview li::marker { color: var(--tick); }
+.preview blockquote {
+  margin: 0 0 .6em;
+  padding: calc(var(--gutter) * .35px) calc(var(--gutter) * 1px);
+  color: var(--fieldfg);
+}
+.item[data-quote="bar"] .preview blockquote {
+  border-left: calc(var(--qbar) * 1px) solid var(--tick);
+  background: color-mix(in srgb, var(--paper) 78%, var(--tick));
+}
+.item[data-quote="card"] .preview blockquote {
+  border: 1px solid color-mix(in srgb, var(--tick) 45%, var(--paper));
+  border-radius: var(--inner);
+  background: color-mix(in srgb, var(--paper) 70%, var(--tick));
+}
+.item[data-quote="rule"] .preview blockquote {
+  border-top: calc(var(--qbar) * 1px) solid var(--tick);
+  border-bottom: 1px solid var(--line);
+  padding-left: 0;
+}
+.item[data-quote="margin"] .preview blockquote { margin-left: calc(var(--gutter) * 1px); }
+.preview code {
+  font-family: var(--ef);
+  font-size: .92em;
+  background: color-mix(in srgb, var(--paper) 75%, var(--ink));
+  color: var(--fieldfg);
+  padding: 0 3px;
+}
+.preview pre {
+  margin: 0 0 .6em;
+  padding: 8px;
+  overflow: auto;
+  background: var(--codebg);
+  color: var(--codefg);
+}
+.preview pre code { background: transparent; color: inherit; padding: 0; }
+.preview a { color: var(--link); text-decoration: underline; }
+.preview hr { border: 0; border-top: 1px solid var(--line); margin: .8em 0; }
+.preview del { text-decoration: line-through; }
+.status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 6px;
+  font-size: calc(var(--type) * .9px);
+  color: var(--ink);
+  background: var(--face);
+  box-shadow: inset 1px 1px var(--line), inset -1px -1px var(--hi);
+}
+.item[data-status="words"] .status .kind { display: none; }
+.item[data-status="off"] .status { display: none; }
+.item[data-chrome="rail"] .keys { display: none; }
+.item[data-chrome="rail"] .fascia { padding-bottom: 4px; }
+.item[data-chrome="bare"] .keys,
+.item[data-chrome="bare"] .meta,
+.item[data-chrome="bare"] .window-keys { display: none; }
+.item[data-chrome="bare"] .mark { min-height: 32px; box-shadow: none; background: transparent; color: var(--ink); }
+.item[data-chrome="bare"] .title { color: var(--ink); text-shadow: none; }
+.item[data-chrome="bare"] .power { display: none; }
+.item[data-paper="night"] .preview a,
+.item[data-paper="night"] .editor { caret-color: var(--fieldfg); }
+.item[data-paper="night"] { --codebg: #101814; --codefg: #d8ffe9; --link: #9ad7ff; }
+@media (prefers-reduced-motion: reduce) {
+  .item, .tab { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="habits.html">Habits</a>
+    <a href="plan.html">Plan</a>
+    <a href="todo.html">To do</a>
+    <a href="goals.html">Goals</a>
+    <a href="tracking.html">Tracking</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Ops</a>
+    <a href="pen-settings.html">Pen</a>
+    <a href="timeblock.html">Timeblock</a>
+    <a href="baby-animal.html">Friend</a>
+    <a href="item-detail-body.html" aria-current="page">Body</a>
+  </nav>
+  <h1>Body tab lab</h1>
+  <p class="lede">Item detail, Body tab. The sample is the task Studio kiln rebuild. Elijah, the Studio, pen Kiln. Week of Monday 26 Oct 2026. The other tabs are labels only.</p>
+  <details class="plan" open>
+    <summary>Plan</summary>
+    <div class="plan-body">
+      <p>Body edits the item’s markdown body. On this task the Studio list shows the panel, so Body leads the bay. The default face is the markdown editor. Source opens a monospace well and the key then reads Rendered. HTML in the body is stripped to plain prose. The editor’s keys are bold, italic, code, heading, lists, quote, and link, then Edit, Split, and Preview. The status line says Markdown, then words and characters. Ctrl or Cmd with B or I wraps the selection. A missing item says Item not found. An empty read-only body says No body yet. An empty preview says Nothing to preview yet.</p>
+      <h3>What stays</h3>
+      <p>The words stay. Source and Rendered stay. The same formatting keys and the three views stay. The count of words and characters stays. The fascia stays: CRT title, Task plate, stage, save lamp, Save, Complete, Missed, Delete, and the other tab labels. Writes still wait about half a second, then flush on blur. Image, embed, and a font menu stay off this tab. They belong to Docs mode.</p>
+      <h3>What changes, and why</h3>
+      <p>The well can take a line length, so a firing log can sit in a column the eye can finish. Heading scale, paper, the quote, and the list ink change the reading and leave the markdown alone. Split can share one gutter, so source and preview are one note. Source can sit with Edit, Split, and Preview, because it is the same kind of choice and today it sits alone above the editor. The status line can quiet down to the word count. The house preset keeps the stacked machine, the white well, and the silver keys.</p>
+    </div>
+  </details>
+  <p class="now">Preset <strong id="presetName">Original</strong></p>
+  <div class="presets" role="group" aria-label="Snap presets">
+    <button type="button" data-preset="original" aria-pressed="true">Original</button>
+    <button type="button" data-preset="overhaul">Complete overhaul</button>
+    <button type="button" data-preset="minimal">Minimalized</button>
+    <button type="button" data-preset="skeuo">Skeuomorphic</button>
+    <button type="button" data-preset="cute">Extra cute</button>
+    <button type="button" data-preset="split">Split proof</button>
+    <button type="button" data-preset="source">Source well</button>
+    <button type="button" data-preset="phosphor">Phosphor page</button>
+    <button type="button" data-preset="galley">Reading galley</button>
+  </div>
+  <p class="lede">A preset sets every control. Nudge any control after that and the name becomes Custom.</p>
+
+  <h2>Type and frame</h2>
+  <label>Font
+    <select data-key="font">
+      <option value="house">House (w95fa, Tahoma)</option>
+      <option value="tahoma">Tahoma / MS Sans Serif</option>
+      <option value="grotesk">Karla, Avenir, Segoe</option>
+      <option value="system">System UI</option>
+      <option value="mono">UI monospace</option>
+      <option value="serif">Palatino, Georgia</option>
+      <option value="round">Rounded UI</option>
+      <option value="typewriter">Typewriter</option>
+      <option value="didot">Didot, Bodoni</option>
+    </select>
+  </label>
+  <label>Editor font
+    <select data-key="efont">
+      <option value="mono">Cascadia, Courier</option>
+      <option value="house">House pixel</option>
+      <option value="serif">Palatino, Georgia</option>
+      <option value="system">System UI</option>
+      <option value="grotesk">Karla, Avenir</option>
+      <option value="round">Rounded UI</option>
+      <option value="typewriter">Typewriter</option>
+    </select>
+  </label>
+  <label>Prose font
+    <select data-key="pfont">
+      <option value="house">Same as chrome</option>
+      <option value="serif">Palatino, Georgia</option>
+      <option value="system">System UI</option>
+      <option value="grotesk">Karla, Avenir</option>
+      <option value="mono">Monospace</option>
+      <option value="didot">Didot, Bodoni</option>
+    </select>
+  </label>
+  <label>Density
+    <select data-key="density">
+      <option value="compact">Compact</option>
+      <option value="house">House</option>
+      <option value="airy">Airy</option>
+    </select>
+  </label>
+  <label>Layout
+    <select data-key="layout">
+      <option value="popup">Popup</option>
+      <option value="page">Detail page</option>
+      <option value="sheet">Sheet</option>
+    </select>
+  </label>
+  <label>Face
+    <select data-key="face">
+      <option value="writing">Writing</option>
+      <option value="source">Source</option>
+      <option value="prose">Plain prose</option>
+      <option value="empty">No body yet</option>
+      <option value="missing">Item not found</option>
+      <option value="previewempty">Nothing to preview</option>
+    </select>
+  </label>
+  <label>View
+    <select data-key="view">
+      <option value="edit">Edit</option>
+      <option value="split">Split</option>
+      <option value="preview">Preview</option>
+    </select>
+  </label>
+
+  <h2>Surface</h2>
+  <label>Color system
+    <select data-key="system">
+      <option value="house">House gray</option>
+      <option value="paper">Paper</option>
+      <option value="walnut">Walnut blotter</option>
+      <option value="candy">Candy</option>
+      <option value="lacquer">Lacquer</option>
+      <option value="blueprint">Blueprint</option>
+      <option value="jewel">Jewel</option>
+      <option value="dash">Night glass</option>
+      <option value="instrument">Instrument</option>
+    </select>
+  </label>
+  <label>Paper
+    <select data-key="paper">
+      <option value="white">White well</option>
+      <option value="cream">Cream</option>
+      <option value="news">Newsprint</option>
+      <option value="clay">Kiln clay</option>
+      <option value="blueprint">Blueprint</option>
+      <option value="night">Night glass</option>
+    </select>
+  </label>
+  <label>Corner language
+    <select data-key="corners">
+      <option value="square">Square</option>
+      <option value="fascia">Fascia</option>
+      <option value="keycap">Keycap</option>
+      <option value="soft">Soft</option>
+      <option value="pill">Pill</option>
+    </select>
+  </label>
+  <label>Shadow
+    <select data-key="shadow">
+      <option value="milled">Milled</option>
+      <option value="flat">Flat</option>
+      <option value="drop">Drop</option>
+      <option value="lacquer">Lacquer</option>
+      <option value="hard">Hard</option>
+      <option value="brass">Brass</option>
+    </select>
+  </label>
+  <label>Contrast <span class="val" data-for="contrast">100</span>
+    <input type="range" data-key="contrast" min="80" max="140" value="100">
+  </label>
+  <label>Saturation <span class="val" data-for="sat">100</span>
+    <input type="range" data-key="sat" min="40" max="160" value="100">
+  </label>
+
+  <h2>The page</h2>
+  <label>Type size <span class="val" data-for="type">12</span>
+    <input type="range" data-key="type" min="11" max="22" value="12">
+  </label>
+  <label>Editor size <span class="val" data-for="ed">13</span>
+    <input type="range" data-key="ed" min="12" max="24" value="13">
+  </label>
+  <label>Measure <span class="val" data-for="measure">100</span>
+    <input type="range" data-key="measure" min="36" max="100" value="100">
+  </label>
+  <label>Editor width <span class="val" data-for="width">960</span>
+    <input type="range" data-key="width" min="480" max="1100" value="960">
+  </label>
+  <label>Padding <span class="val" data-for="pad">8</span>
+    <input type="range" data-key="pad" min="4" max="32" value="8">
+  </label>
+  <label>Heading scale <span class="val" data-for="hscale">100</span>
+    <input type="range" data-key="hscale" min="80" max="180" value="100">
+  </label>
+  <label>Line height <span class="val" data-for="lh">150</span>
+    <input type="range" data-key="lh" min="120" max="210" value="150">
+  </label>
+  <label>Gutter <span class="val" data-for="gutter">10</span>
+    <input type="range" data-key="gutter" min="0" max="48" value="10">
+  </label>
+  <label>Quote bar <span class="val" data-for="qbar">3</span>
+    <input type="range" data-key="qbar" min="0" max="12" value="3">
+  </label>
+  <label>Quote
+    <select data-key="quote">
+      <option value="bar">Left bar</option>
+      <option value="card">Card</option>
+      <option value="rule">Rules</option>
+      <option value="margin">Margin only</option>
+    </select>
+  </label>
+  <label>Checklist ink
+    <select data-key="ink">
+      <option value="house">House black</option>
+      <option value="phosphor">Phosphor</option>
+      <option value="lamp">Lamp on night</option>
+      <option value="cobalt">Cobalt</option>
+      <option value="clay">Kiln clay</option>
+      <option value="candy">Candy</option>
+      <option value="ink">Iron gall</option>
+    </select>
+  </label>
+
+  <h2>Chrome</h2>
+  <label>Fascia
+    <select data-key="chrome">
+      <option value="full">Full fascia</option>
+      <option value="rail">Title and tabs</option>
+      <option value="bare">Name only</option>
+    </select>
+  </label>
+  <label>Tabs
+    <select data-key="tabs">
+      <option value="lamps">Power lamps</option>
+      <option value="words">Word keys</option>
+      <option value="line">Underline</option>
+      <option value="spine">Spine</option>
+    </select>
+  </label>
+  <label>Toolbar
+    <select data-key="toolbar">
+      <option value="icons">Icons</option>
+      <option value="words">Words</option>
+      <option value="stamps">Stamps</option>
+      <option value="quiet">Quiet words</option>
+    </select>
+  </label>
+  <label>Status
+    <select data-key="status">
+      <option value="full">Markdown, words, characters</option>
+      <option value="words">Words and characters</option>
+      <option value="off">Hidden</option>
+    </select>
+  </label>
+  <label>Save lamp
+    <select data-key="save">
+      <option value="unsaved">Unsaved changes</option>
+      <option value="saved">Saved</option>
+    </select>
+  </label>
+  <label>Gap <span class="val" data-for="space">8</span>
+    <input type="range" data-key="space" min="2" max="20" value="8">
+  </label>
+  <label>Radius <span class="val" data-for="radius">3</span>
+    <input type="range" data-key="radius" min="0" max="28" value="3">
+  </label>
+  <label>Border <span class="val" data-for="border">2</span>
+    <input type="range" data-key="border" min="0" max="4" value="2">
+  </label>
+  <label>Shade <span class="val" data-for="shade">10</span>
+    <input type="range" data-key="shade" min="0" max="32" value="10">
+  </label>
+</aside>
+
+<div class="stage" id="stage">
+  <div class="stage-cap">
+    <span>Preset <strong id="stagePreset">Original</strong></span>
+    <span>Task · Studio kiln rebuild · Elijah · Studio · pen Kiln</span>
+    <span>Mon 26 Oct 2026</span>
+  </div>
+  <div class="stage-well">
+    <div class="frame">
+      <article class="item" id="item" data-ui-name="Item detail" aria-label="Item detail, Body tab">
+        <header class="fascia">
+          <div class="row">
+            <div class="mark">
+              <span class="power" aria-hidden="true"></span>
+              <span class="orb" role="img" aria-label="Item icon"></span>
+              <input class="title" id="title" value="Studio kiln rebuild" aria-label="Item name">
+            </div>
+            <div class="window-keys inert" aria-hidden="true">
+              <button type="button" class="wkey" title="Item settings">⚙</button>
+              <button type="button" class="wkey" title="Minimize">–</button>
+              <button type="button" class="wkey" title="Close">×</button>
+            </div>
+          </div>
+          <div class="row meta">
+            <span class="type-plate"><span class="type-lamp" aria-hidden="true"></span>Task</span>
+            <span class="chip">clarified</span>
+            <span class="save-flag is-unsaved" id="saveFlag"><span class="save-lamp" aria-hidden="true"></span><span id="saveText">Unsaved changes</span></span>
+          </div>
+          <div class="row keys inert">
+            <button type="button" class="key" title="Cmd/Ctrl+S">Save</button>
+            <button type="button" class="key">Complete</button>
+            <button type="button" class="key quiet" title="Too late — file as a missed opportunity">Missed</button>
+            <button type="button" class="key danger">Delete</button>
+          </div>
+        </header>
+        <div class="sheet">
+          <div class="bay" role="tablist" aria-label="Item detail">
+            <button type="button" class="tab" role="tab" id="tab-body" aria-selected="true">Body</button>
+            <button type="button" class="tab inert" role="tab" aria-selected="false" tabindex="-1">Details</button>
+            <button type="button" class="tab inert" role="tab" aria-selected="false" tabindex="-1">Scheduling</button>
+            <button type="button" class="tab inert" role="tab" aria-selected="false" tabindex="-1">Dependencies</button>
+            <button type="button" class="tab inert" role="tab" aria-selected="false" tabindex="-1">Subtasks</button>
+            <button type="button" class="tab inert" role="tab" aria-selected="false" tabindex="-1">Notes <span class="count">3</span></button>
+            <button type="button" class="tab inert" role="tab" aria-selected="false" tabindex="-1">Resources <span class="count">2</span></button>
+            <button type="button" class="tab secondary inert" role="tab" aria-selected="false" tabindex="-1">Links <span class="count">4</span></button>
+            <button type="button" class="tab secondary inert" role="tab" aria-selected="false" tabindex="-1">Analysis</button>
+            <button type="button" class="tab secondary inert" role="tab" aria-selected="false" tabindex="-1">Time</button>
+            <button type="button" class="tab secondary inert" role="tab" aria-selected="false" tabindex="-1">History</button>
+          </div>
+          <div class="scroll" id="panel">
+            <p class="missing" id="missing" hidden>Item not found.</p>
+            <div id="present">
+              <div class="mode" id="modeRow">
+                <button type="button" id="sourceBtn" aria-pressed="false">Source</button>
+              </div>
+              <div class="prose" id="prose" hidden></div>
+              <div class="rte" id="rte">
+                <div class="toolbar" role="toolbar" aria-label="Formatting">
+                  <button type="button" class="tool" data-act="bold" title="Bold (Ctrl+B)"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 2h5a3 3 0 0 1 1.7 5.5A3.2 3.2 0 0 1 9.4 14H4V2zm2 5h2.6A1.6 1.6 0 0 0 8.6 4H6v3zm0 2v3h3.2a1.6 1.6 0 0 0 0-3.2H6z"/></svg><span class="w">Bold</span></button>
+                  <button type="button" class="tool" data-act="italic" title="Italic (Ctrl+I)"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 2h6v2h-2.1l-2.4 8H11v2H5v-2h2.1l2.4-8H7V2z"/></svg><span class="w">Italic</span></button>
+                  <button type="button" class="tool" data-act="code" title="Inline code"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 4.2 2.4 8l3.8 3.8-1.4 1.4L0 8l4.8-5.2 1.4 1.4zm3.6 0L14 8l-4.2 3.8 1.4 1.4L16 8 11.2 2.8 9.8 4.2z"/></svg><span class="w">Code</span></button>
+                  <span class="sep" aria-hidden="true"></span>
+                  <button type="button" class="tool" data-act="h" title="Heading"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 3h2v4h6V3h2v10h-2V9H5v4H3V3z"/></svg><span class="w">Heading</span></button>
+                  <button type="button" class="tool" data-act="ul" title="Bulleted list"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3h2v2H2V3zm4 0h8v2H6V3zM2 7h2v2H2V7zm4 0h8v2H6V7zM2 11h2v2H2v-2zm4 0h8v2H6v-2z"/></svg><span class="w">List</span></button>
+                  <button type="button" class="tool" data-act="ol" title="Numbered list"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 3h1v3H3V5H2V4h1V3zm-1 6h2v1H3v1h1v1H2v-1H1v-1h1V9zm1 5h1v1H2v1h2v-1H3v-1h1v-1H2v1zm3-11h8v2H6V3zm0 4h8v2H6V7zm0 4h8v2H6v-2z"/></svg><span class="w">1.</span></button>
+                  <button type="button" class="tool" data-act="quote" title="Quote"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 4h4v4c0 2-1.2 3.2-3 4l-.8-1.2C4.2 10.2 5 9.4 5 8H3V4zm6 0h4v4c0 2-1.2 3.2-3 4l-.8-1.2c1-0.6 1.8-1.4 1.8-2.8H9V4z"/></svg><span class="w">Quote</span></button>
+                  <button type="button" class="tool" data-act="link" title="Link"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 9.8a3 3 0 0 1 0-4.2l1.4-1.4a3 3 0 0 1 4.2 4.2l-.7.7-1.4-1.4.7-.7a1 1 0 0 0-1.4-1.4L7.6 7a1 1 0 0 0 0 1.4l.4.4-1.4 1.4-.4-.4zm3.6-3.6a3 3 0 0 1 0 4.2l-1.4 1.4a3 3 0 1 1-4.2-4.2l.7-.7 1.4 1.4-.7.7a1 1 0 0 0 1.4 1.4L8.4 9a1 1 0 0 0 0-1.4l-.4-.4 1.4-1.4.4.4z"/></svg><span class="w">Link</span></button>
+                  <span class="spacer" aria-hidden="true"></span>
+                  <button type="button" class="tool" data-view="edit" title="Edit" aria-pressed="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M11.2 1.8 14.2 4.8 5.5 13.5 2 14l.5-3.5 8.7-8.7zM3.2 11.4l-.2 1.6 1.6-.2 7.2-7.2-1.4-1.4-7.2 7.2z"/></svg><span class="w">Edit</span></button>
+                  <button type="button" class="tool" data-view="split" title="Split view" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 2h5v12H2V2zm7 0h5v12H9V2zM7 2h2v12H7V2z"/></svg><span class="w">Split</span></button>
+                  <button type="button" class="tool" data-view="preview" title="Preview" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 3C3.5 3 1 8 1 8s2.5 5 7 5 7-5 7-5-2.5-5-7-5zm0 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg><span class="w">Preview</span></button>
+                </div>
+                <div class="rte-body" id="rteBody">
+                  <textarea class="editor" id="editor" spellcheck="true" aria-label="Body" placeholder="Write your note in markdown…"></textarea>
+                  <div class="split-bar" id="splitBar" hidden></div>
+                  <div class="preview" id="preview" hidden></div>
+                </div>
+                <div class="status">
+                  <span class="kind">Markdown</span>
+                  <span id="counts">0 words · 0 chars</span>
+                </div>
+              </div>
+              <textarea class="source" id="source" hidden spellcheck="false" aria-label="Body source"></textarea>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+  <p class="lab-note">Body is the document. Notes, Resources, Links, and the rest of the bay stay put and do not open.</p>
+</div>
+
+<script>
+(function () {
+  var DOC = [
+    "# Studio kiln rebuild",
+    "",
+    "Working note on the task. Elijah is at the Studio. The pen for the hours in the room is Kiln. Today is Monday 26 Oct 2026. The arch comes down this week, and the new bagwall is up before Thursday 29 Oct.",
+    "",
+    "## Why the arch failed",
+    "",
+    "The skew bricks on the right wall walked out during the bisque that finished Saturday 24 Oct. The crown dropped about a finger. Elijah marked the crack with a pencil while the brick was still warm, then left the door shut until this morning.",
+    "",
+    "- Right skew, courses 4 through 6. The mortar is powder and the bricks rock.",
+    "- Crown, three bricks. A hairline runs from the spy hole toward the bagwall.",
+    "- Left wall is sound. It stays.",
+    "- The middle thermocouple reads late. That is the probe, not the arch.",
+    "",
+    "## This week",
+    "",
+    "1. Mon 26 Oct. Photograph the crack, pull the loose skews, and stack them on the ware cart.",
+    "2. Tue 27 Oct. New skews from the shelf by the clay mixer. Set them in a stiff mix.",
+    "3. Wed 28 Oct. Bagwall, two courses lower than the old one, so the bottom stays even.",
+    "4. Thu 29 Oct. Candle overnight. A slow climb only if the arch stays shut.",
+    "5. Fri 30 Oct. Cone packs out. The last lines go in this body. Pen Kiln is only the hours spent in the room.",
+    "",
+    "## Cone pack",
+    "",
+    "Target is cone 6 on the hot face. The witness cones sit on a pad of the same clay as the shelves. A cold bottom still gets a cone 5 beside the 6.",
+    "",
+    "> Elijah, Monday 26 Oct, 9:40 AM, still in the Studio. The right skew is the one that moved. The left one did not. One wall comes out. The left wall stays.",
+    "> If the crown rings hollow under a knuckle, that brick is already gone. Tap it before mixing mortar.",
+    "",
+    "## Mix",
+    "",
+    "The mortar is the studio recipe, written here so the next firing can find it.",
+    "",
+    "- 2 parts fireclay, the bag labeled Studio, opened 12 Oct",
+    "- 1 part fine grog, from the bin under the wheel",
+    "- Water until it stands on a trowel and does not slump",
+    "- ~~Sodium silicate~~ stays out. That was the slip test on 19 Oct, and it stays out of a wall.",
+    "",
+    "The door carries the words `cone 6` in pencil. The shelf pack is `6` over `5`.",
+    "",
+    "```",
+    "candle    80 C, hold 8 h     Monday night into Tuesday",
+    "climb     100 C / h to 900",
+    "slow      60 C / h to 1220",
+    "soak      20 min, or until the witness bends",
+    "```",
+    "",
+    "## Where the rest of it lives",
+    "",
+    "The cone numbers on the studio wall match the [pyrometric cone](https://en.wikipedia.org/wiki/Pyrometric_cone) article Elijah left open on the bench laptop. The door-brick order is on the Studio rebuild list. It lives on that list.",
+    "",
+    "---",
+    "",
+    "## Still open before Thursday",
+    "",
+    "- Bagwall bricks counted Monday morning: 28 sound, 6 to replace",
+    "- The new thermocouple is in the drawer under the wheel, still in the packet",
+    "- Three shelves are cracked. They are tagged shelf, and they stay out of this firing",
+    "- Elijah walks the Studio at close on Wednesday 28 Oct and writes the last line here",
+    "",
+    "Hours on pen Kiln stay on the time log. This body is the build."
+  ].join("\n");
+
+  var FONTS = {
+    house: '"w95fa", Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    tahoma: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    grotesk: 'Karla, Avenir, "Segoe UI", sans-serif',
+    system: 'system-ui, "Segoe UI", sans-serif',
+    mono: 'ui-monospace, "Cascadia Code", "Courier New", monospace',
+    serif: 'Palatino, Georgia, serif',
+    round: '"Arial Rounded MT Bold", Nunito, "Segoe UI", sans-serif',
+    typewriter: '"Courier New", Courier, monospace',
+    didot: 'Didot, "Bodoni MT", Bodoni, serif'
+  };
+  var INKS = {
+    house: "#111111",
+    phosphor: "#0e6b45",
+    lamp: "#d8ffe9",
+    cobalt: "#000080",
+    clay: "#6b3a22",
+    candy: "#a12858",
+    ink: "#1a1208"
+  };
+  var PAPERS = {
+    white: ["#ffffff", "#000000"],
+    cream: ["#f6f0e4", "#1c140f"],
+    news: ["#efe8d6", "#1a1a1a"],
+    clay: ["#f3e4d4", "#2a1c14"],
+    blueprint: ["#e7eef6", "#0b1c3a"],
+    night: ["#070c0a", "#d8ffe9"]
+  };
+  var SYSTEMS = {
+    house: { face:"#c0c0c0", ink:"#111111", name:"#2a2c2e", titlebg:"#070c0a", titlefg:"#7dffc4", accent:"#7dffc4", key:"#d7d7d7", bay:"#b7bcc2", line:"#808080", framec:"#0a0a0a", hi:"#ffffff", sheen:"#ececec", shadebg:"#9a9c9e", muted:"#5c6166", link:"#000080" },
+    paper: { face:"#f4f4f2", ink:"#1a1a1a", name:"#1a1a1a", titlebg:"#f4f4f2", titlefg:"#1a1a1a", accent:"#1a1a1a", key:"#fff", bay:"#ececec", line:"#c8c8c6", framec:"#1a1a1a", hi:"#fff", sheen:"#fff", shadebg:"#e4e4e2", muted:"#666", link:"#000080" },
+    walnut: { face:"#6b4226", ink:"#1c140f", name:"#1c140f", titlebg:"#2a1a10", titlefg:"#f6efe2", accent:"#e4c98a", key:"#e7d3b0", bay:"#5a3820", line:"#3a2414", framec:"#1a0e08", hi:"#f6efe2", sheen:"#8a5a34", shadebg:"#3a2416", muted:"#4a3424", link:"#3a2414" },
+    candy: { face:"#ffe4f0", ink:"#3a2030", name:"#5a2844", titlebg:"#fff", titlefg:"#a12858", accent:"#a12858", key:"#fff", bay:"#ffd0e4", line:"#e8a0c0", framec:"#c45b86", hi:"#fff", sheen:"#fff5fa", shadebg:"#f7c2d8", muted:"#8a5070", link:"#9a2060" },
+    lacquer: { face:"#1c1612", ink:"#f4efe6", name:"#e4c98a", titlebg:"#0c0a08", titlefg:"#e4c98a", accent:"#e4c98a", key:"#3a3028", bay:"#241c16", line:"#6b4a22", framec:"#e4c98a", hi:"#6a5848", sheen:"#2a221c", shadebg:"#100e0c", muted:"#b7a890", link:"#f0d090" },
+    blueprint: { face:"#e7eef6", ink:"#0b1c3a", name:"#0b1c3a", titlebg:"#0b1c3a", titlefg:"#d6e6f5", accent:"#d6e6f5", key:"#f7fbff", bay:"#d5e2f0", line:"#8eabc8", framec:"#0b1c3a", hi:"#fff", sheen:"#f4f8fc", shadebg:"#c5d4e6", muted:"#3d5a78", link:"#0b3a86" },
+    jewel: { face:"#16131c", ink:"#f4efe6", name:"#e4d4f0", titlebg:"#0c0a10", titlefg:"#e8fff4", accent:"#c9a6e0", key:"#2a2440", bay:"#221c30", line:"#5c4e78", framec:"#c9a6e0", hi:"#3a3450", sheen:"#2a2440", shadebg:"#0c0a10", muted:"#c8bdd4", link:"#e8d4ff" },
+    dash: { face:"#101618", ink:"#d8ffe9", name:"#9ad7ff", titlebg:"#070c0a", titlefg:"#7dffc4", accent:"#7dffc4", key:"#1a2422", bay:"#0e1816", line:"#245046", framec:"#7dffc4", hi:"#1c2c28", sheen:"#162220", shadebg:"#070c0a", muted:"#8fb8a4", link:"#9ad7ff" },
+    instrument: { face:"#1a1e24", ink:"#e8e6df", name:"#c8d0c4", titlebg:"#070c0a", titlefg:"#7dffc4", accent:"#9ad7ff", key:"#2a3138", bay:"#22282e", line:"#4a5550", framec:"#9ad7ff", hi:"#3a4248", sheen:"#242a30", shadebg:"#12161a", muted:"#a8b0a4", link:"#9ad7ff" }
+  };
+
+  var ORIGINAL = {
+    font:"house", efont:"mono", pfont:"house", density:"house", layout:"popup", face:"writing", view:"edit",
+    system:"house", paper:"white", corners:"fascia", shadow:"milled", chrome:"full", tabs:"lamps",
+    toolbar:"icons", status:"full", save:"unsaved", quote:"bar", ink:"house",
+    contrast:100, sat:100, type:12, ed:13, measure:100, width:960, pad:8, hscale:100, lh:150,
+    gutter:10, qbar:3, space:8, radius:3, border:2, shade:10
+  };
+  function P(over) {
+    var o = {};
+    for (var k in ORIGINAL) o[k] = ORIGINAL[k];
+    for (var j in over) o[j] = over[j];
+    return o;
+  }
+  var PRESETS = {
+    original: P({}),
+    overhaul: P({
+      font:"grotesk", efont:"mono", pfont:"serif", density:"airy", layout:"page", face:"writing", view:"split",
+      system:"instrument", paper:"cream", corners:"keycap", shadow:"lacquer", chrome:"rail", tabs:"spine",
+      toolbar:"words", status:"full", save:"saved", quote:"card", ink:"cobalt",
+      contrast:105, sat:110, type:14, ed:16, measure:68, width:1040, pad:18, hscale:130, lh:165,
+      gutter:28, qbar:4, space:10, radius:8, border:1, shade:22
+    }),
+    minimal: P({
+      font:"system", efont:"system", pfont:"system", density:"compact", layout:"sheet", face:"writing", view:"edit",
+      system:"paper", paper:"white", corners:"square", shadow:"flat", chrome:"bare", tabs:"line",
+      toolbar:"quiet", status:"words", save:"saved", quote:"rule", ink:"house",
+      contrast:110, sat:90, type:13, ed:15, measure:72, width:760, pad:10, hscale:110, lh:155,
+      gutter:12, qbar:1, space:4, radius:0, border:1, shade:0
+    }),
+    skeuo: P({
+      font:"serif", efont:"typewriter", pfont:"serif", density:"airy", layout:"popup", face:"writing", view:"split",
+      system:"walnut", paper:"cream", corners:"soft", shadow:"brass", chrome:"full", tabs:"words",
+      toolbar:"stamps", status:"full", save:"unsaved", quote:"card", ink:"ink",
+      contrast:105, sat:115, type:15, ed:17, measure:62, width:720, pad:20, hscale:125, lh:170,
+      gutter:22, qbar:5, space:12, radius:12, border:2, shade:16
+    }),
+    cute: P({
+      font:"round", efont:"round", pfont:"round", density:"airy", layout:"popup", face:"writing", view:"preview",
+      system:"candy", paper:"cream", corners:"pill", shadow:"drop", chrome:"full", tabs:"lamps",
+      toolbar:"words", status:"words", save:"saved", quote:"card", ink:"candy",
+      contrast:105, sat:130, type:15, ed:17, measure:58, width:680, pad:18, hscale:135, lh:170,
+      gutter:18, qbar:6, space:12, radius:22, border:2, shade:14
+    }),
+    split: P({
+      font:"house", efont:"mono", pfont:"serif", density:"house", layout:"page", face:"writing", view:"split",
+      system:"house", paper:"white", corners:"fascia", shadow:"milled", chrome:"full", tabs:"lamps",
+      toolbar:"icons", status:"full", save:"unsaved", quote:"bar", ink:"phosphor",
+      contrast:105, sat:100, type:13, ed:15, measure:92, width:1080, pad:14, hscale:115, lh:160,
+      gutter:24, qbar:4, space:8, radius:3, border:2, shade:10
+    }),
+    source: P({
+      font:"house", efont:"mono", pfont:"house", density:"compact", layout:"popup", face:"source", view:"edit",
+      system:"house", paper:"white", corners:"square", shadow:"milled", chrome:"full", tabs:"lamps",
+      toolbar:"icons", status:"full", save:"unsaved", quote:"bar", ink:"house",
+      contrast:110, sat:100, type:12, ed:14, measure:100, width:860, pad:12, hscale:100, lh:145,
+      gutter:8, qbar:3, space:6, radius:2, border:2, shade:8
+    }),
+    phosphor: P({
+      font:"mono", efont:"mono", pfont:"mono", density:"house", layout:"popup", face:"writing", view:"preview",
+      system:"dash", paper:"night", corners:"fascia", shadow:"lacquer", chrome:"full", tabs:"lamps",
+      toolbar:"icons", status:"full", save:"unsaved", quote:"bar", ink:"lamp",
+      contrast:115, sat:120, type:13, ed:15, measure:70, width:820, pad:16, hscale:120, lh:165,
+      gutter:16, qbar:3, space:8, radius:3, border:1, shade:18
+    }),
+    galley: P({
+      font:"serif", efont:"serif", pfont:"serif", density:"airy", layout:"page", face:"writing", view:"preview",
+      system:"paper", paper:"cream", corners:"square", shadow:"flat", chrome:"rail", tabs:"line",
+      toolbar:"quiet", status:"words", save:"saved", quote:"margin", ink:"ink",
+      contrast:105, sat:95, type:16, ed:19, measure:62, width:760, pad:28, hscale:150, lh:175,
+      gutter:20, qbar:0, space:10, radius:0, border:0, shade:0
+    })
+  };
+  var LABELS = {
+    original:"Original", overhaul:"Complete overhaul", minimal:"Minimalized", skeuo:"Skeuomorphic",
+    cute:"Extra cute", split:"Split proof", source:"Source well", phosphor:"Phosphor page", galley:"Reading galley"
+  };
+  var NUM = ["contrast","sat","type","ed","measure","width","pad","hscale","lh","gutter","qbar","space","radius","border","shade"];
+  var state = P({});
+  state.preset = "original";
+  var doc = DOC;
+  var snapping = false;
+
+  var stage = document.getElementById("stage");
+  var item = document.getElementById("item");
+  var editor = document.getElementById("editor");
+  var source = document.getElementById("source");
+  var preview = document.getElementById("preview");
+  var rte = document.getElementById("rte");
+  var rteBody = document.getElementById("rteBody");
+  var splitBar = document.getElementById("splitBar");
+  var prose = document.getElementById("prose");
+  var missing = document.getElementById("missing");
+  var present = document.getElementById("present");
+  var sourceBtn = document.getElementById("sourceBtn");
+  var modeRow = document.getElementById("modeRow");
+  var counts = document.getElementById("counts");
+  var saveFlag = document.getElementById("saveFlag");
+  var saveText = document.getElementById("saveText");
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+  function renderInline(text) {
+    var spans = [];
+    function protect(html) {
+      spans.push(html);
+      return "\u0000P" + (spans.length - 1) + "\u0000";
+    }
+    text = text.replace(/`([^`]+)`/g, function (_m, code) { return protect("<code>" + code + "</code>"); });
+    text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (_m, label, href) {
+      var raw = href.replace(/&amp;/g, "&");
+      if (!/^(https?:|mailto:|\/|#)/i.test(raw.trim())) return label + " (" + href + ")";
+      return protect('<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + label + "</a>");
+    });
+    text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    text = text.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+    text = text.replace(/(^|[^*])\*([^*\s][^*]*?)\*/g, "$1<em>$2</em>");
+    text = text.replace(/\u0000P(\d+)\u0000/g, function (_m, i) { return spans[Number(i)] || ""; });
+    return text;
+  }
+  function renderMarkdown(src) {
+    if (!src || !String(src).trim()) return "";
+    var lines = String(src).replace(/\r\n?/g, "\n").split("\n");
+    var out = [];
+    var i = 0;
+    var listType = null;
+    function closeList() {
+      if (listType) { out.push("</" + listType + ">"); listType = null; }
+    }
+    while (i < lines.length) {
+      var line = lines[i];
+      var fence = line.match(/^\s*```(.*)$/);
+      if (fence) {
+        closeList();
+        var body = [];
+        i++;
+        while (i < lines.length && !/^\s*```/.test(lines[i])) { body.push(esc(lines[i])); i++; }
+        i++;
+        out.push("<pre><code>" + body.join("\n") + "</code></pre>");
+        continue;
+      }
+      if (!line.trim()) { closeList(); i++; continue; }
+      if (/^\s*([-*_])\1\1+\s*$/.test(line)) { closeList(); out.push("<hr>"); i++; continue; }
+      var heading = line.match(/^\s*(#{1,6})\s+(.*)$/);
+      if (heading) {
+        closeList();
+        var level = heading[1].length;
+        out.push("<h" + level + ">" + renderInline(esc(heading[2].trim())) + "</h" + level + ">");
+        i++;
+        continue;
+      }
+      if (/^\s*>\s?/.test(line)) {
+        closeList();
+        var quote = [];
+        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+          quote.push(renderInline(esc(lines[i].replace(/^\s*>\s?/, ""))));
+          i++;
+        }
+        out.push("<blockquote>" + quote.join("<br>") + "</blockquote>");
+        continue;
+      }
+      if (/^\s*[-*+]\s+/.test(line)) {
+        if (listType !== "ul") { closeList(); out.push("<ul>"); listType = "ul"; }
+        out.push("<li>" + renderInline(esc(line.replace(/^\s*[-*+]\s+/, ""))) + "</li>");
+        i++;
+        continue;
+      }
+      if (/^\s*\d+\.\s+/.test(line)) {
+        if (listType !== "ol") { closeList(); out.push("<ol>"); listType = "ol"; }
+        out.push("<li>" + renderInline(esc(line.replace(/^\s*\d+\.\s+/, ""))) + "</li>");
+        i++;
+        continue;
+      }
+      closeList();
+      var para = [];
+      while (i < lines.length && lines[i].trim() &&
+        !/^\s*(#{1,6}\s|>|[-*+]\s|\d+\.\s|```)/.test(lines[i]) &&
+        !/^\s*([-*_])\1\1+\s*$/.test(lines[i])) {
+        para.push(renderInline(esc(lines[i].trim())));
+        i++;
+      }
+      out.push("<p>" + para.join("<br>") + "</p>");
+    }
+    closeList();
+    return out.join("\n");
+  }
+  function plain(src) {
+    return String(src)
+      .replace(/```/g, "")
+      .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+      .replace(/^\s*>\s?/gm, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[*_~`]/g, "");
+  }
+  function wrap(text, start, end, marker) {
+    var selected = text.slice(start, end);
+    var before = text.slice(0, start);
+    var after = text.slice(end);
+    if (selected.indexOf(marker) === 0 && selected.lastIndexOf(marker) === selected.length - marker.length && selected.length >= marker.length * 2) {
+      var inner = selected.slice(marker.length, selected.length - marker.length);
+      return { text: before + inner + after, a: start, b: start + inner.length };
+    }
+    var wrapped = marker + selected + marker;
+    var caret = start + marker.length;
+    return {
+      text: before + wrapped + after,
+      a: selected ? start + marker.length : caret,
+      b: selected ? start + marker.length + selected.length : caret
+    };
+  }
+  function prefix(text, start, end, pfx) {
+    var lineStart = text.lastIndexOf("\n", start - 1) + 1;
+    var lineEnd = text.indexOf("\n", end);
+    if (lineEnd < 0) lineEnd = text.length;
+    var block = text.slice(lineStart, lineEnd);
+    var lines = block.split("\n");
+    var all = lines.every(function (l) { return l.indexOf(pfx) === 0; });
+    var updated = lines.map(function (l) { return all ? l.slice(pfx.length) : pfx + l; }).join("\n");
+    return { text: text.slice(0, lineStart) + updated + text.slice(lineEnd), a: lineStart, b: lineStart + updated.length };
+  }
+  function activeField() {
+    if (state.face === "source") return source;
+    if (state.face === "writing" && state.view !== "preview") return editor;
+    return null;
+  }
+  function applyEdit(fn) {
+    var el = activeField();
+    if (!el) return;
+    var result = fn(doc, el.selectionStart, el.selectionEnd);
+    doc = result.text;
+    syncFields();
+    render();
+    el.focus();
+    el.setSelectionRange(result.a, result.b);
+  }
+  function syncFields() {
+    if (document.activeElement !== editor) editor.value = doc;
+    if (document.activeElement !== source) source.value = doc;
+  }
+  function wordLine(value) {
+    var n = (value.match(/\S+/g) || []).length;
+    return n + (n === 1 ? " word" : " words") + " · " + value.length + " chars";
+  }
+  function render() {
+    var blank = state.face === "previewempty" || state.face === "empty";
+    counts.textContent = wordLine(blank ? "" : doc);
+    if (state.face === "empty") prose.innerHTML = '<span class="empty">No body yet.</span>';
+    else if (state.face === "prose") prose.textContent = plain(doc);
+    if (state.face === "previewempty") {
+      preview.className = "preview empty";
+      preview.textContent = "Nothing to preview yet.";
+      return;
+    }
+    var html = renderMarkdown(doc);
+    if (!html) {
+      preview.className = "preview empty";
+      preview.textContent = "Nothing to preview yet.";
+    } else {
+      preview.className = "preview";
+      preview.innerHTML = html;
+    }
+  }
+
+  function paint() {
+    var sys = SYSTEMS[state.system] || SYSTEMS.house;
+    var paper = PAPERS[state.paper] || PAPERS.white;
+    var ff = FONTS[state.font] || FONTS.house;
+    var ef = FONTS[state.efont] || FONTS.mono;
+    var pf = state.pfont === "house" ? ff : (FONTS[state.pfont] || ff);
+    var measure = state.measure >= 98 ? "none" : (state.measure + "ch");
+    item.style.setProperty("--ff", ff);
+    item.style.setProperty("--ef", ef);
+    item.style.setProperty("--pf", pf);
+    item.style.setProperty("--face", sys.face);
+    item.style.setProperty("--ink", sys.ink);
+    item.style.setProperty("--name", sys.name);
+    item.style.setProperty("--titlebg", sys.titlebg);
+    item.style.setProperty("--titlefg", sys.titlefg);
+    item.style.setProperty("--accent", sys.accent);
+    item.style.setProperty("--key", sys.key);
+    item.style.setProperty("--bay", sys.bay);
+    item.style.setProperty("--line", sys.line);
+    item.style.setProperty("--framec", sys.framec);
+    item.style.setProperty("--hi", sys.hi);
+    item.style.setProperty("--sheen", sys.sheen);
+    item.style.setProperty("--shadebg", sys.shadebg);
+    item.style.setProperty("--muted", sys.muted);
+    item.style.setProperty("--link", state.paper === "night" ? "#9ad7ff" : sys.link);
+    item.style.setProperty("--paper", paper[0]);
+    item.style.setProperty("--fieldfg", paper[1]);
+    item.style.setProperty("--tick", INKS[state.ink] || INKS.house);
+    item.style.setProperty("--codebg", state.paper === "night" ? "#101814" : "#1e1e1e");
+    item.style.setProperty("--codefg", state.paper === "night" ? "#d8ffe9" : "#f0f0f0");
+    item.style.setProperty("--type", state.type);
+    item.style.setProperty("--ed", state.ed);
+    item.style.setProperty("--measure", measure);
+    item.style.setProperty("--pad", state.pad);
+    item.style.setProperty("--hscale", state.hscale);
+    item.style.setProperty("--lh", state.lh);
+    item.style.setProperty("--gutter", state.gutter);
+    item.style.setProperty("--qbar", state.qbar);
+    item.style.setProperty("--space", state.space);
+    item.style.setProperty("--rad", state.radius);
+    item.style.setProperty("--bw", state.border);
+    item.style.setProperty("--shade", state.shade);
+    item.style.setProperty("--ctr", state.contrast / 100);
+    item.style.setProperty("--sat", state.sat / 100);
+    item.style.setProperty("--panel", state.width);
+    stage.style.setProperty("--panel", state.width);
+    stage.dataset.system = state.system;
+    stage.dataset.layout = state.layout;
+    item.dataset.density = state.density;
+    item.dataset.corners = state.corners;
+    item.dataset.shadow = state.shadow;
+    item.dataset.chrome = state.chrome;
+    item.dataset.tabs = state.tabs;
+    item.dataset.toolbar = state.toolbar;
+    item.dataset.status = state.status;
+    item.dataset.quote = state.quote;
+    item.dataset.paper = state.paper;
+
+    var saved = state.save === "saved";
+    saveFlag.className = "save-flag " + (saved ? "is-saved" : "is-unsaved");
+    saveText.textContent = saved ? "Saved" : "Unsaved changes";
+
+    var showSource = state.face === "source";
+    var showMissing = state.face === "missing";
+    var showProse = state.face === "prose" || state.face === "empty";
+    var showRte = state.face === "writing" || state.face === "previewempty";
+    missing.hidden = !showMissing;
+    present.hidden = showMissing;
+    modeRow.hidden = showMissing;
+    sourceBtn.textContent = showSource ? "Rendered" : "Source";
+    sourceBtn.setAttribute("aria-pressed", showSource ? "true" : "false");
+    prose.hidden = !showProse;
+    rte.hidden = !showRte;
+    source.hidden = !showSource;
+    var showEdit = showRte && state.view !== "preview" && state.face !== "previewempty";
+    var showPreview = showRte && (state.view !== "edit" || state.face === "previewempty");
+    editor.hidden = !showEdit;
+    preview.hidden = !showPreview;
+    splitBar.hidden = !(showEdit && showPreview);
+    rteBody.className = "rte-body" + (showEdit && showPreview ? " is-split" : "");
+    document.querySelectorAll("[data-view]").forEach(function (b) {
+      var on = b.getAttribute("data-view") === state.view;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.disabled = state.face === "previewempty";
+    });
+    document.querySelectorAll("[data-act]").forEach(function (b) {
+      b.disabled = state.face === "previewempty" || state.view === "preview" || state.face === "prose" || state.face === "empty" || state.face === "missing";
+    });
+    var label = LABELS[state.preset] || "Custom";
+    document.getElementById("presetName").textContent = label;
+    document.getElementById("stagePreset").textContent = label;
+    document.querySelectorAll("[data-preset]").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-preset") === state.preset ? "true" : "false");
+    });
+    NUM.forEach(function (key) {
+      var slot = document.querySelector('.val[data-for="' + key + '"]');
+      if (slot) slot.textContent = String(state[key]);
+    });
+    render();
+  }
+
+  function readControl(el) {
+    var key = el.getAttribute("data-key");
+    state[key] = el.type === "range" ? Number(el.value) : el.value;
+  }
+  function writeControls() {
+    document.querySelectorAll("[data-key]").forEach(function (el) {
+      var key = el.getAttribute("data-key");
+      if (state[key] == null) return;
+      el.value = String(state[key]);
+    });
+  }
+  function nudge() {
+    if (snapping) return;
+    state.preset = "custom";
+    paint();
+  }
+  document.querySelectorAll("[data-key]").forEach(function (el) {
+    el.addEventListener("input", function () { readControl(el); nudge(); });
+    el.addEventListener("change", function () { readControl(el); nudge(); });
+  });
+  document.querySelectorAll("[data-preset]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var id = b.getAttribute("data-preset");
+      var next = PRESETS[id] || PRESETS.original;
+      snapping = true;
+      for (var k in next) state[k] = next[k];
+      writeControls();
+      snapping = false;
+      state.preset = id;
+      paint();
+    });
+  });
+
+  function onDocInput(el) {
+    doc = el.value;
+    if (el !== editor) editor.value = doc;
+    if (el !== source) source.value = doc;
+    render();
+  }
+  editor.addEventListener("input", function () { onDocInput(editor); });
+  source.addEventListener("input", function () { onDocInput(source); });
+  editor.addEventListener("keydown", function (e) {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    var key = e.key.toLowerCase();
+    if (key === "b") { e.preventDefault(); applyEdit(function (t, s, n) { return wrap(t, s, n, "**"); }); }
+    if (key === "i") { e.preventDefault(); applyEdit(function (t, s, n) { return wrap(t, s, n, "*"); }); }
+  });
+  document.querySelectorAll("[data-act]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var act = b.getAttribute("data-act");
+      if (act === "bold") applyEdit(function (t, s, n) { return wrap(t, s, n, "**"); });
+      else if (act === "italic") applyEdit(function (t, s, n) { return wrap(t, s, n, "*"); });
+      else if (act === "code") applyEdit(function (t, s, n) { return wrap(t, s, n, "`"); });
+      else if (act === "h") applyEdit(function (t, s, n) { return prefix(t, s, n, "# "); });
+      else if (act === "ul") applyEdit(function (t, s, n) { return prefix(t, s, n, "- "); });
+      else if (act === "ol") applyEdit(function (t, s, n) { return prefix(t, s, n, "1. "); });
+      else if (act === "quote") applyEdit(function (t, s, n) { return prefix(t, s, n, "> "); });
+      else if (act === "link") applyEdit(function (t, s, n) {
+        var label = t.slice(s, n) || "link text";
+        var chunk = "[" + label + "](https://)";
+        return { text: t.slice(0, s) + chunk + t.slice(n), a: s + 1, b: s + 1 + label.length };
+      });
+    });
+  });
+  document.querySelectorAll("[data-view]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      state.view = b.getAttribute("data-view");
+      if (state.face === "previewempty") state.face = "writing";
+      var sel = document.querySelector('[data-key="view"]');
+      if (sel) sel.value = state.view;
+      var face = document.querySelector('[data-key="face"]');
+      if (face) face.value = state.face;
+      nudge();
+    });
+  });
+  sourceBtn.addEventListener("click", function () {
+    state.face = state.face === "source" ? "writing" : "source";
+    var face = document.querySelector('[data-key="face"]');
+    if (face) face.value = state.face;
+    nudge();
+  });
+
+  editor.value = doc;
+  source.value = doc;
+  writeControls();
+  paint();
+})();
+</script>
+</body>
+</html>

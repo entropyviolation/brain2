@@ -1,0 +1,7 @@
+{
+  "id": "filmrecs",
+  "name": "Film DNA Lab",
+  "version": "1.0.0",
+  "description": "Letterboxd taste map: vibe shelves, likes wall, Watch ranking (safe / balanced / explore), blend with a friend's CSV, and import watchlist/likes exports into a Films list.",
+  "nativeTemplate": "filmrecs"
+}

@@ -4,7 +4,7 @@ Presence is the Now door read from stores that already exist. A presence stamp, 
 
 **Later owner:** one presence agent.
 
-**Files:** `components/Analytics/MetricsTrends.tsx`, `components/Analytics/MoodFieldView.tsx`, and a new presence plate file under `components/Analytics/` if the counts and the lag histogram need a home of their own. Do not edit `TrackingAnalytics.tsx`. The joint mood/company dwell link is named here; the tracking agent owns that file.
+**Files:** `components/Analytics/meta/MetricsTrends.tsx`, `components/Analytics/time/MoodFieldView.tsx`, and a new presence plate file under `components/Analytics/` if the counts and the lag histogram need a home of their own. Do not edit `TrackingAnalytics.tsx`. The joint mood/company dwell link is named here; the tracking agent owns that file.
 
 Source: `docs/analytics-vision/04-now.md` and the Now section of `docs/analytics-vision/ANALYTICS_VISION.md`.
 

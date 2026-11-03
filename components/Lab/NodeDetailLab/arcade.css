@@ -18,7 +18,7 @@
   padding: 16px;
   border-radius: 14px;
   color: var(--ar-ink);
-  font-family: var(--font-pixelify), var(--font-karla), sans-serif;
+  font-family: var(--font-karla), Karla, sans-serif;
   background:
     linear-gradient(90deg, var(--ar-pink) 0 4px, transparent 4px calc(100% - 4px), var(--ar-blue) calc(100% - 4px)),
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 1.5px) 0 0 / 6px 6px,
@@ -88,7 +88,9 @@
   line-height: 1.15;
   text-transform: uppercase;
   color: #fff;
-  text-shadow: 2px 2px 0 var(--ar-pink), 0 0 12px rgba(255, 255, 255, 0.4);
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
+  text-shadow: 2px 2px 0 var(--ar-pink);
 }
 .ar-status {
   display: flex;

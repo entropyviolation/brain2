@@ -23,12 +23,23 @@ import { requestNavigateToList } from "@/lib/app-navigation"
 import { useListsUiStore } from "@/lib/lists-ui-store"
 import { useTaskStore } from "@/lib/task-store"
 
-export const NA_SMART_DAILY = "na-smart-daily"
-export const NA_SMART_WEEKLY = "na-smart-weekly"
-export const NA_SMART_MONTHLY = "na-smart-monthly"
-export const NA_SMART_COMPLETED = "na-smart-completed"
-export const NA_SMART_MISSED = "na-smart-missed"
-export const NA_SCHEDULED_FOLDER = "na-scheduled"
+import {
+  NA_SMART_DAILY,
+  NA_SMART_WEEKLY,
+  NA_SMART_MONTHLY,
+  NA_SMART_COMPLETED,
+  NA_SMART_MISSED,
+  NA_SCHEDULED_FOLDER,
+} from "@/lib/na-smart-ids"
+
+export {
+  NA_SMART_DAILY,
+  NA_SMART_WEEKLY,
+  NA_SMART_MONTHLY,
+  NA_SMART_COMPLETED,
+  NA_SMART_MISSED,
+  NA_SCHEDULED_FOLDER,
+}
 
 type Mutators = {
   lists: List[]

@@ -213,6 +213,7 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
     inset 0 1px 0 #fff,
     0 8px 22px rgba(30, 40, 52, 0.28);
   color: #1c1e20;
+  --clock-cell: 1.85rem;
 }
 
 .clock-picker-drums {
@@ -262,7 +263,7 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 
 .clock-picker-colon {
   align-self: center;
-  margin-bottom: calc(2.775rem - 3px);
+  margin-bottom: calc(var(--clock-cell) * 1.5 - 3px);
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
@@ -295,7 +296,7 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
   gap: 4px;
   box-sizing: border-box;
   min-width: 3rem;
-  height: 1.85rem;
+  height: var(--clock-cell);
   margin: 0;
   padding: 0 4px;
   border: 0;
@@ -394,7 +395,7 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 .clock-picker-entry {
   box-sizing: border-box;
   width: 3rem;
-  height: calc(1.85rem * 3 + 4px);
+  height: calc(var(--clock-cell) * 3 + 4px);
   margin: 0;
   padding: 0;
   border: 0;
@@ -560,4 +561,90 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 /* Ticks off also drops the rim circle. */
 .clock-picker-analog[data-ticks="off"] .clock-picker-well {
   box-shadow: none;
+}
+
+/* Phone: 44px drums and actions, 16px fields, panel stays inside the safe area. */
+@media (max-width: 767px) {
+  .clock-picker {
+    width: auto;
+    min-width: min(100%, 11rem);
+    max-width: 100%;
+    min-height: 44px;
+  }
+
+  .clock-picker-field {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  .clock-picker::after {
+    right: 44px;
+    font-size: 16px;
+  }
+
+  .clock-picker-open {
+    flex: 0 0 44px;
+    width: 44px;
+    min-height: 44px;
+  }
+
+  .clock-picker.itinerary-time-input,
+  .clock-picker.habit95-input {
+    max-width: 100%;
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .clock-picker.itinerary-time-input .clock-picker-field,
+  .clock-picker.habit95-input .clock-picker-field {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  .clock-picker.itinerary-time-input::after {
+    right: 44px;
+    font-size: 16px;
+  }
+
+  .clock-picker-panel {
+    --clock-cell: 44px;
+    width: min(14rem, calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 1rem));
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .clock-picker-gap {
+    display: block;
+    height: var(--clock-cell);
+  }
+
+  .clock-picker-entry {
+    width: 44px;
+    font-size: 16px !important;
+  }
+
+  .clock-picker-now,
+  .clock-picker-confirm,
+  .clock-picker-cancel,
+  .clock-picker-mini,
+  .clock-picker-dial {
+    min-height: 44px;
+    height: auto;
+    font-size: 16px !important;
+  }
+
+  .clock-picker-dial-line {
+    min-height: 44px;
+    align-items: center;
+    font-size: 16px;
+  }
+
+  .clock-picker-analog {
+    width: min(12.5rem, 100%);
+  }
+
+  .clock-picker-dial-edit {
+    max-height: min(12rem, 40dvh);
+  }
 }

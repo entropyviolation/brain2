@@ -98,6 +98,11 @@ export const RELATIONS: RelationDef[] = [
   { id: "has-phase", label: "has phase", inverse: "phase-of", inverseLabel: "phase of" },
   { id: "resource-of", label: "resource of", inverse: "has-resource", inverseLabel: "has resource" },
   { id: "has-resource", label: "has resource", inverse: "resource-of", inverseLabel: "resource of" },
+  // Identity (KG-I4, KG-I5). Symmetric. Accept writes `same-as`. Dismiss does not write `different-from`.
+  { id: "same-as", label: "same as", inverse: "same-as", inverseLabel: "same as" },
+  { id: "different-from", label: "different from", inverse: "different-from", inverseLabel: "different from" },
+  { id: "mentioned", label: "mentioned", inverse: "mentioned-by", inverseLabel: "mentioned by" },
+  { id: "mentioned-by", label: "mentioned by", inverse: "mentioned", inverseLabel: "mentioned" },
   { id: "related", label: "related to", inverse: "related", inverseLabel: "related to" },
 ]
 

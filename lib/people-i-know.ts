@@ -249,3 +249,11 @@ export function createPerson(name: string, listId: string, pipelines?: PersonPip
     personPipelines: pipelines && pipelines.length > 0 ? pipelines : undefined,
   }
 }
+
+/** A person already in the vault with this name (case and spacing ignored), so a creator can reuse them. */
+export function personNamed(name: string): Task | undefined {
+  const key = name.trim().toLowerCase()
+  if (!key) return undefined
+  const { tasks, lists } = useTaskStore.getState()
+  return personRecords(tasks, lists).find((task) => (task.title || task.description || "").trim().toLowerCase() === key)
+}

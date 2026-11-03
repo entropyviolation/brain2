@@ -6,7 +6,7 @@
  * 1000 rows past the cursor (`message.ROWID`, which only grows), oldest first.
  * The first run starts at 0, so history loads one batch per tick and the same
  * cursor carries on into live sync. Mapping lives in `messages.ts`.
- * `COGS_MESSAGES_DB` points it at another file (tests).
+ * `BRAIN2_MESSAGES_DB` points it at another file (tests).
  * Brief: docs/phone-sync/01-texts.md.
  */
 import os from "node:os"
@@ -15,18 +15,19 @@ import type { DatabaseSync } from "node:sqlite"
 import { rowToMessage, type MessageRow } from "./messages"
 import type { PhoneReader } from "./runner"
 import type { MessageRecord } from "./types"
+import { brain2Env } from "@/lib/brain2-env.mjs"
 
 export const MESSAGES_BATCH = 1000
 
 export function messagesDbPath(): string {
-  return process.env.COGS_MESSAGES_DB || path.join(os.homedir(), "Library", "Messages", "chat.db")
+  return brain2Env("MESSAGES_DB") || path.join(os.homedir(), "Library", "Messages", "chat.db")
 }
 
 const FULL_DISK_ACCESS =
   "Give Full Disk Access to the app running the hub (System Settings → Privacy & Security → Full Disk Access), then restart it."
 
 async function openDb(file: string): Promise<DatabaseSync> {
-  if (process.platform !== "darwin" && !process.env.COGS_MESSAGES_DB) {
+  if (process.platform !== "darwin" && !brain2Env("MESSAGES_DB")) {
     throw new Error("Texts sync needs a Mac: it reads ~/Library/Messages/chat.db.")
   }
   // getBuiltinModule, not import: bundlers (vite, Electron builds) choke on node:sqlite.

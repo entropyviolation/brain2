@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-`components/Analytics/ResearchReportView.tsx` gathers rows. `research-report.ts` decides which sections earn a place (floors at the top of that file). No model.
+`components/Analytics/meta/ResearchReportView.tsx` gathers rows. `research-report.ts` decides which sections earn a place (floors at the top of that file). No model.
 
 ## Information
 Habit days, met days and streak, week grade raw vs curved, tracking coverage, sleep nights, one wellbeing move, planned vs tracked minutes, text-pipeline stamps, gratitude lines, why and blocked-reason counts. Each section has a sentence, an n, and optional bars or a trace.

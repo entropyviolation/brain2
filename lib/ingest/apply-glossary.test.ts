@@ -9,7 +9,7 @@ describe("tryApplyGlossary", () => {
     const r = applyMainInfo()
     expect(r.status).toBe("ok")
     expect(r.reply).toContain("BIM")
-    expect(r.reply).toContain("Brain2 Ingestion Messenger")
+    expect(r.reply).toContain("Brain Interface Manager")
     expect(r.reply).toContain("{prefix} info")
     expect(r.reply).toContain("all commands")
   })

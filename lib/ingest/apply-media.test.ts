@@ -4,6 +4,7 @@ import { ingestIncoming, ingestIncomingAsync } from "./executor"
 import { useIngestStore } from "./ingest-store"
 import { useTaskStore } from "@/lib/task-store"
 import { NOTE_TYPE_ID } from "@/lib/note-types"
+import { MEDIA_QUESTION } from "./apply-media"
 import type { IncomingMessage } from "./types"
 
 const NOW = new Date(2026, 8, 21, 17, 42, 0)
@@ -90,11 +91,53 @@ describe("media ingest", () => {
     expect(useTaskStore.getState().tasks.find((t) => t.description === "oats")?.completed).toBe(true)
   })
 
+  it("leaves a photo question up while later texts and live location run", async () => {
+    const asked = await ingestIncomingAsync(
+      sim("", {
+        attachments: [{ kind: "photo", mime: "image/jpeg", name: "page.jpg", dataUrl: "idb:hold_test" }],
+        ocrText: "a page of handwriting",
+      }),
+      NOW,
+    )
+    expect(asked.status).toBe("needs_clarify")
+    expect(asked.reply).toBe(MEDIA_QUESTION)
+
+    const loc = await ingestIncomingAsync(sim("gps: Park\n37.80,-122.50", { locationUpdate: true }), NOW)
+    expect(loc.reply ?? "").not.toContain(MEDIA_QUESTION)
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.kind).toBe("media")
+
+    const note = await ingestIncomingAsync(sim("picked up the mail"), NOW)
+    expect(note.status).toBe("ok")
+    expect(note.reply ?? "").not.toContain(MEDIA_QUESTION)
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.kind).toBe("media")
+
+    const typed = ingestIncoming(sim("left the house"), NOW)
+    expect(typed.reply ?? "").not.toContain(MEDIA_QUESTION)
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.kind).toBe("media")
+
+    const skip = await ingestIncomingAsync(sim("skip"), NOW)
+    expect(skip.status).toBe("ok")
+    expect(skip.reply).toBe("Skipped.")
+    expect(useIngestStore.getState().getPending("simulate", "sim")).toBeUndefined()
+  })
+
   it("dumps and bumps inventory with inv", () => {
     const added = ingestIncoming(sim("inv oats"), NOW)
     expect(added.status).toBe("ok")
     const dump = ingestIncoming(sim("inv"), NOW)
     expect(dump.status).toBe("ok")
     if (dump.status === "ok") expect(dump.reply).toMatch(/oats/i)
+  })
+  it("files a held photo into Inbox from an answer with words", async () => {
+    const asked = await ingestIncomingAsync(
+      sim("", { attachments: [{ kind: "photo", mime: "image/jpeg", name: "x.jpg", dataUrl: "idb:hold_inbox" }], ocrText: "plain" }),
+      NOW,
+    )
+    expect(asked.status).toBe("needs_clarify")
+    const filed = await ingestIncomingAsync(sim("inbox: album cover inspo"), NOW)
+    expect(filed.status).toBe("ok")
+    const task = useTaskStore.getState().tasks.find((t) => t.description === "album cover inspo")
+    expect(task?.resources?.length).toBe(1)
+    expect(useIngestStore.getState().getPending("simulate", "sim")).toBeUndefined()
   })
 })

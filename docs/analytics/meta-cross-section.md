@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-`components/Analytics/CrossSection.tsx`, series in `cross-section.ts`. Also mounted inside Observatory.
+`components/Analytics/meta/CrossSection.tsx`, series in `cross-section.ts`. Also mounted inside Observatory.
 
 ## Information
 Thirteen day-aligned strips from `buildCrossSection`: habits, tracking, sleep, completions, points, operations, regret, mood minutes, joy, switches, places (distinct Location pens), goal-linked completions, Screen Time. Missing stays blank. Zero is a real value. `n` = days with a reading.

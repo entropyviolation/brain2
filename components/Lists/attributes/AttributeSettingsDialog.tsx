@@ -34,7 +34,7 @@ export function AttributeSettingsDialog({
         if (!open) onClose()
       }}
     >
-      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
+      <DialogContent className="fm98-dialog sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Attribute settings</DialogTitle>
           <DialogDescription>

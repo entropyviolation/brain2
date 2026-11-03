@@ -13,10 +13,26 @@ type PersistGate = {
   onFinishHydration: (cb: () => void) => () => void
 }
 
+/** Stores that have hydrated once this session. */
+const painted = new WeakSet<PersistGate>()
+
+/**
+ * True once the store has hydrated, and it stays true. A later `rehydrate()`
+ * (a hub pull, a phone reload) sets the flag false while it re-reads, and the
+ * rows already in memory are still the vault, so they stay on screen instead
+ * of flashing "Loading habits…".
+ */
+export function persistHydratedSnapshot(persist: PersistGate): boolean {
+  if (painted.has(persist)) return true
+  if (!persist.hasHydrated()) return false
+  painted.add(persist)
+  return true
+}
+
 export function usePersistHydrated(persist: PersistGate): boolean {
   return useSyncExternalStore(
     (onChange) => persist.onFinishHydration(onChange),
-    () => persist.hasHydrated(),
+    () => persistHydratedSnapshot(persist),
     () => false,
   )
 }

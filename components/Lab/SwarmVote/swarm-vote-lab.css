@@ -1,0 +1,16 @@
+.sv-lab { max-width: 760px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 20px; }
+.sv-lab h1 { font-size: 1.25rem; margin: 0; }
+.sv-lab h2 { font-size: 0.95rem; margin: 0 0 8px; }
+.sv-lab h3 { font-size: 0.85rem; margin: 12px 0 4px; }
+.sv-note { margin: 0; opacity: 0.7; }
+.sv-lab textarea { width: 100%; font: inherit; padding: 8px; box-sizing: border-box; }
+.sv-models { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.sv-models li { display: flex; align-items: center; gap: 8px; }
+.sv-models span { flex: 1; }
+.sv-models b { min-width: 1.5em; text-align: center; }
+.sv-check { display: flex; gap: 6px; align-items: center; margin: 8px 0; }
+.sv-table { width: 100%; border-collapse: collapse; }
+.sv-table th, .sv-table td { text-align: left; padding: 4px 8px; border-bottom: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 15%, transparent); }
+.sv-ballots { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 0.85rem; }
+.sv-missed { opacity: 0.55; }
+.sv-keys { display: flex; flex-wrap: wrap; gap: 6px; }

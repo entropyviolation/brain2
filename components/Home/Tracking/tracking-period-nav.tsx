@@ -1,16 +1,82 @@
 /**
  * components/Home/Tracking/tracking-period-nav.tsx — Date toolbar for Tracking
  *
- * Period nameplate date with metal prev/next/today keys (Plan kin). Time Grid
- * (day and week), Activity Log, and Day Log all use this so the three tabs
- * share one navigator. Optional meta sits under the date; optional trailing
- * keys (Clear day, Log activity, week cell size) stay at the end.
+ * Period nameplate date with short keycap prev / next / today keys. Time Grid
+ * (day and week), Activity Log, Day Log, and Tracking log share this navigator.
+ * Optional meta sits under the date; optional trailing keys (Clear day, Log
+ * activity, week cell size) stay at the end. Double-click the date to open
+ * the date picker (`date` + `onPickDate`; hidden while `locked`).
  * `variant="crt"` is the Home Tracking desk: ‹ [DATE in a CRT] › TODAY as
  * one group, then small CRT readouts (tracked, %, days) on the right.
  */
 "use client"
 
-import type { ReactNode } from "react"
+import { useRef, type ReactNode } from "react"
+import { dateInputValue, parseLocalDate } from "@/lib/date-utils"
+
+function openDatePicker(input: HTMLInputElement | null) {
+  if (!input) return
+  const show = input.showPicker?.bind(input)
+  if (show) {
+    try {
+      show()
+      return
+    } catch {
+      /* showPicker throws when the gesture is not trusted, such as in tests. */
+    }
+  }
+  input.focus()
+}
+
+function PeriodDate({
+  className,
+  label,
+  meta,
+  date,
+  onPickDate,
+  locked,
+}: {
+  className: string
+  label: string
+  meta?: ReactNode
+  date?: Date
+  onPickDate?: (date: Date) => void
+  locked: boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const canPick = Boolean(date && onPickDate) && !locked
+  const hint = canPick ? "Double-click to choose a date" : undefined
+  const title = hint && typeof meta === "string" ? `${hint}. ${meta}` : hint ?? (typeof meta === "string" ? meta : undefined)
+  return (
+    <div
+      className={className}
+      data-pick={canPick ? "true" : undefined}
+      title={title}
+      onDoubleClick={(event) => {
+        if (!canPick) return
+        event.preventDefault()
+        openDatePicker(inputRef.current)
+      }}
+    >
+      <h3>{label}</h3>
+      {className === "trk-period-title" && meta ? <p className="trk-period-meta">{meta}</p> : null}
+      {canPick ? (
+        <input
+          ref={inputRef}
+          type="date"
+          className="trk-period-pick"
+          aria-label="Choose a date"
+          tabIndex={-1}
+          value={dateInputValue(date)}
+          onChange={(event) => {
+            const next = parseLocalDate(event.target.value)
+            if (next) onPickDate?.(next)
+          }}
+        />
+      ) : null}
+    </div>
+  )
+}
 
 export function TrackingPeriodNav({
   label,
@@ -25,6 +91,8 @@ export function TrackingPeriodNav({
   locked = false,
   variant = "plate",
   readouts,
+  date,
+  onPickDate,
 }: {
   label: string
   onPrevious: () => void
@@ -40,26 +108,24 @@ export function TrackingPeriodNav({
   variant?: "plate" | "crt"
   /** CRT readouts beside the date (desk). */
   readouts?: ReactNode
+  /** Selected day. With `onPickDate`, a double-click on the date opens a picker. */
+  date?: Date
+  onPickDate?: (date: Date) => void
 }) {
+  const step = (className: string, aria: string, glyph: string, onClick: () => void) => (
+    <button type="button" className={`trk-keycap ${className}`} data-no95="" aria-label={aria} onClick={onClick}>
+      {glyph}
+    </button>
+  )
   if (variant === "crt") {
     return (
       <div className="trk-period-crt" data-locked={locked ? "true" : "false"}>
         <div className="trk-pgroup">
+          {locked ? null : step("trk-period-chev", previousLabel, "‹", onPrevious)}
+          <PeriodDate className="trk-scope-crt" label={label} meta={meta} date={date} onPickDate={onPickDate} locked={locked} />
+          {locked ? null : step("trk-period-chev", nextLabel, "›", onNext)}
           {locked ? null : (
-            <button type="button" className="trk-period-chev" aria-label={previousLabel} onClick={onPrevious}>
-              ‹
-            </button>
-          )}
-          <div className="trk-scope-crt" title={typeof meta === "string" ? meta : undefined}>
-            <h3>{label}</h3>
-          </div>
-          {locked ? null : (
-            <button type="button" className="trk-period-chev" aria-label={nextLabel} onClick={onNext}>
-              ›
-            </button>
-          )}
-          {locked ? null : (
-            <button type="button" className="trk-period-today" onClick={onToday}>
+            <button type="button" className="trk-keycap trk-period-today" data-no95="" onClick={onToday}>
               {todayLabel}
             </button>
           )}
@@ -74,25 +140,18 @@ export function TrackingPeriodNav({
       {locked ? (
         <span className="trk-period-chev" aria-hidden />
       ) : (
-      <button type="button" className="trk-period-chev" aria-label={previousLabel} onClick={onPrevious}>
-        &lt;
-      </button>
+        step("trk-period-chev", previousLabel, "‹", onPrevious)
       )}
-      <div className="trk-period-title">
-        <h3>{label}</h3>
-        {meta ? <p className="trk-period-meta">{meta}</p> : null}
-      </div>
+      <PeriodDate className="trk-period-title" label={label} meta={meta} date={date} onPickDate={onPickDate} locked={locked} />
       {locked ? (
         <span className="trk-period-chev" aria-hidden />
       ) : (
-      <button type="button" className="trk-period-chev" aria-label={nextLabel} onClick={onNext}>
-        &gt;
-      </button>
+        step("trk-period-chev", nextLabel, "›", onNext)
       )}
       {locked ? null : (
-      <button type="button" className="trk-period-today" onClick={onToday}>
-        {todayLabel}
-      </button>
+        <button type="button" className="trk-keycap trk-period-today" data-no95="" onClick={onToday}>
+          {todayLabel}
+        </button>
       )}
       {trailing ? <div className="trk-period-trailing">{trailing}</div> : null}
     </div>

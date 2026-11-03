@@ -56,6 +56,7 @@ import {
   type MorningGmDraft,
   type MorningGmStep,
 } from "./apply-morning-gm"
+import { logStartPlans } from "@/lib/start-plans"
 import { isRitualSkip } from "./ritual-skip"
 import type { ApplyResult, PendingClarify } from "./types"
 
@@ -193,7 +194,7 @@ export function startNightRitual(now = new Date()): ApplyResult {
   return beginEndRitual("day", localDayKey(now), now)
 }
 
-function tasksScheduledInPeriod(tasks: Task[], period: ReviewPeriod, key: string): Task[] {
+export function tasksScheduledInPeriod(tasks: Task[], period: ReviewPeriod, key: string): Task[] {
   const ref = dateFromPeriodKey(period, key)
   return tasks.filter((t) => {
     if (t.completed) return false
@@ -246,8 +247,9 @@ function nextStartStep(step: StartStep): StartStep | null {
   return START_STEPS[idx + 1]!
 }
 
-function previousKeyFor(period: ReviewPeriod, periodKey: string): string {
+export function previousKeyFor(period: ReviewPeriod, periodKey: string): string {
   const ref = dateFromPeriodKey(period, periodKey)
+  // Midday so DST edges do not slip the calendar day.
   const anchor = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 12, 0, 0)
   return getPeriodKey(period, previousPeriodDate(period, anchor))
 }
@@ -651,6 +653,14 @@ function saveStart(ritual: StartRitualDraft, now: Date): ApplyResult {
     pulledTaskIds: ritual.draft.pulledTaskIds,
     source: "telegram",
   }
+  slice.planLogged = logStartPlans({
+    period: ritual.period,
+    periodKey: ritual.periodKey,
+    own: ritual.draft.nextPlans ?? "",
+    children: {},
+    logged: undefined,
+    now,
+  })
   useReviewsStore.getState().replaceStartRitual(ritual.period, ritual.periodKey, slice)
   return {
     status: "ok",

@@ -12,6 +12,7 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { sessionElapsedMs, startWorkingOnOperation } from "@/lib/operation-work-session"
 import {
   addPenColorNowObjective,
+  attachPenNowObjective,
   pausePenColorSession,
   PEN_CLOCK_UNSHOWN_GRACE_MS,
   penClockShouldStop,
@@ -88,7 +89,7 @@ describe("pen color session", () => {
       19 * 60 + 42,
     )
 
-    pausePenColorSession(afterWork)
+    pausePenColorSession(afterWork, { hold: true })
     expect(usePenColorSessionStore.getState().session?.pausedAt).toBeTruthy()
 
     const duringPause = new Date(2026, 8, 21, 19, 50, 47)
@@ -230,5 +231,51 @@ describe("pen color session", () => {
     expect(entry?.stepId).toBe("fronts")
     expect(entry!.endMin).toBeGreaterThan(entry!.startMin)
     vi.useRealTimers()
+  })
+
+  it("keeps the sitting when the page unloads for a refresh", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(AT)
+    startPenColorSession("act-exercise", AT)
+    const dispose = watchPenClockShown(() => true, () => AT)
+    window.dispatchEvent(new Event("pagehide"))
+    expect(usePenColorSessionStore.getState().session?.penId).toBe("act-exercise")
+    dispose()
+    vi.useRealTimers()
+  })
+
+  it("keeps a sitting whose pen is not in the seed set until the time grid rehydrates", () => {
+    startPenColorSession("act-exercise", AT)
+    const live = usePenColorSessionStore.getState().session!
+    usePenColorSessionStore.getState().setSession({ ...live, penId: "custom-activity" })
+    const hydrated = vi.spyOn(useTimeTrackingStore.persist, "hasHydrated").mockReturnValue(false)
+    expect(tickPenColorSession(new Date(AT.getTime() + 60_000))?.penId).toBe("custom-activity")
+    hydrated.mockRestore()
+  })
+
+  it("files an attached objective onto the task's Objectives list", () => {
+    useTaskStore.getState().addTask({
+      id: "nest",
+      description: "Build the nest",
+      type: "task",
+      stage: "clarified",
+      createdAt: AT,
+      completed: false,
+      lists: [],
+      links: [],
+    })
+    startPenColorSession("act-exercise", AT)
+    addPenColorNowObjective("cut the tray", AT)
+    const id = usePenColorSessionStore.getState().session!.nowObjectives![0].id
+    attachPenNowObjective(id, { taskId: "nest" })
+
+    const nest = useTaskStore.getState().tasks.find((t) => t.id === "nest")
+    const def = nest?.itemAttributeDefinitions?.find((item) => item.name === "Objectives")
+    expect(def?.type).toBe("list")
+    const listId = nest?.attributes?.[def!.id]
+    expect(typeof listId).toBe("string")
+    const filed = useTaskStore.getState().tasks.find((t) => t.id === `objective-item-${id}`)
+    expect(filed).toMatchObject({ title: "cut the tray", rewardValue: 1 })
+    expect(filed?.lists).toContain(listId)
   })
 })

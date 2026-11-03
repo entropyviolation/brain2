@@ -108,8 +108,7 @@ describe("FolderTree", () => {
     expect(onNavTo).toHaveBeenCalledWith("f2")
   })
 
-  it("calls onEditFolder from the settings button", () => {
-    const onEditFolder = vi.fn()
+  it("has no per-folder settings button", () => {
     render(
       <FolderTree
         folders={mockFolders}
@@ -121,11 +120,9 @@ describe("FolderTree", () => {
         onDragOver={vi.fn()}
         onDrop={vi.fn()}
         onCreateFolder={vi.fn()}
-        onEditFolder={onEditFolder}
       />,
     )
-    fireEvent.click(screen.getByLabelText("Edit Work"))
-    expect(onEditFolder).toHaveBeenCalledWith(expect.objectContaining({ id: "f1" }))
+    expect(screen.queryByLabelText("Edit Work")).toBeNull()
   })
 
   it("renders Quick Access and Folders section headings", () => {
@@ -165,6 +162,38 @@ describe("FolderTree", () => {
     expect(screen.getByText("Work").closest(".fm-tree-folder")?.querySelector(".fm-tree-icon")).toBeTruthy()
   })
 
+  it("lists each item type under Quick Access → Item Types", () => {
+    const onNavTo = vi.fn()
+    const onOpenItemType = vi.fn()
+    render(
+      <FolderTree
+        folders={mockFolders}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={onNavTo}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+        itemTypes={[
+          { id: "book", name: "Book", pluralName: "Books" },
+          { id: "task", name: "Task", pluralName: "Tasks" },
+        ]}
+        onOpenItemType={onOpenItemType}
+      />,
+    )
+    expect(screen.getByText("Item Types")).toBeInTheDocument()
+    expect(screen.queryByText("Books")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText("Expand Item Types"))
+    expect(screen.getByText("Books")).toBeInTheDocument()
+    expect(screen.getByText("Tasks")).toBeInTheDocument()
+    fireEvent.click(screen.getByText("Books"))
+    expect(onOpenItemType).toHaveBeenCalledWith("book")
+    fireEvent.click(screen.getByText("Item Types"))
+    expect(onNavTo).toHaveBeenCalledWith("item-types")
+  })
+
   it("adds Module Lists to Quick Access when the folder exists", () => {
     render(
       <FolderTree
@@ -183,5 +212,24 @@ describe("FolderTree", () => {
       />,
     )
     expect(screen.getAllByText("Module Lists").length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("hides the folder pane when the phone Address toggle closes it", () => {
+    render(
+      <FolderTree
+        folders={mockFolders}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+        collapsed
+      />,
+    )
+    expect(screen.queryByRole("navigation", { name: "Lists folders" })).toBeNull()
+    expect(document.getElementById("fm-folder-tree")).toHaveAttribute("hidden")
   })
 })

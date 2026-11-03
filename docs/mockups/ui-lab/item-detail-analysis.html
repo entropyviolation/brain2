@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item detail · Analysis — UI lab</title>
+<style>
+:root { --crt0: #7dffc4; --bench: #1e2028; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 13px;
+  background: #12141a;
+  color: #e4e4ea;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(250px, 320px) 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (max-width: 980px) { body { grid-template-columns: 1fr; } }
+.bench {
+  background: var(--bench);
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 96vh;
+  overflow: auto;
+  font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: var(--crt0);
+  opacity: .7;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #444;
+  border-radius: 3px;
+}
+.lab-sections a:hover { opacity: 1; }
+.lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  color: var(--crt0);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.lede { margin: 0 0 8px; opacity: .82; line-height: 1.45; }
+.bench h2 {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin: 14px 0 6px;
+  color: var(--crt0);
+  font-weight: 700;
+}
+.bench label { display: block; margin: 7px 0 2px; opacity: .9; }
+.bench select, .bench input[type="range"] { width: 100%; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.reset {
+  font: inherit;
+  font-size: 10px;
+  color: #e8e8ec;
+  background: #2a2d36;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 4px 8px;
+  cursor: pointer;
+  margin: 4px 0 8px;
+}
+.bench :focus-visible, .item :focus-visible { outline: 2px solid var(--crt0); outline-offset: 2px; }
+
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap { margin: 0; font-size: 11px; letter-spacing: .04em; opacity: .85; }
+.sample-line { margin: 0; font-size: 11px; letter-spacing: .04em; opacity: .72; }
+.well {
+  flex: 1;
+  min-height: 520px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 28px 16px 40px;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    #3a3d40;
+}
+.toast { min-height: 1.2em; margin: 0; font-size: 11px; opacity: .75; }
+
+.item {
+  --ff: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  --type: 12;
+  --title-size: 15;
+  --card-size: 24;
+  --label-size: 14;
+  --value-size: 14;
+  --question-size: 14;
+  --tab-size: 10.5;
+  --chip-size: 10;
+  --key-size: 12;
+  --leading: 1.35;
+  --title-track: 12;
+  --tab-track: 9;
+  --card-track: -2;
+  --title-w: 700;
+  --card-w: 600;
+  --label-w: 500;
+  --value-w: 500;
+  --width: 860;
+  --win-pad: 3;
+  --fascia-pad: 10;
+  --card-pad: 24;
+  --gap: 8;
+  --q-gap: 16;
+  --metric-gap: 8;
+  --tab-gap: 4;
+  --key-gap: 6;
+  --tab-min: 108;
+  --win-rad: 3;
+  --card-rad: 8;
+  --key-rad: 3;
+  --field-rad: 2;
+  --win-border: 0;
+  --card-border: 1;
+  --field-border: 1;
+  --rule: 1;
+  --row-h: 22;
+  --shade: 10;
+  --bevel: 2;
+  --card-shade: 2;
+  --key-h: 28;
+  --tab-h: 32;
+  --lamp: 8;
+  --orb: 30;
+  --glow: 3;
+  --mill: 0.16;
+  --sec: 0.86;
+  --face-l: 50%;
+  --card-l: 100%;
+  --bay-l: 63%;
+  --ink-a: 100%;
+  --muted-a: 75%;
+  --mix: 0%;
+  --crt: color-mix(in srgb, #c4896a var(--mix), #7dffc4);
+  --ink: color-mix(in srgb, #111111 var(--ink-a), #6a6a6a);
+  --face: color-mix(in srgb, #ffffff var(--face-l), #808080);
+  --card: color-mix(in srgb, #ffffff var(--card-l), #d0d0d0);
+  --bay: color-mix(in srgb, #ffffff var(--bay-l), #6a6e72);
+  --muted: color-mix(in srgb, var(--ink) var(--muted-a), #9a9a9a);
+  width: min(100%, calc(var(--width) * 1px));
+  color: var(--ink);
+  background: var(--face);
+  font-family: var(--ff);
+  font-size: calc(var(--type) * 1px);
+  font-weight: 400;
+  line-height: var(--leading);
+  border: calc(var(--win-border) * 1px) solid #0a0a0a;
+  border-radius: calc(var(--win-rad) * 1px);
+  padding: calc(var(--win-pad) * 1px);
+  box-shadow:
+    inset calc(var(--bevel) * -1px) calc(var(--bevel) * -1px) #0a0a0a,
+    inset calc(var(--bevel) * 1px) calc(var(--bevel) * 1px) #fff,
+    0 calc(var(--shade) * .45px) calc(var(--shade) * 1px) rgba(0,0,0,.28);
+}
+.item[data-smooth="pixel"] { -webkit-font-smoothing: none; }
+.item[data-smooth="smooth"] { -webkit-font-smoothing: antialiased; }
+.item[data-figures="tabular"] .line b,
+.item[data-figures="tabular"] .chip { font-variant-numeric: tabular-nums; }
+.item[data-figures="proportional"] .line b,
+.item[data-figures="proportional"] .chip { font-variant-numeric: proportional-nums; }
+.item[data-case="upper"] .title { text-transform: uppercase; }
+.item[data-case="typed"] .title { text-transform: none; }
+.item[data-tabface="body"] .tab { font-family: inherit; }
+
+.window { display: flex; flex-direction: column; gap: calc(var(--gap) * 1px); min-width: 0; }
+.fascia {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--gap) * 1px);
+  padding: calc(var(--fascia-pad) * 1px);
+  border-radius: calc(var(--key-rad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,var(--mill)) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #fff 0%, var(--face) 48%, #8a8a8a 100%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.75);
+}
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--key-gap) * 1px); }
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 12rem;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 12px 6px 8px;
+  border-radius: calc(var(--key-rad) * 1px);
+  color: var(--crt);
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt) 16%, transparent), transparent 48%),
+    #070c0a;
+  box-shadow: 0 0 0 1px #000, inset 0 8px 14px rgba(0,0,0,.35);
+}
+.lamp, .save-lamp, .type-lamp, .tab-lamp {
+  width: calc(var(--lamp) * 1px);
+  height: calc(var(--lamp) * 1px);
+  flex: none;
+  border-radius: 50%;
+}
+.lamp.on, .save-lamp.on {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 calc(var(--glow) * 2px) var(--crt);
+}
+.save-lamp.off {
+  background: radial-gradient(circle at 35% 30%, #ead0c8, #c56e74 42%, #4c2226 78%);
+  box-shadow: 0 0 0 1px #3a181c, 0 0 6px rgba(197,110,116,.45);
+}
+.lamp.off, .tab-lamp {
+  background: radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 60%, #111);
+  box-shadow: 0 0 0 1px #1a1c1e;
+}
+.orb {
+  width: calc(var(--orb) * 1px);
+  height: calc(var(--orb) * 1px);
+  flex: none;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #1a1f1d, #050807 72%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.8), 0 0 0 1px color-mix(in srgb, var(--crt) 18%, transparent);
+  cursor: pointer;
+}
+.orb svg { width: 60%; height: 60%; display: block; }
+.title {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  font-size: calc(var(--title-size) * 1px);
+  font-weight: var(--title-w);
+  letter-spacing: calc(var(--title-track) * 0.01em);
+  color: var(--crt);
+  text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.back, .key, .gear, .more {
+  font: inherit;
+  font-size: calc(var(--key-size) * 1px);
+  font-weight: var(--label-w);
+  color: #1a1c1e;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,.72), transparent 30%), linear-gradient(165deg, #f4f4f4, var(--face) 70%, #b9b9b9);
+  border: 0;
+  border-radius: calc(var(--key-rad) * 1px);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0,0,0,.25), 0 0 0 1px #4a4e52, 0 1px 0 rgba(0,0,0,.25);
+}
+.back, .gear, .more {
+  width: calc(var(--key-h) * 1px);
+  height: calc(var(--key-h) * 1px);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.key { min-height: calc(var(--key-h) * 1px); padding: 2px 10px; }
+.key.quiet { opacity: .72; }
+.key:active, .back:active, .gear:active, .more:active { transform: translateY(1px); }
+.minutes-field {
+  width: 7.5rem;
+  height: calc(var(--key-h) * 1px);
+  padding: 2px 6px;
+  border: calc(var(--field-border) * 1px) solid #808080;
+  border-radius: calc(var(--field-rad) * 1px);
+  background: #fff;
+  color: #111;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  font: inherit;
+  font-size: calc(var(--key-size) * 1px);
+}
+.save-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: calc(var(--key-h) * 1px);
+  padding: 2px 10px 2px 8px;
+  font-size: calc(var(--chip-size) * 1px);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #1a1c1e;
+  background: linear-gradient(180deg, #fff, #d5d8dc);
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+  border-radius: calc(var(--key-rad) * 1px);
+}
+.chip, .type-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: calc(var(--chip-size) * 2.2px);
+  padding: 0 8px;
+  font-size: calc(var(--chip-size) * 1px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #1a1c1e;
+  background: linear-gradient(180deg, #fff, #c8cccf);
+  border: 0;
+  border-radius: calc(var(--key-rad) * 1px);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgba(0,0,0,.25);
+}
+.type-plate { cursor: pointer; padding-left: 7px; }
+.type-lamp {
+  background: radial-gradient(circle at 35% 30%, #fff, #cbd5e1 48%, #1a1c1e 120%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.45);
+}
+.keys { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--key-gap) * 1px); }
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--tab-min) * 1px), 1fr));
+  gap: calc(var(--tab-gap) * 1px);
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: calc(var(--key-rad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,var(--mill)) 0 1px, transparent 1px 2px),
+    var(--bay);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.2);
+}
+.tab {
+  position: relative;
+  min-height: calc(var(--tab-h) * 1px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px 0 calc(var(--lamp) * 1px + 14px);
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: calc(var(--tab-size) * 1px);
+  font-weight: 500;
+  letter-spacing: calc(var(--tab-track) * 0.01em);
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,.75), transparent 46%), linear-gradient(180deg, #eee, var(--face));
+  border: 0;
+  border-radius: calc(var(--key-rad) * 1px);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.35);
+}
+.tab .tab-lamp { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); }
+.tab.secondary:not([aria-selected="true"]) {
+  min-height: calc(var(--tab-h) * 0.88px);
+  font-size: calc(var(--tab-size) * 0.95px);
+  opacity: var(--sec);
+}
+.tab[aria-selected="true"] {
+  color: var(--crt);
+  text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt);
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt) 16%, transparent), transparent 48%),
+    #070c0a;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.55), 0 0 0 1px #000;
+  opacity: 1;
+  transform: translateY(1px);
+}
+.tab[aria-selected="true"] .tab-lamp {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 calc(var(--glow) * 2px) var(--crt);
+}
+
+.body { padding: 0 8px 10px; }
+.card {
+  background: var(--card);
+  color: #111;
+  border: calc(var(--card-border) * 1px) solid #e4e4e7;
+  border-radius: calc(var(--card-rad) * 1px);
+  box-shadow: 0 calc(var(--card-shade) * 1px) calc(var(--card-shade) * 2px) rgba(0,0,0,.08);
+  padding: calc(var(--card-pad) * 1px);
+}
+.card h2 {
+  margin: 0 0 12px;
+  font-size: calc(var(--card-size) * 1px);
+  font-weight: var(--card-w);
+  letter-spacing: calc(var(--card-track) * 0.01em);
+  line-height: 1.1;
+  color: #111;
+}
+.q { display: flex; flex-direction: column; gap: 6px; margin-bottom: calc(var(--q-gap) * 1px); }
+.q label {
+  font-size: calc(var(--label-size) * 1px);
+  font-weight: var(--label-w);
+  color: #111;
+}
+.read {
+  margin: 0;
+  font-size: calc(var(--question-size) * 1px);
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 4.5em;
+  padding: 8px;
+  font: inherit;
+  font-size: calc(var(--question-size) * 1px);
+  color: #111;
+  background: #fff;
+  border: calc(var(--field-border) * 1px) solid #d4d4d8;
+  border-radius: calc(var(--field-rad) * 1px);
+}
+.item[data-fields="reading"] textarea,
+.item[data-fields="reading"] .when-editing { display: none; }
+.item[data-fields="editing"] .read,
+.item[data-fields="editing"] .when-reading { display: none; }
+.metrics-head {
+  margin: 4px 0 8px;
+  padding-top: 16px;
+  border-top: calc(var(--rule) * 1px) solid #e4e4e7;
+  font-size: calc(var(--label-size) * 1px);
+  font-weight: var(--label-w);
+  color: #111;
+}
+.metric-rows { display: flex; flex-direction: column; gap: calc(var(--metric-gap) * 1px); }
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  min-height: calc(var(--row-h) * 1px);
+}
+.line span {
+  font-size: calc(var(--label-size) * 1px);
+  font-weight: var(--label-w);
+  color: #111;
+}
+.line b {
+  font-size: calc(var(--value-size) * 1px);
+  font-weight: var(--value-w);
+  color: #111;
+}
+.menu {
+  position: absolute;
+  right: 12px;
+  top: 128px;
+  z-index: 2;
+  background: var(--face);
+  color: var(--ink);
+  border: 1px solid #808080;
+  padding: 4px;
+  min-width: 180px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,.25);
+}
+.menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.menu button:hover { background: #000080; color: #fff; }
+.frame { --width: 860; position: relative; width: min(100%, calc(var(--width) * 1px)); }
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="habits.html">Habits</a>
+    <a href="plan.html">Plan</a>
+    <a href="todo.html">To do</a>
+    <a href="goals.html">Goals</a>
+    <a href="tracking.html">Tracking</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Ops</a>
+    <a href="pen-settings.html">Pen</a>
+    <a href="timeblock.html">Timeblock</a>
+    <a href="baby-animal.html">Baby animal</a>
+    <a href="item-detail-analysis.html" aria-current="page">Analysis</a>
+  </nav>
+  <h1>Analysis lab</h1>
+  <p class="lede">The item page, Analysis tab, as it ships. Studio kiln rebuild. The controls change type, weight, space, the metric rule, and color of this screen.</p>
+  <button type="button" class="reset" id="reset">Reset to the app</button>
+
+  <h2>Type</h2>
+  <label>Font
+    <select data-key="font">
+      <option value="tahoma">Tahoma / MS Sans Serif</option>
+      <option value="system">System UI</option>
+      <option value="grotesk">Avenir, Segoe</option>
+      <option value="mono">UI monospace</option>
+      <option value="serif">Palatino, Georgia</option>
+      <option value="typewriter">Typewriter</option>
+    </select>
+  </label>
+  <label>Tab face
+    <select data-key="tabface">
+      <option value="mono">Mono, as the bay</option>
+      <option value="body">Same as the window</option>
+    </select>
+  </label>
+  <label>Title case
+    <select data-key="case">
+      <option value="upper">Uppercase</option>
+      <option value="typed">As typed</option>
+    </select>
+  </label>
+  <label>Figures
+    <select data-key="figures">
+      <option value="tabular">Tabular numbers</option>
+      <option value="proportional">Proportional numbers</option>
+    </select>
+  </label>
+  <label>Smoothing
+    <select data-key="smooth">
+      <option value="pixel">Pixel</option>
+      <option value="smooth">Smoothed</option>
+    </select>
+  </label>
+  <label>Body size <span class="val">12</span>
+    <input type="range" min="11" max="18" step="1" data-key="type" value="12">
+  </label>
+  <label>Title size <span class="val">15</span>
+    <input type="range" min="12" max="28" step="1" data-key="title-size" value="15">
+  </label>
+  <label>Card title size <span class="val">24</span>
+    <input type="range" min="16" max="40" step="1" data-key="card-size" value="24">
+  </label>
+  <label>Label size <span class="val">14</span>
+    <input type="range" min="11" max="22" step="1" data-key="label-size" value="14">
+  </label>
+  <label>Value size <span class="val">14</span>
+    <input type="range" min="12" max="32" step="1" data-key="value-size" value="14">
+  </label>
+  <label>Question size <span class="val">14</span>
+    <input type="range" min="12" max="22" step="1" data-key="question-size" value="14">
+  </label>
+  <label>Tab size <span class="val">10.5</span>
+    <input type="range" min="9" max="16" step="0.5" data-key="tab-size" value="10.5">
+  </label>
+  <label>Chip size <span class="val">10</span>
+    <input type="range" min="8" max="16" step="1" data-key="chip-size" value="10">
+  </label>
+  <label>Key size <span class="val">12</span>
+    <input type="range" min="10" max="18" step="1" data-key="key-size" value="12">
+  </label>
+  <label>Line height <span class="val">1.35</span>
+    <input type="range" min="1.1" max="1.8" step="0.05" data-key="leading" value="1.35">
+  </label>
+  <label>Title tracking <span class="val">12</span>
+    <input type="range" min="0" max="28" step="1" data-key="title-track" value="12">
+  </label>
+  <label>Tab tracking <span class="val">9</span>
+    <input type="range" min="0" max="24" step="1" data-key="tab-track" value="9">
+  </label>
+  <label>Card title tracking <span class="val">-2</span>
+    <input type="range" min="-6" max="12" step="1" data-key="card-track" value="-2">
+  </label>
+
+  <h2>Weight</h2>
+  <label>Title weight <span class="val">700</span>
+    <input type="range" min="400" max="800" step="50" data-key="title-w" value="700">
+  </label>
+  <label>Card title weight <span class="val">600</span>
+    <input type="range" min="400" max="800" step="50" data-key="card-w" value="600">
+  </label>
+  <label>Label weight <span class="val">500</span>
+    <input type="range" min="400" max="800" step="50" data-key="label-w" value="500">
+  </label>
+  <label>Value weight <span class="val">500</span>
+    <input type="range" min="400" max="800" step="50" data-key="value-w" value="500">
+  </label>
+
+  <h2>Space</h2>
+  <label>Width <span class="val">860</span>
+    <input type="range" min="520" max="1100" step="10" data-key="width" value="860">
+  </label>
+  <label>Window pad <span class="val">3</span>
+    <input type="range" min="0" max="16" step="1" data-key="win-pad" value="3">
+  </label>
+  <label>Fascia pad <span class="val">10</span>
+    <input type="range" min="4" max="28" step="1" data-key="fascia-pad" value="10">
+  </label>
+  <label>Card pad <span class="val">24</span>
+    <input type="range" min="8" max="48" step="1" data-key="card-pad" value="24">
+  </label>
+  <label>Section gap <span class="val">8</span>
+    <input type="range" min="0" max="24" step="1" data-key="gap" value="8">
+  </label>
+  <label>Question gap <span class="val">16</span>
+    <input type="range" min="4" max="40" step="1" data-key="q-gap" value="16">
+  </label>
+  <label>Metric gap <span class="val">8</span>
+    <input type="range" min="0" max="28" step="1" data-key="metric-gap" value="8">
+  </label>
+  <label>Tab gap <span class="val">4</span>
+    <input type="range" min="0" max="16" step="1" data-key="tab-gap" value="4">
+  </label>
+  <label>Tab min width <span class="val">108</span>
+    <input type="range" min="72" max="180" step="2" data-key="tab-min" value="108">
+  </label>
+  <label>Key gap <span class="val">6</span>
+    <input type="range" min="0" max="20" step="1" data-key="key-gap" value="6">
+  </label>
+
+  <h2>Frame</h2>
+  <label>Window radius <span class="val">3</span>
+    <input type="range" min="0" max="24" step="1" data-key="win-rad" value="3">
+  </label>
+  <label>Card radius <span class="val">8</span>
+    <input type="range" min="0" max="28" step="1" data-key="card-rad" value="8">
+  </label>
+  <label>Key radius <span class="val">3</span>
+    <input type="range" min="0" max="16" step="1" data-key="key-rad" value="3">
+  </label>
+  <label>Field radius <span class="val">2</span>
+    <input type="range" min="0" max="16" step="1" data-key="field-rad" value="2">
+  </label>
+  <label>Window border <span class="val">0</span>
+    <input type="range" min="0" max="8" step="1" data-key="win-border" value="0">
+  </label>
+  <label>Card border <span class="val">1</span>
+    <input type="range" min="0" max="8" step="1" data-key="card-border" value="1">
+  </label>
+  <label>Field border <span class="val">1</span>
+    <input type="range" min="0" max="6" step="1" data-key="field-border" value="1">
+  </label>
+  <label>Shadow <span class="val">10</span>
+    <input type="range" min="0" max="36" step="1" data-key="shade" value="10">
+  </label>
+  <label>Bevel <span class="val">2</span>
+    <input type="range" min="0" max="6" step="1" data-key="bevel" value="2">
+  </label>
+  <label>Card shadow <span class="val">2</span>
+    <input type="range" min="0" max="24" step="1" data-key="card-shade" value="2">
+  </label>
+  <label>Key height <span class="val">28</span>
+    <input type="range" min="22" max="44" step="1" data-key="key-h" value="28">
+  </label>
+  <label>Tab height <span class="val">32</span>
+    <input type="range" min="24" max="48" step="1" data-key="tab-h" value="32">
+  </label>
+  <label>Lamp size <span class="val">8</span>
+    <input type="range" min="4" max="16" step="1" data-key="lamp" value="8">
+  </label>
+  <label>Orb size <span class="val">30</span>
+    <input type="range" min="18" max="48" step="1" data-key="orb" value="30">
+  </label>
+
+  <h2>Figures</h2>
+  <label>Chart thickness <span class="val">1</span>
+    <input type="range" min="0" max="12" step="1" data-key="rule" value="1">
+  </label>
+  <label>Row height <span class="val">22</span>
+    <input type="range" min="16" max="48" step="1" data-key="row-h" value="22">
+  </label>
+
+  <h2>Color</h2>
+  <label>Contrast <span class="val">50</span>
+    <input type="range" min="20" max="80" step="1" data-key="contrast" value="50">
+  </label>
+  <label>Saturation <span class="val">100</span>
+    <input type="range" min="40" max="160" step="1" data-key="sat" value="100">
+  </label>
+  <label>Palette amount <span class="val">0</span>
+    <input type="range" min="0" max="100" step="1" data-key="mix" value="0">
+  </label>
+  <label>Silver <span class="val">50</span>
+    <input type="range" min="20" max="85" step="1" data-key="face-l" value="50">
+  </label>
+  <label>Card <span class="val">100</span>
+    <input type="range" min="40" max="100" step="1" data-key="card-l" value="100">
+  </label>
+  <label>Tab bay <span class="val">63</span>
+    <input type="range" min="25" max="90" step="1" data-key="bay-l" value="63">
+  </label>
+  <label>Ink <span class="val">100</span>
+    <input type="range" min="40" max="100" step="1" data-key="ink-a" value="100">
+  </label>
+  <label>Question ink <span class="val">75</span>
+    <input type="range" min="30" max="100" step="1" data-key="muted-a" value="75">
+  </label>
+  <label>Phosphor glow <span class="val">3</span>
+    <input type="range" min="0" max="14" step="1" data-key="glow" value="3">
+  </label>
+  <label>Mill <span class="val">0.16</span>
+    <input type="range" min="0" max="0.45" step="0.01" data-key="mill" value="0.16">
+  </label>
+  <label>Quiet tabs <span class="val">0.86</span>
+    <input type="range" min="0.35" max="1" step="0.01" data-key="sec" value="0.86">
+  </label>
+</aside>
+
+<main class="stage">
+  <p class="stage-cap">Item detail · Analysis</p>
+  <p class="sample-line">Studio kiln rebuild · Elijah · Studio · Kiln · Week of 26 Oct 2026</p>
+  <div class="well">
+    <div class="frame" id="frame">
+      <article class="item" id="item" data-ui-name="Item detail" data-fields="reading" data-case="upper" data-figures="tabular" data-smooth="pixel" data-tabface="mono" aria-label="Item detail">
+        <div class="window">
+          <header class="fascia">
+            <div class="row">
+              <button type="button" class="back" id="back" aria-label="Back">
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M9 2 L4 7 L9 12" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+              <div class="mark">
+                <span class="lamp on" aria-hidden="true"></span>
+                <button type="button" class="orb" id="orb" aria-label="Item image">
+                  <svg viewBox="0 0 18 18" aria-hidden="true">
+                    <path d="M3 13 V8 Q9 2 15 8 V13 Z" fill="none" stroke="#c4896a" stroke-width="1.4"/>
+                    <path d="M7 13 V9 H11 V13" fill="none" stroke="#e7c4a8" stroke-width="1.2"/>
+                  </svg>
+                </button>
+                <h1 class="title">Studio kiln rebuild</h1>
+              </div>
+            </div>
+            <div class="row">
+              <button type="button" class="type-plate" id="typePlate" title="Double-click to view or edit this type">
+                <span class="type-lamp" aria-hidden="true"></span>
+                Task
+              </button>
+              <span class="chip">scheduled</span>
+              <button type="button" class="gear" id="gear" aria-label="Item settings">
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                  <circle cx="7" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                  <path d="M7 1.2 v2 M7 10.8 v2 M1.2 7 h2 M10.8 7 h2 M2.8 2.8 l1.4 1.4 M9.8 9.8 l1.4 1.4 M11.2 2.8 l-1.4 1.4 M4.2 9.8 l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.1"/>
+                </svg>
+              </button>
+              <span class="chip">Took 268m</span>
+            </div>
+            <div class="row keys">
+              <span class="save-flag" role="status"><span class="save-lamp on" id="saveLamp" aria-hidden="true"></span><span id="saveWord">Saved</span></span>
+              <button type="button" class="key when-reading" id="editBtn">Edit</button>
+              <button type="button" class="key when-editing" id="cancelBtn">Cancel</button>
+              <button type="button" class="key when-editing" id="saveBtn">Save</button>
+              <input class="minutes-field" id="completeMinutes" aria-label="Actual minutes" placeholder="Actual minutes" value="">
+              <button type="button" class="key" id="completeBtn">Complete</button>
+              <button type="button" class="key" id="missedBtn" title="Too late — file as a missed opportunity">Missed</button>
+              <button type="button" class="key quiet" id="deleteBtn">Delete</button>
+              <button type="button" class="more" id="moreBtn" aria-label="More actions" aria-expanded="false">···</button>
+            </div>
+          </header>
+          <div class="tabs" role="tablist" aria-label="Item detail">
+            <button type="button" class="tab" role="tab" data-tab="Details" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>Details</button>
+            <button type="button" class="tab" role="tab" data-tab="Scheduling" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>Scheduling</button>
+            <button type="button" class="tab" role="tab" data-tab="Dependencies" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>Dependencies</button>
+            <button type="button" class="tab" role="tab" data-tab="Subtasks" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>Subtasks</button>
+            <button type="button" class="tab" role="tab" data-tab="Notes" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>Notes</button>
+            <button type="button" class="tab" role="tab" data-tab="Resources" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>Resources</button>
+            <button type="button" class="tab secondary" role="tab" data-tab="Analysis" aria-selected="true"><span class="tab-lamp" aria-hidden="true"></span>Analysis</button>
+            <button type="button" class="tab secondary" role="tab" data-tab="Time" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>Time</button>
+            <button type="button" class="tab secondary" role="tab" data-tab="History" aria-selected="false"><span class="tab-lamp" aria-hidden="true"></span>History</button>
+          </div>
+          <div class="body" role="tabpanel" aria-label="Analysis">
+            <section class="card">
+              <h2>Task Analysis</h2>
+              <div class="q">
+                <label for="why">Why do you need to do this task?</label>
+                <p class="read" id="whyRead">The brick lining cracked on Sat 18 Oct, in the bisque. The Sunday repair block was missed. Tuesday 21 Oct was a long session on the door seal, and the test fire is still open. Elijah fires on Thu 29 Oct. This rebuild is the lining, the seal, and that test fire on the Kiln pen, in the studio, in the week of 26 Oct 2026.</p>
+                <textarea id="why" rows="3" placeholder="Explain the purpose and motivation behind this task...">The brick lining cracked on Sat 18 Oct, in the bisque. The Sunday repair block was missed. Tuesday 21 Oct was a long session on the door seal, and the test fire is still open. Elijah fires on Thu 29 Oct. This rebuild is the lining, the seal, and that test fire on the Kiln pen, in the studio, in the week of 26 Oct 2026.</textarea>
+              </div>
+              <div class="q">
+                <label for="consequences">What happens if you don't do it?</label>
+                <p class="read" id="consequencesRead">Thursday's firing does not happen. The ware drying in the studio stays green through this week. The Kiln pen's Thursday block has no kiln to light.</p>
+                <textarea id="consequences" rows="3" placeholder="Describe the potential consequences of not completing this task...">Thursday's firing does not happen. The ware drying in the studio stays green through this week. The Kiln pen's Thursday block has no kiln to light.</textarea>
+              </div>
+              <h3 class="metrics-head">Task Metrics</h3>
+              <div class="metric-rows">
+                <div class="line"><span>Entropy:</span><b>0.64</b></div>
+                <div class="line"><span>Reward Value:</span><b>35</b></div>
+                <div class="line"><span>Cognitive Load:</span><b>2/3</b></div>
+                <div class="line"><span>Estimated Duration:</span><b>210 minutes</b></div>
+                <div class="line"><span>Actual Duration:</span><b>268 minutes</b></div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+      <div class="menu" id="moreMenu" hidden>
+        <button type="button" id="upgradeBtn">Upgrade to Operation</button>
+      </div>
+    </div>
+  </div>
+  <p class="toast" id="toast" role="status"></p>
+</main>
+<script>
+(function () {
+  var FONTS = {
+    tahoma: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    system: "system-ui, sans-serif",
+    grotesk: 'Avenir, "Avenir Next", "Segoe UI", sans-serif',
+    mono: 'ui-monospace, "Courier New", monospace',
+    serif: 'Palatino, "Palatino Linotype", Georgia, serif',
+    typewriter: '"Courier New", Courier, monospace'
+  };
+  var PERCENT = { "face-l": 1, "card-l": 1, "bay-l": 1, "ink-a": 1, "muted-a": 1, mix: 1 };
+  var item = document.getElementById("item");
+  var frame = document.getElementById("frame");
+  var why = document.getElementById("why");
+  var con = document.getElementById("consequences");
+  var whyRead = document.getElementById("whyRead");
+  var conRead = document.getElementById("consequencesRead");
+  var toast = document.getElementById("toast");
+  var savedWhy = why.value;
+  var savedCon = con.value;
+
+  function note(msg) { toast.textContent = msg || ""; }
+  function dirty() { return why.value !== savedWhy || con.value !== savedCon; }
+  function lamp() {
+    var on = !dirty();
+    document.getElementById("saveLamp").className = "save-lamp " + (on ? "on" : "off");
+    document.getElementById("saveWord").textContent = on ? "Saved" : "Unsaved changes";
+  }
+  function paintOne(el) {
+    var key = el.dataset.key;
+    var raw = el.value;
+    if (key === "font") item.style.setProperty("--ff", FONTS[raw] || FONTS.tahoma);
+    else if (key === "case" || key === "figures" || key === "smooth" || key === "tabface") item.dataset[key] = raw;
+    else if (PERCENT[key]) item.style.setProperty("--" + key, raw + "%");
+    else item.style.setProperty("--" + key, raw);
+    if (key === "width") frame.style.setProperty("--width", raw);
+    var val = el.parentElement && el.parentElement.querySelector(".val");
+    if (val) val.textContent = raw;
+    var contrast = 0.75 + (Number(document.querySelector('[data-key="contrast"]').value) / 100) * 0.5;
+    var sat = Number(document.querySelector('[data-key="sat"]').value) / 100;
+    item.style.filter = "contrast(" + contrast.toFixed(3) + ") saturate(" + sat.toFixed(3) + ")";
+  }
+  function paintAll() {
+    document.querySelectorAll("[data-key]").forEach(paintOne);
+  }
+  document.querySelectorAll("[data-key]").forEach(function (el) {
+    el.addEventListener("input", function () { paintOne(el); });
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    document.querySelectorAll("[data-key]").forEach(function (el) {
+      el.value = el.defaultValue;
+    });
+    paintAll();
+    note("Back to the app's type, space, and color.");
+  });
+
+  why.addEventListener("input", function () { whyRead.textContent = why.value; lamp(); });
+  con.addEventListener("input", function () { conRead.textContent = con.value; lamp(); });
+  document.getElementById("editBtn").addEventListener("click", function () { item.dataset.fields = "editing"; });
+  document.getElementById("cancelBtn").addEventListener("click", function () {
+    why.value = savedWhy;
+    con.value = savedCon;
+    whyRead.textContent = savedWhy;
+    conRead.textContent = savedCon;
+    item.dataset.fields = "reading";
+    lamp();
+    note("Editing closed. The questions are the saved text.");
+  });
+  document.getElementById("saveBtn").addEventListener("click", function () {
+    savedWhy = why.value;
+    savedCon = con.value;
+    lamp();
+    note("Save writes the draft.");
+  });
+  document.getElementById("back").addEventListener("click", function () { note("Back leaves item detail."); });
+  document.getElementById("orb").addEventListener("click", function () { note("The orb opens the image picker."); });
+  document.getElementById("typePlate").addEventListener("dblclick", function () { note("Opens the type editor for Task."); });
+  document.getElementById("gear").addEventListener("click", function () { note("Item settings is a dialog, not a tab."); });
+  document.getElementById("completeBtn").addEventListener("click", function () { note("Complete files the task. Actual minutes beside this key is the complete-time field."); });
+  document.getElementById("missedBtn").addEventListener("click", function () { note("Missed files the task on Missed Opportunities."); });
+  document.getElementById("deleteBtn").addEventListener("click", function () { note("Delete asks before the item is removed."); });
+  document.getElementById("moreBtn").addEventListener("click", function () {
+    var menu = document.getElementById("moreMenu");
+    var open = menu.hidden;
+    menu.hidden = !open;
+    this.setAttribute("aria-expanded", String(open));
+  });
+  document.getElementById("upgradeBtn").addEventListener("click", function () {
+    document.getElementById("moreMenu").hidden = true;
+    document.getElementById("moreBtn").setAttribute("aria-expanded", "false");
+    note("Upgrade to Operation.");
+  });
+  document.querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      if (tab.dataset.tab === "Analysis") { note(""); return; }
+      note(tab.dataset.tab + " stays on its own tab.");
+    });
+  });
+  paintAll();
+})();
+</script>
+</body>
+</html>

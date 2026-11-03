@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-23_
 
-`components/Analytics/MetricsTrends.tsx`. Reads `metrics-store` only. Logging uses `MetricLogger` in a dialog.
+`components/Analytics/meta/MetricsTrends.tsx`. Reads `metrics-store` only. Logging uses `MetricLogger` in a dialog.
 
 ## Information
 Five wellbeing metrics, 0–100: joy, suffering, alignment, self satisfaction, situational satisfaction. Each reading has a local timestamp (`at`), so one day can hold several.

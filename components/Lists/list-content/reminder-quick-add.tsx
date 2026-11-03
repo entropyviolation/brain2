@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   REMINDER_REPEAT_OPTIONS,
   addReminder,
@@ -12,6 +12,7 @@ import {
   type ReminderRepeat,
 } from "@/lib/reminders"
 import { NativeSelect } from "@/components/ui/native-select"
+import { addIosReminder, iosRemindersAvailable } from "@/lib/mobile/reminders-bridge"
 
 export type ReminderQuickAddProps = {
   /** Lists add-row: close the composer. Shell popup may omit. */
@@ -49,7 +50,12 @@ export function ReminderQuickAdd({
   const [repeat, setRepeat] = useState<ReminderRepeat>("once")
   const [textMe, setTextMe] = useState(true)
   const [persistent, setPersistent] = useState(true)
+  const [iosReminder, setIosReminder] = useState(false)
+  // Known after mount: the static export has no phone bridge to ask at build time.
+  const [canIos, setCanIos] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => setCanIos(iosRemindersAvailable()), [])
 
   const reset = () => {
     setText("")
@@ -57,6 +63,7 @@ export function ReminderQuickAdd({
     setRepeat("once")
     setTextMe(true)
     setPersistent(true)
+    setIosReminder(false)
     setError("")
   }
 
@@ -74,8 +81,14 @@ export function ReminderQuickAdd({
     }
     const id = addReminder(text, at, repeat, { textMe, persistent })
     onAdded?.(id)
+    // Fire and forget: the reminder is already filed here, so a denied or failed
+    // iPhone copy only says so and never blocks the add.
+    const iosFailure = iosReminder && canIos ? addIosReminder({ title: text, at, repeat }) : null
     if (stayOpen) {
       reset()
+      void iosFailure?.then((result) => {
+        if (!result.ok) setError(`Added here. Not added to iPhone Reminders: ${result.error}`)
+      })
       return
     }
     onCancel?.()
@@ -136,6 +149,12 @@ export function ReminderQuickAdd({
             <input type="checkbox" checked={persistent} onChange={(e) => setPersistent(e.target.checked)} />
             Persistent
           </label>
+          {canIos ? (
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={iosReminder} onChange={(e) => setIosReminder(e.target.checked)} />
+              Add to iPhone Reminders
+            </label>
+          ) : null}
         </div>
         <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>
           Text me sends a Telegram text. Persistent stays on the header bell until you dismiss it. Both start
@@ -223,6 +242,15 @@ export function ReminderQuickAdd({
             <span className="b2-reminder-compose-flag-hint">Stay on the bell until dismiss</span>
           </span>
         </label>
+        {canIos ? (
+          <label className="b2-reminder-compose-flag-card">
+            <input type="checkbox" checked={iosReminder} onChange={(e) => setIosReminder(e.target.checked)} />
+            <span className="b2-reminder-compose-flag-copy">
+              <span className="b2-reminder-compose-flag-title">Add to iPhone Reminders</span>
+              <span className="b2-reminder-compose-flag-hint">Also rings in the Reminders app</span>
+            </span>
+          </label>
+        ) : null}
       </div>
 
       {error ? <p className="b2-reminder-compose-error">{error}</p> : null}
