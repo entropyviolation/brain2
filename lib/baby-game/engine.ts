@@ -17,19 +17,22 @@
 import { createCharacters, remember, type Character } from "./character"
 import { createMinds, type Mind } from "./mind"
 import type { Talk } from "./chatter"
-import type { Book } from "./shelf"
+import type { Book, GoldExample, ReadStyle } from "./shelf"
+import type { Study } from "./study"
+import type { Letter } from "./bestie"
 import { approachDistance, CONDITION_TEXT, isShy, RESIDENTS, resident, temper, type Condition, type Resident } from "./cast"
 import { LESSONS, pathTalk } from "./dharma"
 import { COMMONS_NOTES, offeringOf, theoryTalk } from "./theory"
-import { economyOf, lovesGems, type EconomySpec } from "./economy"
+import { economyOf, type EconomySpec } from "./economy"
 import { approachLine, favorLine, giftLine, moodLabel, smallTalk, SPOOK_LINE, type Taste } from "./lines"
-import { item, ITEMS, LAMP_PARTS, RECIPES } from "./items"
+import { item, ITEMS, LAMP_PARTS, RECIPES, SHELL_IDS, type ItemDef, SHELL_KINDS, shellKindOf } from "./items"
 import { MAP_W, PLOTS, unlockedAct, type NodeKind } from "./world"
 import { stageOf, type TreeRec } from "./trees"
 import { QUESTS, type Quest } from "./quests"
 import { MINIGAMES, REWARDS, type MinigameId } from "./minigames"
 import { blankPlot, CROP_BY_SEED, CROPS, cycleName, festivalOn, inSeason, isRipe, levelOf, SKILLS, type Plot, type SkillId } from "./farm"
 import type { FriendTone } from "@/lib/baby-animal-personality"
+import type { SlimeState } from "./slime"
 
 export const DAY_START = 6 * 60
 /** 2am: the day ends where you stand. */
@@ -108,6 +111,20 @@ export type GameState = {
   chatter: Talk[]
   /** Books on each friend's shelf, by friend id (`shelf.ts`). Only metadata; the words are in the attachment store. */
   shelves: Record<string, Book[]>
+  /** Sittings the player corrected, kept as worked examples for the reading prompt (`shelf.ts` `GoldExample`). */
+  gold?: GoldExample[]
+  /** Per friend: read in their scheduled hours (default) or all the way through until stopped. */
+  readStyle?: Record<string, ReadStyle>
+  /** Each friend's Study notebook, sessions and manifesto (`study.ts`). Missing until they first study. */
+  study?: Record<string, Study>
+  /** Notes best friends left in the mailbox (`bestie.ts`), oldest first. */
+  mail?: Letter[]
+  /** What C has said to friends in free talk, newest last, so a best friend can know them (`bestie.ts`). */
+  aboutC?: string[]
+  /** Items a best friend invented as gifts (`forge.ts`), by id; `registerCustom` puts them into `ITEMS` on load. */
+  custom?: Record<string, ItemDef>
+  /** The slime mold, one body over the whole map with a memory (`slime.ts`). Missing until the game first ticks it. */
+  slime?: SlimeState
 }
 
 export type RealTask = { id: string; text: string; urgent: boolean; done: boolean; added: number; plan?: string[] }
@@ -177,6 +194,9 @@ export function animal(s: GameState, id: string): AnimalState {
 
 export const hearts = (s: GameState, id: string) => Math.floor(animal(s, id).trust / 10)
 
+/** Full friendship: 10 hearts with a friend of the village. They call you C and write you notes (`bestie.ts`). */
+export const isBestFriend = (s: GameState, id: string) => !!resident(id) && hearts(s, id) >= 10
+
 function touch(s: GameState, id: string): AnimalState {
   s.animals[id] = s.animals[id] ?? blankAnimal()
   return s.animals[id]!
@@ -199,6 +219,18 @@ const setMood = (a: AnimalState, delta: number) => {
 }
 
 export function bag(s: GameState, id: string, qty: number) {
+  // "a shell" means any shell: spend the plain one first, then the named kinds
+  if (id === "shell" && qty < 0) {
+    let owed = -qty
+    for (const sid of SHELL_IDS) {
+      const take = Math.min(owed, s.inv[sid] ?? 0)
+      if (!take) continue
+      s.inv[sid] = s.inv[sid]! - take
+      if (s.inv[sid]! <= 0) delete s.inv[sid]
+      owed -= take
+    }
+    return
+  }
   if (qty > 0) s.found[id] = true
   s.inv[id] = (s.inv[id] ?? 0) + qty
   if (s.inv[id]! <= 0) delete s.inv[id]
@@ -238,7 +270,7 @@ export function setEconomy(s: GameState, spec: EconomySpec): GameState {
   return n
 }
 
-export const have = (s: GameState, id: string) => s.inv[id] ?? 0
+export const have = (s: GameState, id: string) => (id === "shell" ? SHELL_IDS.reduce((n, sid) => n + (s.inv[sid] ?? 0), 0) : (s.inv[id] ?? 0))
 
 // ─── skills and the Starlog ───────────────────────────────────────────────
 
@@ -273,9 +305,9 @@ export function isAsleep(r: Resident, minutes: number): boolean {
   return from > to ? h >= from || h < to : h >= from && h < to
 }
 
-/** How a friend takes a gift. Gems are loved by the share of friends `gemLove` picks (`economy.ts`); everything else goes by tags. */
-export function tasteOf(r: Resident, itemId: string, gemLove = economyOf({}).gemLove): Taste {
-  if (itemId === "gem" && lovesGems(r.id, gemLove) && r.hates !== "shiny") return "love"
+/** How a friend takes a gift. Every baby animal loves a gem; everything else goes by tags. */
+export function tasteOf(r: Resident, itemId: string): Taste {
+  if (itemId === "gem") return "love"
   const tags = item(itemId).tags
   const loved = temper(r.id).love
   if (tags.includes(loved)) return "love"
@@ -359,6 +391,26 @@ export function knock(s: GameState, id: string): GameState {
   return n
 }
 
+/** A hoard of gems this size wins a friend outright: trust goes straight to full. */
+export const GEM_HOARD = 100
+
+/** Give the whole hoard at once (`GEM_HOARD` gems). It ignores the once-a-day gift and fills the bond. */
+export function giftGemHoard(s: GameState, id: string): Result {
+  const r = resident(id)
+  if (!r) return no(s, "Nobody there.")
+  if (have(s, "gem") < GEM_HOARD) return no(s, `A hoard is ${GEM_HOARD} gems.`)
+  const n = clone(s)
+  const a = touch(n, id)
+  a.trust = 100
+  setMood(a, 2)
+  a.fed = true
+  bag(n, "gem", -GEM_HOARD)
+  n.stats.gifts += 1
+  noteToday(n, `Gave ${r.name} a hoard of ${GEM_HOARD} gems. Bonded for life.`)
+  remember(n.characters, id, n.day, "gift", `was given ${GEM_HOARD} gems at once and was overcome`)
+  return done(n, [{ text: `${r.name} is yours, heart and all. ❤️`, tone: "good" }], true, giftLine("love", temper(id).tone))
+}
+
 export function gift(s: GameState, id: string, itemId: string): Result {
   const r = resident(id)
   const def = ITEMS[itemId]
@@ -369,7 +421,7 @@ export function gift(s: GameState, id: string, itemId: string): Result {
   if (a0.gifted) return no(s, `${r.name} already got a gift today.`)
   const n = clone(s)
   const a = touch(n, id)
-  const taste = tasteOf(r, itemId, economyOf(s).gemLove)
+  const taste = tasteOf(r, itemId)
   const delta = { love: 8, like: 4, meh: 1, hate: -3 }[taste]
   addTrust(a, delta > 0 ? gain(delta, a.mood) : delta)
   setMood(a, taste === "love" ? 1 : taste === "hate" ? -1 : 0)
@@ -442,7 +494,7 @@ export const CHAT_TRUST_PER_DAY = 3
  * Apply a typed chat line. A model (or the script) only chooses the words, a small trust nudge, and *which* true
  * fact to share; the facts themselves come from the cast, and the nudge is clamped and capped per day.
  */
-export function chat(s: GameState, id: string, reply: ChatReply): Result {
+export function chat(s: GameState, id: string, reply: ChatReply, told?: string): Result {
   const r = resident(id)
   if (!r) return no(s, "Nobody there.")
   const n = clone(s)
@@ -450,6 +502,12 @@ export function chat(s: GameState, id: string, reply: ChatReply): Result {
   const msgs: Msg[] = []
   a.chats += 1
   remember(n.characters, id, n.day, "chat", `said "${reply.say.slice(0, 90)}"`)
+  if (told && told.trim().length >= 12) {
+    const t = told.trim().replace(/\s+/g, " ").slice(0, 140)
+    remember(n.characters, id, n.day, "told", `C said: "${t}"`)
+    if (isBestFriend(s, id)) n.aboutC = [...(n.aboutC ?? []), `${r.name} heard: "${t}"`].slice(-30)
+  }
+  if (isBestFriend(s, id) && reply.say.includes("?")) remember(n.characters, id, n.day, "asked", `asked C: ${reply.say.slice(reply.say.lastIndexOf(".") + 1).trim().slice(0, 140) || reply.say.slice(0, 140)}`)
   const delta = a.chats <= CHAT_TRUST_PER_DAY ? Math.max(-1, Math.min(2, Math.round(reply.trust))) : 0
   const before = Math.floor(a.trust / 10)
   addTrust(a, delta > 0 ? gain(delta, a.mood) : delta)
@@ -597,7 +655,7 @@ export function gather(s: GameState, nodeId: string, kind: NodeKind, rand: () =>
     if (n.weather === "meteor" && rand() < 0.4) got = ["starshard", 1]
   } else {
     const [id, lo, hi] = YIELD[kind]
-    got = [id, lo + Math.floor(rand() * (hi - lo + 1))]
+    got = [kind === "shell" ? `shell-${shellKindOf(nodeId)}` : id, lo + Math.floor(rand() * (hi - lo + 1))]
   }
   const lvl = skillLevel(s, "foraging")
   if (rand() < bonus + (lvl >= 5 ? 0.5 : lvl >= 3 ? 0.25 : 0)) got[1] += 1
@@ -621,7 +679,7 @@ export function fish(s: GameState, nodeId: string, grade: 0 | 1 | 2, rand: () =>
   const lvl = skillLevel(s, "fishing")
   const catches: Array<[string, number]> = [["fish", grade === 2 ? 2 : 1]]
   if (lvl >= 2 && rand() < 1 / 3) catches[0]![1] += 1
-  if (grade === 2 && rand() < (lvl >= 4 ? 0.7 : 0.4)) catches.push(["shell", 1])
+  if (grade === 2 && rand() < (lvl >= 4 ? 0.7 : 0.4)) catches.push([`shell-${Object.keys(SHELL_KINDS)[Math.floor(rand() * Object.keys(SHELL_KINDS).length)]}`, 1])
   for (const [id, q] of catches) bag(n, id, q)
   n.stats.gathered += catches.reduce((sum, [, q]) => sum + q, 0)
   n.stats.fished += 1

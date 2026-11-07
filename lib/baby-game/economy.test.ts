@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { RESIDENTS, resident } from "./cast"
-import { DEFAULT_ECONOMY, ECONOMIES, economyOf, inferEconomy, lovesGems, parseEconomy } from "./economy"
-import { drawLimit, freeRiding, gift, newGame, payOut, setEconomy, tasteOf, thanksLabel } from "./engine"
+import { DEFAULT_ECONOMY, ECONOMIES, economyOf, inferEconomy, parseEconomy } from "./economy"
+import { drawLimit, freeRiding, gift, giftGemHoard, hearts, newGame, payOut, setEconomy, tasteOf, thanksLabel } from "./engine"
 
 describe("economy presets", () => {
   it("defaults to a gift economy with no market", () => {
@@ -34,15 +34,22 @@ describe("gems are a gift, not money", () => {
     expect(n.buttons).toBe(17)
   })
 
-  it("most friends love a gem, picked stably by gemLove", () => {
-    const lovers = RESIDENTS.filter((r) => lovesGems(r.id, ECONOMIES["gift-commons"]!.gemLove))
-    expect(lovers.length).toBeGreaterThan(RESIDENTS.length / 2)
-    expect(lovers.length).toBeLessThan(RESIDENTS.length)
-    expect(RESIDENTS.filter((r) => lovesGems(r.id, 0))).toHaveLength(0)
-    const fan = lovers.find((r) => r.hates !== "shiny")!
-    expect(tasteOf(fan, "gem")).toBe("love")
+  it("every friend loves a gem, even one that hates shiny things", () => {
+    for (const r of RESIDENTS) expect(tasteOf(r, "gem"), r.name).toBe("love")
+    const fan = RESIDENTS[0]!
     expect(gift(newGame(), fan.id, "gem").s.animals[fan.id]!.trust).toBeGreaterThanOrEqual(8)
     expect(resident(fan.id)).toBeTruthy()
+  })
+
+  it("a hoard of 100 gems fills the bond at once, and needs all 100", () => {
+    const fan = RESIDENTS[0]!
+    expect(giftGemHoard(newGame(), fan.id).ok).toBe(false)
+    const rich = { ...newGame(), inv: { gem: 130 } }
+    const r = giftGemHoard(rich, fan.id)
+    expect(r.ok).toBe(true)
+    expect(r.s.animals[fan.id]!.trust).toBe(100)
+    expect(hearts(r.s, fan.id)).toBe(10)
+    expect(r.s.inv.gem).toBe(30)
   })
 })
 

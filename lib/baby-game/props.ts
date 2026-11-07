@@ -9,15 +9,17 @@
 
 import { RESIDENTS } from "./cast"
 import { act as actOf, addXp, advance, animal, bag, DAY_START, done, hour, no, payOut, RESTORE, ripeCount, skillLevel, sweepLog, weatherFor, type GameState, type Msg, type Result } from "./engine"
+import { collectMail } from "./bestie"
 import { economyOf } from "./economy"
 import { festivalOn, isRipe, SKILLS, SKILL_IDS } from "./farm"
 import { item, ITEMS, SEEDS } from "./items"
+import { cellOf, feedSlime, newSlime, slimeThought, moodOf } from "./slime"
 import { PROPS, type PropKind } from "./world"
 
 /** Props that open an existing screen instead of acting by themselves. */
 export const PROP_SCREEN: Partial<Record<PropKind, "bench" | "fish">> = { collage: "bench", rowboat: "fish" }
 
-type Ctx = { rand: () => number; msgs: Msg[]; before: GameState }
+type Ctx = { rand: () => number; msgs: Msg[]; before: GameState; /** The prop being used. */ at: { x: number; y: number } }
 type Use = {
   label: string
   /** How often: once per `day` (default), once a `week`, or `any` time. */
@@ -51,6 +53,8 @@ const USES: Partial<Record<PropKind, Use>> = {
       const b = payOut(n, 3 * (1 + Math.floor(c.rand() * 3)))
       good(c, `+${b}, tucked in with letters from a better world`)
       if (c.rand() < 0.35) give(n, c, "postcard")
+      // notes from best friends, and any gift they tucked in (`bestie.ts`)
+      for (const m of collectMail(n)) c.msgs.push(m)
     },
   },
   firewood: {
@@ -258,10 +262,21 @@ const USES: Partial<Record<PropKind, Use>> = {
     },
   },
   slime: {
-    label: "Watch the slime mold", minutes: 10,
+    label: "Speak with the slime mold", minutes: 10,
     run: (n, c) => {
-      info(c, "It maps the shortest path between two oat flakes, without a brain.")
-      good(c, `+${payOut(n, 6)} from the shortest path`)
+      let sl = n.slime ?? newSlime()
+      const cell = cellOf(c.at.x, c.at.y)
+      // it eats what you can spare of the sweet things, and remembers where
+      const food = ["berry", "jam", "glowbean", "moonmelon", "pie", "sorbet"].find((id) => (n.inv[id] ?? 0) > 0)
+      if (food) {
+        bag(n, food, -1)
+        sl = feedSlime(sl, cell, `a ${item(food).name.toLowerCase()}`, n.day)
+        good(c, `It swells around the ${item(food).name.toLowerCase()} and glows.`)
+      } else sl = { ...sl, thought: slimeThought(sl, { day: n.day, hour: n.minutes / 60, weather: n.weather, rand: c.rand }) }
+      n.slime = sl
+      info(c, `"${sl.thought}"`)
+      const fed = moodOf(sl, n.day) === "content"
+      good(c, `+${payOut(n, 6 + Math.floor(sl.size * 10) + (fed ? 3 : 0))} from the shortest path`)
       addXp(n, "crafting", 1, c.msgs)
     },
   },
@@ -314,7 +329,7 @@ export function tryProp(s: GameState, index: number, rand: () => number): Result
   if (use.energy && s.energy < use.energy) return no(s, "Too tired for that.")
   const n = advance(s, use.minutes ?? 0)
   n.energy -= use.energy ?? 0
-  const c: Ctx = { rand, msgs: [], before: s }
+  const c: Ctx = { rand, msgs: [], before: s, at: PROPS[index]! }
   const refused = use.run(n, c)
   if (refused) return no(s, refused)
   if (use.every !== "any") n.seen[key] = true

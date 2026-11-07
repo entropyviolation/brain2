@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { RESIDENTS } from "./cast"
 import { ITEMS } from "./items"
 import { REGIONS } from "./regions"
-import { buildWorld, EXTENT_H, EXTENT_W, GATES, PLOTS, PROPS, isSolidTile, MAP_H, MAP_W, NODES, reachable, STATIONS, tileIndex, zoneAt, ZONE_ACT } from "./world"
+import { buildWorld, T, EXTENT_H, EXTENT_W, GATES, PLOTS, PROPS, isSolidTile, MAP_H, MAP_W, NODES, reachable, STATIONS, tileIndex, zoneAt, ZONE_ACT } from "./world"
 
 const SPAWN: [number, number] = [24, 22]
 const world = buildWorld(RESIDENTS.map((r) => r.day))
@@ -21,6 +21,10 @@ describe("the map", () => {
     for (const r of RESIDENTS) expect(open.has(tileIndex(...r.day)), `${r.name} at ${r.day}`).toBe(true)
     for (const n of NODES) expect(near(open, n.x, n.y), `${n.kind} ${n.x},${n.y}`).toBe(true)
     for (const [id, s] of Object.entries(STATIONS)) expect(near(open, s.x, s.y), id).toBe(true)
+  })
+
+  it("keeps every fish in the water", () => {
+    for (const n of NODES.filter((n) => n.kind === "fish")) expect(world.tiles[tileIndex(n.x, n.y)], `${n.id} ${n.x},${n.y}`).toBe(T.WATER)
   })
 
   it("keeps each zone behind its gate until its act", () => {

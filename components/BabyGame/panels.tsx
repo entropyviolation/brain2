@@ -12,11 +12,11 @@ import { economyOf } from "@/lib/baby-game/economy"
 import { useEffect, useRef, useState } from "react"
 import { approachDistance, APPROACHES, CONDITION_TEXT, inValley, RESIDENTS, resident, temper, type Resident } from "@/lib/baby-game/cast"
 import {
-  animal, askBlocks, canCraft, drawLimit, errandButtons, freeRiding, shelfCount, standing, have, hearts, isAsleep, moodLabel, questProgress, REAL_MAX, RESTORE, sellPrice, skillLevel, stocked, starlogCount, starlogTotal, STARLOG_STEP, tasteFact, thanksLabel, visibleQuests, wantsMet, type GameState,
+  animal, askBlocks, canCraft, GEM_HOARD, drawLimit, errandButtons, freeRiding, shelfCount, standing, have, hearts, isAsleep, moodLabel, questProgress, REAL_MAX, RESTORE, sellPrice, skillLevel, stocked, starlogCount, starlogTotal, STARLOG_STEP, tasteFact, thanksLabel, visibleQuests, wantsMet, type GameState,
 } from "@/lib/baby-game/engine"
 import { CROPS, CYCLE_LEN, cycleName, dayOfCycle, festivalOn, inSeason, isRipe, levelProgress, SKILLS, SKILL_IDS } from "@/lib/baby-game/farm"
 import { item, ITEMS, LAMP_PARTS, RECIPES, SEEDS } from "@/lib/baby-game/items"
-import type { CouncilLine } from "@/lib/baby-game/llm"
+import { deepModelName, setDeepModelName, type CouncilLine } from "@/lib/baby-game/llm"
 import { ACTS } from "@/lib/baby-game/story"
 import type { FriendTone } from "@/lib/baby-animal-personality"
 import { DesignPanel } from "./designpanel"
@@ -88,6 +88,7 @@ export function TalkPanel(p: {
   hasModel: boolean
   onTalk: () => void
   onGift: (itemId: string) => void
+  onGiftHoard: () => void
   onApproach: (tone: FriendTone) => void
   onFavor: () => void
   onTurnIn: () => void
@@ -155,6 +156,7 @@ export function TalkPanel(p: {
                   <b>×{have(p.g, id)}</b>
                 </button>
               ))}
+              {have(p.g, "gem") >= GEM_HOARD ? key(`Give ${GEM_HOARD} gems ❤️`, p.onGiftHoard, { primary: true, title: "A whole hoard: they bond with you at once" }) : null}
               {key("Back", () => p.setView("menu"))}
             </div>
           ) : p.view === "approach" ? (
@@ -423,15 +425,15 @@ export function LampPanel({ g, onPlace, onClose }: { g: GameState; onPlace: (id:
 }
 
 export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { g: GameState; companion: string; perk: string; level: number; onClaim: (id: string) => void; onClose: () => void }) {
-  const [tab, setTab] = useState<"story" | "quests" | "friends" | "design" | "skills" | "log" | "diary">("story")
+  const [tab, setTab] = useState<"story" | "quests" | "friends" | "design" | "skills" | "log" | "diary" | "letters">("story")
   const [designId, setDesignId] = useState<string | undefined>()
   const act = Math.min(5, g.parts.length + 1)
   return (
     <Plate title="Journal" onClose={onClose} wide>
       <div className="bg-tabs" role="tablist">
-        {(["story", "quests", "friends", "skills", "log", "diary"] as const).map((x) => (
+        {(["story", "quests", "friends", "letters", "skills", "log", "diary"] as const).map((x) => (
           <button key={x} type="button" role="tab" aria-selected={tab === x} className={`friend-key bg-key${tab === x ? " is-on" : ""}`} data-no95="" onClick={() => setTab(x)}>
-            {x === "story" ? "Story" : x === "quests" ? "Quests" : x === "friends" ? "Friends" : x === "skills" ? "Skills" : x === "log" ? "Starlog" : "Diary"}
+            {x === "story" ? "Story" : x === "quests" ? "Quests" : x === "friends" ? "Friends" : x === "letters" ? `Letters${(g.mail ?? []).some((l) => !l.read) ? " •" : ""}` : x === "skills" ? "Skills" : x === "log" ? "Starlog" : "Diary"}
           </button>
         ))}
       </div>
@@ -448,6 +450,26 @@ export function JournalPanel({ g, companion, perk, level, onClaim, onClose }: { 
             {companion} · bond level {level} · {perk}
           </p>
           <EconomyNote g={g} />
+        </div>
+      ) : null}
+      {tab === "letters" ? (
+        <div>
+          {(g.mail ?? []).length ? (
+            [...(g.mail ?? [])].reverse().map((l) => (
+              <div key={l.id} className={`bg-errand${l.read ? " is-done" : ""}`}>
+                <PixelSprite id={l.from} scale={2} />
+                <p>
+                  <b>{resident(l.from)?.name ?? l.from}</b> · day {l.day}
+                  {l.read ? "" : " · waiting in the mailbox"}
+                  <br />
+                  <small>{l.read ? l.text : "A folded note is tucked in the mailbox. Check the mail to read it."}</small>
+                  {l.gift && l.read ? <small className="bg-faint"> Gift: {item(l.gift).name}</small> : null}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="bg-faint">No letters yet. At ten hearts a friend starts writing to you, and leaves the notes in the mailbox.</p>
+          )}
         </div>
       ) : null}
       {tab === "quests" ? (
@@ -616,6 +638,7 @@ export function TimingGame({ title, hint, speed, onDone }: { title: string; hint
 
 export function MenuPanel({ llmOn, hasModel, canSleep, dev, onToggleDev, onSleep, onToggleLlm, onReset, onExit, onClose }: { llmOn: boolean; hasModel: boolean | null; canSleep: boolean; dev: boolean; onToggleDev: () => void; onSleep: () => void; onToggleLlm: () => void; onReset: () => void; onExit: () => void; onClose: () => void }) {
   const [sure, setSure] = useState(false)
+  const [deep, setDeep] = useState(() => deepModelName())
   return (
     <Plate title="Menu" onClose={onClose}>
       <label className="bg-check">
@@ -624,6 +647,13 @@ export function MenuPanel({ llmOn, hasModel, canSleep, dev, onToggleDev, onSleep
           Friends may answer in their own words
           <small>{hasModel === null ? "Looking for a local model…" : hasModel ? "Local model found." : "No local model found. Short scripted answers instead."}</small>
         </span>
+      </label>
+      <label className="bg-field">
+        <span>
+          Model for reading and book talk
+          <small>An Ollama model name, such as qwen2.5:32b. Reading and friends' book talks are the slow, careful jobs, so a bigger model here helps most. Blank uses the usual one.</small>
+        </span>
+        <input type="text" value={deep} placeholder="usual model" spellCheck={false} onChange={(e) => { setDeep(e.target.value); setDeepModelName(e.target.value) }} />
       </label>
       <label className="bg-check">
         <input type="checkbox" checked={dev} onChange={onToggleDev} />

@@ -199,5 +199,514 @@
         "skip": "iIJ"
       }
     }
+  },
+  "otter": {
+    "from": "Otter pup, sprite-otter_00001_.png (liked 2026-11-02) drawn as a sheet in sprite-otter-sheet_00002_.png, front, side and back from the sheet (2026-11-03)",
+    "views": {
+      "front": {
+        "file": "sprite-otter-sheet_00002_.png",
+        "part": 3,
+        "height": 22,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite-otter-sheet_00002_.png",
+        "part": 4,
+        "height": 20,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "sprite-otter-sheet_00002_.png",
+        "part": 2,
+        "height": 22,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      }
+    }
+  },
+  "fawn": {
+    "from": "Redesign fawn, sprite-redesign-fawn_00005_.png (liked) and sheet sprite-redesign-fawn-sheet_00002_.png (2026-11-03)",
+    "views": {
+      "front": {
+        "file": "sprite-redesign-fawn-sheet_00002_.png",
+        "part": 0,
+        "height": 26,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite-redesign-fawn-sheet_00002_.png",
+        "part": 2,
+        "height": 22,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "sprite-redesign-fawn-sheet_00002_.png",
+        "part": 3,
+        "height": 26,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      }
+    }
+  },
+  "wolf": {
+    "from": "Redesign wolf, sprite-redesign-wolf_00005_.png (liked) and sheet sprite-redesign-wolf-sheet_00002_.png (2026-11-03)",
+    "views": {
+      "front": {
+        "file": "sprite-redesign-wolf-sheet_00002_.png",
+        "part": 3,
+        "height": 24,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "sprite-redesign-wolf-sheet_00002_.png",
+        "part": 1,
+        "height": 24,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "sprite-redesign-wolf-sheet_00002_.png",
+        "part": 5,
+        "height": 24,
+        "tol": 70,
+        "shadow": true,
+        "skip": "iIJ"
+      }
+    }
+  },
+  "squirrel": {
+    "from": "gray squirrel, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 2,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 2,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 2,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "mole": {
+    "from": "mole, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 6,
+        "height": 17,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 6,
+        "height": 17,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 6,
+        "height": 17,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "woodpecker": {
+    "from": "woodpecker, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 7,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 7,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 7,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "mallard": {
+    "from": "mallard, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 13,
+        "height": 20,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 13,
+        "height": 20,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 13,
+        "height": 20,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "badger": {
+    "from": "badger, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 20,
+        "height": 18,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 20,
+        "height": 18,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 20,
+        "height": 18,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "raccoon": {
+    "from": "raccoon, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 33,
+        "height": 24,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 33,
+        "height": 24,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 33,
+        "height": 24,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "chipmunk": {
+    "from": "chipmunk, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 34,
+        "height": 22,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 34,
+        "height": 22,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 34,
+        "height": 22,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "goose": {
+    "from": "goose, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 57,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 57,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animals-sheet1_00001_.png",
+        "part": 57,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "elephant": {
+    "from": "elephant, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animal-elephant_00001_.png",
+        "part": 0,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animal-elephant_00001_.png",
+        "part": 0,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animal-elephant_00001_.png",
+        "part": 0,
+        "height": 26,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "kangaroo": {
+    "from": "kangaroo, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animal-kangaroo_00001_.png",
+        "part": 0,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "side": {
+        "file": "ref-animal-kangaroo_00001_.png",
+        "part": 0,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "ref-animal-kangaroo_00001_.png",
+        "part": 0,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "lion": {
+    "from": "lion, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animal-lion_00001_.png",
+        "part": 0,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "side": {
+        "file": "ref-animal-lion_00001_.png",
+        "part": 0,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "back": {
+        "file": "ref-animal-lion_00001_.png",
+        "part": 0,
+        "height": 27,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "monkey": {
+    "from": "monkey, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animal-monkey_00001_.png",
+        "part": 0,
+        "height": 25,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animal-monkey_00001_.png",
+        "part": 0,
+        "height": 25,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animal-monkey_00001_.png",
+        "part": 0,
+        "height": 25,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "panda": {
+    "from": "panda, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animal-panda_00001_.png",
+        "part": 0,
+        "height": 24,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animal-panda_00001_.png",
+        "part": 0,
+        "height": 24,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animal-panda_00001_.png",
+        "part": 0,
+        "height": 24,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "pig": {
+    "from": "pig, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animal-pig_00001_.png",
+        "part": 0,
+        "height": 21,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animal-pig_00001_.png",
+        "part": 0,
+        "height": 21,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animal-pig_00001_.png",
+        "part": 0,
+        "height": 21,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
+  },
+  "tiger": {
+    "from": "tiger, snapped from the liked reference sheet (circled, 2026-11-03)",
+    "views": {
+      "front": {
+        "file": "ref-animal-tiger_00001_.png",
+        "part": 1,
+        "height": 25,
+        "tol": 70,
+        "skip": "iIJ"
+      },
+      "side": {
+        "file": "ref-animal-tiger_00001_.png",
+        "part": 1,
+        "height": 25,
+        "tol": 70,
+        "skip": "iIJ",
+        "flip": true
+      },
+      "back": {
+        "file": "ref-animal-tiger_00001_.png",
+        "part": 1,
+        "height": 25,
+        "tol": 70,
+        "skip": "iIJ",
+        "faceless": true
+      }
+    }
   }
 }

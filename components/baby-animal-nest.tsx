@@ -2,7 +2,7 @@
  * components/baby-animal-nest.tsx — Header friend for today's companion
  *
  * Click the photograph for this friend's details (the same page as Gallery
- * Details). The chat key (speech-bubble icon) beside the name asks them to speak. Click the
+ * Details). The chat key (speech-bubble icon) beside the name asks them to speak. The gamepad key next to it opens the baby animal game directly (same friend props as the details page). Click the
  * bubble for the mission sheet, which loads then. The friend jewel itself
  * stays eager. A refresh does not parse the sheet until that open. The task
  * opens item detail on top, Accept starts a same-day point window, Decline walks
@@ -12,7 +12,7 @@
  */
 "use client"
 
-import { useEffect, useRef, useState, type ComponentType } from "react"
+import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { BabyAnimalFriendGallery } from "@/components/baby-animal-gallery"
 import { FriendDetailsPanel } from "@/components/friend-details"
@@ -23,7 +23,8 @@ import { ensureWeeklyFriend, uploadFriendPicture } from "@/lib/baby-animal-frien
 import { consumeReunionLine, isPriorMonday } from "@/lib/baby-animal-greeting"
 import { localMondayKey } from "@/lib/baby-animals"
 import { friendCheerLine } from "@/lib/friend-copy"
-import { isActionableFriendKind, type FriendMission } from "@/lib/friend-mission"
+import { isActionableFriendKind, missionsForAnimal, type FriendMission } from "@/lib/friend-mission"
+import { bondProgress, friendPointsTotal } from "@/lib/friend-stats"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
@@ -32,6 +33,9 @@ import { useAttachmentSrc } from "@/components/use-attachment-src"
 import { isHabitGoalMet } from "@/lib/habit-utils"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
+
+/** The game loads only when opened, as it does from the details page. */
+const BabyGame = lazy(() => import("@/components/BabyGame/BabyGame").then((m) => ({ default: m.BabyGame })))
 
 /** CRT bezel power-on length (ms) — one short gesture, not a loop. */
 const CRT_POWER_ON_MS = 560
@@ -74,6 +78,23 @@ function reunionNudge(line: string): FriendNudge {
   }
 }
 
+function GamepadMark() {
+  return (
+    <svg viewBox="0 0 24 16" width="18" height="12" aria-hidden="true">
+      <path
+        d="M6.5 2h11c2.4 0 3.6 1.8 4.2 5.2.5 3-.2 6.3-2.4 6.3-1.4 0-2-1-3-2.4H7.7c-1 1.4-1.6 2.4-3 2.4-2.2 0-2.9-3.3-2.4-6.3C2.9 3.8 4.1 2 6.5 2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="M7 5v4M5 7h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="15.5" cy="6" r="1" fill="currentColor" />
+      <circle cx="18" cy="8.2" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
 function ChatMark() {
   return (
     <svg viewBox="0 0 24 18" width="18" height="14" aria-hidden="true">
@@ -101,6 +122,9 @@ export function BabyAnimalNest() {
   const [detailsCover, setDetailsCover] = useState(false)
   const [galleryCover, setGalleryCover] = useState(false)
   const [missionOpen, setMissionOpen] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const friendMissions = useBabyAnimalsStore((s) => s.friendMissions)
+  const friendHistory = useBabyAnimalsStore((s) => s.friendHistory)
   const MissionSheet = useFriendMissionSheet(missionOpen)
   const [nudge, setNudge] = useState<FriendNudge | null>(null)
   const [cheer, setCheer] = useState<FriendMission | null>(null)
@@ -259,6 +283,12 @@ export function BabyAnimalNest() {
   const who = displayName || "today's friend"
   const photoLabel = photo ? `Open details for ${who}` : "Open the friend gallery"
   const chatLabel = nudge ? `Ask ${who} for another line` : `Ask ${who} for a mission`
+  const gameAnimalId = photo?.animalId ?? ""
+  const gameMissions = missionsForAnimal(friendMissions, gameAnimalId)
+  const gameBond = bondProgress(
+    friendPointsTotal(gameMissions),
+    friendHistory.find((row) => row.animalId === gameAnimalId)?.wearCount ?? 0,
+  )
   const celebrate = cheer
     ? personalityFor(personalities, cheer.animalId, cheer.displayName).pushiness === "celebrate"
     : false
@@ -303,11 +333,34 @@ export function BabyAnimalNest() {
           <button type="button" className="baby-nest-chat-hit" onClick={speak} aria-label={chatLabel} title={chatLabel} disabled={busy}>
             <ChatMark />
           </button>
+          <button
+            type="button"
+            className="baby-nest-chat-hit"
+            onClick={() => setPlaying(true)}
+            aria-label="Play the baby animal game"
+            title="Play the baby animal game"
+            disabled={!photo}
+          >
+            <GamepadMark />
+          </button>
           <button type="button" className="baby-nest-gallery-hit" onClick={() => setGalleryOpen(true)}>
             Gallery
           </button>
         </span>
       </span>
+      {playing && photo ? (
+        <Suspense fallback={null}>
+          <BabyGame
+            friend={{
+              animalId: gameAnimalId,
+              name: who,
+              level: gameBond.level,
+              realMission: gameMissions.find((row) => row.status === "accepted")?.title ?? null,
+            }}
+            onClose={() => setPlaying(false)}
+          />
+        </Suspense>
+      ) : null}
       <Dialog open={galleryOpen} modal={!galleryCover} onOpenChange={setGalleryOpen}>
         <DialogContent className="baby-friend-dialog flex max-h-[min(88vh,760px)] flex-col overflow-hidden sm:max-w-3xl">
           <DialogHeader className="baby-friend-dialog-head">

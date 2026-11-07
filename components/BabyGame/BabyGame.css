@@ -156,7 +156,7 @@
 .bg-canvas {
   display: block;
   width: 100%;
-  aspect-ratio: 304 / 192;
+  aspect-ratio: 320 / 200;
   max-height: calc(100vh - 170px);
   margin: 0 auto;
   object-fit: contain;
@@ -893,3 +893,31 @@
 .bg-map.is-pick { cursor: crosshair; }
 .bg-econ { padding: 6px 8px; border: 1px solid var(--bg-plate-lo); border-left: 3px solid #2fae82; border-radius: 4px; background: #fff; margin: 6px 0; }
 .bg-econ p { margin: 2px 0 4px; }
+
+/* the slime mold speaking while you stand near it */
+.bg-slime-voice {
+  position: absolute;
+  left: 50%;
+  bottom: 100px;
+  transform: translateX(-50%);
+  max-width: min(86%, 440px);
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(214, 160, 240, 0.7);
+  background: rgba(30, 14, 44, 0.92);
+  color: #f6dcf2;
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+}
+
+.bg-slime-voice b {
+  margin-right: 4px;
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff9ad0;
+}

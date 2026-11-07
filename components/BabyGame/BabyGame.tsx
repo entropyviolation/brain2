@@ -17,16 +17,22 @@ import { speciesPersonality, type FriendTone } from "@/lib/baby-animal-personali
 import { RESIDENTS, resident, temper } from "@/lib/baby-game/cast"
 import { perkFor, spriteFor } from "@/lib/baby-game/companion"
 import {
-  act as actOf, addDiary, advance, ask, approach, chat, collapsed, craft, deliverErrand, eat, enterFestival, favor, fish, fishCost, gather, gift, harvest, hearts, hour, buy, sell, take, contribute,
+  act as actOf, addDiary, advance, ask, approach, chat, collapsed, craft, deliverErrand, eat, enterFestival, favor, fish, fishCost, gather, gift, giftGemHoard, harvest, hearts, hour, buy, sell, take, contribute,
   chop, clearStump, knock, placePart, plant, playMinigame, setEconomy, minigameBlock, till, addRealTask, claimQuest, completeRealTask, dropRealTask, setRealPlan, water, waterAll, readyToAsk, readyToTurnIn, sleep, spook, talk, turnIn, type GameState, type Msg, type Result, animal,
 } from "@/lib/baby-game/engine"
-import { askAnimal, councilTalk, gameModel, generateEconomy, lineKind, llmEnabled, setLlmEnabled, voiceLine, writeDiary } from "@/lib/baby-game/llm"
+import { askAnimal, councilTalk, gameModel, thinkingModel, generateEconomy, lineKind, llmEnabled, setLlmEnabled, voiceLine, writeDiary } from "@/lib/baby-game/llm"
 import type { LifeContext } from "@/lib/baby-game/life"
 import { PROP_SCREEN, tryProp } from "@/lib/baby-game/props"
+import { groundOf, nearestSlime, newSlime, tickSlime } from "@/lib/baby-game/slime"
 import { crowdNear, center, holdTalk, knockLine, nearest, newSim, stepSim, teleport as teleportSim, type Sim, type Target } from "@/lib/baby-game/sim"
 import { blockAt, type Mind } from "@/lib/baby-game/mind"
-import { applyTalk, mindWithModel, readWithModel, talkWithModel, whereOf } from "@/lib/baby-game/chatter"
-import { applyReading, nextBook, rereadBook, shelveBook, unshelveBook, type Book } from "@/lib/baby-game/shelf"
+import { postLetters } from "@/lib/baby-game/bestie"
+import { applyLetterPatch, penLetter } from "@/lib/baby-game/letters"
+import { applyTalk, describeWithModel, mindWithModel, pitchWithModel, readWithModel, talkWithModel, whereOf } from "@/lib/baby-game/chatter"
+import { adoptTopic, activeManifesto, announceManifestos, applyOutline, applySection, applyStudy, canWrite, nextSection, pitchTarget, shelfActivity, studyOf, topicDue } from "@/lib/baby-game/study"
+import { embedWithOllama, outlineWithModel, runStudySession, sectionWithModel, topicWithModel } from "@/lib/baby-game/study-llm"
+import type { Library } from "@/lib/baby-game/passages"
+import { applyReading, finished, nextBook, replaceReading, rereadBook, setReadStyle, shelveBook, unshelveBook, type Book, type ReadStyle, type SittingEdit } from "@/lib/baby-game/shelf"
 import { growTrees, syncTrees } from "@/lib/baby-game/trees"
 import { hasSave, loadGame, resetGame, saveGame, type SaveSlot } from "@/lib/baby-game/save"
 import { applyFlags, DEV_GEMS, devRefill, devSetWeather, loadFlags, nextSpeed, saveFlags, type DevFlags } from "@/lib/baby-game/dev"
@@ -54,6 +60,7 @@ import {
 import "@/components/friend-details/friend-details.css"
 import "./BabyGame.css"
 import "./pixel-skin.css"
+import "./village.css"
 import { DotGothic16 } from "next/font/google"
 
 export type GameFriend = {
@@ -121,6 +128,8 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
   const modeRef = useRef<Mode>(mode)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [prompt, setPrompt] = useState<string | null>(null)
+  /** What the slime mold is thinking while you stand near it. */
+  const [slimeSays, setSlimeSays] = useState<string | null>(null)
   const [llmOn, setLlmOn] = useState(() => (typeof window === "undefined" ? true : llmEnabled()))
   const [hasModel, setHasModel] = useState<boolean | null>(null)
   const [zoneName, setZoneName] = useState("")
@@ -146,6 +155,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
   const talkReturn = useRef<{ id: string; line: string }>({ id: "", line: "" })
 
   const world = useMemo(() => buildWorld([...RESIDENTS.map((r) => r.day), ...FIRE_SLOTS]), [])
+  const slimeGround = useMemo(() => groundOf(world), [world])
   const map = useMemo(() => (typeof document === "undefined" ? null : buildMapCanvas(world)), [world])
   const perk = useMemo(() => perkFor(friend.animalId), [friend.animalId])
   const petSprite = useMemo(() => spriteFor(friend.animalId, friend.name), [friend.animalId, friend.name])
@@ -226,8 +236,21 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       const model = await gameModel()
       const page = await writeDiary(gRef.current, friend.name, tone, model, friend.life)
       const logged = addDiary(gRef.current, page.text, page.by)
-      const next = growTrees(world, sleep(logged, power, { level: friend.level, routine: perk.id === "routine" }))
+      const slept = growTrees(world, sleep(logged, power, { level: friend.level, routine: perk.id === "routine" }))
+      // best friends leave notes overnight; a model then rewrites each in their voice and may invent a gift (`bestie.ts`, `letters.ts`)
+      // a manifesto decided yesterday is announced this morning (`study.ts`)
+      const { s: announced, news } = announceManifestos(slept)
+      const { s: next, posted } = postLetters(announced, Math.random)
       commit(next)
+      if (news.length) toast(news.map((text) => ({ text, tone: "info" as const })))
+      if (posted.length && model) {
+        void (async () => {
+          for (const l of posted) {
+            const patch = await penLetter(next, l, model)
+            if (patch) commit(applyLetterPatch(gRef.current, l.id, patch))
+          }
+        })()
+      }
       const sim = simRef.current
       if (sim) {
         sim.px = center(SPAWN[0])
@@ -239,13 +262,13 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       setMode({
         t: "story",
         title: `Day ${next.day}`,
-        paragraphs: [page.text, next.weather === "rain" ? "It's raining. Puddle people will be very pleased." : "It's a clear morning."],
+        paragraphs: [page.text, next.weather === "rain" ? "It's raining. Puddle people will be very pleased." : "It's a clear morning.", ...news],
         button: "Good morning",
         chip: page.by === "model" ? "diary written by the local model" : "diary written from the day's events",
         then: () => setMode(null),
       })
     },
-    [commit, friend.level, friend.life, friend.name, perk.id, setMode, tone, world],
+    [commit, friend.level, friend.life, friend.name, perk.id, setMode, toast, tone, world],
   )
 
   /** Re-voice a scripted line in the friend's own words when a model is up. The script shows first; the rewrite replaces it. */
@@ -481,6 +504,10 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       const inView = Math.abs(pa.x - sim.px) < VIEW_W * 0.7 && Math.abs(pa.y - sim.py) < VIEW_H * 0.7
       const key = `${a}|${b}|${Math.round(sim.clock * 10)}`
       const useModel = llmOn && hasModel !== false && talkJobs.current < 1
+      // an author with a manifesto outline asks the friend they met to read it (`study.ts`, `chatter.ts` `pitchWithModel`)
+      const pitch = pitchTarget(s, a, b, pick.current)
+      const write = (st: GameState, call: Parameters<typeof talkWithModel>[4]) =>
+        pitch ? pitchWithModel(st, pitch.author, pitch.reader, where, call, pick.current++) : talkWithModel(st, a, b, where, call, pick.current++)
       if (inView) setLiveTalks((t) => [...t.filter((x) => x.a !== a && x.b !== a && x.a !== b && x.b !== b), { key, a, b, lines: null, started: 0 }].slice(-4))
       const finish = (t: Awaited<ReturnType<typeof talkWithModel>>) => {
         commit(applyTalk(gRef.current, t))
@@ -491,41 +518,149 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
         window.setTimeout(() => setLiveTalks((x) => x.filter((v) => v.key !== key)), secs * 1000 + 400)
       }
       if (!useModel) {
-        void talkWithModel(s, a, b, where, null, pick.current++).then(finish)
+        void write(s, null).then(finish)
         return
       }
       talkJobs.current += 1
-      holdTalk(sim, a, b, 30)
-      void gameModel()
-        .then((call) => talkWithModel(gRef.current, a, b, where, call, pick.current++))
+      holdTalk(sim, a, b, 120)
+      void thinkingModel()
+        .then((call) => write(gRef.current, call))
         .then(finish)
         .finally(() => (talkJobs.current -= 1))
     },
     [commit, hasModel, llmOn],
   )
 
-  /** One sitting at the bookshelf: the friend stays home with a book until the model (or the script) has written it. */
+  /** Friends reading a whole book until stopped (`readStyle` "allatonce"); lives here so it goes on whatever screen is open. */
+  const readAlls = useRef(new Map<string, { bookId: string; stop: boolean; sittings: number }>())
+
+  /**
+   * One sitting at the bookshelf: the friend stays home with a book until the model (or the script) has written it.
+   * `how` is "scheduled" (their day), "manual" (asked for) or "all" (part of a read-through: a model that fails is
+   * not papered over with the script; the run stops instead). Returns whether a sitting was saved.
+   */
   const runReading = useCallback(
-    async (id: string, bookId: string, manual = false) => {
+    async (id: string, bookId: string, how: "scheduled" | "manual" | "all" = "scheduled"): Promise<boolean> => {
       const sim = simRef.current
       const npc = sim?.npcs[id]
       const book = gRef.current.shelves?.[id]?.find((b) => b.id === bookId)
       const r = resident(id)
-      if (!npc || !book || !r || npc.reading) return
+      if (!npc || !book || !r || npc.reading) return false
       npc.reading = true
       try {
         const text = await bookText(book)
         if (!text) {
           toast([{ text: `${r.name} can't find the pages of "${book.title}". Shelve it again?`, tone: "bad" }])
-          return
+          return false
         }
-        const call = llmOn ? await gameModel() : null
-        const [sitting] = await Promise.all([readWithModel(gRef.current, id, book, text, actOf(gRef.current), call), new Promise((ok) => window.setTimeout(ok, manual ? 900 : 5000))])
+        const call = llmOn ? await thinkingModel() : null
+        if (how === "all" && !call) {
+          toast([{ text: `${r.name} won't read "${book.title}" straight through without the model: ${llmOn ? "no model answered" : "the model is switched off"}. Turn it on and start again.`, tone: "bad" }])
+          return false
+        }
+        const write = () => readWithModel(gRef.current, id, book, text, actOf(gRef.current), call)
+        let sitting = (await Promise.all([write(), new Promise((ok) => window.setTimeout(ok, how === "scheduled" ? 5000 : 400))]))[0]
+        if (how === "all" && sitting.by === "scripted") sitting = await write()
+        if (how === "all" && sitting.by === "scripted") {
+          toast([{ text: `${r.name} stopped reading "${book.title}": the model did not answer. Start again when it is back.`, tone: "bad" }])
+          return false
+        }
         commit(applyReading(gRef.current, id, bookId, sitting))
         const near = Math.hypot(npc.x - sim!.px, npc.y - sim!.py) < VIEW_W
-        if (manual || near) toast([{ text: `${r.name} read p. ${sitting.pageFrom}${sitting.pageTo !== sitting.pageFrom ? `–${sitting.pageTo}` : ""} of "${book.title}".`, tone: "info" }])
+        if (how === "manual" || (how === "scheduled" && near)) toast([{ text: `${r.name} read p. ${sitting.pageFrom}${sitting.pageTo !== sitting.pageFrom ? `–${sitting.pageTo}` : ""} of "${book.title}".`, tone: "info" }])
+        return true
       } finally {
         npc.reading = false
+      }
+    },
+    [commit, llmOn, toast],
+  )
+
+  /** Sit with a book, sitting after sitting, until it is finished or `stopReading` is called. Survives closing the home screen. */
+  const runReadAll = useCallback(
+    async (id: string, bookId: string) => {
+      if (readAlls.current.has(id)) return
+      const run = { bookId, stop: false, sittings: 0 }
+      readAlls.current.set(id, run)
+      const title = gRef.current.shelves?.[id]?.find((b) => b.id === bookId)?.title ?? "the book"
+      try {
+        while (!run.stop) {
+          const book = gRef.current.shelves?.[id]?.find((b) => b.id === bookId)
+          if (!book || finished(book)) break
+          if (!(await runReading(id, bookId, "all"))) break
+          run.sittings++
+        }
+      } finally {
+        readAlls.current.delete(id)
+        const done = gRef.current.shelves?.[id]?.find((b) => b.id === bookId)
+        toast([{ text: `${resident(id)?.name ?? id} ${done && finished(done) ? "finished" : "put down"} "${title}" after ${run.sittings} sitting${run.sittings === 1 ? "" : "s"}.`, tone: "info" }])
+      }
+    },
+    [runReading, toast],
+  )
+
+  /**
+   * A study session at the bookshelf (`study.ts`, `study-llm.ts`): the friend searches their shelf and keeps only the
+   * notes they can stand behind, caps the session off, and after enough sessions a manifesto topic is drawn out of them.
+   */
+  const runStudy = useCallback(
+    async (id: string, how: "scheduled" | "manual" = "scheduled"): Promise<boolean> => {
+      const sim = simRef.current
+      const npc = sim?.npcs[id]
+      const r = resident(id)
+      const books = gRef.current.shelves?.[id] ?? []
+      if (!npc || !r || npc.reading || !books.length) return false
+      npc.reading = true
+      npc.shelfDoing = activeManifesto(gRef.current, id) ? "studying for their manifesto" : "studying at the bookshelf"
+      try {
+        const call = llmOn ? await thinkingModel() : null
+        const lib: Library = { books, text: bookText, embed: llmOn ? embedWithOllama : undefined }
+        const res = (await Promise.all([runStudySession(gRef.current, id, lib, call), new Promise((ok) => window.setTimeout(ok, how === "scheduled" ? 5000 : 400))]))[0]
+        if (!res) {
+          if (how === "manual") toast([{ text: `${r.name} can't find any pages to study.`, tone: "bad" }])
+          return false
+        }
+        commit(applyStudy(gRef.current, id, res))
+        if (topicDue(gRef.current, id)) commit(adoptTopic(gRef.current, id, await topicWithModel(gRef.current, id, call)))
+        const near = Math.hypot(npc.x - sim!.px, npc.y - sim!.py) < VIEW_W
+        if (how === "manual" || near) toast([{ text: `${r.name} studied "${res.session.theme}" and kept ${res.notes.length} note${res.notes.length === 1 ? "" : "s"}.`, tone: "info" }])
+        return true
+      } finally {
+        npc.reading = false
+        npc.shelfDoing = undefined
+      }
+    },
+    [commit, llmOn, toast],
+  )
+
+  /** Working on the manifesto: first the outline, then one section at a time (`study.ts` `canWrite`). */
+  const runWrite = useCallback(
+    async (id: string, how: "scheduled" | "manual" = "scheduled"): Promise<boolean> => {
+      const sim = simRef.current
+      const npc = sim?.npcs[id]
+      const r = resident(id)
+      if (!npc || !r || npc.reading || !canWrite(gRef.current, id)) return false
+      npc.reading = true
+      npc.shelfDoing = "working on their manifesto"
+      try {
+        const call = llmOn ? await thinkingModel() : null
+        const m = studyOf(gRef.current, id).manifesto!
+        const near = Math.hypot(npc.x - sim!.px, npc.y - sim!.py) < VIEW_W
+        const wait = new Promise((ok) => window.setTimeout(ok, how === "scheduled" ? 5000 : 400))
+        if (!m.outline.length) {
+          const [outline] = await Promise.all([outlineWithModel(gRef.current, id, call), wait])
+          commit(applyOutline(gRef.current, id, outline))
+          if (how === "manual" || near) toast([{ text: `${r.name} outlined their manifesto "${outline.title ?? m.title}" in ${outline.sections.length} parts.`, tone: "info" }])
+        } else {
+          const at = nextSection(m)
+          const [body] = await Promise.all([sectionWithModel(gRef.current, id, at, call), wait])
+          commit(applySection(gRef.current, id, at, body))
+          if (how === "manual" || near) toast([{ text: `${r.name} wrote "${m.outline[at]!.title}" for their manifesto.`, tone: "info" }])
+        }
+        return true
+      } finally {
+        npc.reading = false
+        npc.shelfDoing = undefined
       }
     },
     [commit, llmOn, toast],
@@ -543,13 +678,21 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
         if (blockAt(s.minds?.[r.id], s.day, h)?.place !== "read") continue
         const key = `${r.id}:${s.day}:${h}`
         if (readKeys.current.has(key)) continue
+        // the same hour is for reading, studying, or (once there is a manifesto to write) writing it
+        const act = shelfActivity(s, r.id, h)
+        if (act !== "read") {
+          readKeys.current.add(key)
+          void (act === "write" ? runWrite(r.id) : runStudy(r.id))
+          continue
+        }
         const book = nextBook(s, r.id)
         if (!book) continue
         readKeys.current.add(key)
-        void runReading(r.id, book.id)
+        if (s.readStyle?.[r.id] === "allatonce") void runReadAll(r.id, book.id)
+        else void runReading(r.id, book.id)
       }
     },
-    [runReading],
+    [runReading, runReadAll, runStudy, runWrite],
   )
 
   const lifeRef = useRef({ startTalk, readOnSchedule })
@@ -570,6 +713,11 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
         commit({ ...gRef.current, minds: { ...gRef.current.minds, [id]: m } })
         toast([{ text: `${c.name}'s mind was rewritten ${m.by === "model" ? "by the model" : "from keywords"}.`, tone: "good" }])
       },
+      describeMind: async (id: string, mind: Mind) => {
+        const c = gRef.current.characters[id]
+        if (!c) return mind.description
+        return describeWithModel(c, mind, llmOn ? await gameModel() : null)
+      },
       shelve: async (id: string, file: File) => {
         try {
           const book = await bookFromFile(file)
@@ -584,10 +732,26 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
         void dropBookFiles(book)
       },
       reread: (id: string, bookId: string) => commit(rereadBook(gRef.current, id, bookId)),
-      readNow: (id: string, bookId: string) => void runReading(id, bookId, true),
+      readNow: (id: string, bookId: string) => void runReading(id, bookId, "manual"),
+      studyNow: (id: string) => void runStudy(id, "manual"),
+      writeNow: (id: string) => void runWrite(id, "manual"),
+      readAll: (id: string, bookId: string) => void runReadAll(id, bookId),
+      stopReading: (id: string) => {
+        const run = readAlls.current.get(id)
+        if (run) run.stop = true
+      },
+      readingAll: (id: string) => {
+        const run = readAlls.current.get(id)
+        return run ? { bookId: run.bookId, sittings: run.sittings, stopping: run.stop } : null
+      },
+      setStyle: (id: string, style: ReadStyle) => commit(setReadStyle(gRef.current, id, style)),
+      saveSitting: (id: string, bookId: string, index: number, edit: SittingEdit, passage: string, note?: string) => {
+        commit(replaceReading(gRef.current, id, bookId, index, edit, passage, note))
+        toast([{ text: note !== undefined ? `${resident(id)?.name ?? id}'s reading was replaced and kept as a gold example.` : `${resident(id)?.name ?? id}'s reading was replaced.`, tone: "good" }])
+      },
       openFile: (book: Book) => void openBookFile(book),
     }),
-    [commit, llmOn, runReading, toast],
+    [commit, llmOn, runReadAll, runReading, runStudy, runWrite, toast],
   )
   const getSim = useCallback(() => simRef.current, [])
 
@@ -730,6 +894,12 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
             next = { ...next, energy: Math.max(0, next.energy - Math.floor(runAcc)) }
             runAcc -= Math.floor(runAcc)
           }
+          if (!(d.on && d.freeze)) {
+            // the slime mold spreads, draws back and remembers: one tick a second, and a dream when the day turns
+            const hr = next.minutes / 60
+            const walkers = Object.entries(sim.npcs).filter(([, n]) => !n.asleep).map(([id, n]) => ({ id, name: resident(id)?.name ?? id, tx: Math.floor(n.x / TILE), ty: Math.floor(n.y / TILE) }))
+            next = { ...next, slime: tickSlime(next.slime ?? newSlime(), { day: next.day, hour: hr, weather: next.weather, player: { tx: Math.floor(sim.px / TILE), ty: Math.floor(sim.py / TILE) }, walkers, fireLit: next.parts.length >= 1 && (hr >= 18 || hr < 6), ground: slimeGround, rand: Math.random }) }
+          }
           if (d.on && d.energy && next.energy < next.maxEnergy) next = { ...next, energy: next.maxEnergy }
           if (d.on && d.gems && (next.inv.gem ?? 0) < DEV_GEMS) next = { ...next, inv: { ...next.inv, gem: DEV_GEMS }, found: { ...next.found, gem: true } }
           if (d.on && d.lockWeather && next.weather !== d.lockWeather) next = devSetWeather(next, d.lockWeather)
@@ -751,6 +921,9 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
       const toolVerb = target?.kind === "plot" && toolRef.current !== "hand" ? { hoe: "Till the soil", seeds: "Plant seeds", can: "Water", scythe: "Harvest" }[toolRef.current] : null
       const label = toolVerb ?? (target ? (target.kind === "node" && gRef.current.nodes[target.node.id] === gRef.current.day ? `${target.label} (picked clean)` : target.label) : null)
       setPrompt((p) => (p === label ? p : label))
+      const near = !paused && gRef.current.slime ? nearestSlime(gRef.current.slime, sim.px, sim.py) : null
+      const says = near && near.d < 70 ? gRef.current.slime!.thought : null
+      setSlimeSays((v) => (v === says ? v : says))
       const t = now / 1000
       pops.current = pops.current.filter((p) => t - p.born < 1.4)
       drawFrame(ctx, {
@@ -783,7 +956,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
     setMode({ ...m, busy: true })
     const model = llmOn ? await gameModel() : null
     const reply = await askAnimal(r, gRef.current, text, model, pick.current++, friend.life)
-    const res = chat(gRef.current, m.id, reply)
+    const res = chat(gRef.current, m.id, reply, text)
     apply(res, m.id)
     setMode({ ...m, busy: false, view: "chat", line: res.line ?? reply.say, by: reply.by })
   }
@@ -947,6 +1120,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
                 })}
               </div>
             ) : null}
+            {!mode && slimeSays ? <div className="bg-slime-voice"><b>slime mold</b> {slimeSays}</div> : null}
             {!mode && prompt ? <div className="bg-prompt"><kbd>E</kbd> {prompt}</div> : null}
             {!mode ? (
               <div className="bg-pad" aria-hidden="true">
@@ -988,6 +1162,7 @@ export function BabyGame({ friend, onClose }: { friend: GameFriend; onClose: () 
                     setView={(view) => setMode({ ...mode, view })}
                     onTalk={() => talkAction((s) => talk(s, mode.id, pick.current++))}
                     onGift={(id) => talkAction((s) => gift(s, mode.id, id), "menu", "reacting to a gift they just got")}
+                    onGiftHoard={() => talkAction((s) => giftGemHoard(s, mode.id), "menu", "being given a hundred gems at once and bonding with the player for life")}
                     onApproach={(t) => talkAction((s) => approach(s, mode.id, t), "menu", "reacting to how they just approached you")}
                     onFavor={() => setMode({ t: "timing", kind: "favor", id: mode.id })}
                     onTurnIn={() => talkAction((s) => turnIn(s, mode.id))}

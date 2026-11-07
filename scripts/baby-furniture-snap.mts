@@ -130,7 +130,7 @@ function medianCut(px: Rgb[], n: number): Rgb[] {
 export type Snapped = { w: number; h: number; pal: string[]; rows: string[] }
 
 
-async function snap(id: string, file: string, height: number): Promise<Snapped | null> {
+export async function snap(id: string, file: string, height: number): Promise<Snapped | null> {
   const { data, info } = await sharp(path.join(DIR, file)).removeAlpha().raw().toBuffer({ resolveWithObject: true })
   const w = info.width
   const h = info.height
@@ -300,4 +300,4 @@ ${body}
   }
 }
 
-main().catch((e) => (console.error(e), process.exit(1)))
+if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => (console.error(e), process.exit(1)))

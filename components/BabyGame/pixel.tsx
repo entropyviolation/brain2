@@ -8,11 +8,12 @@
 
 import { useEffect, useRef } from "react"
 import { item, SHAPES } from "@/lib/baby-game/items"
+import { paintShellIcon, shellCanvas } from "./shell"
 import { paintGrid, playerGrid, spriteGrid, SPRITE_PALETTE, SPRITE_SIZE } from "@/lib/baby-game/sprites"
 
 export function itemGrid(id: string): string[] {
   const def = item(id)
-  const shape = SHAPES[def.shape] ?? SHAPES.round!
+  const shape = def.rows ?? SHAPES[def.shape] ?? SHAPES.round!
   const [light, main, dark] = def.tones
   return shape.map((row) => row.replace(/L/g, light).replace(/M/g, main).replace(/D/g, dark))
 }
@@ -21,15 +22,17 @@ export function gridFor(id: string): string[] {
   return id === "player" ? playerGrid("front") : spriteGrid(id, "front")
 }
 
-function useGrid(grid: string[], scale: number) {
+/** `shell` names a snapped shell picture to paint instead of the grid (`shell.ts`). */
+function useGrid(grid: string[], scale: number, shell?: string) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const canvas = ref.current
     const ctx = canvas?.getContext("2d")
     if (!canvas || !ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    paintGrid(ctx, grid, 0, 0, scale)
-  }, [grid, scale])
+    if (shell && shellCanvas(shell)) paintShellIcon(ctx, shell, canvas.width)
+    else paintGrid(ctx, grid, 0, 0, scale)
+  }, [grid, scale, shell])
   return ref
 }
 
@@ -41,7 +44,7 @@ export function PixelSprite({ id, scale = 4, label }: { id: string; scale?: numb
 
 export function ItemIcon({ id, scale = 3 }: { id: string; scale?: number }) {
   const grid = itemGrid(id)
-  const ref = useGrid(grid, scale)
+  const ref = useGrid(grid, scale, id.startsWith("shell-") ? id.slice(6) : undefined)
   return <canvas ref={ref} width={8 * scale} height={8 * scale} role="img" aria-label={item(id).name} className="bg-pixel" />
 }
 

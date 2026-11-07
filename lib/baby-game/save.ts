@@ -11,6 +11,8 @@ import { refreshCharacters } from "./character"
 import { refreshMinds } from "./mind"
 import { blankCommons, newGame, type GameState } from "./engine"
 import { DEFAULT_ECONOMY, ECONOMIES } from "./economy"
+import { registerCustom } from "./forge"
+import { refreshSlime } from "./slime"
 import { rekeyTrees } from "./trees"
 import { MAP_W } from "./world"
 
@@ -47,8 +49,9 @@ export function loadGame(slot: SaveSlot = "play"): GameState {
       saved.buttons = 0
       saved.found = { ...(saved.found ?? {}), gem: true }
     }
+    registerCustom(saved.custom)
     const characters = refreshCharacters(saved.characters)
-    return { ...base, ...saved, stats: { ...base.stats, ...saved.stats }, real: saved.real ?? [], made: saved.made ?? {}, questsDone: saved.questsDone ?? {}, inv: saved.inv ?? base.inv, animals: saved.animals ?? {}, commons: { ...blankCommons(), ...saved.commons }, characters, minds: refreshMinds(saved.minds, characters), chatter: Array.isArray(saved.chatter) ? saved.chatter : [], shelves: saved.shelves ?? {} } as GameState
+    return { ...base, ...saved, stats: { ...base.stats, ...saved.stats }, real: saved.real ?? [], made: saved.made ?? {}, questsDone: saved.questsDone ?? {}, inv: saved.inv ?? base.inv, animals: saved.animals ?? {}, commons: { ...blankCommons(), ...saved.commons }, characters, minds: refreshMinds(saved.minds, characters), chatter: Array.isArray(saved.chatter) ? saved.chatter : [], shelves: saved.shelves ?? {}, gold: Array.isArray(saved.gold) ? saved.gold : [], readStyle: saved.readStyle ?? {}, mail: Array.isArray(saved.mail) ? saved.mail : [], ...(saved.slime ? { slime: refreshSlime(saved.slime) } : {}) } as GameState
   } catch {
     return newGame()
   }

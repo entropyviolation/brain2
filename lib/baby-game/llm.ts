@@ -19,6 +19,7 @@ import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall, type ModelCall } from "@/lib/bim-flow/ollama"
 import { CONDITION_TEXT, RESIDENTS, type Resident, temper } from "./cast"
 import { act as actOf, type ChatReply, hearts, isAsleep, type GameState, hour, scriptedDiary, tasteFact, type RealTask } from "./engine"
+import { bestBrief } from "./bestie"
 import { isTeaching, pathBrief, PATHS } from "./dharma"
 import { isTheoryLine, THEORY, theoryBrief } from "./theory"
 import { ITEMS } from "./items"
@@ -58,6 +59,43 @@ export async function gameModel(): Promise<ModelCall | null> {
   }
 }
 
+const DEEP_KEY = "brain2-baby-game-deepmodel"
+const DEEP_TIMEOUT_MS = 90_000
+
+/** The Ollama model name the player set for reading and book talk (e.g. `qwen2.5:32b`); empty = the usual one. */
+export function deepModelName(): string {
+  try {
+    return localStorage.getItem(DEEP_KEY) ?? ""
+  } catch {
+    return ""
+  }
+}
+
+export function setDeepModelName(name: string): void {
+  try {
+    if (name.trim()) localStorage.setItem(DEEP_KEY, name.trim())
+    else localStorage.removeItem(DEEP_KEY)
+  } catch {
+    // private window: the choice will not stick
+  }
+}
+
+/**
+ * The model for the slow, careful jobs: reading a book and talking about it. Each call gets its own long timeout
+ * (a talk is many calls), and uses the player's bigger model when one is set. Null when there is no model.
+ */
+export async function thinkingModel(): Promise<ModelCall | null> {
+  if (!llmEnabled()) return null
+  try {
+    const crew = await chatCrew()
+    if (!crew) return null
+    const deep = deepModelName()
+    return (req) => ollamaCall(crew.main, AbortSignal.timeout(DEEP_TIMEOUT_MS))({ ...req, model: req.model ?? (deep || undefined) })
+  } catch {
+    return null
+  }
+}
+
 const REPLY_SCHEMA = {
   type: "object",
   properties: {
@@ -76,17 +114,18 @@ const TONE_VOICE = {
   coach: "warm and encouraging, like a good coach",
 } as const
 
-function chatSystem(r: Resident, s: GameState, h: number, life?: LifeContext): string {
+export function chatSystem(r: Resident, s: GameState, h: number, life?: LifeContext): string {
   const t = temper(r.id)
   return [
     `You are ${r.name}, a baby ${r.id} in Valdivia, a cozy hidden valley of forests, still lakes and farm fields. ${r.bio}`,
     `Your voice is ${TONE_VOICE[t.tone]}. You are ${t.cadence === "quiet" ? "shy and say very little" : t.cadence === "eager" ? "eager and talkative" : "friendly"}.`,
     `The Hush has silenced the Evening Song since the Orb Lamp went dark. You miss it. You are talking to the Center of The World, the newcomer. You have ${h} of 10 hearts for them.`,
     `It is ${s.weather === "rain" ? "raining" : "dry"} and about ${hour(s)}:00.`,
-    "Reply in character in at most two short sentences. Never say you are an AI. Never invent items, places, or promises.",
+    "Reply in character in at most two short sentences (best friends may use three). Never say you are an AI. Never invent items, places, or promises.",
     `trust: 2 if the Center of The World was kind, specific, and spoke in a way you like; 1 if friendly; 0 if neutral; -1 only if rude.`,
     `reveal: "wants" only if they ask what you need; "likes" if they ask what you like; "clue" if they ask how to win your trust or when to visit; otherwise "none".`,
     s.characters?.[r.id] ? characterBrief(s.characters[r.id]!) : "",
+    bestBrief(s, r.id),
     pathBrief(r.id),
     theoryBrief(r.id),
     lifeBrief(life),

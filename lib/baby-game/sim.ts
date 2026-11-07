@@ -12,7 +12,7 @@
 
 import { RESIDENTS, inValley, isShy, type Resident } from "./cast"
 import { CROPS } from "./farm"
-import { act as actOf, isAsleep, type GameState } from "./engine"
+import { act as actOf, isAsleep, nodeReady, type GameState } from "./engine"
 import { homeDoor, homeOf, HOME_NOUN, HOMES } from "./homes"
 import { propLabel } from "./props"
 import { stageOf } from "./trees"
@@ -25,9 +25,13 @@ const NPC_SPEED = 15
 const TALK_REACH = 22
 const SPOOK_REACH = 44
 /** How close two friends must come to stop and talk, and how long before the same pair, or either of them, talks again (sim seconds). */
-const MEET_REACH = TILE * 1.4
-const PAIR_COOLDOWN = 150
+const MEET_REACH = TILE * 1.6
+const PAIR_COOLDOWN = 120
 const SOLO_COOLDOWN = 35
+/** Seeking: how far (tiles) a free friend looks for company, how often they decide to, and how long they keep at it (sim seconds). */
+const SEEK_RANGE = 26
+const SEEK_GIVE_UP = 40
+const SEEK_REPATH = 2.5
 
 export type Npc = {
   id: string
@@ -47,6 +51,14 @@ export type Npc = {
   with: string
   /** At the bookshelf; set and cleared by the UI. */
   reading: boolean
+  /** What they do there when it is not reading ("studying at the bookshelf"); cleared with `reading`. */
+  shelfDoing?: string
+  /** Who they are walking over to for a chat; empty when not seeking. */
+  seek: string
+  /** `sim.clock` at which they stop looking for that friend. */
+  seekUntil: number
+  /** `sim.clock` when the path to the sought friend was last drawn. */
+  seekPathAt: number
 }
 
 export type Sim = {
@@ -79,7 +91,7 @@ export function newSim(spawn: [number, number], s: GameState, world?: World): Si
     const tile = asleep ? bedOf(r) : anchor.tile
     npcs[r.id] = {
       id: r.id, x: center(tile[0]), y: center(tile[1]), goal: asleep ? "day" : anchor.goal, path: [], wait: Math.random() * 2, face: 1, asleep,
-      gathering: anchor.gathering && !asleep, doing: asleep ? "asleep" : anchor.doing, talkUntil: 0, with: "", reading: false,
+      gathering: anchor.gathering && !asleep, doing: asleep ? "asleep" : anchor.doing, talkUntil: 0, with: "", reading: false, seek: "", seekUntil: 0, seekPathAt: 0,
     }
   }
   return { px: center(spawn[0]), py: center(spawn[1]), face: 1, facing: "front", moving: false, running: false, clock: 0, npcs, pet: { x: center(spawn[0]) - 12, y: center(spawn[1]) }, met: [], lastTalk: {} }
@@ -255,17 +267,21 @@ export function stepSim(sim: Sim, world: World, s: GameState, input: StepInput, 
     const anchor = anchorFor(r, s, gatherIndex, world)
     if (anchor.gathering) gatherIndex += 1
     npc.gathering = anchor.gathering
-    npc.doing = npc.reading ? "reading at the bookshelf" : npc.talkUntil > sim.clock ? `talking with ${RESIDENTS.find((x) => x.id === npc.with)?.name ?? "a friend"}` : anchor.doing
+    npc.doing = npc.reading ? npc.shelfDoing ?? "reading at the bookshelf" : npc.talkUntil > sim.clock ? `talking with ${RESIDENTS.find((x) => x.id === npc.with)?.name ?? "a friend"}` : anchor.doing
     // talking or reading: stand still until it is over
     if (npc.talkUntil > sim.clock || npc.reading) continue
-    if (npc.goal !== anchor.goal) {
+    const seeking = seekStep(sim, world, npc, anchor, a)
+    if (!seeking && npc.goal !== anchor.goal) {
       npc.goal = anchor.goal
       npc.path = bfs(world, [Math.floor(npc.x / TILE), Math.floor(npc.y / TILE)], anchor.tile, a)
     }
-    if (npc.wait > 0) {
+    if (seeking) {
+      // walking toward a friend: no idle wait
+    } else if (npc.wait > 0) {
       npc.wait -= dt
     } else if (!npc.path.length) {
       npc.wait = 1.5 + rand() * 3
+      if (!npc.seek && anchor.goal !== "home" && !anchor.gathering && trySeek(sim, s, r, npc, a, rand)) continue
       if (anchor.radius > 0) npc.path = bfs(world, [Math.floor(npc.x / TILE), Math.floor(npc.y / TILE)], pickWander(world, anchor.tile, anchor.radius, a, rand), a)
     }
     // shy friends flee a runner
@@ -289,6 +305,53 @@ export function stepSim(sim: Sim, world: World, s: GameState, input: StepInput, 
   }
   meet(sim, a)
   return startled
+}
+
+/** Is the friend `q` a fair one to walk to: awake, out, not busy, and not just talked with `p`? */
+function seekable(sim: Sim, p: Npc, q: Npc): boolean {
+  if (q.asleep || q.reading || q.goal === "home" || q.talkUntil > sim.clock) return false
+  return sim.clock - (sim.lastTalk[[p.id, q.id].sort().join("|")] ?? -1e9) >= PAIR_COOLDOWN
+}
+
+/** A friend with nothing in their step may decide to go find someone: social ones often, the rest now and then, liking friends best. */
+function trySeek(sim: Sim, s: GameState, r: Resident, npc: Npc, a: number, rand: () => number): boolean {
+  if (sim.clock - (sim.lastTalk[npc.id] ?? -1e9) <= SOLO_COOLDOWN) return false
+  if (rand() > (r.social ? 0.75 : 0.35)) return false
+  const bonds = s.minds?.[r.id]?.bonds ?? {}
+  let best: { id: string; score: number } | null = null
+  for (const o of RESIDENTS) {
+    if (o.id === r.id || !inValley(o, a)) continue
+    const q = sim.npcs[o.id]
+    if (!q || !seekable(sim, npc, q)) continue
+    const dist = Math.hypot(q.x - npc.x, q.y - npc.y) / TILE
+    if (dist > SEEK_RANGE) continue
+    const score = (bonds[o.id] ?? 0) * 2 + (o.social ? 1 : 0) - dist * 0.15 + rand() * 2
+    if (!best || score > best.score) best = { id: o.id, score }
+  }
+  if (!best) return false
+  npc.seek = best.id
+  npc.seekUntil = sim.clock + SEEK_GIVE_UP
+  npc.seekPathAt = -1e9
+  return true
+}
+
+/** Keep walking toward the sought friend. Returns true while seeking; clears the seek when it is over. */
+function seekStep(sim: Sim, world: World, npc: Npc, anchor: Anchor, a: number): boolean {
+  if (!npc.seek) return false
+  const target = sim.npcs[npc.seek]
+  const stop = !target || sim.clock > npc.seekUntil || anchor.goal === "home" || anchor.gathering || !seekable(sim, npc, target)
+  if (stop) {
+    npc.seek = ""
+    npc.goal = ""
+    npc.path = []
+    return false
+  }
+  if (sim.clock - npc.seekPathAt > SEEK_REPATH) {
+    npc.seekPathAt = sim.clock
+    npc.path = bfs(world, [Math.floor(npc.x / TILE), Math.floor(npc.y / TILE)], [Math.floor(target.x / TILE), Math.floor(target.y / TILE)], a)
+    if (!npc.path.length) { npc.seek = ""; npc.goal = ""; return false }
+  }
+  return true
 }
 
 /** Is this friend free to start a talk: awake, out, not heading to bed, not busy, not just talked? */
@@ -387,7 +450,7 @@ export function nearest(sim: Sim, s: GameState, world?: World): Target | null {
       }
     }
   }
-  for (const node of NODES) consider({ kind: "node", node, x: center(node.x), y: center(node.y), label: NODE_LABEL[node.kind] ?? "Gather" }, TALK_REACH - 4)
+  for (const node of NODES) if (nodeReady(s, node.id)) consider({ kind: "node", node, x: center(node.x), y: center(node.y), label: NODE_LABEL[node.kind] ?? "Gather" }, TALK_REACH - 4)
   return best
 }
 

@@ -9,6 +9,7 @@
  */
 
 import { disc, hash, LEAF, post, Q, r, shadow, STONE, STRAW, TERRA, tufts, WOOD, type Ctx, type Painter, type PropEnv } from "./proparthi-kit"
+import { pooledLayer } from "./pixelsnap"
 import { TASTE } from "./proparthi-taste"
 
 const PAINT: Record<string, Painter> = {
@@ -400,7 +401,11 @@ const PAINT: Record<string, Painter> = {
 /** Paint a prop at three times the detail. Returns false when this kind has no hi-res painter, or the frame is not scaled up. */
 export function drawPropHi(ctx: Ctx, kind: string, x: number, y: number, t: number, variant: number, env: PropEnv = { rain: false, night: false }): boolean {
   const paint = PAINT[kind]
-  if (!paint || ctx.getTransform().a < Q - 0.01) return false
+  if (!paint) return false
+  if (ctx.getTransform().a < Q - 0.01) {
+    pooledLayer(ctx, `prop|${kind}|${variant}|${env.rain ? 1 : 0}${env.night ? 1 : 0}`, x, y, t, Q, { x0: -16, y0: -32, w: 64, h: 64 }, (c) => drawPropHi(c, kind, x, y, t, variant, env))
+    return true
+  }
   ctx.save()
   ctx.translate(x, y)
   ctx.scale(1 / Q, 1 / Q)

@@ -61,7 +61,8 @@ export async function bookFromFile(file: File): Promise<Omit<Book, "at" | "readi
 const textCache = new Map<string, string>()
 
 /** A shelved book's words, or null if the store lost them. */
-export async function bookText(book: Pick<Book, "textUri">): Promise<string | null> {
+export async function bookText(book: Pick<Book, "textUri"> & { inline?: string }): Promise<string | null> {
+  if (book.inline) return book.inline
   const hit = textCache.get(book.textUri)
   if (hit) return hit
   try {
@@ -77,6 +78,7 @@ export async function bookText(book: Pick<Book, "textUri">): Promise<string | nu
 
 /** Open the original file in a new tab. */
 export async function openBookFile(book: Pick<Book, "fileUri">): Promise<void> {
+  if (!book.fileUri) return
   const rec = await getAttachment(book.fileUri)
   if (!rec) return
   const url = URL.createObjectURL(rec.blob)

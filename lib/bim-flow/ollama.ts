@@ -26,6 +26,9 @@ let endpoint: ModelEndpoint = { base: OLLAMA_URL }
 export function setModelEndpoint(next: ModelEndpoint | null): void {
   endpoint = next ?? { base: OLLAMA_URL }
 }
+/** Where calls go now (the Mac's daemon, or the hub's proxy on the phone). */
+export const modelEndpoint = (): ModelEndpoint => endpoint
+
 export const DEFAULT_MODEL = "qwen2.5:14b-instruct"
 const NUM_CTX = 4096
 
@@ -36,15 +39,17 @@ export type ModelCall = (req: {
   user: string
   schema: Record<string, unknown>
   maxTokens?: number
+  /** Default 0 (same prompt, same answer). Conversation raises it so two reads of a book do not sound alike. */
+  temperature?: number
 }) => Promise<unknown>
 
 const cache = new Map<string, unknown>()
 
 /** A `ModelCall` bound to one Ollama model. Identical prompts are answered from memory, unless `fresh` (a test run: real timings, every call archived). */
 export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: boolean } = {}): ModelCall {
-  return async ({ model: only, system, user, schema, maxTokens = 200 }) => {
+  return async ({ model: only, system, user, schema, maxTokens = 200, temperature = 0 }) => {
     const model = only || bound
-    const key = JSON.stringify([model, system, user, schema])
+    const key = JSON.stringify([model, system, user, schema, temperature])
     if (!opts.fresh && cache.has(key)) return cache.get(key)
     const res = await fetch(`${endpoint.base}/api/chat`, {
       method: "POST",
@@ -57,7 +62,7 @@ export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: 
         // qwen3 thinks by default and spends `num_predict` on it, leaving `content` empty. Others ignore the flag.
         think: false,
         keep_alive: "15m",
-        options: { temperature: 0, num_ctx: NUM_CTX, num_predict: maxTokens },
+        options: { temperature, num_ctx: NUM_CTX, num_predict: maxTokens },
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },

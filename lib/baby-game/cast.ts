@@ -1,5 +1,5 @@
 /**
- * lib/baby-game/cast.ts — The twenty-four residents of Valdivia
+ * lib/baby-game/cast.ts — The thirty-nine residents of Valdivia
  *
  * One resident per drawn species (`sprites.ts`). The chain is five acts of four or five friends: each act's
  * friends hand their keepsake to the next, and the last one in an act holds a Lamp part. Everything a resident
@@ -12,6 +12,7 @@
 import { speciesPersonality, type FriendCadence, type FriendDialogEffect, type FriendTone } from "@/lib/baby-animal-personality"
 import { friendWhim } from "@/lib/friend-whims"
 import { WHIM_TAGS, type Tag } from "./items"
+import { NEWCOMERS, NEWCOMER_PERSONA } from "./newcomers"
 import type { ZoneId } from "./world"
 
 /** What must be true when you ask a trusting friend for their keepsake. A friend's clue says which. */
@@ -451,6 +452,8 @@ export const RESIDENTS: Resident[] = [
       "When the lamp lights, don't thank me. Thank everyone. Then thank me quietly. That's enough. And after that, let's watch the sunrise. It always comes. That's my favorite part.",
     ],
   },
+  // Side friends who moved into the empty zones
+  ...NEWCOMERS,
 ]
 
 export function resident(id: string): Resident | undefined {
@@ -484,7 +487,7 @@ export type Temper = {
 }
 
 /** Friends whose species is not in the app's roster borrow the personality of a kin species. */
-const PERSONA_OF: Record<string, string> = { blackduck: "duckling", possum: "mouse", possum2: "kitten", possum3: "hedgehog" }
+const PERSONA_OF: Record<string, string> = { blackduck: "duckling", possum: "mouse", possum2: "kitten", possum3: "hedgehog", ...NEWCOMER_PERSONA }
 
 export function temper(id: string): Temper {
   const p = speciesPersonality(PERSONA_OF[id] ?? id)

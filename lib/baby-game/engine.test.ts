@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest"
 import { RESIDENTS, approachDistance, temper, type Condition } from "./cast"
 import {
-  advance, approach, ask, contribute, take, drawLimit, freeRiding, standing, deliverErrand, shelfCount, askBlocks, buy, stocked, chat, conditionMet, craft, DAY_LIMIT, favor, fish, gather, gift, hearts, makeErrands, newGame,
+  advance, approach, ask, canCraft, have, nodeReady, contribute, take, drawLimit, freeRiding, standing, deliverErrand, shelfCount, askBlocks, buy, stocked, chat, conditionMet, craft, DAY_LIMIT, favor, fish, gather, gift, hearts, makeErrands, newGame,
   addRealTask, claimQuest, completeRealTask, enterFestival, harvest, questProgress, urgentCount, visibleQuests, placePart, plant, playMinigame, sleep, sell, sellPrice, skillLevel, spook, starlogCount, talk, till, turnIn, water, waterAll, weatherFor, type GameState,
 } from "./engine"
 import { CROPS, cycleName, dayOfCycle, festivalOn, levelOf } from "./farm"
-import { ITEMS, LAMP_PARTS } from "./items"
+import { ITEMS, LAMP_PARTS, shellKindOf } from "./items"
+import { NODES } from "./world"
 import { councilTalk, scriptedReply } from "./llm"
 import { spriteFor } from "./companion"
 import { questById } from "./quests"
@@ -492,5 +493,28 @@ describe("the Commons", () => {
     const s = { ...newGame(), inv: { pebble: 1 }, economy: ECONOMIES.mixed }
     const r = sell(s, "pebble")
     expect(r.s.commons.stock.pebble).toBe((s.commons.stock.pebble ?? 0) + 1)
+  })
+})
+
+describe("shells", () => {
+  const shellNode = NODES.find((n) => n.kind === "shell")!
+
+  it("a shell node gives the kind its id fixes, and every kind counts as a shell", () => {
+    const r = gather(newGame(), shellNode.id, "shell", () => 0)
+    const id = `shell-${shellKindOf(shellNode.id)}`
+    expect(r.s.inv[id]).toBe(1)
+    expect(have(r.s, "shell")).toBe(1)
+    const two = { ...r.s, inv: { ...r.s.inv, "shell-cowrie": 1 } }
+    expect(have(two, "shell")).toBe(2)
+    expect(canCraft({ ...two, inv: { ...two.inv, reed: 1 } }, "chime")).toBe(true)
+    const crafted = craft({ ...two, inv: { ...two.inv, reed: 1 } }, "chime")
+    expect(crafted.s.inv.chime).toBe(1)
+    expect(have(crafted.s, "shell")).toBe(0)
+  })
+
+  it("a picked node stays picked until the next day", () => {
+    const r = gather(newGame(), shellNode.id, "shell", () => 0)
+    expect(nodeReady(r.s, shellNode.id)).toBe(false)
+    expect(nodeReady({ ...r.s, day: r.s.day + 1 }, shellNode.id)).toBe(true)
   })
 })

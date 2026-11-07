@@ -62,7 +62,7 @@ export type CharacterGoal = {
 export type CharacterLikes = { tags: Tag[]; hates: Tag; loves: Tag }
 
 /** `neighbor` is a talk with another friend (`chatter.ts`); `read` is a sitting at their bookshelf (`shelf.ts`). */
-export type MemoryKind = "met" | "gift" | "wish" | "keepsake" | "quest" | "chat" | "visit" | "neighbor" | "read"
+export type MemoryKind = "met" | "gift" | "wish" | "keepsake" | "quest" | "chat" | "visit" | "neighbor" | "read" | "told" | "asked" | "letter" | "study"
 
 export type Memory = { day: number; kind: MemoryKind; text: string }
 

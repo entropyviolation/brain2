@@ -6,6 +6,8 @@
  * y-sorted with friends and the player, and fade when someone is standing behind one.
  */
 
+import { snapTo } from "./pixelsnap"
+
 export type TreeKind = "oak" | "pine" | "birch" | "blossom"
 
 export type TreeArt = { img: HTMLCanvasElement; w: number; h: number; /** Half-width of the canopy, for fading. */ reach: number; /** Height of the canopy above the trunk's base. */ rise: number }
@@ -31,7 +33,7 @@ type Blob = { x: number; y: number; r: number }
 
 const cache = new Map<string, TreeArt>()
 
-/** Canvas pixels per game pixel: a tree is painted this much finer than it is shown, so the leaves have grain. */
+/** Canvas pixels per game pixel: a tree is painted this much finer, then pooled to the fine grid of two pixels per game pixel (`snapTo`), so the leaf clumps keep their shape on the game's own grid. */
 const Q = 3
 
 function paint(kind: TreeKind, seed: number): TreeArt {
@@ -168,7 +170,7 @@ function paint(kind: TreeKind, seed: number): TreeArt {
     }
   }
   if (kind === "pine") px(ramp[0]!, cx, Q, Q, 3 * Q)
-  return { img: canvas, w: gw, h: gh, reach: kind === "pine" ? 14 : 20, rise: kind === "pine" ? 58 : 44 }
+  return { img: snapTo(canvas, gw * 2, gh * 2, { cover: 0.45 }), w: gw, h: gh, reach: kind === "pine" ? 14 : 20, rise: kind === "pine" ? 58 : 44 }
 }
 
 /** A stump, seedling or sapling, drawn straight to the canvas (a few pixels each, so nothing to cache). `seed` is 0..1 and picks the lean. */

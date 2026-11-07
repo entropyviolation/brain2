@@ -8,6 +8,18 @@ const world = buildWorld([...RESIDENTS.map((r) => r.day), ...FIRE_SLOTS])
 const noInput = { dx: 0, dy: 0, run: false }
 
 describe("the sim", () => {
+  it("friends with nothing to do go looking for each other and talk", () => {
+    const s = { ...newGame(), minutes: 11 * 60 }
+    const sim = newSim([21, 18], s)
+    let seeked = false
+    for (let i = 0; i < 6000 && !sim.met.length; i++) {
+      stepSim(sim, world, s, noInput, 0.1, Math.random)
+      if (Object.values(sim.npcs).some((n) => n.seek)) seeked = true
+    }
+    expect(seeked).toBe(true)
+    expect(sim.met.length).toBeGreaterThan(0)
+  })
+
   it("starts friends where they would be right now", () => {
     const noon = newSim([21, 18], { ...newGame(), minutes: 12 * 60 })
     const chick = RESIDENTS.find((r) => r.id === "chick")!

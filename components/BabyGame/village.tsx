@@ -11,17 +11,18 @@
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { RESIDENTS, inValley, resident } from "@/lib/baby-game/cast"
 import { mindFromCharacter, blockAt, BOND_MAX, BOND_MIN, inBlock, placeLabel, placeOptions, tidyMind, wakingHours, type Block, type Mind, type Place } from "@/lib/baby-game/mind"
-import { finished, pageAt, SHELF_MAX, type Book } from "@/lib/baby-game/shelf"
+import { activeManifesto, canWrite, manifestoDone, SESSIONS_FOR_TOPIC, studyOf, WORKBOOK_SESSIONS_FOR_OUTLINE, workbookSessions, type StudyNote } from "@/lib/baby-game/study"
+import { finished, pageAt, SHELF_MAX, type Book, type GoldExample, type ReadStyle, type Reading, type SittingEdit } from "@/lib/baby-game/shelf"
 import { whereOf, type Talk, type TalkLine } from "@/lib/baby-game/chatter"
 import { act as actOf, isAsleep, type GameState } from "@/lib/baby-game/engine"
 import { HOME_NOUN, homeDoor, HOMES } from "@/lib/baby-game/homes"
 import { cameraOf, VIEW_H, VIEW_W } from "./render"
 import { center, type Sim } from "@/lib/baby-game/sim"
 import { TILE } from "@/lib/baby-game/world"
-import { BOOK_ACCEPT } from "./shelf-io"
+import { BOOK_ACCEPT, bookText } from "./shelf-io"
 import { Plate } from "./panels"
 import { PixelSprite } from "./pixel"
 
@@ -57,7 +58,7 @@ export function statusOf(g: GameState, sim: Sim | null, id: string): Status {
   if (isAsleep(r, g.minutes)) return { state: "asleep", doing: "asleep", where: HOMES[id]?.name ?? "home" }
   if (!npc) return { state: "out", doing: "", where: "" }
   const where = whereOf(npc.x, npc.y)
-  if (npc.reading) return { state: "reading", doing: "reading at the bookshelf", where: HOMES[id]?.name ?? where }
+  if (npc.reading) return { state: "reading", doing: npc.shelfDoing ?? "reading at the bookshelf", where: HOMES[id]?.name ?? where }
   if (npc.talkUntil > (sim?.clock ?? 0)) return { state: "talking", doing: `talking with ${nameOf(npc.with)}`, where }
   const h = HOMES[id]
   if (h) {
@@ -181,6 +182,37 @@ function Legend() {
 
 // ——— the mind editor ———
 
+/** A one-line entry that opens to its whole text while it has focus (a long belief is never cut off). Enter closes it; no newlines. */
+function GrowText({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const ref = useRef<HTMLTextAreaElement | null>(null)
+  const [open, setOpen] = useState(false)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = ""
+    if (open) el.style.height = `${el.scrollHeight + 2}px`
+  }, [value, open])
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      className={`bv-grow${open ? " is-open" : ""}`}
+      value={value}
+      aria-label={label}
+      title={open ? undefined : value}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault()
+          e.currentTarget.blur()
+        }
+      }}
+      onChange={(e) => onChange(e.target.value.replace(/\s*\n+\s*/g, " "))}
+    />
+  )
+}
+
 function ListEdit({ label, hint, items, onChange, max = 10 }: { label: string; hint: string; items: string[]; onChange: (xs: string[]) => void; max?: number }) {
   const [draft, setDraft] = useState("")
   return (
@@ -189,7 +221,7 @@ function ListEdit({ label, hint, items, onChange, max = 10 }: { label: string; h
       <ul className="bv-list">
         {items.map((x, i) => (
           <li key={i}>
-            <input value={x} onChange={(e) => onChange(items.map((y, j) => (j === i ? e.target.value : y)))} aria-label={`${label} ${i + 1}`} />
+            <GrowText value={x} onChange={(v) => onChange(items.map((y, j) => (j === i ? v : y)))} label={`${label} ${i + 1}`} />
             <button type="button" className="bv-x" aria-label="Remove" onClick={() => onChange(items.filter((_, j) => j !== i))}>×</button>
           </li>
         ))}
@@ -237,10 +269,11 @@ function SaveBar({ dirty, onSave, onRevert, extra }: { dirty: boolean; onSave: (
   )
 }
 
-export function MindEditor({ g, id, hasModel, onSave, onRebuild }: { g: GameState; id: string; hasModel: boolean; onSave: (m: Mind) => void; onRebuild: (description: string) => Promise<void> }) {
+export function MindEditor({ g, id, hasModel, onSave, onRebuild, onDescribe }: { g: GameState; id: string; hasModel: boolean; onSave: (m: Mind) => void; onRebuild: (description: string) => Promise<void>; onDescribe: (m: Mind) => Promise<string> }) {
   const mind = g.minds[id]!
   const { draft, setDraft, dirty, revert } = useDraft(mind)
   const [busy, setBusy] = useState(false)
+  const [describing, setDescribing] = useState(false)
   const [showBonds, setShowBonds] = useState(false)
   const set = (patch: Partial<Mind>) => setDraft((d) => ({ ...d, ...patch }))
   const bonds = Object.entries(draft.bonds).filter(([k]) => resident(k)).sort((a, b) => b[1] - a[1])
@@ -257,7 +290,15 @@ export function MindEditor({ g, id, hasModel, onSave, onRebuild }: { g: GameStat
             } finally {
               setBusy(false)
             }
-          }, { disabled: busy || !draft.description.trim(), title: "Replaces beliefs, motivations, likes, dislikes and goals; keeps bonds" })}
+          }, { disabled: busy || describing || !draft.description.trim(), title: "Replaces beliefs, motivations, likes, dislikes and goals; keeps bonds" })}
+          {btn(describing ? "Writing…" : "Rewrite the description from the mind", async () => {
+            setDescribing(true)
+            try {
+              set({ description: await onDescribe(draft) })
+            } finally {
+              setDescribing(false)
+            }
+          }, { disabled: busy || describing, title: "Writes a new description from the beliefs, motivations, likes, dislikes and goals below (your unsaved edits count). Save to keep it." })}
           <span className="bg-chip">{hasModel ? "uses the local model" : "no model: reads keywords"}</span>
           <span className="bg-chip">last written by {mind.by === "you" ? "you" : mind.by === "model" ? "the model" : "the game"}</span>
         </div>
@@ -273,7 +314,7 @@ export function MindEditor({ g, id, hasModel, onSave, onRebuild }: { g: GameStat
         <ul className="bv-list bv-goals">
           {draft.goals.map((goal, i) => (
             <li key={goal.id + i}>
-              <input value={goal.text} onChange={(e) => set({ goals: draft.goals.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)) })} aria-label={`Goal ${i + 1}`} />
+              <GrowText value={goal.text} onChange={(v) => set({ goals: draft.goals.map((x, j) => (j === i ? { ...x, text: v } : x)) })} label={`Goal ${i + 1}`} />
               <label className="bv-progress" title={`${goal.progress}%`}>
                 <input type="range" min={0} max={100} step={5} value={goal.progress} onChange={(e) => set({ goals: draft.goals.map((x, j) => (j === i ? { ...x, progress: Number(e.target.value) } : x)) })} aria-label={`Progress on goal ${i + 1}`} />
                 <em>{goal.progress >= 100 ? "done" : `${goal.progress}%`}</em>
@@ -348,7 +389,7 @@ export function ScheduleEditor({ g, id, onSave }: { g: GameState; id: string; on
                   {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
                 </select>
               </td>
-              <td><input value={b.doing} onChange={(e) => setBlock(i, { doing: e.target.value })} aria-label="Doing" /></td>
+              <td><GrowText value={b.doing} onChange={(v) => setBlock(i, { doing: v })} label="Doing" /></td>
               <td>
                 <select value={b.place} onChange={(e) => setBlock(i, { place: e.target.value as Place })} aria-label="Where" className={`is-${placeKind(b.place)}`}>
                   {places.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
@@ -473,11 +514,24 @@ function MemoryList({ g, id }: { g: GameState; id: string }) {
 export type HomeActions = {
   saveMind: (id: string, m: Mind) => void
   rebuildMind: (id: string, description: string) => Promise<void>
+  /** A description written from the rest of the mind. Not saved until the player saves. */
+  describeMind: (id: string, mind: Mind) => Promise<string>
   /** Resolves to an error message, or null when shelved. */
   shelve: (id: string, file: File) => Promise<string | null>
   unshelve: (id: string, book: Book) => void
   reread: (id: string, bookId: string) => void
   readNow: (id: string, bookId: string) => void
+  /** One study session, or one sitting of manifesto work, when asked for. */
+  studyNow: (id: string) => void
+  writeNow: (id: string) => void
+  /** Sitting after sitting until the book is finished or `stopReading`; goes on whatever screen is open. */
+  readAll: (id: string, bookId: string) => void
+  stopReading: (id: string) => void
+  /** The read-through running for this friend, if any. */
+  readingAll: (id: string) => { bookId: string; sittings: number; stopping: boolean } | null
+  setStyle: (id: string, style: ReadStyle) => void
+  /** Replace a sitting with the player's version; with `note`, also keep it as a gold example. */
+  saveSitting: (id: string, bookId: string, index: number, edit: SittingEdit, passage: string, note?: string) => void
   openFile: (book: Book) => void
 }
 
@@ -496,12 +550,59 @@ function Spine({ b, on, onClick }: { b: Book; on: boolean; onClick: () => void }
   )
 }
 
-function BookDetail({ id, b, status, actions, onBack }: { id: string; b: Book; status: Status; actions: HomeActions; onBack: () => void }) {
+const ideaLines = (ideas?: Array<{ name: string; gist: string }>) => (ideas ?? []).map((i) => `${i.name}: ${i.gist}`).join("\n")
+const parseIdeas = (t: string) =>
+  t.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+    const at = l.indexOf(":")
+    return at > 0 ? { name: l.slice(0, at).trim().slice(0, 40), gist: l.slice(at + 1).trim().slice(0, 170) } : { name: l.slice(0, 40), gist: l.slice(0, 170) }
+  }).slice(0, 5)
+
+/** One sitting open for correction: the whole passage they read, their version beside it, and what to do with it. */
+function SittingEditor({ id, b, index, r, actions, onDone }: { id: string; b: Book; index: number; r: Reading; actions: HomeActions; onDone: () => void }) {
+  const [passage, setPassage] = useState<string | null>(null)
+  const [f, setF] = useState({ takeaway: r.takeaway, quote: r.quote, explain: r.explain ?? "", question: r.question ?? "", ideas: ideaLines(r.ideas), belief: "", goal: "", note: "" })
+  useEffect(() => {
+    let live = true
+    void bookText(b).then((t) => live && setPassage(t ? t.slice(r.from, r.to) : ""))
+    return () => { live = false }
+  }, [b, r.from, r.to])
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => setF({ ...f, [k]: e.target.value })
+  const edit = (): SittingEdit => ({ takeaway: f.takeaway.trim(), quote: f.quote.trim(), explain: f.explain.trim() || undefined, question: f.question.trim() || undefined, ideas: parseIdeas(f.ideas), belief: f.belief.trim() || undefined, goal: f.goal.trim() || undefined })
+  const ok = f.takeaway.trim().length > 0 && passage !== null
+  return (
+    <div className="bv-edit">
+      <h5>The pages they read (p. {r.pageFrom}{r.pageTo !== r.pageFrom ? `–${r.pageTo}` : ""})</h5>
+      <pre className="bv-passage">{passage === null ? "Loading the pages…" : passage || "The pages are not in this browser any more."}</pre>
+      <h5>The perfect reading</h5>
+      <label>What the author claims, and what {nameOf(id)} makes of it<textarea rows={4} value={f.takeaway} onChange={set("takeaway")} /></label>
+      <label>Explained to a younger friend<textarea rows={3} value={f.explain} onChange={set("explain")} /></label>
+      <label>Ideas, one per line as name: gist<textarea rows={3} value={f.ideas} onChange={set("ideas")} /></label>
+      <label>A real question it leaves<input type="text" value={f.question} onChange={set("question")} /></label>
+      <label>Quote, copied from the pages<input type="text" value={f.quote} onChange={set("quote")} /></label>
+      <label>A belief it gives them (optional)<input type="text" value={f.belief} onChange={set("belief")} /></label>
+      <label>A goal it gives them (optional)<input type="text" value={f.goal} onChange={set("goal")} /></label>
+      <label>
+        What did the agent get wrong or miss? (for the gold example: prompts, tools, the loop)
+        <textarea rows={3} value={f.note} onChange={set("note")} placeholder="e.g. it said a line stayed with it but never said what Deleuze claims; it ignored the term 'plateau'" />
+      </label>
+      <div className="bg-keys">
+        {btn("Replace in their mind", () => { actions.saveSitting(id, b.id, index, edit(), passage ?? ""); onDone() }, { primary: true, disabled: !ok, title: "Their log, memory, ideas and the belief or goal this sitting gave are replaced by this" })}
+        {btn("Replace and keep as a gold example", () => { actions.saveSitting(id, b.id, index, edit(), passage ?? "", f.note); onDone() }, { disabled: !ok, title: "Also saves the pages, what the agent wrote, this version and your note; the best example goes into their next readings" })}
+        {btn("Cancel", onDone)}
+      </div>
+    </div>
+  )
+}
+
+function BookDetail({ id, b, status, style, actions, onBack }: { id: string; b: Book; status: Status; style: ReadStyle; actions: HomeActions; onBack: () => void }) {
   const pages = b.pageStarts.length
   const frac = b.chars ? Math.min(1, b.at / b.chars) : 0
   const page = pageAt(b, Math.max(0, b.at - 1))
   const canRead = status.state !== "asleep" && status.state !== "away" && status.state !== "reading" && !finished(b)
   const [confirm, setConfirm] = useState(false)
+  const run = actions.readingAll(id)
+  const all = !!run
+  const [editing, setEditing] = useState<number | null>(null)
   return (
     <div className="bv-book">
       <button type="button" className="bv-back" onClick={onBack}>← All books</button>
@@ -512,8 +613,11 @@ function BookDetail({ id, b, status, actions, onBack }: { id: string; b: Book; s
         <em>{finished(b) ? "Finished" : b.at === 0 ? "Not started" : `Up to page ${page} of ${pages} · ${Math.round(frac * 100)}%`}</em>
       </div>
       <div className="bg-keys">
-        {btn(status.state === "reading" ? "Reading…" : "Read a little now", () => actions.readNow(id, b.id), { primary: true, disabled: !canRead, title: canRead ? "They sit down with it for one sitting" : status.state === "asleep" ? "Asleep" : finished(b) ? "Finished; start over to read again" : "Busy" })}
-        {btn("Open the file", () => actions.openFile(b))}
+        {btn(status.state === "reading" ? "Reading…" : "Read a little now", () => actions.readNow(id, b.id), { primary: true, disabled: !canRead || all, title: canRead ? "They sit down with it for one sitting" : status.state === "asleep" ? "Asleep" : finished(b) ? "Finished; start over to read again" : "Busy" })}
+        {all
+          ? btn(run.stopping ? "Stopping…" : `Stop reading (${run.sittings} done)`, () => actions.stopReading(id), { disabled: run.stopping, title: "They finish the sitting they are on, then put it down. Closing this screen does not stop them." })
+          : btn("Read it all in one go", () => actions.readAll(id, b.id), { disabled: !canRead, title: canRead ? "Sitting after sitting, straight through to the end, whatever screen you are on, until you press Stop" : "Not right now" })}
+        {b.fileUri ? btn("Open the file", () => actions.openFile(b)) : null}
         {btn("Start over", () => actions.reread(id, b.id), { disabled: b.at === 0 })}
         {confirm ? (
           <>
@@ -522,19 +626,33 @@ function BookDetail({ id, b, status, actions, onBack }: { id: string; b: Book; s
           </>
         ) : btn("Take off the shelf", () => setConfirm(true), { title: "Removes the book and its words; sittings stay in their memory" })}
       </div>
+      <label className="bv-style">
+        Reading style
+        <select value={style} onChange={(e) => actions.setStyle(id, e.target.value as ReadStyle)}>
+          <option value="hourly">An hour at a time, when their day says so</option>
+          <option value="allatonce">All the way through, until I press Stop</option>
+        </select>
+      </label>
+      {b.digest ? <p className="bv-digest"><b>Understood so far:</b> {b.digest}</p> : null}
+      {b.ideas?.length ? <p className="bv-changed">{b.ideas.map((i) => <span key={`${i.at}${i.name}`} className="bg-chip" title={`${i.gist} (p. ${i.page}${i.shared ? `, talked about ${i.shared}×` : ""})`}>{i.name}</span>)}</p> : null}
       <h4>What {nameOf(id)} took from it</h4>
       {b.readings.length ? (
         <ol className="bv-sittings">
-          {[...b.readings].reverse().map((r, i) => (
-            <li key={i}>
+          {b.readings.map((r, n) => [r, n] as const).reverse().map(([r, n]) => (
+            <li key={n}>
               <header>
                 <b>p. {r.pageFrom}{r.pageTo !== r.pageFrom ? `–${r.pageTo}` : ""}</b>
                 <small>day {r.day}, {clock(r.minute)}</small>
                 <span className="bv-feel">{r.feeling}</span>
-                <span className="bg-chip">{r.by === "model" ? "model" : "scripted"}</span>
+                <span className="bg-chip">{r.by === "model" ? "model" : r.by === "you" ? "you" : "scripted"}</span>
+                {btn(editing === n ? "Close" : "Edit", () => setEditing(editing === n ? null : n), { title: "Read the pages they read and write the perfect version" })}
               </header>
               <p>{r.takeaway}</p>
+              {r.explain ? <p className="bg-faint"><i>To a younger friend:</i> {r.explain}</p> : null}
+              {r.ideas?.length ? <p className="bv-changed">{r.ideas.map((i) => <span key={i.name} className="bg-chip" title={i.gist}>{i.name}: {i.gist}</span>)}</p> : null}
+              {r.question ? <p className="bg-faint"><i>Still wondering:</i> {r.question}</p> : null}
               {r.quote ? <blockquote>“{r.quote}”</blockquote> : null}
+              {editing === n ? <SittingEditor id={id} b={b} index={n} r={r} actions={actions} onDone={() => setEditing(null)} /> : null}
               {r.changed.length ? <p className="bv-changed">{r.changed.map((c) => <span key={c} className="bg-chip is-change">{c}</span>)}</p> : null}
             </li>
           ))}
@@ -547,7 +665,126 @@ function BookDetail({ id, b, status, actions, onBack }: { id: string; b: Book; s
   )
 }
 
-type HomeTab = "shelf" | "mind" | "day" | "talks" | "memory"
+/** Every sitting the player corrected, with a way to copy them out as JSON for improving prompts, examples and tools. */
+function GoldList({ gold }: { gold: GoldExample[] }) {
+  const [copied, setCopied] = useState(false)
+  if (!gold.length) return null
+  return (
+    <div className="bv-gold">
+      <h4>Gold examples ({gold.length})</h4>
+      <p className="bg-faint">Sittings you corrected. The newest one for this friend goes into their next reading as the standard to meet. Copy them all to build better prompts, examples and tools.</p>
+      <ul>
+        {[...gold].reverse().slice(0, 6).map((x, i) => (
+          <li key={i}><b>{nameOf(x.friend)}</b> on “{x.book}”{x.note ? `: ${x.note}` : ""}</li>
+        ))}
+      </ul>
+      {btn(copied ? "Copied" : "Copy all as JSON", () => { void navigator.clipboard?.writeText(JSON.stringify(gold, null, 2)).then(() => setCopied(true)) })}
+    </div>
+  )
+}
+
+type HomeTab = "shelf" | "study" | "mind" | "day" | "talks" | "memory"
+
+const NoteList = ({ notes }: { notes: StudyNote[] }) =>
+  notes.length ? (
+    <ol className="bv-sittings">
+      {[...notes].reverse().map((n, i) => (
+        <li key={`${n.day}${i}${n.quote.slice(0, 12)}`}>
+          <header>
+            <b>{n.theme}</b>
+            <small>day {n.day}</small>
+          </header>
+          <p>{n.idea}</p>
+          <blockquote>“{n.quote}” <small>{n.book}, p. {n.page}</small></blockquote>
+        </li>
+      ))}
+    </ol>
+  ) : (
+    <p className="bv-empty">Nothing written down yet.</p>
+  )
+
+/** The Study notebook, the manifesto and its study workbook, in full, for the player to read. */
+function StudyPanel({ g, id, status, actions }: { g: GameState; id: string; status: Status; actions: HomeActions }) {
+  const r = resident(id)!
+  const st = studyOf(g, id)
+  const m = st.manifesto
+  const live = activeManifesto(g, id)
+  const free = st.sessions.filter((x) => !x.manifesto)
+  const idle = status.state !== "asleep" && status.state !== "away" && status.state !== "reading" && (g.shelves?.[id] ?? []).length > 0
+  const copies = Object.entries(g.shelves ?? {}).filter(([who, bs]) => who !== id && bs.some((b) => b.manifestoBy === id)).map(([who]) => who)
+  const said = Object.entries(m?.pitched ?? {})
+  return (
+    <div className="bv-study">
+      <p className="bg-faint">
+        {r.name} sometimes studies instead of reading: they search the whole shelf or one book, and write a note only when they judge it good, worthy and true, always with a quote from the pages. Each session ends with a summary. After {SESSIONS_FOR_TOPIC} sessions a manifesto topic is drawn out of them, announced the next morning.
+      </p>
+      <div className="bg-keys">
+        {btn(status.state === "reading" ? `${status.doing}…` : "Study now", () => actions.studyNow(id), { primary: true, disabled: !idle, title: idle ? "One study session" : "Needs a book on the shelf and to be awake and free" })}
+        {live && canWrite(g, id) ? btn("Work on the manifesto now", () => actions.writeNow(id), { disabled: !idle, title: live.outline.length ? "Write the next section" : "Write the outline" }) : null}
+      </div>
+      {!m ? <p>{free.length} of {SESSIONS_FOR_TOPIC} study sessions before a manifesto topic is drawn.</p> : null}
+      {m ? (
+        <section className="bv-manifesto">
+          <h4>{live ? m.title : "A manifesto is coming"}</h4>
+          {live ? (
+            <>
+              <p><b>Topic:</b> {m.topic} · decided on day {m.decidedDay}</p>
+              {m.thesis ? <p className="bv-digest"><b>Thesis:</b> {m.thesis}</p> : null}
+              {m.outline.length ? (
+                <>
+                  <p className="bg-faint">{manifestoDone(m) ? "Finished writing." : `${m.outline.filter((x) => x.body).length} of ${m.outline.length} parts written.`}{copies.length ? ` Read by ${copies.map(nameOf).join(", ")}.` : ""}</p>
+                  <ol className="bv-sittings">
+                    {m.outline.map((sec, n) => (
+                      <li key={n}>
+                        <details>
+                          <summary><b>{n + 1}. {sec.title}</b> <small>{sec.body ? "written" : "outline only"}</small></summary>
+                          <p className="bg-faint">{sec.summary}</p>
+                          {sec.body ? sec.body.split(/\n{2,}/).map((para, k) => <p key={k}>{para}</p>) : null}
+                        </details>
+                      </li>
+                    ))}
+                  </ol>
+                  {said.length ? <p className="bv-changed">{said.map(([who, p]) => <span key={who} className="bg-chip">{nameOf(who)}: {p.yes ? "agreed to read it" : `said not now (day ${p.day})`}</span>)}</p> : null}
+                </>
+              ) : (
+                <p>{workbookSessions(st) >= WORKBOOK_SESSIONS_FOR_OUTLINE ? "Ready to write the outline." : `${workbookSessions(st)} of ${WORKBOOK_SESSIONS_FOR_OUTLINE} manifesto study sessions before they start the outline.`}</p>
+              )}
+            </>
+          ) : (
+            <p>{r.name} has settled on “{m.topic}”. They will say so in the morning.</p>
+          )}
+        </section>
+      ) : null}
+      {live ? (
+        <>
+          <h4>Manifesto study workbook ({st.workbook.length})</h4>
+          <NoteList notes={st.workbook} />
+        </>
+      ) : null}
+      <h4>Study notebook ({st.notebook.length})</h4>
+      <NoteList notes={st.notebook} />
+      <h4>Sessions ({st.sessions.length})</h4>
+      {st.sessions.length ? (
+        <ol className="bv-sittings">
+          {[...st.sessions].reverse().map((x, i) => (
+            <li key={i}>
+              <header>
+                <b>{x.theme}</b>
+                <small>day {x.day}, {clock(x.minute)}</small>
+                {x.manifesto ? <span className="bg-chip">manifesto</span> : null}
+                <span className="bg-chip">{x.by === "model" ? "model" : "scripted"}</span>
+              </header>
+              <p>{x.summary}</p>
+              <p className="bg-faint">{x.searches.length} search{x.searches.length === 1 ? "" : "es"} · {x.kept} note{x.kept === 1 ? "" : "s"} kept{x.refused ? ` · ${x.refused} refused` : ""}</p>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="bv-empty">No study sessions yet.</p>
+      )}
+    </div>
+  )
+}
 
 export function HomePanel({ g, id, getSim, hasModel, actions, onClose }: { g: GameState; id: string; getSim: () => Sim | null; hasModel: boolean; actions: HomeActions; onClose: () => void }) {
   useTick()
@@ -647,6 +884,7 @@ export function HomePanel({ g, id, getSim, hasModel, actions, onClose }: { g: Ga
             {(
               [
                 ["shelf", `Shelf (${books.length})`],
+                ["study", "Study"],
                 ["mind", "Mind"],
                 ["day", "Day"],
                 ["talks", `Talks (${(g.chatter ?? []).filter((t) => t.a === id || t.b === id).length})`],
@@ -663,7 +901,7 @@ export function HomePanel({ g, id, getSim, hasModel, actions, onClose }: { g: Ga
           <div className="bv-pane">
             {tab === "shelf" ? (
               book ? (
-                <BookDetail id={id} b={book} status={status} actions={{ ...actions, unshelve: (i, b) => { actions.unshelve(i, b); setBookId(null) } }} onBack={() => setBookId(null)} />
+                <BookDetail id={id} b={book} status={status} style={g.readStyle?.[id] ?? "hourly"} actions={{ ...actions, unshelve: (i, b) => { actions.unshelve(i, b); setBookId(null) } }} onBack={() => setBookId(null)} />
               ) : (
                 <div>
                   <button type="button" className="bv-dropzone" onClick={() => file.current?.click()} disabled={busy || books.length >= SHELF_MAX}>
@@ -671,7 +909,7 @@ export function HomePanel({ g, id, getSim, hasModel, actions, onClose }: { g: Ga
                     <small>Click, or drop a file anywhere on the room. PDF, .txt or .md. It stays in this browser.</small>
                   </button>
                   <p className="bg-faint">
-                    {r.name} reads in the hours their day marks “at the bookshelf”, a few pages a sitting, oldest book first. What they take from it goes into their memory, may change a belief or a goal, and can send them somewhere the next hour. It comes up when they talk with friends and with you.
+                    {r.name} reads in the hours their day marks “at the bookshelf”, about four thousand characters a sitting, oldest book first, or all the way through when you set that on the book. They keep notes as they go: the ideas, a question, and what they have understood of the whole book. What they take from it goes into their memory, may change a belief or a goal, and can send them somewhere the next hour. It comes up when they talk with friends and with you.
                   </p>
                   {reading ? <p>Next up: <b>{reading.title}</b>, from page {pageAt(reading, reading.at)}.</p> : null}
                   {books.length ? (
@@ -687,10 +925,12 @@ export function HomePanel({ g, id, getSim, hasModel, actions, onClose }: { g: Ga
                       ))}
                     </ul>
                   ) : null}
+                  <GoldList gold={g.gold ?? []} />
                 </div>
               )
             ) : null}
-            {tab === "mind" ? <MindEditor g={g} id={id} hasModel={hasModel} onSave={(m) => actions.saveMind(id, m)} onRebuild={(d) => actions.rebuildMind(id, d)} /> : null}
+            {tab === "study" ? <StudyPanel g={g} id={id} status={status} actions={actions} /> : null}
+            {tab === "mind" ? <MindEditor g={g} id={id} hasModel={hasModel} onSave={(m) => actions.saveMind(id, m)} onRebuild={(d) => actions.rebuildMind(id, d)} onDescribe={(m) => actions.describeMind(id, m)} /> : null}
             {tab === "day" ? <ScheduleEditor g={g} id={id} onSave={(m) => actions.saveMind(id, m)} /> : null}
             {tab === "talks" ? <TalkLog g={g} who={id} /> : null}
             {tab === "memory" ? <MemoryList g={g} id={id} /> : null}
@@ -787,7 +1027,7 @@ export function VillagePanel({ g, getSim, hasModel, actions, onClose, initial }:
             </div>
             {g.minds[pick] ? (
               mindTab === "mind" ? (
-                <MindEditor key={pick} g={g} id={pick} hasModel={hasModel} onSave={(m) => actions.saveMind(pick, m)} onRebuild={(d) => actions.rebuildMind(pick, d)} />
+                <MindEditor key={pick} g={g} id={pick} hasModel={hasModel} onSave={(m) => actions.saveMind(pick, m)} onRebuild={(d) => actions.rebuildMind(pick, d)} onDescribe={(m) => actions.describeMind(pick, m)} />
               ) : mindTab === "day" ? (
                 <ScheduleEditor key={pick} g={g} id={pick} onSave={(m) => actions.saveMind(pick, m)} />
               ) : (

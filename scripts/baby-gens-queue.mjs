@@ -131,12 +131,31 @@ async function chibiBatch() {
 }
 
 const REDESIGN = ["redesign-bunny", "redesign-fawn", "redesign-wolf"]
+
+/** Cuter batch (2026-11-03): the hand-drawn animals with no liked picture yet. Same redesign guards: short, round, chunky, big eyes. */
+const CUTER_LOOK = "round chubby body, big round head, huge shiny dark eyes with white highlights, tiny nose, short stubby legs, soft fluffy fur"
+Object.assign(SUBJECTS, {
+  "cuter-fox": `baby red fox kit with orange fur, a white chest, white tipped ears and a fluffy tail, ${CUTER_LOOK}`,
+  "cuter-cub": `baby brown bear cub with a tan muzzle, small round ears, ${CUTER_LOOK}`,
+  "cuter-foal": `baby foal with a soft chestnut coat, a white blaze, a tufted mane and a short fluffy tail, ${CUTER_LOOK}`,
+  "cuter-capybara": `baby capybara pup with brown fur, a blunt round nose and tiny round ears, ${CUTER_LOOK}`,
+  "cuter-crow": `baby crow fledgling with soft dark grey feathers, a small beak, ${CUTER_LOOK}`,
+  "cuter-gosling": `baby gosling with soft pale grey-white down and a small orange beak, ${CUTER_LOOK}`,
+  "cuter-chick": `baby chick with fluffy cream down, a tiny orange beak and tiny feet, ${CUTER_LOOK}`,
+  "cuter-owl": `baby owlet with fluffy white and tan down, a heart shaped face and huge round eyes, ${CUTER_LOOK}`,
+  "cuter-mouse": `baby mouse with grey fur, big round pink ears, a pink nose and a thin pink tail, ${CUTER_LOOK}`,
+  "cuter-seal": `baby harp seal pup with white fluffy fur, big dark eyes and a tiny black nose, ${CUTER_LOOK}`,
+  "cuter-penguin": `baby penguin chick with grey fluffy down, a white face and a small dark beak, ${CUTER_LOOK}`,
+  "cuter-skunk": `baby skunk kit with black fur, a white stripe down its back and a fluffy tail, ${CUTER_LOOK}`,
+})
+const CUTER = Object.keys(SUBJECTS).filter((k) => k.startsWith("cuter-"))
 const REDESIGN_BAD = "creepy, scary, uncanny, long body, elongated body, long neck, long snout, stretched, yellow, golden, gold, "
 
 async function main() {
   if (process.argv[2] === "person-center-chibi") return chibiBatch()
   const ids = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(SUBJECTS)
   if (ids[0] === "second") ids.splice(0, 1, ...SECOND)
+  if (ids[0] === "cuter") ids.splice(0, 1, ...CUTER)
   if (ids[0] === "redesign") ids.splice(0, 1, ...REDESIGN)
   for (const id of ids) {
     if (PEOPLE[id]) {
@@ -146,7 +165,7 @@ async function main() {
     }
     const what = SUBJECTS[id]
     if (!what) throw new Error(`no subject "${id}"; known: ${Object.keys(SUBJECTS).join(", ")}`)
-    const redesign = REDESIGN.includes(id)
+    const redesign = REDESIGN.includes(id) || id.startsWith("cuter-")
     const second = SECOND.includes(id) || redesign
     const bad = redesign ? GLITCH + REDESIGN_BAD : second ? GLITCH : ""
     for (const seed of redesign ? [5, 11, 23, 42, 77] : second ? [5, 11, 23] : [5, 11]) console.log(`${id} single seed ${seed}:`, await queue(graph(single(what), bad + NEGATIVE, seed, `sprite-${id}`)))

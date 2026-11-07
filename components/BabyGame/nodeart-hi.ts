@@ -7,6 +7,8 @@
  * and the caller falls back to the game-pixel painters.
  */
 
+import { pooledLayer } from "./pixelsnap"
+
 import { CROP_ART } from "./art"
 import { disc, hash, line, Q, r, type Ctx } from "./proparthi-kit"
 
@@ -181,7 +183,11 @@ const NODES: Record<string, NodePainter> = {
 /** A gather node at three times the detail. Returns false when this frame is not scaled up. */
 export function drawNodeHi(ctx: Ctx, kind: string, x: number, y: number, ready: boolean, t: number): boolean {
   const paint = NODES[kind]
-  if (!paint || ctx.getTransform().a < Q - 0.01) return false
+  if (!paint) return false
+  if (ctx.getTransform().a < Q - 0.01) {
+    pooledLayer(ctx, `node|${kind}|${ready ? 1 : 0}`, x, y, t, Q, { x0: -16, y0: -32, w: 64, h: 64 }, (c) => drawNodeHi(c, kind, x, y, ready, t))
+    return true
+  }
   ctx.save()
   ctx.translate(x, y)
   ctx.scale(1 / Q, 1 / Q)
@@ -197,7 +203,10 @@ export function drawNodeHi(ctx: Ctx, kind: string, x: number, y: number, ready: 
 
 /** One plot's crop at its stage, at three times the detail. `frac` is growth 0..1; ripe at 1. */
 export function drawCropHi(ctx: Ctx, id: string, x: number, y: number, frac: number, t: number): boolean {
-  if (ctx.getTransform().a < Q - 0.01) return false
+  if (ctx.getTransform().a < Q - 0.01) {
+    pooledLayer(ctx, `crop|${id}|${Math.round(frac * 20)}`, x, y, t, Q, { x0: -16, y0: -32, w: 64, h: 64 }, (c) => drawCropHi(c, id, x, y, frac, t))
+    return true
+  }
   const a = CROP_ART[id] ?? CROP_ART.glowbean!
   const c = ctx
   c.save()

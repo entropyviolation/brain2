@@ -43,6 +43,8 @@ export type ItemDef = {
   recipe?: Record<string, number>
   /** What it sells for at the Stump, when that is not a third of `value`. */
   sellFor?: number
+  /** A picture drawn for this one item (8 rows of 8 shape letters), used instead of `shape` (`forge.ts`). */
+  rows?: readonly string[]
 }
 
 const mat = (id: string, name: string, shape: string, tones: ItemDef["tones"], tags: Tag[], value: number, blurb: string): ItemDef => ({
@@ -87,7 +89,29 @@ add(
   mat("feather", "Soft Feather", "feather", ["w", "s", "S"], ["soft"], 3, "Dropped, not lost."),
 )
 
+/** The kinds of shell on Valdivia's shores. Each is its own material (`shell-<kind>`), drawn from a liked ComfyUI picture (`shell-sprites.ts`). */
+export const SHELL_KINDS: Record<string, { name: string; tones: ItemDef["tones"]; blurb: string }> = {
+  abalone: { name: "Abalone Shell", tones: ["v", "V", "x"], blurb: "Teal, violet and rose inside, with a row of round holes." },
+  cone: { name: "Cone Shell", tones: ["t", "T", "u"], blurb: "A tan and cream net of small patches." },
+  cowrie: { name: "Tiger Cowrie", tones: ["w", "s", "S"], blurb: "Glossy, spotted, and a little proud." },
+  nautilus: { name: "Nautilus Shell", tones: ["t", "T", "u"], blurb: "One slow spiral, in brown and cream stripes." },
+  scallop: { name: "Scallop Shell", tones: ["r", "R", "q"], blurb: "A ribbed fan, soft pink." },
+  spondylus: { name: "Spiny Oyster", tones: ["r", "R", "q"], blurb: "Coral red, with a few brave spines." },
+  turbo: { name: "Turban Shell", tones: ["g", "G", "h"], blurb: "A green and brown speckled spire." },
+  wentletrap: { name: "Wentletrap", tones: ["w", "s", "S"], blurb: "White, tall, and ribbed in little rings." },
+}
+export const SHELL_IDS = ["shell", ...Object.keys(SHELL_KINDS).map((k) => `shell-${k}`)]
+
+/** Which kind a gather node holds, fixed by its id so the shell you see is the shell you get. */
+export function shellKindOf(nodeId: string): string {
+  let h = 2166136261
+  for (const ch of nodeId) h = Math.imul(h ^ ch.charCodeAt(0), 16777619)
+  const kinds = Object.keys(SHELL_KINDS)
+  return kinds[(h >>> 0) % kinds.length]!
+}
+
 add(
+  ...Object.entries(SHELL_KINDS).map(([k, d]) => mat(`shell-${k}`, d.name, "shell", d.tones, ["watery", "musical"], 5, d.blurb)),
   made("jam", "Berry Jam", "jar", ["p", "P", "q"], ["sweet", "cozy"], 9, { berry: 3 }, "Sticky, warm, and gone in one afternoon."),
   made("whistle", "Acorn Whistle", "tube", ["t", "T", "u"], ["musical", "crunchy"], 9, { acorn: 2, reed: 1 }, "One note, very proud of itself."),
   made("basket", "Reed Basket", "basket", ["t", "T", "u"], ["green", "cozy"], 9, { reed: 3 }, "Woven by someone with a lot of patience."),

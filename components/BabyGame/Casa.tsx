@@ -120,7 +120,7 @@ export function Casa({ night, petSprite, onExit, onBed, onLook }: Props) {
 
   return (
     <div className="bg-casa">
-      <canvas ref={setCanvas} width={VIEW_W * HI} height={VIEW_H * HI} className="bg-canvas" aria-label={floorName} />
+      <canvas ref={setCanvas} width={VIEW_W * HI} height={VIEW_H * HI} className="bg-canvas" style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }} aria-label={floorName} />
       <div className="bg-zone">{floorName}</div>
       {label ? (
         <div className="bg-prompt">
