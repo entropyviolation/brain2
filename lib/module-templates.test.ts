@@ -11,6 +11,7 @@ describe("buildModuleTemplate", () => {
       "filmrecs",
       "gradsearch",
       "sweep",
+      "speedread",
       "blank",
     ])
   })
@@ -179,6 +180,15 @@ describe("buildModuleTemplate", () => {
     expect(built.lists).toEqual([])
     expect(built.seedTasks).toEqual([])
     expect((built.module.views ?? []).map((v) => v.kind)).toEqual(["sweep"])
+  })
+
+  it("builds a Speed Read workspace with one view and no lists", () => {
+    const built = buildModuleTemplate("speedread", 15)
+    expect(built.module.templateId).toBe("speedread")
+    expect(built.module.title).toBe("Speed Read")
+    expect(built.lists).toEqual([])
+    expect(built.seedTasks).toEqual([])
+    expect((built.module.views ?? []).map((v) => v.kind)).toEqual(["speed-read"])
   })
 
   it("every view + workflow across all templates references real categories", () => {

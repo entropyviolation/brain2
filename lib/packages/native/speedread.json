@@ -1,0 +1,7 @@
+{
+  "id": "speedread",
+  "name": "Speed Read",
+  "version": "1.0.0",
+  "description": "Open any PDF, pick a page, and read it one word at a time at a speed you set (rapid serial visual presentation), in a choice of typefaces.",
+  "nativeTemplate": "speedread"
+}

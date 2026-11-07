@@ -74,6 +74,8 @@ export type ModuleViewKind =
   | "sweep"
   /** GradSearch program explorer (bundled catalog; personal marks in localStorage). */
   | "grad-search"
+  /** Speed Read: any PDF page, one word at a time (RSVP) at an adjustable speed. */
+  | "speed-read"
   /** An uploaded .html file run in a sandboxed frame with the `window.brain2` bridge. */
   | "html"
   /**

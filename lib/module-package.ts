@@ -41,6 +41,7 @@ export const RENDERED_MODULE_VIEW_KINDS = [
   "house-cleaning",
   "sweep",
   "grad-search",
+  "speed-read",
   "html",
   "package-app",
   "decision-matrix",

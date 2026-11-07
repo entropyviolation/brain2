@@ -36,6 +36,7 @@ import {
   AppWindow,
   Home,
   Brush,
+  Zap,
 } from "lucide-react"
 import type { ModuleType, ModuleViewKind, AttrRule, RuleOperator } from "@/lib/modules-store"
 import type { Task, AttributeValue } from "@/lib/types"
@@ -109,6 +110,7 @@ export const MODULE_VIEW_KINDS: ModuleViewKindMeta[] = [
   { kind: "film-dna", label: "Film DNA Lab", needsList: true, icon: Clapperboard },
   { kind: "house-cleaning", label: "House cleaning (Tidy)", needsList: false, icon: Home },
   { kind: "sweep", label: "Sweep", needsList: false, icon: Brush },
+  { kind: "speed-read", label: "Speed Read (PDF, one word at a time)", needsList: false, icon: Zap },
   { kind: "grad-search", label: "GradSearch (program explorer)", needsList: false, icon: GraduationCap },
   { kind: "html", label: "Uploaded HTML page", needsList: false, icon: FileCode },
   { kind: "package-app", label: "Package app (downloaded folder)", needsList: false, icon: AppWindow },

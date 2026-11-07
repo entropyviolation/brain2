@@ -4,7 +4,7 @@
  * The iPhone app opens the desk page, not `/mobile/`. This group sits in the
  * header's Menu sheet beside Refresh and carries what the phone shell's top row
  * had that the desk lacks: the **Mac** key (✓ loaded, … loading, ✕ failed; tap to
- * reload), Mobile hub, NFC, Bulk Add, From Notes, and Phone Notes. BIM is the
+ * reload), Mobile hub, NFC, Speed read, Bulk Add, From Notes, and Phone Notes. BIM is the
  * header key beside Menu. On mount it engages the Mac window
  * (`lib/phone-window.ts`) and loads it, the same as the shell.
  * `PhoneKeyboard` mounts the keycap keyboard (`keyboard/mobile-keyboard.tsx`)
@@ -78,6 +78,9 @@ export function PhoneDeskKeys() {
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => window.location.assign("/mobile/nfc/")}>
           NFC
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => window.location.assign("/mobile/read/")}>
+          Speed read
         </Button>
         <EnhancedBulkAdd />
         <Button type="button" variant="outline" size="sm" onClick={() => openCaptureDoor("notes")}>

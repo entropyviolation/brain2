@@ -23,6 +23,7 @@ const VIEW_NOTES: Record<ModuleViewKind, string> = {
   "film-dna": "Film DNA Lab: shelves, a likes wall, Watch ranking, and a Letterboxd export import.",
   "house-cleaning": "Tidy: areas, chores, a per-task timer, today’s goal, Stuck mode, and three plan sizes.",
   sweep: "Caches, logs, Xcode leftovers, Trash, and duplicate files. The scan runs in the desktop app.",
+  "speed-read": "Open a PDF, pick any page, and read it one word at a time at an adjustable speed, in a choice of typefaces.",
   "grad-search": "Search, filter, score, compare, and save graduate programs. The catalog is bundled.",
   html: "An uploaded .html page in a sandbox. It sees only the lists ticked for it. Writes need Allow edits.",
   "package-app": "A downloaded folder (html, css, js, assets) in the same sandbox, with the same list bridge.",

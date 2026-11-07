@@ -21,7 +21,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap, FileCode, Package, Brush } from "lucide-react"
+import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap, FileCode, Package, Brush, Zap } from "lucide-react"
 import { MODULE_TEMPLATES, instantiateModuleTemplate, type ModuleTemplateId } from "@/lib/module-templates"
 import type { ModuleDefinition } from "@/lib/types"
 import {
@@ -43,6 +43,7 @@ const TEMPLATE_ICONS: Partial<Record<ModuleTemplateId, React.ComponentType<{ cla
   filmrecs: Clapperboard,
   gradsearch: GraduationCap,
   sweep: Brush,
+  speedread: Zap,
   blank: FilePlus2,
 }
 

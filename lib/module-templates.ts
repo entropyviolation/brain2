@@ -40,6 +40,7 @@ export type ModuleTemplateId =
   | "filmrecs"
   | "gradsearch"
   | "sweep"
+  | "speedread"
   | "blank"
 
 export interface ModuleTemplateMeta {
@@ -90,6 +91,12 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     name: "Sweep",
     description:
       "Caches, logs, Xcode leftovers, the Trash, and duplicate files on this Mac. The scan runs in the desktop app.",
+  },
+  {
+    id: "speedread",
+    name: "Speed Read",
+    description:
+      "Open any PDF, pick a page, and read it one word at a time at a speed you set (rapid serial visual presentation), in a choice of typefaces.",
   },
   {
     id: "blank",
@@ -729,6 +736,21 @@ function buildSweep(uid: Uid): BuiltModuleTemplate {
   return { lists: [], seedTasks: [], module }
 }
 
+function buildSpeedRead(uid: Uid): BuiltModuleTemplate {
+  const module: ModuleInstance = {
+    id: uid("module"),
+    type: "workspace",
+    kind: "workspace",
+    title: "Speed Read",
+    description: "Read any PDF page one word at a time, at your speed.",
+    templateId: "speedread",
+    icon: "zap",
+    config: {},
+    views: [view("speed-read", "Reader", {}, uid)],
+  }
+  return { lists: [], seedTasks: [], module }
+}
+
 function buildGradSearch(uid: Uid): BuiltModuleTemplate {
   const module: ModuleInstance = {
     id: uid("module"),
@@ -782,6 +804,8 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
       return buildGradSearch(uid)
     case "sweep":
       return buildSweep(uid)
+    case "speedread":
+      return buildSpeedRead(uid)
     case "blank":
     default:
       return buildBlank(uid)

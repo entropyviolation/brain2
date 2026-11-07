@@ -57,6 +57,7 @@ import { TripActivitiesView } from "@/components/Modules/workspace/itinerary/Tri
 import { FilmDnaView } from "@/components/Modules/workspace/filmrecs/FilmDnaView"
 import { TidyView } from "@/components/Modules/workspace/housecleaning/TidyView"
 import { SweepView } from "@/components/Modules/workspace/sweep/SweepView"
+import { SpeedReadView } from "@/components/Modules/workspace/speedread/SpeedReadView"
 import { GradSearchView } from "@/components/Modules/workspace/gradsearch/GradSearchView"
 import { HtmlModuleView } from "@/components/Modules/workspace/html/HtmlModuleView"
 import { PackageAppView } from "@/components/Modules/workspace/package-app/PackageAppView"
@@ -135,6 +136,8 @@ export function ModuleViewBody({
       return <TidyView module={module} />
     case "sweep":
       return <SweepView />
+    case "speed-read":
+      return <SpeedReadView />
     case "grad-search":
       return <GradSearchView />
     case "html":

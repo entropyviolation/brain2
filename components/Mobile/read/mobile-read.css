@@ -1,0 +1,44 @@
+/* Phone frame for Speed Read: a back key under the status bar, then the module. */
+.m-read {
+  min-height: 100vh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: linear-gradient(180deg, #eceff3, #d7dce2);
+}
+.m-read-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #e3e7ec;
+  border-bottom: 1px solid #c3c9d1;
+}
+.m-read-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 12px 0 6px;
+  border: 1px solid #8c939b;
+  border-bottom-width: 3px;
+  background: linear-gradient(180deg, #f3f5f7, #dde1e6);
+  color: #161a20;
+  font: inherit;
+  font-weight: 600;
+}
+.m-read-back:active {
+  border-bottom-width: 1px;
+  transform: translateY(2px);
+}
+.m-read-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #161a20;
+}
+.m-read .sr {
+  min-height: calc(100vh - 57px - env(safe-area-inset-top, 0px));
+}
