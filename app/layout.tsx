@@ -69,6 +69,7 @@ import { ChromePatina } from "./chrome-patina"
 import { PcbBackdrop } from "./pcb-backdrop"
 import { CompletionPopupHost } from "@/components/Completion/CompletionPopupHost"
 import { UiNamesHost } from "@/components/UiNames/UiNamesHost"
+import { TextMirrorHost } from "@/components/Docs/text-mirror-host"
 import { APP_NAME } from "@/lib/app-brand"
 import { DEFAULT_PCB_MODE, PCB_BACKDROP_BOOT_SCRIPT, pcbInkFor } from "@/lib/pcb-backdrop"
 import { NAV_BOOT_SCRIPT } from "@/lib/nav-boot"
@@ -121,6 +122,7 @@ export default function RootLayout({
         {children}
         <CompletionPopupHost />
         <UiNamesHost />
+        <TextMirrorHost />
       </body>
     </html>
   )

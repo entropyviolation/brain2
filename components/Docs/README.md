@@ -40,6 +40,8 @@ Interiors: `DocumentEditor` and `LinkDialog`.
 |------|---------|
 | `DocsPanel.tsx` | Tab orchestrator: folder sidebar, document list, title/folder fields, auto-save, archive/delete. Caption **Brain2 Docs**. Recent rows show orb/thumbnail identity (`orbFor` / `.docs-doc-orb`). `data-ui-name="Docs"` — this tab is **user notes**, not the repo manual Help/Inspect would load. |
 | `DocsHome.tsx` | Empty / home face: **Blank** and **Upload** as milled keys (`.docs-milled-key`). |
+| `text-mirror-host.tsx` | _Last mapped: 2026-11-07._ Mounted in `app/layout.tsx`. While a `typed-text` rule is on (BIM Chat adds it, `lib/rules/`), watches real keystrokes in every input, textarea, and contenteditable. On blur, Enter/submit that clears the field, removal, or page hide, it raises one `typed-text` event (`fireRuleEvent`); the rules engine adds text over each rule's threshold to that rule's Docs note under a bold "source › field · time" header and a blank line. Skipped: pastes and drops, password fields, `.docs-editor` (a Docs page would re-add itself whole), `data-text-mirror="off"`. A field is added once per identical text. Source comes from the open dialog and the field's aria-label, label, placeholder, or `data-mirror-source`. If the target note is open in the editor it will not show new entries until reopened. |
+| `selection-menu.tsx` | _Last mapped: 2026-11-07._ Right-click menu for highlighted text in a document: Add to Quick Add, Add to BIM chat, Add to list, Attach to item as note, Turn into log. Each send is recorded per document. |
 | `DocumentEditor.tsx` | contenteditable surface + formatting toolbar (fonts, sizes, lists, images, PDF ingest, links) |
 | `LinkDialog.tsx` | Ctrl/Cmd+K hyperlink dialog (optional display text + URL) |
 | `doc-actions.ts` | Create / rename / folder / font / body / status / delete helpers over `note` tasks |
@@ -70,3 +72,12 @@ Interiors: `DocumentEditor` and `LinkDialog`.
 Trip Itinerary module **Plan** views reuse `DocumentEditor` via the module `doc` view kind (`workspace/itinerary/DocPlanView.tsx`).
 
 _Last mapped: 2026-11-02_ The toolbar has a **Secret** checkbox. A secret document is left out of search and BIM answers unless secrets are unlocked (`lib/secrets-store.ts`). It still shows in the Docs list.
+
+_Last mapped: 2026-11-07_ **Selection doors.** Highlight text and right-click (a link still opens the link dialog). `components/Docs/selection-menu.tsx` offers five doors:
+
+- **Quick Add** and **BIM chat** go over window events (`lib/doc-selection/doc-selection-bus.ts`). `hooks/useQuickCaptureHotkey.ts` opens Quick Add seeded with the exact text. `components/Bim/bim-key.tsx` opens the console and `use-bim-chat.ts` shows the text in the compose well. It is not sent; the person sends it.
+- **Add to list** makes an item (`createListItem`) in a list picked with `ListPicker`.
+- **Attach to item as note** appends a dated `noteLog` entry to an item picked with `ItemPicker`.
+- **Turn into log** reads a clock out of the text (`lib/doc-selection/detect-clock.ts`, "10:30 walked outside"), prefills time, day and text, and writes through `applyDiscreteLog` at that minute.
+
+Every send adds a record to `useDocOutLinks` (`lib/doc-selection/doc-out-links.ts`): doc id, kind, text, target id and label. The target keeps its own copy, so the record is only a map of where a doc's text went. **Planned:** an editor sidebar that lists those records and jumps to the target, and removal of a doc's records when it is deleted.

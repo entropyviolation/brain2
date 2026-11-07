@@ -19,6 +19,7 @@
  *   return <QuickAdd open={open} onOpenChange={setOpen} seed={seed} />
  */
 import { useCallback, useEffect, useState } from "react"
+import { QUICK_ADD_SEED_EVENT } from "@/lib/doc-selection/doc-selection-bus"
 
 /**
  * Electron `globalShortcut.register(...)` accelerator the integration pass uses
@@ -100,6 +101,17 @@ export function useQuickCaptureHotkey(options: UseQuickCaptureHotkeyOptions = {}
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [enabled, onOpen, open])
+
+  // Docs selection menu: "Add to Quick Add" opens it with that exact text.
+  useEffect(() => {
+    const onSeed = (event: Event) => {
+      setSeed((event as CustomEvent<string>).detail ?? "")
+      setOpen(true)
+      onOpen?.()
+    }
+    window.addEventListener(QUICK_ADD_SEED_EVENT, onSeed)
+    return () => window.removeEventListener(QUICK_ADD_SEED_EVENT, onSeed)
+  }, [onOpen])
 
   // Bridge the Electron global accelerator → renderer, when available. The
   // preload exposes `window.electron?.onQuickCapture(cb)` during integration;

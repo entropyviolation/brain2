@@ -469,3 +469,46 @@
     max-width: 100%;
   }
 }
+
+/* Right-click menu for highlighted text (selection-menu.tsx) */
+.docs-selmenu {
+  position: fixed;
+  z-index: 80;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  padding: 3px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #404040 #404040 #fff;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+  font-size: 13px;
+}
+.docs-selmenu button {
+  text-align: left;
+  padding: 5px 10px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: default;
+}
+.docs-selmenu button:hover,
+.docs-selmenu button:focus-visible {
+  background: #000080;
+  color: #fff;
+  outline: none;
+}
+.docs-selmenu-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 80;
+  padding: 6px 12px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #404040 #404040 #fff;
+  font-size: 13px;
+}
+.docs-selmenu-dialog { display: flex; flex-direction: column; gap: 10px; max-height: 85vh; overflow: auto; }
+.docs-selmenu-row { display: flex; gap: 8px; justify-content: flex-end; }
+.docs-selmenu-area { width: 100%; font-size: 16px; padding: 6px; border: 1px solid currentColor; background: transparent; }

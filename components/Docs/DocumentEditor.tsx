@@ -51,6 +51,7 @@ import {
   wordBeforeCaret,
 } from "@/lib/doc-links"
 import { LinkDialog, type LinkDialogValues } from "@/components/Docs/LinkDialog"
+import { DocSelectionMenu, type SelectionAsk } from "@/components/Docs/selection-menu"
 import { resizeImageForDoc } from "@/lib/image-resize"
 import { docsScrollSlot, readScrollOffset, writeScrollOffset } from "@/lib/app-navigation"
 import { canPersistScroller } from "@/lib/use-persisted-scroll"
@@ -92,6 +93,7 @@ export function DocumentEditor({
   const [busy, setBusy] = useState<string | null>(null)
   const [wordCount, setWordCount] = useState(0)
   const [linkOpen, setLinkOpen] = useState(false)
+  const [selAsk, setSelAsk] = useState<SelectionAsk | null>(null)
   const [linkInitial, setLinkInitial] = useState<LinkDialogValues>({ text: "", url: "" })
   const [linkEditing, setLinkEditing] = useState(false)
   const [selectedImg, setSelectedImg] = useState<HTMLImageElement | null>(null)
@@ -818,13 +820,20 @@ export function DocumentEditor({
           window.open(anchor.href, "_blank", "noopener,noreferrer")
         }}
         onContextMenu={(e) => {
-          if (readOnly) return
           const root = surfaceRef.current
           if (!root) return
-          const anchor = closestAnchor(e.target as Node, root)
-          if (!anchor) return
+          const anchor = readOnly ? null : closestAnchor(e.target as Node, root)
+          if (anchor) {
+            e.preventDefault()
+            openLinkDialog({ anchor })
+            return
+          }
+          // Highlighted text inside the page: offer the doors out of the doc.
+          const sel = window.getSelection()
+          const picked = sel && !sel.isCollapsed && root.contains(sel.anchorNode) ? sel.toString().trim() : ""
+          if (!picked || !docId) return
           e.preventDefault()
-          openLinkDialog({ anchor })
+          setSelAsk({ text: picked, x: e.clientX, y: e.clientY })
         }}
         onKeyDown={(e) => {
           if (e.key === "Escape") setSelectedImg(null)
@@ -860,6 +869,7 @@ export function DocumentEditor({
       )}
       </div>
 
+      {docId ? <DocSelectionMenu docId={docId} ask={selAsk} onClose={() => setSelAsk(null)} /> : null}
       <LinkDialog
         open={linkOpen}
         initial={linkInitial}

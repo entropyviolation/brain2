@@ -8,6 +8,8 @@
 "use client"
 
 import { useTaskStore } from "@/lib/task-store"
+import { itemTitle } from "@/lib/item-utils"
+import { noteDocWords } from "@/lib/habit-word-feed-apply"
 import { NOTE_TYPE_ID, NOTE_ATTR } from "@/lib/note-types"
 import type { Task } from "@/lib/types"
 import { isAllowedFont } from "@/lib/google-fonts"
@@ -150,6 +152,11 @@ export async function setDocumentBody(docId: string, body: string): Promise<bool
   const updated = stampUpdated({ ...doc, body: previewDocBody(body) })
   store.updateTask(updated)
   await writePersisted(updated, body)
+  try {
+    noteDocWords({ id: updated.id, title: itemTitle(updated as never) }, body)
+  } catch {
+    /* a habit feed must never fail a save */
+  }
   return true
 }
 
