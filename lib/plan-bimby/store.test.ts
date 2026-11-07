@@ -59,7 +59,7 @@ describe("plan run effects", () => {
     s.begin([item("b", "book ny flights", { link: { kind: "flight" } })], [], "x", t("2026-11-02T07:00:00"))
     expect(usePlanRunStore.getState().run!.items[0]!.needsConfirmation).toBe(true)
     const said = usePlanRunStore.getState().fileConfirmation("b", "Your confirmation code: K7QZ2P\nDelta DL 402 JFK to LAX", t("2026-11-02T07:10:00"))
-    expect(said).toMatch(/^Filed flight/)
+    expect(said).toMatch(/^Filed .*JFK → LAX/)
     const flight = useTaskStore.getState().tasks.find((x) => x.type === FLIGHT_TYPE_ID)!
     expect(flight.attributes?.[FLIGHT_ATTR.bookingNumber]).toBe("K7QZ2P")
     expect(useTaskStore.getState().lists.some((l) => l.itemTypeId === FLIGHT_TYPE_ID && flight.lists.includes(l.id))).toBe(true)

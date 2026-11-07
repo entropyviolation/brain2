@@ -18,6 +18,7 @@ A **BIMBY** (BIM + baby) is a small sub-agent that does one specific job: the Tr
 - **Never destroy.** A bulk write has a hard cap, may only touch fields its tool is allowed to, is verified after it runs, and is put back if the check fails. Only a merge removes items. The Lists BIMBY's version is `lib/lists-helper/guard.ts`.
 - **Doubt becomes keys.** Where the line is unclear, show the choices on screen and in the chat (the exact sentence, one key per candidate). No dead ends.
 - **Swarm vote.** Built as `lib/swarm-vote/` and `/lab/swarm-vote` (tally, runner, reword keys, replay bench).
+- **Type `/info`.** The command is `/info`; a line that is only `info` (any case, `info?`) is an alias. gets the BIMBY's manual and runs nothing else: `info.ts` (_2026-11-07_). Built into the Tracking, Habits and Lists chats; in BIM chat, "tracking bimby info" or "info on the lists bimby" works for every BIMBY (`lib/ingest/bimby-handoff.ts`). A line that merely contains the word is not info.
 - **Planned.** Confidence-driven escalation: [`docs/BIMBY_IDEAS.md`](../../docs/BIMBY_IDEAS.md).
 
 ## The Blueprint
@@ -65,7 +66,7 @@ Blueprint. Design: [`docs/SKILLRL_RESEARCH.md`](../../docs/SKILLRL_RESEARCH.md);
 
 _Last mapped: 2026-11-02_
 
-`registry.ts`. `builtinBlueprints()` is the Tracking Helper, the Habits BIMBY, and every shipped BIM flow.
+`registry.ts`. `builtinBlueprints()` is the Tracking Helper, Lists, Overcome and Habits BIMBIES, the Plan, Critic, Link and Inbox BIMBIES (_2026-11-07_), and every shipped BIM flow.
 `agentLabHref` (`components/Lab/Agents/agent-href.ts`) names the lab page a rail click opens.
 `registerBlueprint` adds a module's agent (plan `MOD-1`) and throws on an
 unsound Blueprint or a reused id. `listBlueprints` and `getBlueprint` read both.
@@ -80,7 +81,9 @@ Nothing here reads storage; to show a person's saved copy, pass it to
 - `adapters/bim-flow.ts`, `adapters/tracking-helper.ts`, `adapters/habit-helper.ts`. The two
   helper adapters tell their flows apart by shape (`wire` or `match`), so `helperOfBlueprint` and
   `habitsBimbyOfBlueprint` each return null for the other.
+- `adapters/plan-bimby.ts`, `adapters/critic-bimby.ts`, `adapters/link-bimby.ts`, `adapters/inbox-bimby.ts` (_2026-11-07_): one `pipeline` Blueprint each, stages taken from each BIMBY's README, one built named pipeline that is also a tool. Only Plan has a lab page (`/lab/plan-bimby`). Critic, Link and Inbox have none, so the desk shows no **Open lab** for them. Also (_2026-11-07_): `adapters/idea-swarm.ts` (lab `/lab/idea-swarm`), `adapters/swarm-vote.ts` (lab `/lab/swarm-vote`; a shared tool, not a BIMBY) and `adapters/skills-evolve.ts` (no lab page). Still unregistered: Flight and Report BIMBY (no model code yet).
 - `registry.ts`.
+- `info.ts`, `info.test.ts` (_2026-11-07_): `isInfoRequest`, `infoText(blueprint)`, and `INFO_EXAMPLES` (hand-written "try saying" lines by Blueprint id). The facts come from the Blueprint. A new BIMBY with its own chat calls both functions first, and adds its id to `INFO_EXAMPLES`.
 - `bench.ts` (_2026-11-02_): `Case`, `Variant`, `runSuite` → `Scorecard`, `compareCards` (gained / lost / stuck / held on shared lines), `confusions`, `trimHistory`. Pure, no model inside. A decline is never a pass; a thrown call is a named miss. Slice `EV-1` to `EV-4`, `EV-8` of the plan.
 - `bench-variants.ts`: `keywordBaseline` (free; declines on no overlap or a tie), `swarmVariant` (with `declineOnSplit`), `singleModelVariant`. A new idea from `docs/BIMBY_IDEAS.md` is one more `Variant`.
 - `bench-cases.ts`: `LISTS_CASES`, hand-labelled lines tagged by what makes them hard. The swarm lab's replay bench reads the same set.

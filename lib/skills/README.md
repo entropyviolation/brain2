@@ -50,3 +50,5 @@ never pruned.
 - Local embeddings behind `Scorer`, compared with word overlap on recorded lines.
 - A `skills` node for BIM flows (a `remember` step).
 - Replay with and without skills as an eval (plan slice 5).
+
+_2026-11-07:_ Lab page `/lab/skills-evolve` (`components/Lab/SkillsEvolve/`): success per category, then `evolve` proposals shown, not saved.

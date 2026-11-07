@@ -7,6 +7,8 @@
  * Undo keeps the last five. Plan: `components/Lab/ListsHelper/README.md`.
  */
 
+import { LISTS_HELPER_HREF, listsHelperBlueprint } from "@/lib/agents/adapters/lists-helper"
+import { infoText, isInfoRequest } from "@/lib/agents/info"
 import { applyPlan, undoPlan } from "./apply"
 import { parseIntent, swapName } from "./parse"
 import { closest, titleOf } from "./resolve"
@@ -239,7 +241,11 @@ export function step(prev: Session, text: string, port: Port): { session: Sessio
     return done()
   }
 
-  // 3. A new request.
+  // 3. A new request. "info" is answered from the Blueprint and changes nothing.
+  if (isInfoRequest(t)) {
+    replies.push({ kind: "say", text: infoText(listsHelperBlueprint(), { href: LISTS_HELPER_HREF }) })
+    return done()
+  }
   const intent = parseIntent(port.world(), t, { listId: s.listId, now: port.now() })
   const world = port.world()
   const trace = (result?: ToolResult, outcome?: string) => replies.push({ kind: "trace", lines: traceOf(world, t, intent, result, outcome) })

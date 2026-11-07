@@ -9,13 +9,15 @@
 
 import { runAsAction } from "@/lib/action-history"
 import { taskRepository } from "@/lib/data/task-repository"
+import { extractFlights } from "@/lib/flight-bimby/extract"
+import { fileFlightDraft, flightList } from "@/lib/flight-bimby/file"
 import { FLIGHT_ATTR, FLIGHT_TYPE_ID } from "@/lib/flight-types"
 import { applyIntake } from "@/lib/ingest/apply-discrete-event"
 import { splitIntoDaySlices } from "@/lib/operation-work-session"
 import { formatParsedFlightBody, parseFlightText } from "@/lib/parse-flight-text"
 import { useTaskStore } from "@/lib/task-store"
 import { minutesToTimeString } from "@/lib/time-entries"
-import type { List, Task, TimeLogEntry } from "@/lib/types"
+import type { Task, TimeLogEntry } from "@/lib/types"
 import type { Span } from "./run"
 import type { PlanLink, RunItem } from "./types"
 
@@ -67,24 +69,7 @@ export function logSpanOnTask(taskId: string, span: Span): string | null {
   })
 }
 
-/** The list flights go to: one that takes the Flight type, else one named for flights, else a new "Upcoming flights". */
-export function flightList(lists: readonly List[], make: (list: List) => void, now: Date): List {
-  const typed = lists.find((l) => l.itemTypeId === FLIGHT_TYPE_ID)
-  if (typed) return typed
-  const named = lists.find((l) => /flight/i.test(l.name))
-  if (named) return named
-  const list: List = {
-    id: `list-upcoming-flights-${now.getTime().toString(36)}`,
-    name: "Upcoming flights",
-    color: "#14b8a6",
-    createdAt: now,
-    order: lists.length,
-    scheduleable: false,
-    itemTypeId: FLIGHT_TYPE_ID,
-  }
-  make(list)
-  return list
-}
+export { flightList }
 
 /** Build a Flight task from whatever the person pasted (a confirmation email, or just the code). */
 export function buildFlightTask(raw: string, listId: string, now: Date): Task {
@@ -138,6 +123,10 @@ export function buildFlightTask(raw: string, listId: string, now: Date): Task {
 /** File a flight from a confirmation. Returns the sentence for the run list, or null when there was nothing to read. */
 export function fileFlight(raw: string, now: Date): string | null {
   if (!raw.trim()) return null
+  // The Flight BIMBY reads a full confirmation (several flights, cross-zone times) and files the event too.
+  const read = extractFlights(raw, now)
+  if (read.flights.length) return read.flights.map((d) => fileFlightDraft(d, now).line).join(" ")
+  // A bare code, or a paste with no route in it: keep the old, plain Flight item.
   return runAsAction("plan bimby flight", () => {
     const state = useTaskStore.getState()
     const list = flightList(state.lists, (l) => state.addList(l), now)

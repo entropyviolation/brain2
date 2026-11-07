@@ -6,18 +6,25 @@
  * The lab passes the person's saved copies to the adapters when it wants to show those instead.
  */
 
+import { criticBimbyBlueprint } from "./adapters/critic-bimby"
+import { ideaSwarmBlueprint } from "./adapters/idea-swarm"
+import { inboxBimbyBlueprint } from "./adapters/inbox-bimby"
+import { linkBimbyBlueprint } from "./adapters/link-bimby"
+import { planBimbyBlueprint } from "./adapters/plan-bimby"
 import { bimBlueprints } from "./adapters/bim-flow"
 import { listsHelperBlueprint } from "./adapters/lists-helper"
 import { overcomeBlueprint } from "./adapters/overcome-bimby"
 import { habitsBimbyBlueprint } from "./adapters/habit-helper"
 import { helperBlueprint } from "./adapters/tracking-helper"
+import { skillsEvolveBlueprint } from "./adapters/skills-evolve"
+import { swarmVoteBlueprint } from "./adapters/swarm-vote"
 import { validateBlueprint, type Blueprint } from "./blueprint"
 
 const added = new Map<string, Blueprint>()
 
 /** The agents that ship with Brain2. */
 export function builtinBlueprints(): Blueprint[] {
-  return [helperBlueprint(), listsHelperBlueprint(), overcomeBlueprint(), habitsBimbyBlueprint(), ...bimBlueprints()]
+  return [helperBlueprint(), listsHelperBlueprint(), overcomeBlueprint(), habitsBimbyBlueprint(), planBimbyBlueprint(), criticBimbyBlueprint(), linkBimbyBlueprint(), inboxBimbyBlueprint(), ideaSwarmBlueprint(), swarmVoteBlueprint(), skillsEvolveBlueprint(), ...bimBlueprints()]
 }
 
 /** Add an agent. Throws on a Blueprint that does not validate or reuses an id. */

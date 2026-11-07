@@ -20,7 +20,7 @@ export function AgentsDesk() {
   const [overcomeOpen, setOvercomeOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(agents[0]?.id ?? null)
   const active = agents.find((a) => a.id === activeId) ?? null
-  const href = active ? (agentLabHref(active) ?? "/lab/bim-flow") : null
+  const href = active ? (agentLabHref(active) ?? (active.mind.kind === "graph" ? "/lab/bim-flow" : null)) : null
 
   return (
     <section className="ad-desk" data-ui-name="Agents" data-ui-docs="components/Lab/Agents/README.md">

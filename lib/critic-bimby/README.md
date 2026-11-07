@@ -4,7 +4,7 @@ _Last mapped: 2026-11-02_
 
 A BIMBY stage that reads the person's own words and a finished plan, and says what does not match. It never edits and never writes. Plan, papers and ship rule: [`docs/CRITIC_BIMBY_PLAN.md`](../../docs/CRITIC_BIMBY_PLAN.md).
 
-**Built: C0 and C1 (the code layer, ledger and bench for the Plan BIMBY) and C2 (the model layer).** The Blueprint and lab view (C3), a second host (C4) and lessons (C5) are Planned.
+**Built: C0 and C1 (the code layer, ledger and bench for the Plan BIMBY) and C2 (the model layer).** The Blueprint and a first lab page (C3: `/lab/critic-bimby`, a dry run, bench and ledger rates; a richer view), a second host (C4) and lessons (C5) are Planned.
 
 ## Flow
 

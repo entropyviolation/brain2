@@ -56,3 +56,5 @@ Fetching with a real account is against Instagram's terms however slow it is. Tu
 - `link-bimby.test.ts`.
 - `../../scripts/link-peek-api.mjs`: the peek route.
 - `../../scripts/reel-watch.mjs`: `watchReel` (with `batch`), `readStill`, `cleanOcr`, `isInstagram`, `instagramRefusal`, `readGuard`.
+
+_2026-11-07:_ Lab page `/lab/link-bimby` (`components/Lab/LinkBimby/`): pick a saved link, Peek (optionally watch), see the guesses. A dry run; nothing is filed, linked or reviewed.

@@ -18,7 +18,7 @@ SAY → SEGMENT (`parse.ts`, one model call) → LINK (`links.ts`, code) → SEC
 - **Effects.**
   - Intake link: finishing logs one intake row (`applyIntake` with `logSource` `plan-bimby`, labelled "the Plan BIMBY"), whose note says it was auto-created from that task. Reopening and finishing again does not log twice.
   - Task link (confirmed): each closed play appends a `timeLogs` slice (`plan-log-…` id, `activityLabel` "plan bimby") through `taskRepository`, like `focus-timer-log.ts`, and refreshes `actualDuration`. Plays under 30 s are ignored.
-  - Flight link: the row shows a paste box. A confirmation (a full email, or just the code) goes through `parseFlightText` into a Flight item (`FLIGHT_ATTR` fields, `booked` true) in the list that takes the Flight type, else a list with "flight" in its name, else a new "Upcoming flights" list. Filing finishes the row.
+  - Flight link: the row shows a paste box. A confirmation (a full email, or just the code) goes through the Flight BIMBY (`lib/flight-bimby/`, which also adds the calendar event; a bare code still files the old plain item) into a Flight item (`FLIGHT_ATTR` fields, `booked` true) in the list that takes the Flight type, else a list with "flight" in its name, else a new "Upcoming flights" list. Filing finishes the row.
 
 ## Rules this BIMBY keeps
 
