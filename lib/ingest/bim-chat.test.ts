@@ -4,6 +4,9 @@ import { useIngestStore } from "./ingest-store"
 import { BIM_CHAT_ID, bimChoices, sendToBim, useBimChatStore, useBimFactsStore } from "./bim-chat"
 import { BIM_PING } from "./bim"
 import type { ApplyResult } from "./types"
+import { useEventStore } from "@/lib/event-store"
+import { PASTED } from "@/lib/flight-bimby/fixture"
+import { useTaskStore } from "@/lib/task-store"
 
 describe("BIM Chat", () => {
   beforeEach(() => {
@@ -122,5 +125,31 @@ describe("told facts", () => {
     await sendToBim("Claude limit resets in 2 hours", new Date(2026, 10, 2, 0, 0))
     const r = await sendToBim("when does claude limit reset?", new Date(2026, 10, 2, 1, 5))
     expect(r.text).toBe("In 55 minutes (at 2:00 am).")
+  })
+
+  it("files pasted flight confirmations as Flight items with calendar events, once", async () => {
+    useEventStore.setState({ events: [] })
+    const line = await sendToBim(PASTED, new Date("2026-11-07T12:00:00"))
+    expect(line.text).toMatch(/Filed JetBlue SAN → JFK \(WTWUQC\)/)
+    expect(line.text).toMatch(/Filed Alaska Airlines AS25 JFK → SAN \(LLVAJR\)/)
+    expect(useTaskStore.getState().tasks.filter((t) => t.type === "flight")).toHaveLength(2)
+    expect(useEventStore.getState().events.filter((e) => e.id.startsWith("flight-event-"))).toHaveLength(2)
+    const again = await sendToBim(PASTED, new Date("2026-11-07T12:05:00"))
+    expect(again.text).toMatch(/Already had/)
+    expect(useTaskStore.getState().tasks.filter((t) => t.type === "flight")).toHaveLength(2)
+  })
+
+  it("leaves a plan to book flights alone", async () => {
+    const line = await sendToBim("need to book flights but im stuck")
+    expect(line.text).not.toMatch(/Filed/)
+    expect(useTaskStore.getState().tasks.filter((t) => t.type === "flight")).toHaveLength(0)
+  })
+
+  it("answers 'when am I flying to new york?' from the Flight items, not the model", async () => {
+    useEventStore.setState({ events: [] })
+    await sendToBim(PASTED, new Date("2026-11-07T12:00:00"))
+    const line = await sendToBim("when am I flying to new york?", new Date("2026-11-07T12:03:00"), { llm: true })
+    expect(line.text).toContain("Thursday, November 12 at 11:48 AM (in 5 days)")
+    expect(line.route).toBeUndefined()
   })
 })

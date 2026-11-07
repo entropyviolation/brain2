@@ -22,6 +22,8 @@ import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { SecretsToggle } from "@/components/Secrets/SecretsToggle"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
+import { ReportCard } from "@/components/Bim/report-card"
+import { WireCard } from "@/components/Bim/wire-card"
 import { LlmSuggestions } from "./llm-suggestions"
 import "@/components/Bim/bim-ink.css"
 import "./bim-console.css"
@@ -72,6 +74,8 @@ const ChatLog = memo(function ChatLog({ lines, busy, onTry }: { lines: BimLine[]
             </span>
             <p className="bim-msg-text">{line.text}</p>
             {line.route ? <span className="bim-msg-route">{line.route}</span> : null}
+            {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
+            {line.wireId ? <WireCard wireId={line.wireId} /> : null}
             {line.evidence?.length ? (
               <details className="bim-msg-ev">
                 <summary>evidence ({line.evidence.length})</summary>

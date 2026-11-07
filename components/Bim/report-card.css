@@ -1,0 +1,175 @@
+/* The Report BIMBY's plan card. Uses BIM's phosphor tokens (bim-ink.css) with fallbacks. */
+
+.rc {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  font: 12px/1.45 var(--bim-mono, ui-monospace, monospace);
+  color: var(--bim-ink-2, #8fd3ff);
+}
+
+.rc summary {
+  cursor: pointer;
+  color: var(--bim-legend, #9aa);
+}
+
+.rc ol,
+.rc ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.rc li {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.rc-effect {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--bim-ink, #5cf2d6) 35%, transparent);
+  border-radius: 6px;
+}
+
+.rc-effect.is-applied {
+  border-color: var(--bim-ink, #5cf2d6);
+}
+
+.rc-effect.is-rejected {
+  opacity: 0.55;
+}
+
+.rc-effect.is-failed {
+  border-color: var(--bim-fault, #ff6b6b);
+}
+
+.rc-effect > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.rc-effect > header b {
+  flex: 1 1 12ch;
+  color: var(--bim-lcd, #fff);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rc-kind,
+.rc-status {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--bim-violet, #b69cff);
+}
+
+.rc-status {
+  color: var(--bim-legend, #9aa);
+}
+
+.rc-evidence p {
+  margin: 3px 0 0;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.rc-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rc-field {
+  display: grid;
+  gap: 2px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--bim-legend, #9aa);
+}
+
+.rc-field input,
+.rc-field select {
+  min-height: 32px;
+  padding: 2px 6px;
+  font: 12px var(--bim-mono, ui-monospace, monospace);
+  color: var(--bim-lcd, #fff);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid color-mix(in srgb, var(--bim-ink, #5cf2d6) 40%, transparent);
+  border-radius: 4px;
+}
+
+.rc-field input:disabled,
+.rc-field select:disabled {
+  opacity: 0.6;
+}
+
+.rc-result {
+  margin: 0;
+  color: var(--bim-ink, #5cf2d6);
+}
+
+.rc-result.is-bad {
+  color: var(--bim-fault, #ff6b6b);
+}
+
+.rc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rc-actions button {
+  min-height: 32px;
+  padding: 0 12px;
+  font: 11px var(--bim-mono, ui-monospace, monospace);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--bim-lcd, #fff);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--bim-ink, #5cf2d6) 50%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rc-actions .rc-accept {
+  color: #04120f;
+  background: var(--bim-ink, #5cf2d6);
+}
+
+.rc-gone {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Wire BIMBY card (wire-card.tsx) shares the plan-card look; these are its extras. */
+.rc-checks { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; font-size: 11px; }
+.rc-checks li::before { content: "✓ "; color: var(--bim-ink, #5cf2d6); }
+.rc-checks li.is-bad { color: var(--bim-fault, #ff6b6b); }
+.rc-checks li.is-bad::before { content: "✕ "; }
+.rc-tweak { display: grid; gap: 6px; margin-top: 8px; }
+.rc-tweak textarea { width: 100%; min-height: 44px; resize: vertical; font: inherit; background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 4px; padding: 6px; opacity: 0.9; }
+.rc-rev { font-size: 11px; opacity: 0.7; }
+
+/*
+ * The card is phosphor text, so it carries its own dark glass. In BIM chat that matches the well it
+ * sits in; in the Tracking Helper dialog (a light panel) it is what makes the text readable.
+ */
+.rc {
+  padding: 10px;
+  border-radius: 8px;
+  background: #07100f;
+  border: 1px solid #1d3a36;
+  color: #bfe9ff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 4%);
+}
+.rc summary { color: #9fb6bb; }
+.rc-effect > header b { color: #fff; }
+.rc-trace ol, .rc-why, .rc-evidence { color: #bfe9ff; }
+.rc-field > span { color: #9fb6bb; }
+.rc-field input,
+.rc-field select,
+.rc-tweak textarea { background: #0e1b1a; color: #e8fbff; border: 1px solid #2c5650; }
+.rc-tweak textarea { opacity: 1; }
+.rc-rev { opacity: 1; color: #9fb6bb; }
+.rc-gone { color: #9fb6bb; }

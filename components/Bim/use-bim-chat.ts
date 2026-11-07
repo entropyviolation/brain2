@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
 import { BIM_CHAT_DRAFT_KEY, readDraft, writeTextDraft } from "@/lib/draft-store"
+import { BIM_CHAT_ADD_EVENT } from "@/lib/doc-selection/doc-selection-bus"
 import { useBimChatStore } from "@/lib/ingest/bim-chat"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { chatPhotoFromFile } from "@/lib/ingest/chat-photo"
@@ -36,6 +37,16 @@ export function useBimChat() {
   useEffect(() => {
     const saved = readDraft<{ text?: string }>(BIM_CHAT_DRAFT_KEY)?.text
     if (saved) setDraftState((now) => now || saved)
+  }, [])
+
+  // Text sent from a Docs selection is already in the saved draft; show it.
+  useEffect(() => {
+    const onAdd = () => {
+      const saved = readDraft<{ text?: string }>(BIM_CHAT_DRAFT_KEY)?.text
+      if (saved) setDraftState(saved)
+    }
+    window.addEventListener(BIM_CHAT_ADD_EVENT, onAdd)
+    return () => window.removeEventListener(BIM_CHAT_ADD_EVENT, onAdd)
   }, [])
 
   // BIM speaks only after you do. Check-ins come from the ask me key, not on open.

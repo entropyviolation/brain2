@@ -11,6 +11,8 @@
 import { Fragment, useRef } from "react"
 import { BIM_FULL, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
+import { ReportCard } from "@/components/Bim/report-card"
+import { WireCard } from "@/components/Bim/wire-card"
 import "@/components/Bim/bim-ink.css"
 import "./bim-phone.css"
 
@@ -50,6 +52,8 @@ export function BimPhoneScreen() {
                 <b>{line.who === "you" ? "YOU" : "BIM"}</b> {line.text}
               </p>
               {line.route ? <span className="bim-phone-route">{line.route}</span> : null}
+              {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
+              {line.wireId ? <WireCard wireId={line.wireId} /> : null}
               {line.evidence?.length ? (
                 <details className="bim-phone-ev">
                   <summary>evidence ({line.evidence.length})</summary>

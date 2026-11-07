@@ -14,6 +14,12 @@
  */
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import { answerFlightQuestion } from "@/lib/flight-bimby/ask"
+import { addFlightFromInfo } from "@/lib/flight-bimby/file"
+import { useTaskStore } from "@/lib/task-store"
+import { looksLikeFlightConfirmation } from "@/lib/flight-bimby/extract"
+import { applyTextMirror } from "./apply-text-mirror"
+import { applyTripPrep } from "./apply-trip-prep"
 import { answerTell, applyTell, type TellPending, type TellReply } from "./apply-tell"
 import {
   answerFact,
@@ -30,9 +36,12 @@ import {
 import { tryResistance, tryResistanceOutcome, tryResistanceWhy, type ResistanceReply } from "./bim-resistance"
 import { routable, runSwitchboard, useBimLlmMode, type SwitchboardResult } from "./bim-switchboard"
 import { parseTell } from "./bim-tell"
+import { tryHandoff } from "./bimby-handoff"
 import { ingestIncomingAsync } from "./executor"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { looksLikeVerb } from "./parse-message"
+import { tryReport } from "@/lib/report-bimby/run"
+import { tryWire } from "@/lib/wire-bimby/run"
 import { choiceTextFromCallback, inlineKeyboardForResult } from "./telegram-ui.mjs"
 import type { ApplyResult, IncomingAttachment, IngestIntentKind, IngestSource } from "./types"
 
@@ -61,6 +70,10 @@ export type BimLine = {
   evidence?: string[]
   /** A tag the line carries, such as `resistance` when the Overcome lane took it. */
   tag?: "resistance"
+  /** The Report BIMBY's plan for this line (`lib/report-bimby/store.ts`); the chat draws it as a card. */
+  reportId?: string
+  /** The Wire BIMBY's plan for this line (`lib/wire-bimby/store.ts`); the chat draws it as a card. */
+  wireId?: string
 }
 
 type InlineButton = { text: string; callback_data: string }
@@ -128,6 +141,36 @@ function logTell(raw: string, reply: TellReply, now: Date): void {
 }
 
 /**
+ * A pasted flight confirmation (the Flight BIMBY, `lib/flight-bimby/`): every flight in it becomes a
+ * Flight item with its booking details and a calendar event, blanks filled from facts and never guessed.
+ * Chatter left on the last fact's line ("…now it's time to order…") goes on through the normal path.
+ */
+async function tryFlights(text: string, now: Date): Promise<BimLine | null> {
+  if (!looksLikeFlightConfirmation(text, now)) return null
+  const done = await addFlightFromInfo(text, { now })
+  if (!done.filed.length) return null
+  let reply = done.text
+  let status: ApplyResult["status"] = "ok"
+  if (done.leftover) {
+    const rest = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: done.leftover, receivedAt: now.toISOString() }, now)
+    reply = `${reply}\n\n${bimReplyText(rest)}`
+    status = rest.status
+  }
+  useIngestStore.getState().appendEvent({
+    id: makeIngestEventId(),
+    at: now.toISOString(),
+    channel: BIM_CHAT_SOURCE.channel,
+    chatId: BIM_CHAT_ID,
+    raw: text,
+    kind: "tell",
+    status: "applied",
+    itemIds: done.filed.map((f) => f.taskId),
+    summary: `Flights: ${done.filed.map((f) => `${f.draft.from}→${f.draft.to} ${f.status}`).join(", ")}`,
+  })
+  return { id: lineId(), at: new Date().toISOString(), who: "bim", text: reply, status, kind: "tell" }
+}
+
+/**
  * Facts, questions, and widget commands in plain words (`bim-tell.ts`). Runs
  * ahead of the executor, only here: Telegram's ladder is unchanged. An open
  * ritual or clarify question owns the line, and a real command (`log:`, `groc`)
@@ -137,7 +180,19 @@ function tryTell(text: string, now: Date): BimLine | null {
   const executorBusy = useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID)
   const held = pendingTell
   pendingTell = null
-  if (executorBusy || looksLikeVerb(text, now)) return null
+  if (executorBusy) return null
+  const mirror = held ? null : applyTextMirror(text)
+  if (mirror) {
+    logTell(text, mirror, now)
+    return tellLine(mirror)
+  }
+  // Trip prep ("have to do before leaving for New York: pack ..."), and the answer to its open question.
+  const trip = applyTripPrep(text, now)
+  if (trip) {
+    logTell(text, trip, now)
+    return tellLine(trip)
+  }
+  if (looksLikeVerb(text, now)) return null
 
   let reply: TellReply | null = null
   if (held) reply = answerTell(held, text, now)
@@ -351,13 +406,28 @@ export async function sendToBim(
         ...(choices.length ? { choices } : {}),
       }
     }
+    // "send this to tracking bimby: …" hands the words, unread, to that BIMBY's own chat.
+    const handed = await tryHandoff(text)
+    if (handed) return { id: lineId(), at: new Date().toISOString(), who: "bim", text: handed.text, status: "ok", route: handed.route }
     const answered = await answerAskBack(text, now)
     if (answered) return answered
+    // A pasted booking confirmation is filed before the fact and tell shapes can read its clocks as facts.
+    const flights = pendingTell || useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID) ? null : await tryFlights(text, now)
+    if (flights) return flights
+    // "when am I flying to new york?" is answered from the Flight items, with no model and no search.
+    const flown = pendingTell ? null : answerFlightQuestion(text, now, useTaskStore.getState().tasks)
+    if (flown) return { id: lineId(), at: new Date().toISOString(), who: "bim", text: flown, status: "ok", kind: "tell" }
     // A question about a fact you told BIM comes before the tell shapes, which would answer "when does X?" from events.
     const fact = pendingTell ? null : tryFact(text, now)
     if (fact) return fact
     const told = tryTell(text, now)
     if (told) return told
+    // A request to wire a module to a habit or change a habit's detail view becomes a checked plan; nothing is saved until accepted.
+    const wired = useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID) || looksLikeVerb(text, now) ? null : tryWire(text, now)
+    if (wired) return { id: lineId(), at: new Date().toISOString(), who: "bim", text: wired.text, status: "ok", route: wired.route, wireId: wired.wireId }
+    // A status report ("started my period, took 1 adderall, only 3 left, been on youtube a while") becomes a plan card; nothing is saved until accepted.
+    const report = useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID) || looksLikeVerb(text, now) ? null : await tryReport(text, now)
+    if (report) return { id: lineId(), at: new Date().toISOString(), who: "bim", text: report.text, status: "ok", route: report.route, reportId: report.reportId }
     const outcome = tryResistanceOutcome(text) ?? (await tryResistanceWhy(text, !!opts.llm, now))
     if (outcome) return resistanceLine(outcome)
     const heldBefore = !!useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID)
