@@ -5,6 +5,7 @@
 "use client"
 
 import type { Dispatch, SetStateAction } from "react"
+import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { InboxPartition } from "@/lib/inbox-batch"
 
@@ -30,6 +31,7 @@ export function InboxFoot({
   setPendingDeleteIds,
   startWalk,
   focusId,
+  openHelper,
 }: {
   inboxTasks: { id: string }[]
   sitting: { handled: number; points: number }
@@ -52,6 +54,7 @@ export function InboxFoot({
   setPendingDeleteIds: Dispatch<SetStateAction<string[]>>
   startWalk: (fromId?: string | null) => void
   focusId: string | null
+  openHelper: () => void
 }) {
   return (
     <div className={`inbox-foot${inboxTasks.length === 0 ? " inbox-foot-empty" : ""}`}>
@@ -91,6 +94,9 @@ export function InboxFoot({
             <i className="inbox-keycap">U</i>Deselect
           </Button>
         )}
+        <Button variant="outline" onClick={openHelper} title="Inbox helper: suggest lists, duplicates and questions for the checked ideas, or all in view">
+          <Sparkles className="h-3 w-3" />Inbox helper
+        </Button>
         <Button variant="outline" onClick={cycleSlice} title="Cycle All, Dated, Bare (/)">
           <i className="inbox-keycap">/</i>
           {slice === "dated" ? "Dated" : slice === "bare" ? "Bare" : "All"}

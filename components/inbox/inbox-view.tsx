@@ -98,6 +98,11 @@ import { SelectNDialog } from "./dialogs/select-n-dialog"
 import { inboxDayGroups } from "./time"
 import { InboxTrigger } from "./trigger"
 import { InboxUndoBanner } from "./undo-banner"
+import { InboxHelperWaiting } from "./helper-waiting"
+import { InboxHelperDialog } from "./helper/inbox-helper-dialog"
+import { useInboxHelperStore } from "@/lib/inbox-bimby/store"
+import { applyFile, applyMerge as applyHelperMerge, mergePlan } from "@/lib/inbox-bimby/apply"
+import type { FileGuess, MatchGuess } from "@/lib/inbox-bimby/types"
 import { useInboxChords } from "./hooks/use-inbox-chords"
 import { useInboxRowsScroll } from "./hooks/use-inbox-rows-scroll"
 
@@ -141,6 +146,7 @@ export function Inbox({
   const [query, setQuery] = useState("")
   const [selectCount, setSelectCount] = useState("")
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([])
+  const [helperOpen, setHelperOpen] = useState(false)
   const [sitting, setSitting] = useState({ handled: 0, points: 0 })
   const selectAnchor = useRef<string | null>(null)
   const {
@@ -215,7 +221,7 @@ export function Inbox({
   }, [inboxIdList, focusId, open])
 
   const walking = walkQueue.length > 0
-  const nestedOpen = Boolean(clarificationTask) || batchMode !== null
+  const nestedOpen = Boolean(clarificationTask) || batchMode !== null || helperOpen
   const batchTargets = inboxBatchTargets(selectedIds, focusId)
   const allSelected = inboxAllSelected(inboxIdList, selectedIds)
   const mergeItems = useMemo(
@@ -511,6 +517,31 @@ export function Inbox({
     setBatchMode(null)
   }
 
+  const helperTargets = useMemo(
+    () => (selectedIds.length ? selectedIds.map((id) => inboxTasks.find((t) => t.id === id)).filter((t): t is Task => !!t) : inboxTasks),
+    [selectedIds, inboxTasks],
+  )
+  const helperFile = (task: Task, guess: FileGuess) => {
+    const openBefore = openRevisitInboxIds(allTasks).size
+    rememberWorld("inbox helper file")
+    setTasks(applyFile(allTasks, task.id, guess.listId))
+    rememberInboxListIds([guess.listId])
+    useInboxHelperStore.getState().drop(task.id)
+    creditInboxBatchHandling([{ taskId: task.id, title: itemTitle(task) }], openBefore, openRevisitInboxIds(useTaskStore.getState().tasks).size)
+    noteSitting(1, openBefore, openRevisitInboxIds(useTaskStore.getState().tasks).size)
+    setSelectedIds((ids) => ids.filter((id) => id !== task.id))
+    setUndoLabel("inbox helper file")
+  }
+  const helperMerge = (task: Task, guess: MatchGuess) => {
+    const plan = mergePlan(allTasks, lists, task.id, guess.id)
+    if (!plan) return
+    rememberWorld("inbox helper merge")
+    setTasks(applyHelperMerge(allTasks, plan), { tombstoneIds: plan.discardedIds })
+    useInboxHelperStore.getState().drop(task.id)
+    setSelectedIds((ids) => ids.filter((id) => id !== task.id))
+    setUndoLabel("inbox helper merge")
+  }
+
   const moveFocus = (delta: number) => {
     if (inboxIdList.length === 0) return
     releaseRowsScrollPin()
@@ -630,6 +661,8 @@ export function Inbox({
             linkTasks={linkTasks}
           />
 
+          <InboxHelperWaiting onGo={() => setOpen(false)} />
+
           {undoLabel && partition !== "links" && (
             <InboxUndoBanner undoLabel={undoLabel} handleUndo={handleUndo} />
           )}
@@ -681,6 +714,7 @@ export function Inbox({
               setPendingDeleteIds={setPendingDeleteIds}
               startWalk={startWalk}
               focusId={focusId}
+              openHelper={() => setHelperOpen(true)}
             />
           )}
         </DialogContent>
@@ -739,6 +773,16 @@ export function Inbox({
         pendingDeleteIds={pendingDeleteIds}
         setPendingDeleteIds={setPendingDeleteIds}
         applyDeleteSelection={applyDeleteSelection}
+      />
+
+      <InboxHelperDialog
+        open={helperOpen && !clarificationTask}
+        onClose={() => setHelperOpen(false)}
+        targets={helperTargets}
+        tasks={allTasks}
+        onFile={helperFile}
+        onMerge={helperMerge}
+        onClarify={(task) => handleClarifyTask(task)}
       />
 
       <MergeItemsConfirmDialog

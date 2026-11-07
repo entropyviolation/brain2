@@ -578,6 +578,7 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
 .inbox-partitions,
 .inbox-chord-manual,
 .inbox-undo,
+.inbox-waiting,
 .inbox-foot {
   flex-shrink: 0;
 }
@@ -638,6 +639,19 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
     var(--chrome-pewter);
   box-shadow: var(--inbox-bay-ring);
+}
+
+.inbox-waiting {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  font-size: 11px;
+}
+
+.inbox-waiting:hover,
+.inbox-waiting:focus-visible {
+  filter: brightness(1.06);
 }
 
 .inbox-list-well {
@@ -1357,3 +1371,15 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
     opacity: 1;
   }
 }
+
+/* Inbox helper BIMBY */
+.inbox-helper-bar { display: flex; align-items: center; gap: 0.75rem; }
+.inbox-helper-note { font-size: 0.78rem; opacity: 0.7; }
+.inbox-helper-rows { overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; min-height: 6rem; }
+.inbox-helper-row { border: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 22%, transparent); padding: 0.4rem 0.55rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.inbox-helper-row header { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+.inbox-helper-line { display: flex; justify-content: space-between; gap: 0.6rem; align-items: center; font-size: 0.85rem; }
+.inbox-helper-line em { opacity: 0.7; font-style: normal; }
+.inbox-helper-line i { font-style: normal; opacity: 0.6; font-size: 0.75rem; }
+.inbox-helper-x { opacity: 0.6; }
+.inbox-helper-x:hover { opacity: 1; }

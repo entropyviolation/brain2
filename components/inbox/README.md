@@ -26,6 +26,7 @@ _Last mapped: 2026-10-27_
 - `dialogs/` — Apply list, Set deadline, Select N, Are you sure?
 - `clarify/` — Clarify / walk sheet, the stored door, assigned list plates
 - `hooks/` — scroll pin, window chord listener
+- `helper/` — the Inbox Helper BIMBY dialog
 
 | File | What it paints or holds |
 | --- | --- |
@@ -39,6 +40,7 @@ _Last mapped: 2026-10-27_
 | `trigger.tsx` | Header key when the pin bar does not own `open` |
 | `chrome.tsx` | Mast, partition keycaps, chord legend. Links sits between the keycaps and the legend |
 | `undo-banner.tsx` | Undo sentences |
+| `helper-waiting.tsx` | _2026-11-07._ Strip above the rows: "Proposed timeblock awaiting approval" while blocks sent from BIM chat to the Tracking BIMBY wait for Add. Click closes the Inbox and opens the Tracking chat. Hidden when none are open |
 | `rows.tsx` | Search, scroller, day plates, rows. The well stays mounted on Links (`hidden`) |
 | `foot.tsx` | Sitting line and foot keys |
 | `dialogs/apply-list-dialog.tsx` | Apply list |
@@ -46,6 +48,7 @@ _Last mapped: 2026-10-27_
 | `dialogs/select-n-dialog.tsx` | Select N |
 | `dialogs/delete-confirm-dialog.tsx` | Are you sure? |
 | `link-guess.tsx` | Link BIMBY on the Links tab: the shared guess queue (`useLinkGuesser`, Guess all, Stop), `LinkGuessBar` (tally, To review), and the guess strip with ✓ / ✗ and a comment. _Last mapped: 2026-11-06_ |
+| `helper/inbox-helper-dialog.tsx` | Inbox Helper BIMBY (`lib/inbox-bimby/`). The **Inbox helper** foot key opens it. Ask reads the checked ideas, or all in view; each idea shows File, Merge into and Clarify keys. `inbox-view.tsx` owns `helperFile` / `helperMerge`. _Last mapped: 2026-11-07_ |
 | `bulk-edit-host.tsx` | Bulk edit. `afterAdd` keeps arrival, door, and monkey |
 | `hooks/use-inbox-rows-scroll.ts` | Scroll refs, restore, release, and the layout restore |
 | `hooks/use-inbox-chords.ts` | Window chord listener |
