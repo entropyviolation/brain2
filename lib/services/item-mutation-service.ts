@@ -51,8 +51,24 @@ let installed = false
 let dispatchDepth = 0
 let impliedUnsub: (() => void) | null = null
 let impliedDepth = 0
+let impliedPaused = 0
+
+/**
+ * Run `fn` with type and list implied-action rules held. A writer that already did what the rules
+ * would do (the module-output door logs the reading and fills the habit itself) holds them so the
+ * Book's "read N pages" rule does not do it a second time.
+ */
+export function withoutImpliedActions<T>(fn: () => T): T {
+  impliedPaused += 1
+  try {
+    return fn()
+  } finally {
+    impliedPaused -= 1
+  }
+}
 
 function handleImpliedActions(event: ItemMutationEvent): void {
+  if (impliedPaused > 0) return
   if (event.trigger !== "update" && event.trigger !== "complete") return
   const after = event.after
   if (!after || isLoggedAction(after)) return

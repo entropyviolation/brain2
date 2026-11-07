@@ -186,6 +186,11 @@ export interface TrackPen {
   parentIds?: string[]
   /** `TrackTag` ids. A pen may carry several tags. */
   tags?: string[]
+  /**
+   * A module whose active sessions are painted with this pen (`lib/module-session-apply.ts`).
+   * "Speed Read" sessions land on the `speedreading` pen. Omitted on every other pen. No persist bump.
+   */
+  moduleFeed?: { moduleId: string }
   /** What the variants answer, e.g. "Who?". Shown as the picker's heading. */
   variantLabel?: string
   variants?: PenVariant[]

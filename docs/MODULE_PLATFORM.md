@@ -170,6 +170,8 @@ type ModuleBridgeGrant =
   | { bridge: "ingest";   phrases: string[] }       // claim a text prefix
 ```
 
+**Shipped slice of the `habits` bridge (2026-11-07).** A module reports a `ModuleOutput` (`lib/module-output.ts`) and a habit lists the modules allowed to log into it (`WeeklyTask.moduleFeeds`). `applyModuleOutput` is the door; the Speed Read module is the first emitter. Routing is a lookup on module id, measure, and unit. A model is only for reshaping an output that is not in the shape yet, and that is **Planned**. See `components/Home/Habits/README.md`.
+
 **Bridges are the contract made concrete and safe.** "Modules can impact the
 brain" becomes an explicit, reviewable, revocable list on that manifest — the
 same way `Operation.trackingTagIds` already lets an operation feed habits.

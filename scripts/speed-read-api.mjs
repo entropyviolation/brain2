@@ -8,6 +8,7 @@
  * - `POST /api/speed-read`            raw PDF body, `X-File-Name` (URI-encoded). Same bytes = same id, so a
  *                                     re-upload only bumps `openedAt`.
  * - `GET  /api/speed-read/file/<id>`  the PDF.
+ * - `PATCH  /api/speed-read/<id>`     JSON `{ page }` saves where the book was left (1-based).
  * - `DELETE /api/speed-read/<id>`     removes one from the library.
  *
  * Files live in `data/speed-read/` (gitignored), the list in `data/speed-read/library.json`.
@@ -32,7 +33,7 @@ function cors() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-File-Name",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   }
 }
 
@@ -105,6 +106,17 @@ export function addPdf(dir, bytes, rawName, now = Date.now()) {
   }
   saveLibrary(dir, items)
   return entry
+}
+
+/** Save the page a book was left on. Returns the entry, or null for an unknown id. */
+export function setPdfPage(dir, id, page) {
+  if (!validId(id)) return null
+  const items = loadLibrary(dir)
+  const hit = items.find((x) => x.id === id)
+  if (!hit) return null
+  hit.page = Math.min(100000, Math.max(1, Math.round(Number(page)) || 1))
+  saveLibrary(dir, items)
+  return hit
 }
 
 export function removePdf(dir, id) {
@@ -191,6 +203,19 @@ export async function handleSpeedReadApi(req, res, pathname, deps = {}) {
       ...cors(),
     })
     res.end(body)
+    return true
+  }
+
+  if (req.method === "PATCH" && route.startsWith(`${PREFIX}/`)) {
+    let body = {}
+    try {
+      body = JSON.parse((await readRaw(req, 4096)).toString("utf8") || "{}")
+    } catch {
+      sendJson(res, 400, { ok: false, error: "bad body" })
+      return true
+    }
+    const item = setPdfPage(dir, route.slice(`${PREFIX}/`.length), body?.page)
+    sendJson(res, item ? 200 : 404, item ? { ok: true, item } : { ok: false, error: "not found" })
     return true
   }
 

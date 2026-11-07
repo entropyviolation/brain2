@@ -13,6 +13,8 @@ export interface SpeedReadEntry {
   bytes: number
   addedAt: number
   openedAt: number
+  /** Page the book was left on (1-based). Absent until it has been read. */
+  page?: number
 }
 
 async function route(): Promise<{ base: string; headers: Record<string, string> }> {
@@ -66,6 +68,18 @@ export async function fetchSpeedReadPdf(id: string): Promise<ArrayBuffer> {
   const res = await fetch(`${base}/api/speed-read/file/${encodeURIComponent(id)}`, { headers })
   if (!res.ok) throw new Error(await failText(res))
   return res.arrayBuffer()
+}
+
+/** Remember the page a book was left on, so it opens there next time. */
+export async function saveSpeedReadPage(id: string, page: number): Promise<void> {
+  const { base, headers } = await route()
+  const res = await fetch(`${base}/api/speed-read/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ page }),
+    keepalive: true,
+  })
+  if (!res.ok) throw new Error(await failText(res))
 }
 
 export async function removeFromSpeedReadLibrary(id: string): Promise<void> {

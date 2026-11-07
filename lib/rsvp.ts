@@ -66,6 +66,13 @@ export function endsSentence(word: string): boolean {
   return /[.!?…]["'”’)\]]*$/.test(word)
 }
 
+/** "Dr.", "e.g.", "J." and the like end in a period but not a sentence, so they get no long pause. */
+function isAbbreviation(word: string): boolean {
+  if (!/\.["'”’)\]]*$/.test(word)) return false
+  const { core } = coreOf(word)
+  return /^(?:\p{L}|\p{L}{1,2}\.\p{L}|(?:mr|mrs|ms|dr|prof|sr|jr|st|vs|etc|fig|no|vol|cf|inc|ltd|co))$/iu.test(core)
+}
+
 /** Time weight of one word: 1 is a plain word at the set speed. */
 export function wordWeight(word: string, pauses = true): number {
   if (!pauses) return 1
@@ -74,7 +81,7 @@ export function wordWeight(word: string, pauses = true): number {
   let w = 1
   if (n > 8) w += Math.min(0.6, (n - 8) * 0.08)
   else if (n <= 2) w -= 0.15
-  if (endsSentence(word)) w += 1.1
+  if (endsSentence(word) && !isAbbreviation(word)) w += 1.1
   else if (/[,;:—–-]["'”’)\]]*$/.test(word)) w += 0.5
   if (/\d/.test(word)) w += 0.25
   return w

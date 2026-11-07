@@ -2,7 +2,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { addPdf, cleanPdfName, handleSpeedReadApi, loadLibrary } from "@/scripts/speed-read-api.mjs"
+import { addPdf, cleanPdfName, handleSpeedReadApi, loadLibrary, setPdfPage } from "@/scripts/speed-read-api.mjs"
 
 const PDF = Buffer.from("%PDF-1.4\n%fake\n")
 
@@ -63,6 +63,15 @@ describe("speed-read library", () => {
     expect(b.id).toBe(a.id)
     expect(loadLibrary(dir)).toEqual([{ id: a.id, name: "One", bytes: PDF.length, addedAt: 1, openedAt: 2 }])
     expect(fs.readFileSync(path.join(dir, `${a.id}.pdf`))).toEqual(PDF)
+  })
+
+  it("remembers the page a book was left on", async () => {
+    const a = addPdf(dir, PDF, "One.pdf", 1)
+    const res = mockRes()
+    await handleSpeedReadApi(mockReq("PATCH", { body: Buffer.from(JSON.stringify({ page: 11 })) }), res, `/api/speed-read/${a.id}`, { dir })
+    expect(res.status).toBe(200)
+    expect(loadLibrary(dir)[0].page).toBe(11)
+    expect(setPdfPage(dir, "0000000000000000", 3)).toBeNull()
   })
 
   it("refuses a file that is not a PDF", () => {

@@ -23,12 +23,14 @@ import {
   splitPivot,
   tokenizeWords,
 } from "@/lib/rsvp"
+import { reportPageRead, reportSession } from "@/lib/speed-read-output"
 import { speedReadFaces, SPEED_READ_FONTS } from "@/lib/fonts/speed-read-faces"
 import {
   fetchSpeedReadPdf,
   formatPdfSize,
   listSpeedReadLibrary,
   removeFromSpeedReadLibrary,
+  saveSpeedReadPage,
   uploadToSpeedReadLibrary,
   type SpeedReadEntry,
 } from "@/lib/speed-read-library"
@@ -88,7 +90,7 @@ async function openPdf(data: ArrayBuffer): Promise<PdfDoc> {
 }
 
 /** One page, drawn small. Renders when scrolled near, and stops if it leaves first. */
-function Thumb({ doc, n }: { doc: PdfDoc; n: number }) {
+function Thumb({ doc, n, hold }: { doc: PdfDoc; n: number; hold: boolean }) {
   const host = useRef<HTMLSpanElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const [seen, setSeen] = useState(false)
@@ -113,7 +115,7 @@ function Thumb({ doc, n }: { doc: PdfDoc; n: number }) {
   }, [])
 
   useEffect(() => {
-    if (!seen) return
+    if (!seen || hold) return
     let cancelled = false
     let task: { promise: Promise<void>; cancel: () => void } | null = null
     void (async () => {
@@ -137,7 +139,7 @@ function Thumb({ doc, n }: { doc: PdfDoc; n: number }) {
       cancelled = true
       task?.cancel()
     }
-  }, [seen, doc, n])
+  }, [seen, hold, doc, n])
 
   return (
     <span ref={host} className="sr-thumb-paper">
@@ -167,6 +169,19 @@ export function SpeedReadView() {
   /** The library line for the open PDF: saving, saved, or why not. */
   const [saveNote, setSaveNote] = useState("")
 
+  /** Library id of the open book, and the page it should open on. */
+  const bookId = useRef<string | null>(null)
+  /** Pages already reported for the open PDF, and when it was opened (one count per page per opening). */
+  const pagesReadRef = useRef(new Set<number>())
+  const openedAt = useRef(Date.now())
+  /** When the current page began playing, for the reading-time report. */
+  const pageClock = useRef<{ page: number; at: number } | null>(null)
+  /** The active reading stretch: from play to pause, reported to Tracking when it ends. */
+  const sessionRef = useRef<{ start: number; pages: number; libraryId: string | null; fileName: string } | null>(null)
+  const fileNameRef = useRef("")
+  const startPage = useRef(1)
+  /** Wall-clock time the next flash is due, so timer lateness never adds up. */
+  const dueAt = useRef(0)
   const textCache = useRef(new Map<number, string>())
   const rootRef = useRef<HTMLDivElement>(null)
   const pageBtns = useRef(new Map<number, HTMLButtonElement>())
@@ -206,15 +221,34 @@ export function SpeedReadView() {
     if (hydrated) void refreshLibrary()
   }, [hydrated, refreshLibrary])
 
-  const showDoc = useCallback((next: PdfDoc, name: string) => {
+  const endSession = useCallback(() => {
+    const open = sessionRef.current
+    sessionRef.current = null
+    if (open) reportSession({ libraryId: open.libraryId, fileName: open.fileName, startedAt: open.start, endedAt: Date.now(), pages: open.pages })
+  }, [])
+
+  // Active reading is the stretch where words are flashing: play starts it, pause (or leaving) ends it.
+  useEffect(() => {
+    if (playing) {
+      if (!sessionRef.current) sessionRef.current = { start: Date.now(), pages: 0, libraryId: bookId.current, fileName: fileNameRef.current }
+    } else endSession()
+  }, [playing, endSession])
+  useEffect(() => endSession, [endSession])
+
+  const showDoc = useCallback((next: PdfDoc, name: string, at = 1) => {
     setDoc((prev) => {
       void prev?.destroy().catch(() => undefined)
       return next
     })
+    endSession()
     textCache.current = new Map()
+    pagesReadRef.current = new Set()
+    openedAt.current = Date.now()
+    pageClock.current = null
     setPagesRead([])
     setFileName(name)
-    setPage(1)
+    fileNameRef.current = name
+    setPage(Math.min(next.numPages, Math.max(1, at)))
     setWords([])
     setWordsPage(0)
     setIdx(0)
@@ -228,10 +262,15 @@ export function SpeedReadView() {
       try {
         if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) throw new Error("That is not a PDF.")
         const data = await file.arrayBuffer()
-        showDoc(await openPdf(data.slice(0)), file.name.replace(/\.pdf$/i, ""))
+        bookId.current = null
+        const opened = await openPdf(data.slice(0))
+        showDoc(opened, file.name.replace(/\.pdf$/i, ""))
         setSaveNote("Saving to the library…")
         uploadToSpeedReadLibrary(file.name, data)
-          .then(() => {
+          .then((entry) => {
+            bookId.current = entry.id
+            // A book already in the library comes back on the page it was left on.
+            if (entry.page && entry.page > 1) setPage(Math.min(opened.numPages, entry.page))
             setSaveNote("In the library. The iPhone app can open it.")
             void refreshLibrary()
           })
@@ -251,8 +290,10 @@ export function SpeedReadView() {
       setLoading(true)
       setPlaying(false)
       try {
-        showDoc(await openPdf(await fetchSpeedReadPdf(entry.id)), entry.name)
-        setSaveNote("From the library.")
+        const opened = await openPdf(await fetchSpeedReadPdf(entry.id))
+        bookId.current = entry.id
+        showDoc(opened, entry.name, entry.page ?? 1)
+        setSaveNote(entry.page && entry.page > 1 ? `From the library, back on page ${entry.page}.` : "From the library.")
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not open that PDF.")
       } finally {
@@ -282,6 +323,7 @@ export function SpeedReadView() {
       return null
     })
     setSaveNote("")
+    bookId.current = null
     void refreshLibrary()
   }, [refreshLibrary])
 
@@ -314,6 +356,24 @@ export function SpeedReadView() {
     pageBtns.current.get(page)?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" })
   }, [page])
 
+  // Remember the page on the Mac, a moment after it settles (and when leaving).
+  const savedPage = useRef(0)
+  useEffect(() => {
+    if (!doc || page === savedPage.current) return
+    const t = window.setTimeout(() => {
+      const id = bookId.current
+      if (!id) return
+      savedPage.current = page
+      void saveSpeedReadPage(id, page).catch(() => {
+        savedPage.current = 0
+      })
+    }, 800)
+    return () => window.clearTimeout(t)
+  }, [doc, page])
+  useEffect(() => {
+    if (!doc) savedPage.current = 0
+  }, [doc])
+
   const ready = !!doc && wordsPage === page
   const chunk = useMemo(
     () => (words.length ? chunkAt(words, Math.min(idx, words.length - 1), settings.chunk) : null),
@@ -328,22 +388,44 @@ export function SpeedReadView() {
     [doc],
   )
 
-  // The metronome: one timeout per flash.
+  // The metronome: one timeout per flash. Each flash is due a fixed time after
+  // the last one was due, so timer lateness and render time never add up.
   useEffect(() => {
-    if (!playing || !ready || !chunk) return
+    if (!playing || !ready || !chunk) {
+      dueAt.current = 0
+      return
+    }
     const wait = chunkDelayMs(words, chunk, settings.wpm, settings.pauses)
+    const now = performance.now()
+    let start = dueAt.current
+    if (!start || start < now - 120 || start > now + 40) start = now
+    dueAt.current = start + wait
     const t = window.setTimeout(() => {
       const next = chunk.start + chunk.count
       if (next < words.length) {
         setIdx(next)
       } else {
+        dueAt.current = 0
+        if (!pagesReadRef.current.has(page)) {
+          pagesReadRef.current.add(page)
+          if (sessionRef.current) sessionRef.current.pages += 1
+          // The house hears about it once per page per opening; see lib/speed-read-output.ts.
+          reportPageRead({
+            libraryId: bookId.current,
+            fileName,
+            page,
+            openedAt: openedAt.current,
+            startedAt: pageClock.current?.page === page ? pageClock.current.at : undefined,
+            finishedAt: Date.now(),
+          })
+        }
         setPagesRead((p) => (p.includes(page) ? p : [...p, page]))
         if (settings.carry && doc && page < doc.numPages) setPage(page + 1)
         else setPlaying(false)
       }
-    }, wait)
+    }, Math.max(0, start + wait - now))
     return () => window.clearTimeout(t)
-  }, [playing, ready, chunk, words, settings.wpm, settings.pauses, settings.carry, doc, page])
+  }, [playing, ready, chunk, words, settings.wpm, settings.pauses, settings.carry, doc, page, fileName])
 
   const step = useCallback(
     (dir: 1 | -1) => {
@@ -543,7 +625,7 @@ export function SpeedReadView() {
               aria-label={`Page ${n}`}
               aria-current={n === page}
             >
-              <Thumb doc={doc} n={n} />
+              <Thumb doc={doc} n={n} hold={playing} />
               <span className="sr-thumb-n">{n}</span>
             </button>
           ))}

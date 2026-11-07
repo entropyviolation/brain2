@@ -37,6 +37,7 @@ const CORE_SURFACES: Record<string, string> = {
   bim: "BIM",
   "llm-suggestion": "LLM suggestion",
   rule: "rule",
+  module: "module",
   workflow: "workflow",
   "membership-rule": "membership rule",
   "list-link": "list link",
