@@ -11,6 +11,7 @@
  * `/api/instagram` serves the Instagram report the desktop app built (loopback only).
  * `/api/phone-sync` reads the phone-sync run log (loopback only, no message bodies).
  * `/api/code-docs` reads the repo `docs/` folder for the header code-documentation reader.
+ * `/api/speed-read` keeps the Speed Read PDF library (`data/speed-read/`) for the desk and the iPhone app.
  * A public website `Origin` is refused (`lib/ingest/request-origin.mjs`).
  * Shortcuts and this app stay allowed.
  *   npm run dev
@@ -33,6 +34,8 @@ import { handleInstagramApi } from "./instagram-api.mjs"
 import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
 import { handleCodeDocsApi } from "./code-docs-api.mjs"
 import { handleBabyGensApi } from "./baby-gens-api.mjs"
+import { handleSpeedReadApi } from "./speed-read-api.mjs"
+import { handleLinkPeekApi } from "./link-peek-api.mjs"
 import { brain2Env } from "../lib/brain2-env.mjs"
 
 const hostname = "0.0.0.0"
@@ -184,6 +187,8 @@ const server = createServer(async (req, res) => {
     if (await handlePhoneSyncApi(req, res, pathname)) return
     if (await handleCodeDocsApi(req, res, pathname)) return
     if (await handleBabyGensApi(req, res, pathname)) return
+    if (await handleSpeedReadApi(req, res, pathname)) return
+    if (await handleLinkPeekApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
   } catch (err) {
     console.error("[brain2-dev] request error", err)

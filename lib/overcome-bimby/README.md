@@ -18,6 +18,12 @@ READ (`read.ts`, one model call, `extract` ladder) → LOG (`store.ts`) → GATH
 
 `lib/ingest/bim-resistance.ts`, called from `sendToBim` (`lib/ingest/bim-chat.ts`) after the tell/fact steps and before the LLM router, on a line `routable` would only capture. A hit runs the pipeline (rules only when LLM mode is off), logs a `chat` entry (that is the tag; the chat line also carries `tag: "resistance"` and a `RESISTANCE · barrier · task` route chip), and replies with the push, the three tactics (one marked 🧪 as the test), and tap answers `started: <tactic>` / `stuck: <tactic>`. Those lines are caught first and mark the newest chat entry that offered the tactic. The line is not also filed as a note.
 
+## The loop (redesigned 2026-11-03)
+
+From two example replies the person pasted. A push now groups tactics under headings (`KIND_HEADING` in `tactics.ts`): **Shrink the first step**, **Cut the decision load**, **Get it ready**, **Add momentum**, **Cut the friction**. Tactics name the task (`{task}` is filled by `fillTactic`: "only open the first tab or file for book flights"). New barriers `choices` and `cost`; new kinds `decide` (good-enough rule, three options then flip, dealbreakers first, lock something reversible), `prep` (four facts, five-item checklist, everything in one note, price range first), `message` (tell whoever is waiting) and `restart`. The push says shame and panic make it worse.
+
+The loop in chat: push → tap **Started** or **Stuck** → on Stuck, a **Reset and restart** line and chips naming what is in the way (`why: choices`, `why: cost`, …) → that barrier re-picks on the same task, skipping tactics that already failed. `restart` is never picked normally; it only appears on Stuck.
+
 ## Rules
 
 - **Never destroy.** It writes only its own log.
@@ -26,6 +32,7 @@ READ (`read.ts`, one model call, `extract` ladder) → LOG (`store.ts`) → GATH
 
 ## Planned
 
+- Drafting the exact message for `tell-waiting` and a "do the legwork" offer (search or checklist for the task).
 - Chat: ask for the outcome unprompted after N minutes; let a model confirm a weak (score 1) detection.
 - Follow-up pipeline: check back after N minutes and ask if you started.
 - Link the task to a real task in `useTaskStore` and log the time you then spend (as `lib/plan-bimby/apply.ts` does).

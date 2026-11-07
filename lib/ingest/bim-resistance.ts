@@ -11,7 +11,7 @@ import { ollamaCall } from "@/lib/bim-flow/ollama"
 import { detectResistance } from "@/lib/overcome-bimby/detect"
 import { overcome } from "@/lib/overcome-bimby/run"
 import { useOvercomeStore } from "@/lib/overcome-bimby/store"
-import { BARRIER_WHY, fillTactic, KIND_HEADING, tacticById, TACTICS } from "@/lib/overcome-bimby/tactics"
+import { BARRIER_WHY, KIND_HEADING, TACTICS } from "@/lib/overcome-bimby/tactics"
 import type { Barrier, Tactic } from "@/lib/overcome-bimby/types"
 
 export interface ResistanceReply {

@@ -49,6 +49,32 @@ afterEach(() => {
 })
 
 describe("habit coverage sync", () => {
+  it("keeps a coverage reading when a full rescan runs before Tracking has loaded", () => {
+    const habit: WeeklyTask = {
+      id: "cov-goal",
+      name: "Log 70%",
+      type: TaskType.GOAL,
+      goal: 70,
+      coverageLink: { threshold: 70, enabled: true },
+    }
+    useHabitsStore.setState({ tasks: [habit] })
+    paint(120)
+    stopSync = startHabitCoverageSync()
+    const before = useHabitsStore.getState().weeklyData[dateKey]?.[habit.id]
+    expect(before?.value).toBeGreaterThan(0)
+
+    // Boot order: the habit cell is on disk, the entries have not arrived yet.
+    stopSync()
+    stopSync = null
+    useTimeTrackingStore.setState({ entries: [] })
+    syncHabitCoverageLinks()
+    expect(useHabitsStore.getState().weeklyData[dateKey]?.[habit.id]?.value).toBe(before?.value)
+
+    // A named date is a real erase and still withdraws the reading.
+    syncHabitCoverageLinks([dateKey])
+    expect(useHabitsStore.getState().weeklyData[dateKey]?.[habit.id]?.value).toBeUndefined()
+  })
+
   it("checks a Yes/No week habit once and does not re-enter", () => {
     const habit: WeeklyTask = {
       id: "cov-bool",

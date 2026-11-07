@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { tryResistance, tryResistanceOutcome } from "@/lib/ingest/bim-resistance"
+import { tryResistance, tryResistanceOutcome, tryResistanceWhy } from "@/lib/ingest/bim-resistance"
 import { detectResistance } from "./detect"
 import { tacticScoreboard, withExperiment } from "./experiment"
 import { readByRules } from "./read"
@@ -26,6 +26,21 @@ describe("experiment", () => {
     expect(tactics).toHaveLength(3)
     expect(experiment).toBe(tactics[2]!.id)
     expect(new Set(tactics.map((t) => t.kind)).size).toBe(3)
+  })
+})
+
+describe("the loop on a flights line", () => {
+  it("shrinks the task, then re-picks when named choices are the problem", async () => {
+    const first = await tryResistance("need to book flights but im stuck", false)
+    expect(first?.text).toMatch(/book flights/)
+    expect(first?.text).toMatch(/Shrink the first step/)
+    expect(first?.text).not.toContain("{task}")
+    const stuck = tryResistanceOutcome(first!.choices[1]!.text)
+    expect(stuck?.choices.map((c) => c.text)).toContain("why: choices")
+    const again = await tryResistanceWhy("why: choices", false)
+    expect(again?.route).toMatch(/why choices/)
+    expect(again?.text).toMatch(/Cut the decision load/)
+    expect(await tryResistanceWhy("why: nonsense", false)).toBeNull()
   })
 })
 

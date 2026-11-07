@@ -6,7 +6,9 @@
  * shows on the Activity Time Grid / Week) for the habit's period. Any Activity
  * minutes write that percent into the cell immediately; the habit is met only
  * at the threshold, and `coverageCompleted: false` is still a reading. No
- * Activity minutes clears that reading. Daily-floor weekly habits recompute
+ * Activity minutes clears that reading, but only when a tracking edit named
+ * the date. A full rescan (boot, habit edit) never clears: Tracking may not
+ * have loaded yet, and a cleared cell looked like a vanished entry. Daily-floor weekly habits recompute
  * from live daily habit week % through `applyLinkedFlag` so hand ticks stay.
  *
  * A tracking edit recomputes only the dates whose entries changed, plus the
@@ -120,6 +122,7 @@ function writeCoverage(
   coverage: number,
   minutes: number,
   threshold: number,
+  withdraw: boolean,
 ): void {
   const habits = useHabitsStore.getState()
   const frequency = task.frequency || "daily"
@@ -133,8 +136,12 @@ function writeCoverage(
           : habits.weeklyData
   const previous = bucket[periodKey]?.[task.id]
   // No Activity minutes is silence, not 0%. A stored false/true flag is withdrawn
-  // so the percent cannot stay stuck after the paint is erased.
+  // so the percent cannot stay stuck after the paint is erased. Only a tracking
+  // edit on this date may withdraw: a boot or habit-edit rescan can run before
+  // Tracking's entries have loaded, and reading that gap as an erase blanked
+  // the habit until the next reload.
   if (minutes <= 0) {
+    if (!withdraw) return
     const cleared = clearCoverageObservation(previous)
     if (!cleared) return
     applyPeriodCompletion(task, periodKey, anchor, cleared)
@@ -164,7 +171,7 @@ function applyPeriodCompletion(task: WeeklyTask, periodKey: string, anchor: Date
   void periodKey
 }
 
-function syncCoverageHabits(dateKeys: string[]): void {
+function syncCoverageHabits(dateKeys: string[], withdraw: boolean): void {
   const tasks = useHabitsStore.getState().tasks.filter((task) => effectiveCoverageLink(task))
   if (!tasks.length || !dateKeys.length) return
   for (const task of tasks) {
@@ -173,7 +180,7 @@ function syncCoverageHabits(dateKeys: string[]): void {
     const threshold = clampCoverageThreshold(link.threshold)
     for (const period of periodWindowsForFrequency(task.frequency, dateKeys)) {
       const window = activityWindow(period.keys)
-      writeCoverage(task, period.periodKey, period.anchor, window.coverage, window.minutes, threshold)
+      writeCoverage(task, period.periodKey, period.anchor, window.coverage, window.minutes, threshold, withdraw)
     }
   }
 }
@@ -237,7 +244,7 @@ let coverageSyncAgain = false
 
 function runHabitCoverageSync(dateKeys?: string[]): void {
   const keys = dateKeys ?? everyDatedKey()
-  if (keys.length) syncCoverageHabits(keys)
+  if (keys.length) syncCoverageHabits(keys, dateKeys !== undefined)
   syncDailyFloorHabits(dateKeys)
 }
 
