@@ -161,3 +161,9 @@ all call it.
 - [`docs/SPEC_MAPPING.md`](./SPEC_MAPPING.md) §12 — status
 - [`docs/CANONICAL_FIELDS.md`](./CANONICAL_FIELDS.md) — `TrackPen` fields
 - [`docs/ScienceandSanityBrain2.md`](./ScienceandSanityBrain2.md) — orders of abstraction; GS-8 extends this ladder past pens
+
+---
+
+## A pen fed by a module (2026-11-07)
+
+A pen may carry `moduleFeed: { moduleId }` (`TrackPen`). The module's active sessions are painted on it as blocks with a note (`lib/module-session-apply.ts`). Combined with counts-as, "speedreading" counts as "reading": the blocks stay painted as speedreading, and any view showing Reading rolls them up. Set up by a Wire BIMBY `track` step.

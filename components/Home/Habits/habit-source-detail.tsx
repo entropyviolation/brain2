@@ -13,12 +13,18 @@
  * Tracking tags lists catalog names (plus unit, combine, on/off); Tagged
  * tasks shows the count-tag name and that each Done is 1 toward the goal.
  * Close writes nothing.
+ *
+ * The dialog is a stack of panels (`lib/habit-detail-view.ts`): the source account above, then
+ * a breakdown by book and an entry form when the habit has a module feed or a stored view
+ * (`habit-detail-panels.tsx`). The entry form is the one place this dialog writes.
  */
 "use client"
 
 import { useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
+import { BreakdownPanel, EntryPanel } from "@/components/Home/Habits/habit-detail-panels"
+import { resolveDetailPanels } from "@/lib/habit-detail-view"
 import { listPeriodMeasure, listRoutingFromLink } from "@/lib/habit-completion-pipeline"
 import { currentExemptionContext, isHabitPeriodExempt } from "@/lib/habit-exemption"
 import { isGoalType } from "@/lib/habit-utils"
@@ -108,6 +114,9 @@ export function HabitSourceDetail({
   const lists = useTaskStore((s) => s.lists)
   const trackingTags = useTimeTrackingStore((s) => s.tags)
   const now = useMemo(() => clock ?? new Date(), [clock])
+  const panels = useMemo(() => resolveDetailPanels(task), [task])
+  const showSources = panels.some((p) => p.kind === "sources")
+  const extraPanels = panels.filter((p) => p.kind !== "sources")
   const spanLines = useMemo(() => {
     if (!isGoalType(task.type)) return null
     const measure = listPeriodMeasure(task, items, date, now)
@@ -168,7 +177,7 @@ export function HabitSourceDetail({
         </DialogHeader>
         <div className="habit95-body">
           <p className="habit95-hint">{square.periodLabel}</p>
-          {spanLines ? (
+          {showSources ? spanLines ? (
             <ul className="habit95-span-facts" aria-label="List for this period">
               {spanLines.map((line) => (
                 <li key={line.name} data-frozen={line.frozen ? "true" : "false"}>
@@ -206,6 +215,13 @@ export function HabitSourceDetail({
               ) : null}
               <p className="habit95-hint">Result: {square.result}</p>
             </>
+          ) : null}
+          {extraPanels.map((panel) =>
+            panel.kind === "breakdown" ? (
+              <BreakdownPanel key={`b-${panel.measure}`} task={task} measure={panel.measure} date={date} completion={completion} />
+            ) : panel.kind === "entry" ? (
+              <EntryPanel key={`e-${panel.measure}`} task={task} measure={panel.measure} subjectType={panel.subjectType} date={date} />
+            ) : null,
           )}
           <button type="button" className="habit95-btn" aria-label="Close source detail" onClick={() => onOpenChange(false)}>
             Close

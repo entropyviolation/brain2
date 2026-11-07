@@ -99,7 +99,7 @@ export interface Matching {
   items: MatchItem[]
 }
 
-export type ProposalKind = "set" | "missed" | "reason" | "shorthand"
+export type ProposalKind = "set" | "missed" | "reason" | "shorthand" | "rule"
 
 /** The write a proposal makes when approved. */
 export interface CellWrite {
@@ -110,6 +110,16 @@ export interface CellWrite {
   missReason?: string
 }
 
+/** A session to paint on the Activity grid when the proposal is accepted. */
+export interface SpanWrite {
+  startMin: number
+  endMin: number
+  /** The person guessed the other end. Painted and credited as estimated. */
+  estimated: boolean
+  /** The log line it came from. */
+  notes: string
+}
+
 export interface Proposal {
   id: string
   kind: ProposalKind
@@ -118,15 +128,21 @@ export interface Proposal {
   habit: string
   /** `YYYY-MM-DD`; absent for a shorthand. */
   day?: string
-  /** Old and new, as the card shows them ("off" → "on", "5 pages" → "10 pages"). */
+  /** Old and new, as the card shows them ("undone" → "done", "5 pages" → "10 pages"). */
   from: string
   to: string
   write?: CellWrite
   shorthand?: string
+  /** For a `rule`: the document-words feed to save on the habit when approved. */
+  rule?: { docTitle: string; wordsPer: number; amount: number }
+  /** Also paint this session (a walk found in the BIM log). */
+  span?: SpanWrite
   /** The words it came from. */
   words: string
   /** How code got there, one line ("1 hour = 60 min", "matched by the model, not by a word"). */
   why?: string
+  /** More the habit needs from the person ("How much (pages)?"). Shown on the row until it is typed. */
+  needs?: string
 }
 
 /** A clause that could be two habits. The person picks; code then computes the proposal. */
@@ -147,4 +163,4 @@ export interface TraceStage {
   model?: string
 }
 
-export type HabitRoute = "log" | "answer" | "shorthand" | "reasons" | "nudge" | "question"
+export type HabitRoute = "rule" | "log" | "answer" | "span" | "shorthand" | "reasons" | "nudge" | "question"

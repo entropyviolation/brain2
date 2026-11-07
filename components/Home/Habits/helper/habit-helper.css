@@ -86,6 +86,9 @@
 .hh-state { font: 600 10px/1 ui-monospace, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
 .hh-inline { appearance: none; border: 0; border-bottom: 1px dashed hsl(178 40% 55%); background: none; padding: 0 1px; font: inherit; font-weight: 600; cursor: text; color: inherit; }
 .hh-inline-input { font: inherit; padding: 1px 4px; border: 1px solid hsl(178 40% 55%); border-radius: 3px; min-width: 8ch; }
+.hh-other { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.hh-needs { display: block; color: hsl(262 45% 45%); font-size: 11px; margin-top: 2px; }
+.hh-times { display: block; margin-top: 3px; }
 .hh-foot { display: flex; justify-content: flex-end; }
 .hh-said { margin: 0; font-size: 12px; color: hsl(178 60% 26%); }
 

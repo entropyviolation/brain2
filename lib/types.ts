@@ -42,6 +42,7 @@
 // cycle). `lib/modules-store.ts` does not import this file, so this is safe and
 // lets `ModuleDefinition` reuse the existing module view + plan-sync shapes.
 import type { ModuleView, ModuleInstance } from "@/lib/modules-store"
+import type { HabitWordFeed } from "@/lib/habit-word-feed"
 
 /** Built-in item types. User-defined types are arbitrary ids (kept open). */
 export type BuiltinItemType = "task" | "item" | "action" | "habit" | "event" | "goal" | "note"
@@ -1439,6 +1440,42 @@ export interface WeeklyTask {
    * No persist version bump.
    */
   completionPipelines?: HabitCompletionPipeline[]
+  /**
+   * Modules allowed to log into this habit (`lib/habit-feeds.ts`). A module's
+   * normalized output (`lib/module-output.ts`) lands here when its `moduleId`
+   * and `measure` match a row that is not turned off. No persist bump.
+   */
+  moduleFeeds?: HabitModuleFeed[] | null
+  /**
+   * Docs documents whose words added each day count toward this habit (`lib/habit-word-feed.ts`):
+   * "every 300 words = 1 page". Written by the Habits BIMBY on Accept. No persist bump.
+   */
+  wordFeeds?: HabitWordFeed[] | null
+  /**
+   * The double-click view for this habit's cell (`lib/habit-detail-view.ts`).
+   * Absent means the stock view: the source account, plus a breakdown when
+   * `moduleFeeds` has a row. No persist bump.
+   */
+  detailView?: HabitDetailView | null
+}
+
+/** One module allowed to log into a habit. `measure` is a `lib/module-output.ts` measure id. */
+export interface HabitModuleFeed {
+  moduleId: string
+  measure: string
+  enabled?: boolean
+}
+
+/** A section of a habit's double-click view. Plain data; a new kind is a new row here. */
+export type HabitDetailPanel =
+  | { kind: "sources" }
+  /** What made up the number, grouped by the item it was about (a Book). */
+  | { kind: "breakdown"; measure: string; subjectType?: string }
+  /** A small form: how much, and which item of `subjectType` it was about. */
+  | { kind: "entry"; measure: string; subjectType?: string }
+
+export interface HabitDetailView {
+  panels: HabitDetailPanel[]
 }
 
 /** A logged fact that can lift a daily habit. All-nighter is the morning date. */

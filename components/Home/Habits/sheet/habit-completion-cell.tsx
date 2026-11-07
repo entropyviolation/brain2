@@ -42,6 +42,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useThemeStore } from "@/lib/theme-store"
 import { HabitExemptCell, HabitLedLamp } from "@/components/Home/Habits/sheet/habit-led-lamp"
 import { HabitSourceDetail } from "@/components/Home/Habits/habit-source-detail"
+import { habitHasDetailView } from "@/lib/habit-detail-view"
 import { HabitNumberField, HabitTextField } from "@/components/Home/Habits/habit-value-field"
 import { cellOpensSourceDetail } from "@/lib/habit-source-square"
 import {
@@ -160,7 +161,9 @@ export function HabitCompletionCell({
   const [askMiss, setAskMiss] = useState(false)
   const sourceDetail = cellOpensSourceDetail(task) && !exemptionWand && !missedOpWand
   const listDetail = listGoalOpensDetail(task) && !exemptionWand && !missedOpWand
-  const showDetail = sourceDetail || listDetail
+  // A habit with a module feed or a stored detail view opens its breakdown on a double-click, whatever its source.
+  const feedDetail = habitHasDetailView(task) && !exemptionWand && !missedOpWand
+  const showDetail = sourceDetail || listDetail || feedDetail
   const openSourceDetail = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
     event.preventDefault()
     event.stopPropagation()
@@ -369,7 +372,7 @@ export function HabitCompletionCell({
           : 0
       return (
         <>
-        <div className="habit-cell-stack" onDoubleClick={listDetail ? openSourceDetail : undefined}>
+        <div className="habit-cell-stack" onDoubleClick={listDetail || feedDetail ? openSourceDetail : undefined}>
           <div className="habit-cell-num" title={goalCellTitle(task, completion, variant, tracked)}>
             <HabitNumberField
               value={shownValue}
@@ -427,7 +430,24 @@ export function HabitCompletionCell({
 
     case TaskType.INCREMENTAL: {
       const climb = incrementalDataForTask(task)
-      if (!climb) return null
+      if (!climb) {
+        // No settings and no number in the name: still a box you can type in, never a blank cell.
+        return (
+          <>
+            <div className="habit-cell-num" onDoubleClick={feedDetail ? openSourceDetail : undefined}>
+              <HabitNumberField
+                value={incrementalLoggedValue(completion)}
+                onValue={onIncrementalChange}
+                className="habit-cell-slot"
+                placeholder="0"
+                ariaLabel={`${task.name} ${variant === "daily" ? formatLocalDateKey(date) : periodLabel}`}
+              />
+              {task.unit?.trim() ? <span className="habit-goal"><span className="habit-goal-unit">{task.unit.trim()}</span></span> : null}
+            </div>
+            {detailDialog}
+          </>
+        )
+      }
       const goal = incrementalGoalOn(task, weeklyData, date)
       const value = incrementalLoggedValue(completion)
       const isCompleted = isHabitGoalMet(task, completion, { date, weeklyData })
@@ -441,20 +461,23 @@ export function HabitCompletionCell({
       const ariaPeriod =
         variant === "daily" ? formatLocalDateKey(date) : periodLabel
       return (
-        <div className="habit-cell-num" title={hint}>
-          <HabitNumberField
-            value={value}
-            onValue={onIncrementalChange}
-            className={`habit-cell-slot${isCompleted ? " is-met" : ""}`}
-            style={{ borderColor: isCompleted ? undefined : `${colors.habitIncremental}40` }}
-            placeholder={placeholder}
-            ariaLabel={`${task.name} ${ariaPeriod}`}
-          />
-          <span className="habit-goal">
-            <span className="habit-goal-den">/{goal}</span>
-            {unit ? <span className="habit-goal-unit"> {unit}</span> : null}
-          </span>
-        </div>
+        <>
+          <div className="habit-cell-num" title={hint} onDoubleClick={feedDetail ? openSourceDetail : undefined}>
+            <HabitNumberField
+              value={value}
+              onValue={onIncrementalChange}
+              className={`habit-cell-slot${isCompleted ? " is-met" : ""}`}
+              style={{ borderColor: isCompleted ? undefined : `${colors.habitIncremental}40` }}
+              placeholder={placeholder}
+              ariaLabel={`${task.name} ${ariaPeriod}`}
+            />
+            <span className="habit-goal">
+              <span className="habit-goal-den">/{goal}</span>
+              {unit ? <span className="habit-goal-unit"> {unit}</span> : null}
+            </span>
+          </div>
+          {detailDialog}
+        </>
       )
     }
 

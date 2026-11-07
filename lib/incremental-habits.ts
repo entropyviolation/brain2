@@ -87,9 +87,30 @@ export function normalizeIncrementalData(
   }
 }
 
+/**
+ * Read the climb out of a habit's own name when its settings are empty:
+ * "Read at least 5 pages per day (+1/week)" starts at 5 and adds 1 each week.
+ * A climb habit with `incrementalData: null` used to draw no cell at all and had no target.
+ * Undefined when the name gives no starting number. Nothing is written; the habit's edit form
+ * saves real settings.
+ */
+export function inferIncrementalFromName(task: Pick<WeeklyTask, "name" | "unit">): IncrementalHabitData | undefined {
+  const name = task.name ?? ""
+  const start = /(?:at least|least|for)\s+(\d+(?:\.\d+)?)/i.exec(name) ?? /(\d+(?:\.\d+)?)/.exec(name)
+  if (!start) return undefined
+  const plus = /\+\s*(\d+(?:\.\d+)?)/.exec(name.slice(start.index + start[0].length))
+  const weekly = /(?:\/|per\s+)week/i.test(name)
+  return {
+    cadence: weekly || !plus ? "weekly" : "daily",
+    startValue: Number(start[1]),
+    increment: plus ? Number(plus[1]) : 0,
+    unit: task.unit?.trim() || undefined,
+  }
+}
+
 export function incrementalDataForTask(task: WeeklyTask): IncrementalHabitData | undefined {
   if (task.type !== TaskType.INCREMENTAL) return undefined
-  return normalizeIncrementalData(task.incrementalData)
+  return normalizeIncrementalData(task.incrementalData) ?? inferIncrementalFromName(task)
 }
 
 function startedWeekMonday(task: WeeklyTask, weeklyData: WeeklyData, asOf: Date): Date {

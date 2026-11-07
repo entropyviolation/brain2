@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { editProposal } from "./compute"
+import { computeAll, editProposal, reviseProposal } from "./compute"
+import { findEvidence, readSpanAnswer } from "./evidence"
 import { starterFlow } from "./flow"
 import { missDays, nudges, reasonsOf, whyQueue } from "./history"
 import { cleanMatching, matchSchema } from "./match"
@@ -94,6 +95,16 @@ describe("route", () => {
     const run = await runHabitsBimby({ text: "it was pouring, honestly", flow, ctx: fixtureCtx(TEST_NOW), call: null, ladder: [], pending: { habitId: "outside", day: "2026-10-31" } })
     expect(run.proposals[0]!.write).toEqual({ missedOpportunity: true, missReason: "it was pouring, honestly" })
   })
+  it("treats 'i did do that' as done for the day asked about, not a reason", async () => {
+    const run = await runHabitsBimby({ text: "i did do that", flow, ctx: fixtureCtx(TEST_NOW), call: null, ladder: [], pending: { habitId: "outside", day: "2026-10-31" } })
+    expect(run.route).toBe("answer")
+    expect(run.proposals[0]!.day).toBe("2026-10-31")
+    expect(run.proposals[0]!.kind).toBe("set")
+    expect(run.proposals[0]!.write).not.toHaveProperty("missReason")
+  })
+  it("still routes a quoted what's-left to the nudge while a question is open", () => {
+    expect(routeOf("“what’s left today?”", flow, { habitId: "outside", day: "2026-10-31" }, fixtureCtx(TEST_NOW))).toBe("nudge")
+  })
 })
 
 const days = (map: Record<string, Partial<HabitBrief["days"][string]>>) => Object.fromEntries(Object.entries(map).map(([k, v]) => [k, { met: false, ...v }]))
@@ -134,5 +145,74 @@ describe("shorthand", () => {
     const out = suggestShorthands(habits)
     expect(out.find((p) => p.habitId === "water")).toBeUndefined()
     expect(out.find((p) => p.habitId === "read")!.to).toBe("read 2")
+  })
+})
+
+describe("walk found in the BIM log", () => {
+  const logs = [{ text: "home from my walk", at: new Date(2026, 9, 31, 18, 0).toISOString() }, { text: "drank water", at: new Date(2026, 9, 31, 12, 0).toISOString() }]
+  const ctx = fixtureCtx(TEST_NOW)
+  const ask = () => runHabitsBimby({ text: "i did exercise yesterday", flow, ctx, call: null, ladder: [], logs })
+
+  it("knows the walk ended at 6 pm and asks when it started, instead of setting the goal", async () => {
+    const run = await ask()
+    expect(run.proposals).toEqual([])
+    expect(run.pendingSpan).toMatchObject({ habitId: "exercise", day: "2026-10-31", known: "end", min: 18 * 60, activity: "walk" })
+    expect(run.reply).toMatch(/home from my walk[\s\S]*6:00 pm[\s\S]*started/)
+  })
+  it("a definite start adds the hour and paints 5–6 pm", async () => {
+    const pendingSpan = (await ask()).pendingSpan!
+    const run = await runHabitsBimby({ text: "walk was started at 5 pm", flow, ctx, call: null, ladder: [], pendingSpan })
+    expect(run.route).toBe("span")
+    expect(run.proposals[0]!.write).toEqual({ value: 60 })
+    expect(run.proposals[0]!.span).toMatchObject({ startMin: 17 * 60, endMin: 18 * 60, estimated: false })
+  })
+  it("a guess is credited too, and marked estimated", async () => {
+    const pendingSpan = (await ask()).pendingSpan!
+    const run = await runHabitsBimby({ text: "around 5pm", flow, ctx, call: null, ladder: [], pendingSpan })
+    expect(run.proposals[0]!.write).toEqual({ value: 60 })
+    expect(run.proposals[0]!.span!.estimated).toBe(true)
+  })
+  it("reads a bare hour on the right side of the end, and a length", () => {
+    const p = { known: "end" as const, min: 18 * 60 }
+    expect(readSpanAnswer("5", p)).toMatchObject({ startMin: 17 * 60, endMin: 18 * 60 })
+    expect(readSpanAnswer("about 45 minutes", p)).toMatchObject({ startMin: 17 * 60 + 15, estimated: true })
+    expect(readSpanAnswer("it rained", p)).toBeNull()
+  })
+  it("a start line asks for the end; no cue or another day gives nothing", () => {
+    const exercise = FIXTURE.find((x) => x.id === "exercise")!
+    expect(findEvidence(exercise, "2026-10-31", [{ text: "heading out for a run", at: new Date(2026, 9, 31, 7, 30).toISOString() }])).toMatchObject({ known: "start", min: 450 })
+    expect(findEvidence(exercise, "2026-10-31", [{ text: "went for a walk", at: new Date(2026, 9, 31, 18).toISOString() }])).toBeNull()
+    expect(findEvidence(exercise, "2026-10-30", logs)).toBeNull()
+  })
+  it("with no log it still sets the goal as before", async () => {
+    const run = await runHabitsBimby({ text: "i did exercise yesterday", flow, ctx, call: null, ladder: [], logs: [] })
+    expect(run.proposals[0]!.to).toBe("30 min")
+  })
+})
+
+describe("trusting the words, and editing a row", () => {
+  const habits: HabitBrief[] = [
+    { id: "skin", name: "Skincare", kind: "yesno", words: [], days: {} },
+    { id: "hemi", name: "1 hemisync module per day", kind: "yesno", words: [], days: {} },
+    { id: "study", name: "Study for 1 hour", kind: "goal", goal: 60, unit: "min", words: [], days: {} },
+  ]
+  const ctx = { now: NOW, habits }
+  const text = "i just washed my face after moon mask (skincare)"
+  const item = { clause: "C1", habit: "hemi", maybe: "study", kind: "done" as const, amount: "", day: "", reason: "" }
+
+  it("a model pick that the words disagree with loses to the habit the words name", () => {
+    const out = computeAll({ items: [item] }, tagText(text, NOW), ctx)
+    expect(out.asks).toEqual([])
+    expect(out.proposals[0]).toMatchObject({ habitId: "skin", from: "undone", to: "done" })
+  })
+
+  it("rewrites a row's habit, day and state, and re-reads the old value", () => {
+    const p = computeAll({ items: [{ ...item, habit: "skin", maybe: "" }] }, tagText(text, NOW), ctx).proposals[0]!
+    const goal = reviseProposal(p, { habitId: "study" }, ctx)
+    expect(goal.write).toEqual({ value: 60 })
+    expect(goal.needs).toMatch(/How much/)
+    const typed = reviseProposal(goal, { value: 45, day: "2026-11-05" }, ctx)
+    expect(typed).toMatchObject({ day: "2026-11-05", to: "45 min", needs: undefined })
+    expect(reviseProposal(p, { done: false }, ctx).to).toBe("undone")
   })
 })

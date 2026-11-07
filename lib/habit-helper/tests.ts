@@ -16,7 +16,7 @@ import type { HabitBrief, BimbyContext, Matching, Proposal } from "./types"
 
 /** One proposal or ask as a comparable line. */
 export interface ExpectRow {
-  kind: "set" | "missed" | "reason" | "shorthand" | "ask"
+  kind: "set" | "missed" | "reason" | "shorthand" | "rule" | "ask"
   habit: string
   day?: string
   /** `on`, `10 pages`, a shorthand, or for an ask the habit ids joined by `|`. */
@@ -94,9 +94,9 @@ export const SHIPPED_TESTS: HabitsBimbyTest[] = [
     now: TEST_NOW,
     matching: { items: [item("C2", "water"), item("C3", "read", { amount: "N1" }), item("C4", "stretch")] },
     expect: [
-      { kind: "set", habit: "water", day: "2026-11-01", to: "on" },
+      { kind: "set", habit: "water", day: "2026-11-01", to: "done" },
       { kind: "set", habit: "read", day: "2026-11-01", to: "10 pages" },
-      { kind: "set", habit: "stretch", day: "2026-11-01", to: "on" },
+      { kind: "set", habit: "stretch", day: "2026-11-01", to: "done" },
     ],
   },
   {

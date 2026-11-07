@@ -13,8 +13,14 @@ import { keywordPhrases } from "@/lib/habit-keyword-source"
 import { activeTrackingLink } from "@/lib/habit-tracking"
 import { isHabitGoalMet, isGoalType, normalizeTaskType } from "@/lib/habit-utils"
 import { useHabitsStore } from "@/lib/habits-store"
-import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { activityForHabit } from "@/lib/habit-logged-span"
 import { TaskType, type TaskCompletion, type WeeklyData, type WeeklyTask } from "@/lib/types"
+import { getPersistedDoc } from "@/lib/doc-persist"
+import { seedDocWords } from "@/lib/habit-word-feed-apply"
+import { itemTitle } from "@/lib/item-utils"
+import { NOTE_TYPE_ID } from "@/lib/note-types"
+import { useTaskStore } from "@/lib/task-store"
 import type { CellBrief, HabitBrief, BimbyContext, Proposal } from "./types"
 import { unitOf } from "./words"
 
@@ -96,12 +102,67 @@ export function applyProposals(list: Proposal[]): ApplyResult {
       wrote.push(p.id)
       continue
     }
+    if (p.kind === "rule" && p.rule) {
+      const task = store.tasks.find((t) => t.id === p.habitId)
+      if (!task) continue
+      const rest = (task.wordFeeds ?? []).filter((f) => f.docTitle.trim().toLowerCase() !== p.rule!.docTitle.trim().toLowerCase())
+      store.updateTask({ ...task, wordFeeds: [...rest, { ...p.rule }] })
+      void seedFromDoc(p.rule.docTitle)
+      wrote.push(p.id)
+      continue
+    }
     const date = p.day ? parseLocalDate(p.day) : null
     if (!date || !p.write) continue
     // TODO(A): pass `source: "llm-suggestion"` (and the reason as the change's `note`) once session A's
     // `updateCompletion` takes a source and appends `HabitCellChange`s.
     store.updateCompletion(p.habitId, date, p.write)
+    if (p.span && p.day) paintSpan(p.habitId, p.day, p.span)
     wrote.push(p.id)
   }
   return { wrote, message: wrote.length ? `Saved ${wrote.length} ${wrote.length === 1 ? "change" : "changes"}.` : "Nothing saved." }
+}
+
+/**
+ * Paint a session the BIM log and the person's answer placed, on the activity the habit already tracks, so
+ * the Activity grid and the habit agree. A guessed end is painted as estimated. The same session paints once.
+ */
+function paintSpan(habitId: string, day: string, span: NonNullable<Proposal["span"]>): void {
+  const task = useHabitsStore.getState().tasks.find((t) => t.id === habitId)
+  const tracking = useTimeTrackingStore.getState()
+  if (!task || span.endMin <= span.startMin) return
+  const activity = activityForHabit(task, tracking.scopes, tracking.tags)
+  const stamp = `kw:helper:${habitId}:${day}:${span.startMin}-${span.endMin}`
+  if (tracking.entries.some((e) => e.generatedBy?.id === stamp)) return
+  const scope = tracking.scopes.find((s) => s.id === activity.scopeId) ?? tracking.scopes[0]
+  if (!scope) return
+  const penId =
+    scope.pens.find((x) => x.id === activity.penId)?.id ??
+    scope.pens.find((x) => x.name.trim().toLowerCase() === activity.penName.trim().toLowerCase())?.id ??
+    tracking.addPen(scope.id, { name: activity.penName, color: PEN_PALETTE[scope.pens.length % PEN_PALETTE.length] ?? PEN_PALETTE[0], tags: activity.tagIds })
+  if (!penId) return
+  const before = new Set(useTimeTrackingStore.getState().entries.map((e) => e.id))
+  tracking.paintMinutes(day, scope.id, span.startMin, span.endMin, penId, undefined, stamp, span.estimated ? "estimated" : undefined, {
+    title: activity.title,
+    notes: span.notes,
+    tagIds: activity.tagIds.length ? activity.tagIds : undefined,
+    ...(span.estimated ? { clockCertainty: "estimated" as const } : {}),
+  })
+  for (const e of useTimeTrackingStore.getState().entries.filter((x) => x.penId === penId && (!before.has(x.id) || x.spanId === stamp))) {
+    useTimeTrackingStore.getState().updateEntry(e.id, {
+      generatedBy: { kind: "text", id: stamp },
+      title: activity.title,
+      notes: span.notes,
+      ...(activity.tagIds.length ? { tagIds: activity.tagIds } : {}),
+      ...(span.estimated ? { precision: "estimated" as const, clockCertainty: "estimated" as const } : {}),
+    })
+  }
+}
+
+/** Start counting the named document from its words right now, so what is already written does not count. */
+async function seedFromDoc(title: string): Promise<void> {
+  const want = title.trim().toLowerCase()
+  const doc = useTaskStore.getState().tasks.find((t) => t.type === NOTE_TYPE_ID && itemTitle(t as never).trim().toLowerCase() === want)
+  if (!doc) return
+  const rec = await getPersistedDoc(doc.id).catch(() => null)
+  seedDocWords(doc.id, rec?.body ?? doc.body ?? "")
 }

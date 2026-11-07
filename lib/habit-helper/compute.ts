@@ -13,7 +13,7 @@ import { headOf } from "./match"
 import { scoreClause, tiedAtTop } from "./lexicon"
 import type { Tagged } from "./tags"
 import type { Ask, HabitBrief, BimbyContext, MatchItem, Matching, Proposal, Tag } from "./types"
-import { displayName } from "./words"
+import { clock, displayName } from "./words"
 
 export interface Computed {
   proposals: Proposal[]
@@ -29,10 +29,12 @@ export const unitText = (n: number, unit?: string) => (unit ? `${n} ${n === 1 &&
 export function computeAll(m: Matching, t: Tagged, ctx: BimbyContext): Computed {
   const out: Computed = { proposals: [], asks: [], notes: [] }
   const seen = new Set<string>()
-  for (const item of m.items) {
+  for (let item of m.items) {
     const c = t.clauses.find((x) => x.id === item.clause)
     if (!c) continue
-    const options = askOptions(item, headOf(c, t.tags), ctx.habits)
+    const head = headOf(c, t.tags)
+    item = trustWords(item, head, ctx.habits)
+    const options = askOptions(item, head, ctx.habits)
     if (options.length > 1) {
       if (seen.has(`ask:${c.id}`)) continue
       seen.add(`ask:${c.id}`)
@@ -51,10 +53,27 @@ export function computeAll(m: Matching, t: Tagged, ctx: BimbyContext): Computed 
   return out
 }
 
-/** The habits to ask between, or one or none when there is nothing to ask. */
+/**
+ * The words beat the model. When one habit's words clearly win the clause ("skincare") and the model
+ * pointed somewhere that scores lower (or at nothing), use the habit the words name and drop the `maybe`.
+ */
+function trustWords(item: MatchItem, head: string, habits: HabitBrief[]): MatchItem {
+  const scored = scoreClause(head, habits)
+  const top = scored[0]
+  if (!top || tiedAtTop(scored).length) return item
+  const own = scored.find((s) => s.id === item.habit)?.score ?? 0
+  const other = scored.find((s) => s.id === item.maybe)?.score ?? 0
+  if (top.id === item.habit || top.score <= own || top.score <= other) return item
+  return { ...item, habit: top.id, maybe: "" }
+}
+
+/** The habits to ask between, or one or none when there is nothing to ask. Word hits come first. */
 function askOptions(item: MatchItem, head: string, habits: HabitBrief[]): string[] {
   const exists = (id: string) => habits.some((h) => h.id === id)
-  if (item.maybe && exists(item.maybe)) return [...new Set([item.habit, item.maybe].filter((id) => id && exists(id)))]
+  if (item.maybe && exists(item.maybe)) {
+    const hits = scoreClause(head, habits).filter((s) => s.id !== item.habit && s.id !== item.maybe).slice(0, 2).map((s) => s.id)
+    return [...new Set([...hits, item.habit, item.maybe].filter((id) => id && exists(id)))].slice(0, 4)
+  }
   const tie = tiedAtTop(scoreClause(head, habits))
   return item.habit && tie.includes(item.habit) ? tie : []
 }
@@ -83,8 +102,8 @@ export function computeItem(item: MatchItem, t: Tagged, ctx: BimbyContext): Prop
   }
 
   if (h.kind === "yesno") {
-    if (cell?.completed) return `${name} is already on for ${day}.`
-    return { id, kind: "set", habitId: h.id, habit: name, day, from: "off", to: "on", write: { completed: true }, words, why: byModel }
+    if (cell?.completed) return `${name} is already done for ${day}.`
+    return { id, kind: "set", habitId: h.id, habit: name, day, from: cell?.completed === false || !cell ? "undone" : stateText(h, cell), to: "done", write: { completed: true }, words, why: byModel }
   }
   if (h.kind === "text") {
     const text = headOf(c, t.tags).trim()
@@ -105,9 +124,10 @@ export function computeItem(item: MatchItem, t: Tagged, ctx: BimbyContext): Prop
       if (amt.adds) why = `${cell?.value ?? 0} + ${n}`
     }
   } else why = why ?? "no amount said, so it is set to the goal"
+  const needs = amt?.amount === undefined || convert(amt, h.unit, h.per) === null ? `How much ${shown(h) ? `(${shown(h)})` : ""}? Set to the goal until you say.`.replace(" ?", "?") : undefined
   value = Math.round(value * 100) / 100
   if (cell?.value === value) return `${name} already reads ${unitText(value, shown(h))} on ${day}.`
-  return { id, kind: "set", habitId: h.id, habit: name, day, from: unitText(cell?.value ?? 0, shown(h)), to: unitText(value, shown(h)), write: { value }, words, why }
+  return { id, kind: "set", habitId: h.id, habit: name, day, from: unitText(cell?.value ?? 0, shown(h)), to: unitText(value, shown(h)), write: { value }, words, why, ...(needs ? { needs } : {}) }
 }
 
 /** An amount in the habit's unit, or null when the units do not compare. A bare number is taken as the habit's unit. */
@@ -118,11 +138,11 @@ export function convert(amt: Tag, unit: string | undefined, per = 1): number | n
   return amt.unit === unit ? n / per : null
 }
 
-function stateText(h: HabitBrief, cell: HabitBrief["days"][string] | undefined): string {
+export function stateText(h: HabitBrief, cell: HabitBrief["days"][string] | undefined): string {
   if (!cell) return "blank"
   if (h.kind === "goal") return unitText(cell.value ?? 0, shown(h))
   if (h.kind === "text") return cell.text ? `“${cell.text}”` : "blank"
-  return cell.completed ? "on" : "off"
+  return cell.completed ? "done" : "undone"
 }
 
 /** A card edited by hand: the new value, reason or name typed into it. Code re-derives the write. */
@@ -135,4 +155,99 @@ export function editProposal(p: Proposal, raw: string): Proposal {
   if (!Number.isFinite(n) || text.trim() === "") return p
   const unit = p.to.replace(/^[\d.]+\s*/, "")
   return { ...p, to: unit ? `${n} ${unit}` : String(n), write: { value: n }, why: "typed by you" }
+}
+
+/** A session found in the BIM log, with the other end now said: the minutes credited and the span to paint. */
+export function spanProposal(h: HabitBrief, day: string, a: { startMin: number; endMin: number; estimated: boolean }, line: string, words: string): Proposal {
+  const minutes = a.endMin - a.startMin
+  const value = Math.round((minutes / (h.per ?? 1)) * 100) / 100
+  const cell = h.days[day]
+  const when = `${clock(a.startMin)}–${clock(a.endMin)}`
+  return {
+    id: `p-${h.id}-${day}-span`,
+    kind: "set",
+    habitId: h.id,
+    habit: displayName(h),
+    day,
+    from: unitText(cell?.value ?? 0, shown(h)),
+    to: unitText(value, shown(h)),
+    write: { value },
+    span: { startMin: a.startMin, endMin: a.endMin, estimated: a.estimated, notes: line },
+    words,
+    why: `${a.estimated ? "about " : ""}${when} = ${minutes} min, from “${line}” in your BIM log`,
+  }
+}
+
+/** What a person may change on a row before Accept. Code re-derives `from`, `to` and the write. */
+export interface ProposalPatch {
+  habitId?: string
+  day?: string
+  /** yes/no habits: done or undone. */
+  done?: boolean
+  /** A goal habit's number, in the habit's own unit. */
+  value?: number
+  text?: string
+  reason?: string
+  /** `HH:MM`-free: minutes from midnight. Needs a span on the proposal. */
+  startMin?: number
+  endMin?: number
+}
+
+/**
+ * A row edited by hand in any part: habit, day, state, amount, text, reason, start or end time. The cell it
+ * would change is read again so "old" stays true, and a goal habit with a span keeps minutes = end − start.
+ */
+export function reviseProposal(p: Proposal, patch: ProposalPatch, ctx: BimbyContext): Proposal {
+  let h = ctx.habits.find((x) => x.id === p.habitId)
+  let next: Proposal = { ...p }
+  if (patch.habitId && patch.habitId !== p.habitId) {
+    const to = ctx.habits.find((x) => x.id === patch.habitId)
+    if (!to) return p
+    h = to
+    next = { ...next, habitId: to.id, habit: displayName(to), span: undefined, shorthand: undefined, needs: undefined, why: "habit chosen by you" }
+    if (p.kind === "missed") next.write = { ...p.write, missedOpportunity: true }
+    else if (to.kind === "yesno") next = { ...next, write: { completed: true } }
+    else if (to.kind === "text") next = { ...next, write: { text: p.words } }
+    else {
+      const goal = to.goal || 1
+      next = { ...next, write: { value: goal }, needs: `How much ${shown(to) ? `(${shown(to)})` : ""}? Set to the goal until you say.`.replace(" ?", "?") }
+    }
+  }
+  if (patch.day) next.day = patch.day
+  if (!h) return next
+  const cell = h.days[next.day ?? ""]
+  if (patch.done !== undefined && h.kind === "yesno" && p.kind !== "missed") next.write = { completed: patch.done }
+  if (patch.value !== undefined && Number.isFinite(patch.value)) {
+    next.write = { value: patch.value }
+    next.needs = undefined
+    next.why = "typed by you"
+    if (next.span) next.span = undefined
+  }
+  if (patch.text !== undefined && next.write?.text !== undefined) next.write = { text: patch.text }
+  if (patch.reason !== undefined && (p.kind === "missed" || p.kind === "reason")) next.write = { ...next.write, missedOpportunity: true, missReason: patch.reason }
+  if (next.span && (patch.startMin !== undefined || patch.endMin !== undefined)) {
+    const startMin = patch.startMin ?? next.span.startMin
+    const endMin = patch.endMin ?? next.span.endMin
+    if (endMin > startMin) {
+      const value = Math.round(((endMin - startMin) / (h.per ?? 1)) * 100) / 100
+      next.span = { ...next.span, startMin, endMin, estimated: false }
+      next.write = { value }
+      next.why = `${clock(startMin)}–${clock(endMin)} = ${endMin - startMin} min, typed by you`
+    }
+  }
+  // Old and new, read again from the cell this row now points at.
+  if (p.kind === "missed") {
+    next.from = cell?.missed ? "missed" : stateText(h, cell)
+    next.to = "missed"
+  } else if (next.write?.completed !== undefined) {
+    next.from = stateText(h, cell)
+    next.to = next.write.completed ? "done" : "undone"
+  } else if (next.write?.text !== undefined) {
+    next.from = cell?.text ? `“${cell.text}”` : "empty"
+    next.to = `“${next.write.text}”`
+  } else if (next.write?.value !== undefined) {
+    next.from = unitText(cell?.value ?? 0, shown(h))
+    next.to = unitText(next.write.value, shown(h))
+  }
+  return next
 }

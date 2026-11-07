@@ -15,9 +15,13 @@ import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
 import { dateKey } from "@/lib/tracking-helper/clock"
 import { applyProposals, buildContext } from "./accept"
-import { computeItem, editProposal } from "./compute"
+import { computeItem, editProposal, reviseProposal, type ProposalPatch } from "./compute"
 import { loadFlow } from "./flow"
 import { nudges, whyQueue } from "./history"
+import type { PendingSpan } from "./evidence"
+import { bimLogs } from "./logs"
+import { habitsBimbyBlueprint } from "@/lib/agents/adapters/habit-helper"
+import { infoText, isInfoRequest } from "@/lib/agents/info"
 import { runHabitsBimby, type PendingWhy } from "./run"
 import type { Tagged } from "./tags"
 import type { Ask, HabitRoute, Proposal, TraceStage } from "./types"
@@ -50,6 +54,8 @@ interface BimbyState {
   lines: BimbyLine[]
   busy: boolean
   pending: PendingWhy | null
+  /** A session found in the BIM log with one end known, waiting for the other. */
+  pendingSpan: PendingSpan | null
   /** Why-questions asked, with the day they were asked on. */
   asked: { habitId: string; day: string; on: string }[]
   /** The day the opening nudges were last shown. */
@@ -57,6 +63,8 @@ interface BimbyState {
   open: () => void
   send: (text: string) => Promise<void>
   edit: (lineId: string, proposalId: string, raw: string) => void
+  /** Change any part of a row (habit, day, state, amount, text, reason, times) before Accept. */
+  revise: (lineId: string, proposalId: string, patch: ProposalPatch) => void
   accept: (lineId: string, ids?: string[]) => string
   dismiss: (lineId: string, proposalId: string) => void
   choose: (lineId: string, askId: string, habitId: string) => void
@@ -91,6 +99,7 @@ export const useHabitsBimby = create<BimbyState>()(
       lines: [],
       busy: false,
       pending: null,
+      pendingSpan: null,
       asked: [],
       greetedOn: null,
 
@@ -113,12 +122,17 @@ export const useHabitsBimby = create<BimbyState>()(
         if (!text || get().busy) return
         set((s) => ({ busy: true, lines: [...s.lines, { id: newId(), who: "you" as const, text, at: nowIso() }].slice(-MAX_LINES) }))
         const t0 = Date.now()
+        // "info" is answered from the Blueprint and runs nothing else.
+        if (isInfoRequest(text)) {
+          set((s) => ({ busy: false, lines: [...s.lines, { id: newId(), who: "bimby" as const, text: infoText(habitsBimbyBlueprint(), { href: "/lab/habit-helper" }), at: nowIso(), ms: Date.now() - t0 }].slice(-MAX_LINES) }))
+          return
+        }
         try {
           const flow = loadFlow()
           const crew = await chatCrew().catch(() => null)
           const ladder = flow.match.ladder.length ? flow.match.ladder : crew?.extract ?? []
           const ctx = buildContext()
-          const run = await runHabitsBimby({ text, flow, ctx, call: crew ? ollamaCall(crew.main) : null, ladder, pending: get().pending })
+          const run = await runHabitsBimby({ text, flow, ctx, call: crew ? ollamaCall(crew.main) : null, ladder, pending: get().pending, pendingSpan: get().pendingSpan, logs: bimLogs() })
           const line: BimbyLine = {
             id: newId(),
             who: "bimby",
@@ -140,6 +154,7 @@ export const useHabitsBimby = create<BimbyState>()(
           const why = answered ? nextWhy(after) : null
           set((s) => ({
             busy: false,
+            pendingSpan: run.pendingSpan ?? null,
             lines: [...s.lines, line, ...(why ? [why.line] : [])].slice(-MAX_LINES),
             ...(answered ? { pending: why?.pending ?? null } : {}),
             ...(why ? { asked: why.asked } : {}),
@@ -151,6 +166,11 @@ export const useHabitsBimby = create<BimbyState>()(
 
       edit: (lineId, proposalId, raw) =>
         set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, proposals: l.proposals?.map((p) => (p.id === proposalId ? editProposal(p, raw) : p)) } : l)) })),
+
+      revise: (lineId, proposalId, patch) => {
+        const ctx = buildContext()
+        set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, proposals: l.proposals?.map((p) => (p.id === proposalId ? reviseProposal(p, patch, ctx) : p)) } : l)) }))
+      },
 
       accept: (lineId, ids) => {
         const line = get().lines.find((l) => l.id === lineId)
@@ -177,12 +197,12 @@ export const useHabitsBimby = create<BimbyState>()(
         }))
       },
 
-      clear: () => set({ lines: [], pending: null, greetedOn: null }),
+      clear: () => set({ lines: [], pending: null, pendingSpan: null, greetedOn: null }),
     }),
     {
       name: "habithelper-chat-v1",
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({ lines: s.lines.map(({ trace: _t, ...l }) => l), pending: s.pending, asked: s.asked, greetedOn: s.greetedOn }),
+      partialize: (s) => ({ lines: s.lines.map(({ trace: _t, ...l }) => l), pending: s.pending, pendingSpan: s.pendingSpan, asked: s.asked, greetedOn: s.greetedOn }),
     },
   ),
 )
