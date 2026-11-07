@@ -1,7 +1,7 @@
 /**
  * components/inbox.css — milled fascia for the Inbox dialog
  *
- * Brushed silver bay, engraved nameplates, raised metal keys, CRT count wells,
+ * Brushed silver bay, engraved nameplates, silver keycap word keys, CRT count wells,
  * round power lamp on the active partition. The three partition keys are
  * latching keycaps (`.b2-keycap-tab` in `app/win95.css`): silver skirt at
  * rest, selected key = CRT glass, lamp lights green. _Last mapped: 2026-10-27._
@@ -410,52 +410,167 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
   color: var(--chrome-ink-soft);
 }
 
-/* ---- Raised metal action keys ------------------------------------------ */
+/* ---- Word keys: the house keycap ---------------------------------------
+ * Every Inbox button is the pale silver ortholinear keycap (`.todo-cap` in
+ * `components/Home/ToDo/todo-chrome.css`, docs/DESIGN_STYLE.md#keycaps).
+ * The dialogs sit outside `.todo95`, so the paint lives here, with !important
+ * to beat the win95 mill rule. Left out: the partition keys (latching caps),
+ * row titles, chip ×, list picker rows, and the title-bar close cap.
+ * _Last mapped: 2026-11-06_ */
 
-.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]),
-.inbox-dialog [data-slot="button"] {
-  border: 0 !important;
-  border-radius: var(--r-2, 2px) !important;
+.inbox-dialog {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  --cap-leg: #1f2226;
+  --cap-navy: #22306c;
+  --cap-foot: 4px;
+  --cap-rest:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 calc(-1 * var(--cap-foot)) 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  --cap-down:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row),
+.inbox-dialog a.inbox-row-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: auto;
   min-height: 28px;
-  padding: 4px 12px 5px !important;
-  color: #1c1e20 !important;
+  padding: 3px 10px 6px !important;
+  border: 1px solid var(--cap-edge) !important;
+  border-radius: 4px !important;
+  color: var(--cap-leg) !important;
   text-shadow: none;
-  background: var(--inbox-key-face) !important;
-  box-shadow: var(--inbox-key-ring) !important;
-  font-family: inherit;
-  font-size: 11px !important;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) !important;
+  box-shadow: var(--cap-rest) !important;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):hover:not(:disabled) {
-  filter: brightness(1.04);
-}
-
-.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):active:not(:disabled) {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px var(--chrome-pressed) !important;
-}
-
-.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):disabled {
-  color: var(--chrome-lo) !important;
-  text-shadow: none;
-  cursor: default;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  text-decoration: none;
+  white-space: nowrap;
+  outline: 0;
+  cursor: pointer;
   filter: none;
-  opacity: 0.7;
+  transition: transform 60ms ease, box-shadow 60ms ease;
 }
 
-.inbox-dialog button[title="Clarify this idea"],
-.inbox-dialog button[title="Delete this idea"],
-.inbox-dialog button.inbox-row-tool {
+.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row):hover:not(:disabled),
+.inbox-dialog a.inbox-row-tool:hover {
+  --cap-top: #f7f8f9;
+  --cap-top2: #e8eaed;
+}
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row):active:not(:disabled),
+.inbox-dialog a.inbox-row-tool:active {
+  transform: translateY(2px);
+  box-shadow: var(--cap-down) !important;
+}
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row):disabled {
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+  color: #7d8185 !important;
+  cursor: default;
+  opacity: 1;
+}
+
+.inbox-dialog button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row):focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+/* Primary cap: Save, Apply, Select, Delete. Navy legend, navy lamp, navy ring. */
+.inbox-dialog button.inbox-cap-primary:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row) {
+  --cap-edge: #2a3570;
+  color: #1a2556 !important;
+  letter-spacing: 0.02em;
+  outline: 2px solid var(--cap-navy);
+  outline-offset: 1px;
+}
+
+.inbox-dialog button.inbox-cap-primary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--cap-navy);
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+/* Short cap: row tools, Links filters, BIMBY strip keys. */
+.inbox-dialog button.inbox-row-tool:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row),
+.inbox-dialog a.inbox-row-tool,
+.inbox-dialog .inbox-links-kinds button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row),
+.inbox-dialog .inbox-link-guess button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row),
+.inbox-dialog .inbox-link-guess-bar button:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row) {
+  --cap-foot: 3px;
+  min-height: 22px;
+  padding: 1px 7px 4px !important;
+  font-size: 11px !important;
+}
+
+.inbox-dialog button.inbox-row-tool:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row),
+.inbox-dialog a.inbox-row-tool {
   min-width: 28px;
   width: 28px;
   height: 28px;
   min-height: 28px;
-  padding: 0 !important;
+  padding: 0 0 3px !important;
   letter-spacing: 0;
+}
+
+.inbox-dialog .inbox-link-guess-verdict button.inbox-link-guess-v:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row),
+.inbox-dialog .inbox-link-guess button.inbox-link-guess-x:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row) {
+  min-width: 22px;
+  padding: 1px 3px 4px !important;
+}
+
+/* Latched filter (Links kinds, To review): the CRT, like a selected switcher. */
+.inbox-dialog .inbox-links-kinds button[aria-pressed="true"]:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row),
+.inbox-dialog .inbox-link-guess-bar button.inbox-link-guess-filter[aria-pressed="true"]:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row) {
+  color: var(--inbox-crt) !important;
+  text-shadow: var(--inbox-crt-glow);
+  background: var(--inbox-crt-glass) !important;
+  border-color: #070c0a !important;
+  box-shadow: var(--cap-down) !important;
+  --cap-skirt: #1a2420;
+  transform: translateY(2px);
+}
+
+/* Verdicts that stay on keep the dropped cap, in sage or brick plastic. */
+.inbox-dialog .inbox-link-guess .inbox-link-guess-verdict button.inbox-link-guess-v[data-v="approved"][aria-pressed="true"]:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row) {
+  --cap-top: #c8dcd6;
+  --cap-top2: #b4ccc5;
+  --cap-skirt: #86a99f;
+  --cap-edge: #4a6b62;
+  color: #102820 !important;
+  box-shadow: var(--cap-down) !important;
+  transform: translateY(2px);
+}
+
+.inbox-dialog .inbox-link-guess .inbox-link-guess-verdict button.inbox-link-guess-v[data-v="rejected"][aria-pressed="true"]:not(.inbox-partition):not(.absolute):not(.inbox-row-title):not([role="checkbox"]):not(.b2-close-key):not(.inbox-clarify-chip-remove):not(.list-picker-row) {
+  --cap-top: #7a3c31;
+  --cap-top2: #78292e;
+  --cap-skirt: #4e1a1c;
+  --cap-edge: #3a1214;
+  color: #fbe9e4 !important;
+  box-shadow: var(--cap-down) !important;
+  transform: translateY(2px);
 }
 
 .inbox-dialog > :first-child,
@@ -931,17 +1046,6 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
   padding-top: 8px;
 }
 
-.inbox-dialog.inbox-clarify button.inbox-clarify-save:not(.inbox-partition):not(.absolute) {
-  font-weight: 700 !important;
-  box-shadow:
-    inset -1px -1px var(--inbox-frame),
-    inset 1px 1px var(--inbox-frame),
-    inset -2px -2px var(--inbox-shadow),
-    inset 2px 2px var(--inbox-highlight),
-    inset -3px -3px var(--inbox-frame),
-    inset 3px 3px var(--inbox-face) !important;
-}
-
 .inbox-dialog.inbox-clarify .habit95-list-popup button.b2-close-key:not(.inbox-partition) {
   width: 22px !important;
   height: 22px !important;
@@ -976,25 +1080,6 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
   gap: 4px;
   padding: 4px 6px;
   box-shadow: inset 0 -1px rgba(0, 0, 0, 0.12);
-}
-
-.inbox-dialog .inbox-links-kinds button {
-  min-height: 0;
-  padding: 1px 8px !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  color: var(--inbox-nameplate) !important;
-  border-radius: var(--r-2, 2px) !important;
-  background: var(--inbox-key-face) !important;
-  box-shadow: var(--inbox-key-ring) !important;
-}
-
-.inbox-dialog .inbox-links-kinds button[aria-pressed="true"] {
-  color: var(--inbox-crt) !important;
-  background: var(--inbox-crt-glass) !important;
-  box-shadow: var(--inbox-crt-ring) !important;
 }
 
 .inbox-links-kinds i {
@@ -1086,6 +1171,134 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
 .inbox-link-row:hover .inbox-link-tools,
 .inbox-link-row:focus-within .inbox-link-tools {
   opacity: 1;
+}
+
+/* Link BIMBY: the guess under a link's note (components/inbox/link-guess.tsx). */
+.inbox-link-guess {
+  margin-top: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--inbox-ink);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(80, 84, 88, 0.22);
+  border-radius: var(--r-2, 2px);
+}
+
+.inbox-link-guess-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.inbox-link-guess-head b,
+.inbox-link-guess-kind {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--inbox-nameplate);
+}
+
+.inbox-link-guess-head span {
+  flex: 1;
+  min-width: 0;
+}
+
+.inbox-link-guess ul {
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inbox-link-guess li {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr) auto auto auto;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+  box-shadow: inset 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.inbox-link-guess-text em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--chrome-ink-soft);
+}
+
+.inbox-link-guess-sure {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--chrome-ink-soft);
+}
+
+.inbox-link-guess-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--chrome-ink-soft);
+  box-shadow: inset 0 -1px rgba(0, 0, 0, 0.12);
+}
+
+.inbox-link-guess-run {
+  font-weight: 700;
+  color: var(--inbox-nameplate);
+  font-variant-numeric: tabular-nums;
+}
+
+.inbox-link-guess-tally {
+  font-variant-numeric: tabular-nums;
+}
+
+.inbox-dialog .inbox-link-guess-filter {
+  margin-left: auto;
+}
+
+.inbox-link-guess-filter i {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.inbox-link-guess-verdict {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.inbox-link-guess li[data-verdict="rejected"] .inbox-link-guess-text {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.inbox-link-guess-comment {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 2px 5px;
+  font: inherit;
+  font-size: 11px;
+  resize: vertical;
+  color: var(--inbox-ink);
+  background: #ffffff;
+  box-shadow: var(--inbox-field);
+  border: 0;
+}
+
+.inbox-link-guess-none,
+.inbox-link-guess-busy {
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: var(--chrome-ink-soft);
+}
+
+.inbox-link-guess-foot {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--chrome-ink-soft);
 }
 
 .inbox-link-confirm {

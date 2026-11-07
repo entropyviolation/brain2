@@ -78,3 +78,4 @@ docs/shortcuts/*.plist
 /scripts/texts-analysis/.env
 /scripts/texts-analysis/**/*.sqlite
 /scripts/texts-analysis/**/*.db
+/data/link-peek/

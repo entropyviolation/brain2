@@ -360,7 +360,7 @@ export function TaskClarificationDialog({
             <Button variant="outline" onClick={onClose}>
               {walking ? "End walk" : "Cancel"}
             </Button>
-            <Button onClick={handleSave} className="inbox-clarify-save">
+            <Button onClick={handleSave} className="inbox-clarify-save inbox-cap-primary">
               <Save className="h-4 w-4 mr-2" />
               {walking ? "Save & next" : "Save & Clarify"}
             </Button>

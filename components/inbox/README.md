@@ -4,9 +4,20 @@ _Last mapped: 2026-10-27._
 
 The public import is `@/components/inbox`, which is the file `components/inbox.tsx`. That file is the client door: it imports `components/inbox.css` once and re-exports `Inbox`. There is no `index` file in this folder. An index here would be ignored, or it would steal that import.
 
-Links stay in `components/inbox-links.tsx`. Behavior stays on the `inbox.tsx` / `inbox.css` row in [`components/README.md`](../README.md).
+Links stay in `components/inbox-links.tsx`; its Link BIMBY strip is `link-guess.tsx` here. Behavior stays on the `inbox.tsx` / `inbox.css` row in [`components/README.md`](../README.md).
 
 `inbox-view.tsx` owns the state, the handlers, the selection effect, and the order of the dialogs. The other files are the leaves it composes.
+
+## Keys
+
+_Last mapped: 2026-11-06_
+
+Every button on every Inbox screen is the house silver keycap (`docs/DESIGN_STYLE.md#keycaps`). That covers the Inbox, Monkey brain, and Links tabs, the foot keys, the row tools, the Link BIMBY strip, Clarify, and the four small dialogs. The paint is one rule in `components/inbox.css` ("Word keys"). The dialogs sit outside `.todo95`, so it does not reuse `.todo-cap`. It uses `!important` and a long `:not()` chain to beat the win95 mill rule and the `.fm98-dialog` key rule. Any override (primary, short cap, lit filter) needs that same chain, or the base wins. Apply list and Set deadline now carry `inbox-dialog` so they get the cap.
+
+- Primary cap: `inbox-cap-primary` on Save & Clarify, Apply, Select, and Yes, delete. Navy legend, navy lamp, navy ring.
+- Short cap: row tools, Links kind filters, and the BIMBY strip.
+- A latched filter (Links kinds, To review) is the dropped cap in CRT glass. An approved verdict stays down in sage, a rejected one in brick.
+- Left out: the partition keys (already latching caps), row titles, the chip ×, list picker rows, and the title-bar close cap.
 
 ## Folders
 
@@ -34,6 +45,7 @@ _Last mapped: 2026-10-27_
 | `dialogs/deadline-dialog.tsx` | Set deadline |
 | `dialogs/select-n-dialog.tsx` | Select N |
 | `dialogs/delete-confirm-dialog.tsx` | Are you sure? |
+| `link-guess.tsx` | Link BIMBY on the Links tab: the shared guess queue (`useLinkGuesser`, Guess all, Stop), `LinkGuessBar` (tally, To review), and the guess strip with ✓ / ✗ and a comment. _Last mapped: 2026-11-06_ |
 | `bulk-edit-host.tsx` | Bulk edit. `afterAdd` keeps arrival, door, and monkey |
 | `hooks/use-inbox-rows-scroll.ts` | Scroll refs, restore, release, and the layout restore |
 | `hooks/use-inbox-chords.ts` | Window chord listener |

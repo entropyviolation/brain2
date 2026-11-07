@@ -8,16 +8,27 @@
  * The link opens in the browser. The note edits in place. File moves the row
  * to All Items with the link kept. Delete asks first. Cmd/Ctrl-Z undoes both.
  * Not the idea walk: no clarify sheet, no chords, no points.
+ *
+ * **Guess** asks the Link BIMBY (`lib/link-bimby/`) what in Brain2 the link is a
+ * resource for. The reading shows under the note (`components/inbox/link-guess.tsx`);
+ * **Use** files the link to that list, or ties it to that item. **Guess all** walks every
+ * unguessed link; ✓ / ✗ and a comment on each guess feed later prompts. **To review**
+ * shows only guessed links with no verdict or comment yet.
  */
 "use client"
 
 import { useMemo, useRef, useState } from "react"
 import { format } from "date-fns"
-import { Check, Copy, Edit, ExternalLink, Link2, Trash } from "lucide-react"
+import { Check, Copy, Edit, ExternalLink, Link2, Sparkles, Trash } from "lucide-react"
+import { LinkGuessBar, LinkGuessStrip, useLinkGuesser } from "@/components/inbox/link-guess"
+import { isReviewed } from "@/lib/link-bimby/feedback"
 import { Button } from "@/components/ui/button"
 import { rememberWorld, undoLastAction } from "@/lib/action-history"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { clarifyInboxItems, deleteInboxItems } from "@/lib/inbox-batch"
+import { applyGuess } from "@/lib/link-bimby/apply"
+import { useLinkBimbyStore } from "@/lib/link-bimby/store"
+import type { LinkGuess } from "@/lib/link-bimby/types"
 import { linkHost, linkKindLabel } from "@/lib/saved-links"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
@@ -58,6 +69,9 @@ export function InboxLinks({ links }: { links: Task[] }) {
   const [undoLabel, setUndoLabel] = useState<string | null>(null)
   /** The row whose note is open. Enter and blur both save; only the first one counts. */
   const editingRef = useRef<string | null>(null)
+  const readings = useLinkBimbyStore((s) => s.readings)
+  const { guess, busy } = useLinkGuesser()
+  const [reviewOnly, setReviewOnly] = useState(false)
 
   const kinds = useMemo(() => {
     const seen = new Map<string, number>()
@@ -72,10 +86,14 @@ export function InboxLinks({ links }: { links: Task[] }) {
     const q = query.trim().toLowerCase()
     return links.filter((task) => {
       if (kind !== "all" && linkKindLabel(task.savedLink!) !== kind) return false
+      if (reviewOnly) {
+        const r = readings[task.id]
+        if (!r || isReviewed(r)) return false
+      }
       if (!q) return true
       return `${task.savedLink!.url}\n${task.notes ?? ""}`.toLowerCase().includes(q)
     })
-  }, [links, query, kind])
+  }, [links, query, kind, reviewOnly, readings])
 
   const groups = useMemo(() => {
     const out: { key: string; tasks: Task[] }[] = []
@@ -126,6 +144,12 @@ export function InboxLinks({ links }: { links: Task[] }) {
     setUndoLabel("links delete")
   }
 
+  const takeGuess = (task: Task, g: LinkGuess) => {
+    rememberWorld("links use guess")
+    setTasks(applyGuess(useTaskStore.getState().tasks, task.id, g))
+    setUndoLabel(g.kind === "list" ? `Filed to ${g.name}. Cmd/Ctrl-Z undoes.` : `Tied to “${g.name}” and filed. Cmd/Ctrl-Z undoes.`)
+  }
+
   const copyLink = (task: Task) => {
     void navigator.clipboard?.writeText(task.savedLink!.url).then(
       () => setCopiedId(task.id),
@@ -142,7 +166,9 @@ export function InboxLinks({ links }: { links: Task[] }) {
               ? "Filed to All Items. The link stays on it. Cmd/Ctrl-Z undoes."
               : undoLabel === "links delete"
                 ? "Deleted. Cmd/Ctrl-Z undoes."
-                : "Note saved. Cmd/Ctrl-Z undoes."}
+                : undoLabel === "links edit note"
+                  ? "Note saved. Cmd/Ctrl-Z undoes."
+                  : undoLabel}
           </span>
           <Button
             variant="outline"
@@ -181,6 +207,7 @@ export function InboxLinks({ links }: { links: Task[] }) {
             ))}
           </div>
         )}
+        <LinkGuessBar links={links} reviewOnly={reviewOnly} onReviewOnly={setReviewOnly} />
         <div className="inbox-rows-scroll">
           {shown.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -236,6 +263,15 @@ export function InboxLinks({ links }: { links: Task[] }) {
                           ) : task.notes?.trim() ? (
                             <p className="inbox-link-note">{task.notes.trim()}</p>
                           ) : null}
+                          {busy[task.id] ? (
+                            <p className="inbox-link-guess-busy">{busy[task.id]}</p>
+                          ) : readings[task.id] ? (
+                            <LinkGuessStrip
+                              reading={readings[task.id]!}
+                              onUse={(g) => takeGuess(task, g)}
+                              onAgain={() => void guess(task)}
+                            />
+                          ) : null}
                         </div>
                         <span className="inbox-row-when">{when ? format(when, "h:mm a") : ""}</span>
                         <span className="inbox-link-tools">
@@ -275,6 +311,17 @@ export function InboxLinks({ links }: { links: Task[] }) {
                                 onClick={() => startEdit(task)}
                               >
                                 <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                title="Guess what in Brain2 this link is for"
+                                disabled={Boolean(busy[task.id])}
+                                onClick={() => void guess(task)}
+                              >
+                                <Sparkles className="h-4 w-4" />
+                                Guess
                               </Button>
                               <Button type="button" variant="outline" size="sm" title="File to All Items" onClick={() => fileLink(task)}>
                                 File

@@ -57,7 +57,7 @@ export function SelectNDialog({
           />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setBatchMode(null)}>Cancel</Button>
-            <Button type="submit">Select</Button>
+            <Button type="submit" className="inbox-cap-primary">Select</Button>
           </div>
         </form>
       </DialogContent>

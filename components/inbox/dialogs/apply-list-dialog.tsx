@@ -28,7 +28,7 @@ export function ApplyListDialog({
 }) {
   return (
     <Dialog open={batchMode === "list"} onOpenChange={(next) => { if (!next) setBatchMode(null) }}>
-      <DialogContent className="fm98-dialog sm:max-w-md">
+      <DialogContent className="inbox-dialog fm98-dialog sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Apply list</DialogTitle>
           <DialogDescription>
@@ -39,7 +39,7 @@ export function ApplyListDialog({
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="outline" onClick={() => setBatchMode(null)}>Cancel</Button>
           <Button variant="outline" onClick={applyBatchLists} disabled={batchListIds.length === 0}>Apply</Button>
-          <Button onClick={applyBatchListsAndClarify} disabled={batchListIds.length === 0} className="bg-[#000080] hover:bg-[#000060]">
+          <Button onClick={applyBatchListsAndClarify} disabled={batchListIds.length === 0} className="inbox-cap-primary">
             Apply and clarify
           </Button>
         </div>

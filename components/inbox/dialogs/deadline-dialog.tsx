@@ -27,7 +27,7 @@ export function DeadlineDialog({
 }) {
   return (
     <Dialog open={batchMode === "deadline"} onOpenChange={(next) => { if (!next) setBatchMode(null) }}>
-      <DialogContent className="fm98-dialog sm:max-w-md">
+      <DialogContent className="inbox-dialog fm98-dialog sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Set deadline</DialogTitle>
           <DialogDescription>
@@ -44,7 +44,7 @@ export function DeadlineDialog({
         />
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setBatchMode(null)}>Cancel</Button>
-          <Button onClick={applyBatchDeadline}>Apply</Button>
+          <Button onClick={applyBatchDeadline} className="inbox-cap-primary">Apply</Button>
         </div>
       </DialogContent>
     </Dialog>

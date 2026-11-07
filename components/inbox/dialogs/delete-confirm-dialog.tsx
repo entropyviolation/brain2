@@ -70,7 +70,7 @@ export function DeleteConfirmDialog({
           >
             Cancel
           </Button>
-          <Button onClick={applyDeleteSelection} className="bg-[#000080] hover:bg-[#000060]">
+          <Button onClick={applyDeleteSelection} className="inbox-cap-primary">
             Yes, delete {deletePreview.length}
           </Button>
         </div>
