@@ -46,3 +46,17 @@ describe("acceptBlocks", () => {
     expect(acceptBlocks([b]).refused[0]!.why).toBe("NEEDS A START AND END")
   })
 })
+
+import { awaitingFromBim, type HelperLine } from "./store"
+
+describe("awaitingFromBim", () => {
+  const block = (id: string) => ({ id }) as never
+  const line = (o: Partial<HelperLine>): HelperLine => ({ id: "l", who: "helper", text: "", at: "", ...o })
+  it("counts only open blocks on lines that came from BIM chat", () => {
+    const lines = [
+      line({ fromBim: true, blocks: [block("a"), block("b")], decided: { a: "added" } }),
+      line({ blocks: [block("c")], decided: {} }),
+    ]
+    expect(awaitingFromBim(lines)).toBe(1)
+  })
+})

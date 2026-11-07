@@ -31,6 +31,14 @@ saved until **Add**. Logic and reasoning: [`lib/tracking-helper/README.md`](../.
 The transcript and open proposals are per device (`localStorage` `trackinghelper-chat-v1`). Undo reverts one Add
 in one step (Tracking's usual undo).
 
+## Opened from elsewhere
+
+_Last mapped: 2026-11-07_ The Chat key opens itself when `useHelperOpenRequest` (`lib/tracking-helper/open.ts`) is raised, which the Inbox notice does after switching to Home → Tracking. Lines sent from BIM chat carry `fromBim`.
+
 ## Not yet
 
 Phone shell; a Day Log or Time Grid ghost preview of proposals before they are added (**Planned**).
+
+## Standing instructions
+
+_Last mapped: 2026-11-07_ A line that is a rule, not an account of a day ("whenever I am actively speed reading, track that time on a pen called speedreading that counts as reading, with a note of the book and pages"), is not sent to the timeblock pipeline. `send` in `lib/tracking-helper/store.ts` checks `wantsTrack` first and shows the Wire BIMBY's plan card (`components/Bim/wire-card.tsx`) in the dialog. Accept makes the pen, nests it, and has the module paint its sessions from then on (`lib/wire-bimby/README.md`). **Planned:** more standing rules (other modules; a rule for a screen-time app).

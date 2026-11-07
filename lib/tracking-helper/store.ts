@@ -7,6 +7,8 @@
  */
 "use client"
 
+import { wantsTrack } from "@/lib/wire-bimby/plan"
+import { tryWire } from "@/lib/wire-bimby/run"
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
@@ -17,6 +19,8 @@ import { recordReaction } from "@/lib/skills/learn"
 import { TRACKING_HELPER_SKILLS } from "@/lib/skills/seeds"
 import { acceptBlocks, buildContext } from "./accept"
 import { loadFlow } from "./flow"
+import { helperBlueprint } from "@/lib/agents/adapters/tracking-helper"
+import { infoText, isInfoRequest } from "@/lib/agents/info"
 import { HELPER_AGENT_ID, reactionOfCorrection, reactionOfDismiss, reactionsOfAdd } from "./learn"
 import { QUESTION_REPLY, runHelper } from "./run"
 import type { HelperRoute, ProposedBlock, TraceStage } from "./types"
@@ -41,6 +45,10 @@ export interface HelperLine {
   proposed?: ProposedBlock[]
   /** Ids of the learned skills that were in the prompt (`lib/skills/`). */
   skillsUsed?: string[]
+  /** A standing instruction ("whenever I speed read, track it on a pen") read into a plan card (`lib/wire-bimby`). */
+  wireId?: string
+  /** The words came from BIM chat ("send this to tracking bimby: …"), so the Inbox shows a waiting notice until they are decided. */
+  fromBim?: boolean
 }
 
 /** Learn from the person's reaction to a line's blocks. Credit goes to the skills once per block, on its first reaction. */
@@ -53,7 +61,7 @@ const reactionBase = (line: HelperLine) => ({ input: line.account ?? line.text, 
 interface HelperState {
   lines: HelperLine[]
   busy: boolean
-  send: (text: string) => Promise<void>
+  send: (text: string, opts?: { fromBim?: boolean }) => Promise<void>
   edit: (lineId: string, blockId: string, patch: Partial<ProposedBlock>) => void
   add: (lineId: string, blockIds?: string[], force?: boolean) => string
   dismiss: (lineId: string, blockId: string) => void
@@ -72,12 +80,23 @@ export const useTrackingHelper = create<HelperState>()(
       lines: [],
       busy: false,
 
-      send: async (raw) => {
+      send: async (raw, opts) => {
         const text = raw.trim()
         if (!text || get().busy) return
         const at = new Date().toISOString()
         set((s) => ({ busy: true, lines: [...s.lines, { id: newId(), who: "you" as const, text, at }].slice(-MAX_LINES) }))
         const t0 = Date.now()
+        // "info" is answered from the Blueprint and runs nothing else.
+        if (isInfoRequest(text)) {
+          set((s) => ({ busy: false, lines: [...s.lines, { id: newId(), who: "helper" as const, text: infoText(helperBlueprint(), { href: "/lab/tracking-helper" }), at: new Date().toISOString(), ms: Date.now() - t0 }].slice(-MAX_LINES) }))
+          return
+        }
+        // A standing instruction about a module's time is not an account of a day: it becomes a checked plan card.
+        const standing = wantsTrack(text) ? tryWire(text, new Date()) : null
+        if (standing) {
+          set((s) => ({ busy: false, lines: [...s.lines, { id: newId(), who: "helper" as const, text: standing.text, at: new Date().toISOString(), wireId: standing.wireId, ms: Date.now() - t0 }].slice(-MAX_LINES) }))
+          return
+        }
         try {
           const pendingLine = [...get().lines].reverse().find((l) => l.who === "helper" && openBlocks(l).length && l.account)
           const flow = loadFlow()
@@ -98,7 +117,7 @@ export const useTrackingHelper = create<HelperState>()(
                 ]
                   .filter(Boolean)
                   .join(" ")
-          const line: HelperLine = { id: newId(), who: "helper", text: note, at: new Date().toISOString(), route: run.route, blocks: run.blocks, decided: {}, account: run.route === "question" ? undefined : run.text, model: run.model, ms: Date.now() - t0, trace: run.trace, proposed: run.blocks, skillsUsed: run.skillsUsed }
+          const line: HelperLine = { id: newId(), who: "helper", text: note, at: new Date().toISOString(), route: run.route, blocks: run.blocks, decided: {}, ...(opts?.fromBim ? { fromBim: true } : {}), account: run.route === "question" ? undefined : run.text, model: run.model, ms: Date.now() - t0, trace: run.trace, proposed: run.blocks, skillsUsed: run.skillsUsed }
           if (run.route === "revise" && pendingLine) {
             const base = { ...reactionBase(pendingLine), skillsUsed: pendingLine.skillsUsed ?? [] }
             learn(openBlocks(pendingLine).map((b) => [reactionOfCorrection(b, text, base)]))
@@ -149,3 +168,8 @@ export const useTrackingHelper = create<HelperState>()(
 )
 
 export { openBlocks }
+
+/** Proposed blocks sent from BIM chat that still wait for Add or dismiss. */
+export function awaitingFromBim(lines: HelperLine[]): number {
+  return lines.reduce((n, l) => (l.fromBim ? n + openBlocks(l).length : n), 0)
+}

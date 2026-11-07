@@ -74,6 +74,7 @@ empty answer. Questions, corrections' routing, clocks, days, certainty, chaining
 | `learn.ts` | What a reaction teaches: `reactionsOfAdd` (block as proposed vs as added), `reactionOfDismiss`, `reactionOfCorrection`. Pure. |
 | `accept.ts` | `buildContext` (pens + 180 days of history), `conflictsOf`, `acceptBlocks` (one undo step) |
 | `store.ts` | `useTrackingHelper`: chat lines, proposals, per-card decisions (`trackinghelper-chat-v1`) |
+| `open.ts` | `openTrackingHelper`, `useHelperOpenRequest`: go to Home → Tracking and open the chat |
 | `tests.ts` | Shared test cases (`SHIPPED_TESTS`), `replay`, `compare`; user cases in `trackinghelper-tests-v1` |
 | `learn.test.ts` | Reactions, and learned skills reaching the WIRE prompt |
 | `tracking-helper.test.ts`, `accept.test.ts` | Unit tests, including the 7-block Friday account and two slips the live 14B made |

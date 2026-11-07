@@ -7,6 +7,7 @@
  */
 "use client"
 
+import { WireCard } from "@/components/Bim/wire-card"
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useTrackingHelper } from "@/lib/tracking-helper/store"
@@ -72,6 +73,7 @@ export function TrackingHelperDialog({ open, onOpenChange }: { open: boolean; on
                 <span className="th-who">{l.who === "you" ? "YOU" : "HELPER"} · {clock(l.at)}{l.who === "helper" && l.ms ? ` · ${(l.ms / 1000).toFixed(1)}s${l.model ? ` · ${l.model}` : l.route === "log" || l.route === "revise" ? " · rules" : ""}` : ""}</span>
                 <p>{l.text}</p>
               </div>
+              {l.who === "helper" && l.wireId ? <WireCard wireId={l.wireId} /> : null}
               {l.who === "helper" ? <ProposalBoard line={l} /> : null}
             </div>
           ))}
