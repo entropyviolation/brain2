@@ -1,0 +1,216 @@
+/**
+ * components/Analytics/time-flow.css — Transitions, Context switch, Text events /
+ * spans, Log, Operations
+ *
+ * Small shared kit for the five views: folds, signed bars, unit grid, era bars,
+ * rate clock, quadrant plot. Paper and ink from the atlas tokens; fills stay data.
+ * Docs: `docs/analytics/time-*.md`.
+ */
+
+.tf-fold {
+  border-top: 1px solid var(--at-rule-soft, rgba(20, 23, 28, 0.22));
+  padding-top: 6px;
+}
+.tf-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--at-display, inherit);
+  font-size: 14px;
+  font-weight: 600;
+}
+.tf-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.tf-fold > summary::before {
+  content: "▸";
+  font-size: 11px;
+  transition: transform 0.15s;
+}
+.tf-fold[open] > summary::before {
+  transform: rotate(90deg);
+}
+.tf-fold > summary .an-n {
+  margin-left: auto;
+  font-weight: 400;
+}
+.tf-fold > :not(summary) {
+  margin-top: 8px;
+}
+.tf-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.tf-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.tf-tools input[type="search"],
+.tf-tools input[type="text"] {
+  min-width: 0;
+  flex: 1 1 160px;
+  height: 26px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+}
+.tf-tools input[type="range"] {
+  flex: 1 1 120px;
+  min-width: 80px;
+}
+
+/* ---- Bars: plain and signed ---- */
+
+.tf-bars {
+  display: grid;
+  grid-template-columns: minmax(70px, 32%) 1fr auto;
+  gap: 4px 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.tf-bars > .tf-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tf-track {
+  position: relative;
+  height: 12px;
+  background: var(--at-paper-deep, #e1e5e8);
+}
+.tf-track > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+.tf-track.is-signed::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--at-ink, #14171c);
+}
+.tf-val {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---- Unit grid: one square per event ---- */
+
+.tf-units {
+  display: grid;
+  grid-template-columns: minmax(70px, 28%) 1fr;
+  gap: 6px 10px;
+  align-items: start;
+  font-size: 12px;
+}
+.tf-units > .tf-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 12px;
+}
+.tf-unit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.tf-unit {
+  width: 10px;
+  height: 10px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+.tf-unit.is-est {
+  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.55) 0 2px, transparent 2px 4px);
+}
+.tf-unit.is-unknown {
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px var(--at-ink-faint, #69717c);
+}
+
+/* ---- Era bars: one row per day, 24 h wide ---- */
+
+.tf-era {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 2px 8px;
+  align-items: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.tf-era-track {
+  position: relative;
+  height: 12px;
+  background: var(--at-paper-deep, #e1e5e8);
+  background-image: linear-gradient(90deg, var(--at-rule-soft, rgba(20, 23, 28, 0.22)) 1px, transparent 1px);
+  background-size: 25% 100%;
+}
+.tf-era-track > i {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  min-width: 2px;
+}
+.tf-era-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--at-ink-faint, #69717c);
+}
+
+/* ---- Matrix extras ---- */
+
+.an-matrix-cell.is-diag {
+  background-image: repeating-linear-gradient(45deg, var(--at-rule-soft, rgba(20, 23, 28, 0.22)) 0 1px, transparent 1px 5px) !important;
+}
+.an-matrix-cell[role="button"] {
+  cursor: pointer;
+}
+.an-matrix-cell.is-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- SVG plates (rate clock, quadrant) ---- */
+
+.tf-svg {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  margin: 0 auto;
+  font-family: var(--at-type, inherit);
+}
+.tf-svg text {
+  fill: var(--at-ink, #14171c);
+}
+.tf-svg .tf-faint {
+  fill: var(--at-ink-faint, #69717c);
+}
+.tf-svg .tf-rule {
+  stroke: var(--at-rule-soft, rgba(20, 23, 28, 0.22));
+  fill: none;
+}
+.tf-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+/* Plates with overflow set (readouts, matrix) must not shrink to 0 in the
+   flex column when the canvas has a fixed height. */
+.tf-view > *,
+.tf-view .an-plate > * {
+  flex-shrink: 0;
+}

@@ -2,16 +2,18 @@
  * components/Analytics/time/OperationsAnalytics.tsx — Stage mosaic + work/neglect heat
  *
  * Reads operation items and the after-action reports already stored on them.
- * Does not restyle the Operations module interior.
+ * Does not restyle the Operations module interior. Adds a neglect ranking
+ * (days since last time log, stage filter, search) and a debrief quadrant
+ * (morale × execution, bubble = hours). Docs: `docs/analytics/time-operations.md`.
  */
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { operationTasks } from "@/lib/item-slices"
 import { itemTitle } from "@/lib/item-utils"
 import { useReviewsStore } from "@/lib/reviews-store"
-import { buildHeatmap } from "@/lib/operations"
+import { buildHeatmap, neglectedDays } from "@/lib/operations"
 import { getOperationCategories, OPERATION_ATTR } from "@/lib/operation-types"
 import { parseLocalDate } from "@/lib/date-utils"
 import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
@@ -23,7 +25,11 @@ import {
   formatDebriefHours,
   summarizeOperationDebriefs,
 } from "./operation-debrief"
-import { SliceMosaic, StudioReadout } from "../studio/studio-kit"
+import { CanvasTitle, SliceMosaic, StudioReadout } from "../studio/studio-kit"
+import { debriefPoints, operationNeglect } from "./time-flow-stats"
+import "./time-flow.css"
+
+const CATEGORY_COLORS = ["#0f766e", "#7c3aed", "#b45309", "#be185d", "#4d7c0f", "#c2410c", "#475569", "#0369a1"]
 
 const STAGE_COLOR: Record<string, string> = {
   planning: "#64748b",
@@ -38,12 +44,29 @@ export function OperationsAnalytics() {
   const operationReviews = useReviewsStore((s) => s.operationReviews)
   const { dateKeys, keySet, label } = useAnalyticsRange()
 
-  const start = parseLocalDate(dateKeys[0] ?? "") ?? new Date()
-  const end = parseLocalDate(dateKeys[dateKeys.length - 1] ?? "") ?? new Date()
-
-  const heat = useMemo(
-    () => (dateKeys.length ? buildHeatmap(ops, { start, end, days: dateKeys.length }) : []),
-    [ops, start, end, dateKeys.length],
+  const firstKey = dateKeys[0] ?? ""
+  const lastKey = dateKeys[dateKeys.length - 1] ?? ""
+  const heat = useMemo(() => {
+    if (!dateKeys.length) return []
+    const start = parseLocalDate(firstKey) ?? new Date()
+    const end = parseLocalDate(lastKey) ?? new Date()
+    return buildHeatmap(ops, { start, end, days: dateKeys.length })
+  }, [ops, firstKey, lastKey, dateKeys.length])
+  const [stageFilter, setStageFilter] = useState("")
+  const [query, setQuery] = useState("")
+  const stageOf = (op: (typeof ops)[number]) => String(op.attributes?.[OPERATION_ATTR.stage] ?? "planning")
+  const neglect = useMemo(() => operationNeglect(ops, keySet, lastKey), [ops, keySet, lastKey])
+  const opById = useMemo(() => new Map(ops.map((op) => [op.id, op])), [ops])
+  const neglectShown = neglect.filter((row) => {
+    const op = opById.get(row.id)
+    if (!op) return false
+    if (stageFilter && stageOf(op) !== stageFilter) return false
+    return !query.trim() || itemTitle(op).toLowerCase().includes(query.trim().toLowerCase())
+  })
+  const maxQuiet = Math.max(1, ...neglect.map((r) => r.daysSince ?? 0))
+  const bubbles = useMemo(
+    () => debriefPoints(operationReviews.filter((r) => inRange(r.completedAt, keySet))),
+    [operationReviews, keySet],
   )
 
   const stages = useMemo(() => {
@@ -68,10 +91,10 @@ export function OperationsAnalytics() {
       if (cats.length === 0) counts.set("uncategorized", (counts.get("uncategorized") ?? 0) + 1)
       for (const c of cats) counts.set(c, (counts.get(c) ?? 0) + 1)
     }
-    return [...counts.entries()].map(([id, minutes]) => ({
+    return [...counts.entries()].map(([id, minutes], i) => ({
       id,
       name: id,
-      color: "#5eead4",
+      color: id === "uncategorized" ? "#94a3b8" : CATEGORY_COLORS[i % CATEGORY_COLORS.length],
       minutes,
       label: String(minutes),
     }))
@@ -89,10 +112,13 @@ export function OperationsAnalytics() {
   }, [ops, operationReviews, keySet])
 
   return (
-    <div className="an-canvas an-stack" data-testid="operations-analytics">
+    <div className="an-canvas an-stack tf-view" data-testid="operations-analytics">
       <header className="an-canvas-head">
         <div>
-          <p className="an-canvas-title">Operations</p>
+          <CanvasTitle
+            title="Operations"
+            help="Operation items: how many sit in each stage and category, which days had logged work, how long each has gone without a log, and what the after-action reports said."
+          />
           <p className="an-canvas-kicker">{label} · stage / category mosaic and work vs neglect from timeLogs.</p>
         </div>
       </header>
@@ -145,7 +171,51 @@ export function OperationsAnalytics() {
             ) : (
               <ChartFrame empty emptySentence={`No operation timeLogs in the ${label}.`} />
             )}
+            {heat.length ? (
+              <p className="an-n">
+                {neglectedDays(heat)} of {heat.length} days with no logged work on any operation
+              </p>
+            ) : null}
             <OpenInListsButton taskIds={ops.map((t) => t.id)} />
+          </section>
+          <section className="an-plate" aria-label="Neglect">
+            <CanvasTitle
+              title="Longest untouched"
+              help="Days since each operation last had a time log, counted to the end of the window. Never logged sits at the top. The right column is minutes logged inside the window."
+            />
+            <div className="tf-tools" role="group" aria-label="Stage filter">
+              <button type="button" className="an-chip" aria-pressed={stageFilter === ""} onClick={() => setStageFilter("")}>
+                All
+              </button>
+              {stages.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="an-chip"
+                  aria-pressed={stageFilter === s.id}
+                  onClick={() => setStageFilter(stageFilter === s.id ? "" : s.id)}
+                >
+                  {s.name} · {s.minutes}
+                </button>
+              ))}
+              <input type="search" value={query} aria-label="Search operations" placeholder="Search" onChange={(e) => setQuery(e.target.value)} />
+            </div>
+            <div className="tf-bars tf-scroll">
+              {neglectShown.map((row) => {
+                const op = opById.get(row.id)!
+                return (
+                  <FragmentRow
+                    key={row.id}
+                    name={itemTitle(op) || "Operation"}
+                    width={row.daysSince == null ? 100 : (row.daysSince / maxQuiet) * 100}
+                    color={STAGE_COLOR[stageOf(op)] ?? "#64748b"}
+                    tip={row.lastDate ? `last log ${row.lastDate}` : "never logged"}
+                    value={`${row.daysSince == null ? "never" : `${row.daysSince}d`} · ${row.windowMin}m`}
+                  />
+                )
+              })}
+            </div>
+            {neglectShown.length === 0 ? <p className="an-canvas-hint">No operation matches.</p> : null}
           </section>
           <section className="an-plate" data-testid="operations-debrief">
             <p className="an-canvas-title">After-action debrief</p>
@@ -187,10 +257,26 @@ export function OperationsAnalytics() {
                     tip="Mean of the stored hoursLogged values in this window. A missing total is left out."
                   />
                 </div>
+                {bubbles.length > 0 ? (
+                  <>
+                    <CanvasTitle
+                      title="Morale × execution"
+                      help="One bubble per report that scored both morale and execution (1–10). Bubble area = stored hours logged; no hours = smallest dot. The cross is at 5.5, the middle of the scale, splitting four corners."
+                    />
+                    <DebriefQuadrant points={bubbles} titleOf={(id) => {
+                        const op = opById.get(id)
+                        return (op && itemTitle(op)) || "Operation"
+                      }} />
+                  </>
+                ) : null}
                 {debrief.texts.length === 0 ? (
                   <p className="an-canvas-hint">No written summary, what worked, what failed, or lessons in this window.</p>
                 ) : (
-                  debrief.texts.map((text) => {
+                  <details className="tf-fold" open={debrief.texts.length <= 2}>
+                    <summary>
+                      Written debriefs <span className="an-n">{debrief.texts.length}</span>
+                    </summary>
+                  {debrief.texts.map((text) => {
                     const when = text.completedAt
                     const date = Number.isNaN(when.getTime()) ? "" : when.toLocaleDateString()
                     return (
@@ -230,7 +316,8 @@ export function OperationsAnalytics() {
                         </div>
                       </article>
                     )
-                  })
+                  })}
+                  </details>
                 )}
               </>
             )}
@@ -238,5 +325,92 @@ export function OperationsAnalytics() {
         </>
       )}
     </div>
+  )
+}
+
+function FragmentRow({ name, width, color, tip, value }: { name: string; width: number; color: string; tip: string; value: string }) {
+  return (
+    <>
+      <span className="tf-name" title={name}>
+        {name}
+      </span>
+      <span className="tf-track" title={tip}>
+        <i style={{ width: `${width}%`, background: color }} />
+      </span>
+      <span className="tf-val">{value}</span>
+    </>
+  )
+}
+
+function DebriefQuadrant({
+  points,
+  titleOf,
+}: {
+  points: { id: string; operationId: string; morale: number; execution: number; hours: number | null }[]
+  titleOf: (operationId: string) => string
+}) {
+  const pad = 26
+  const size = 240
+  const span = size - pad * 2
+  const pos = (v: number) => pad + ((v - 1) / 9) * span
+  // Reports that share a score pair share one circle: its area sums their hours and its tooltip lists each one.
+  const cells = [...points
+    .reduce((m, p) => {
+      const key = `${p.morale}-${p.execution}`
+      const cell = m.get(key) ?? { key, morale: p.morale, execution: p.execution, rows: [] as typeof points }
+      cell.rows.push(p)
+      return m.set(key, cell)
+    }, new Map<string, { key: string; morale: number; execution: number; rows: typeof points }>())
+    .values()]
+  const maxH = Math.max(1, ...cells.map((g) => g.rows.reduce((sum, p) => sum + (p.hours ?? 0), 0)))
+  const corners = [
+    { x: pad + 4, y: pad + 10, a: "start", t: "Grind" },
+    { x: size - pad - 4, y: pad + 10, a: "end", t: "Smooth run" },
+    { x: pad + 4, y: size - pad - 4, a: "start", t: "Rough" },
+    { x: size - pad - 4, y: size - pad - 4, a: "end", t: "Fun mess" },
+  ] as const
+  return (
+    <svg className="tf-svg" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Debrief morale against execution">
+      <rect className="tf-rule" x={pad} y={pad} width={span} height={span} />
+      <line className="tf-rule" x1={pos(5.5)} x2={pos(5.5)} y1={pad} y2={size - pad} />
+      <line className="tf-rule" y1={size - pos(5.5)} y2={size - pos(5.5)} x1={pad} x2={size - pad} />
+      {corners.map((c) => (
+        <text key={c.t} x={c.x} y={c.y} fontSize={9} textAnchor={c.a} className="tf-faint">
+          {c.t}
+        </text>
+      ))}
+      <text x={size / 2} y={size - 6} fontSize={9} textAnchor="middle">
+        morale →
+      </text>
+      <text x={10} y={size / 2} fontSize={9} textAnchor="middle" transform={`rotate(-90 10 ${size / 2})`}>
+        execution →
+      </text>
+      {cells.map((g) => {
+        const hours = g.rows.reduce((sum, p) => sum + (p.hours ?? 0), 0)
+        return (
+          <g key={g.key}>
+            <circle
+              cx={pos(g.morale)}
+              cy={size - pos(g.execution)}
+              r={3 + Math.sqrt(hours / maxH) * 14}
+              fill="#0f766e"
+              fillOpacity={0.45}
+              stroke="#0f766e"
+            >
+              <title>
+                {g.rows
+                  .map((p) => `${titleOf(p.operationId)} · morale ${p.morale} · execution ${p.execution}${p.hours != null ? ` · ${p.hours}h` : ""}`)
+                  .join("\n")}
+              </title>
+            </circle>
+            {g.rows.length > 1 ? (
+              <text x={pos(g.morale)} y={size - pos(g.execution) + 3} fontSize={9} textAnchor="middle" pointerEvents="none">
+                {g.rows.length}
+              </text>
+            ) : null}
+          </g>
+        )
+      })}
+    </svg>
   )
 }
