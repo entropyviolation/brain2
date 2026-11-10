@@ -124,7 +124,7 @@ The public door stays in this folder. Each studio group has the views it already
 
 ## Files
 
-_Last mapped: 2026-10-28_
+_Last mapped: 2026-11-03_
 
 | File | Purpose |
 |------|---------|
@@ -143,7 +143,7 @@ _Last mapped: 2026-10-28_
 | `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Overlapping blocks on one minute count once, so an hour stays ≤ 60. Hour×pen small multiples + weekday cycle. |
 | `meta/observatory-findings.ts` | Pearson-r findings for Observatory. Named apart from `meta/Observatory.tsx` (macOS case-fold). |
 | `meta/PeriodSummaryView.tsx` | _Last mapped: 2026-11-02._ Meta view `summary`. When the shared window is exactly a day, week, month, season, or year it shows that period's written summary (or says there is none, with **write it here**) and its children's summaries. Then the plates from `components/PeriodSummary/` over the window. **Past summaries** lists every period with written text or a kept record, newest first; a row moves the window there. Reads only, except the written summary field. |
-| `meta/research-report.ts` / `meta/ResearchReportView.tsx` | Meta view `research-report`: a plain-language rundown of the shared window. Sections appear only when a live series clears a floor (habit-day gap, streak, grade gap, tracking coverage, sleep, one wellbeing move, plan vs tracked minutes, text-pipeline stamps, gratitude, why / blocked-reason counts). Copy rundown is plain text. No model. |
+| `meta/research-report.ts` / `meta/ResearchReportView.tsx` | Meta view `research-report` (contents chips, search, Open all / Fold all; docs `docs/analytics/meta-research-report.md`): a plain-language rundown of the shared window. Sections appear only when a live series clears a floor (habit-day gap, streak, grade gap, tracking coverage, sleep, one wellbeing move, plan vs tracked minutes, text-pipeline stamps, gratitude, why / blocked-reason counts). Copy rundown is plain text. No model. |
 | `signal-stats.ts` | Shannon entropy of pens/day, Gini, list HHI, Markov transitions, weekday/weekend cut, open-item ages. |
 | `behavior/HabitsView.tsx` | Density calendar, sorted bars, week/month grade, Good days, climb, tracking-link split, habit-% lag trace, horizon of daily %, weekday/weekend slopegraph. Day % and rates drop exempt periods from the denominator. |
 | `behavior/PointsView.tsx` | Daily stacked source split (habit / bonus / task) + cumulative + top earners. _Last mapped: 2026-10-20_ A **Points ledger** plate (`#analytics-points-ledger`) lists every award, newest first; a row opens the same breakdown as Home Latest award (`components/Home/award-detail.tsx`). Latest award's foot key lands here through `lib/points-ledger-nav.ts`, and the row that was open on Home opens expanded. |
@@ -186,12 +186,14 @@ _Last mapped: 2026-10-28_
 | `accuracy/CycleView.tsx` | `daysPushed` distribution, open important items, estimate confirmation, empirical survival of open stock, age beeswarm. |
 | `accuracy/RegretView.tsx` | Accrued cost of important items sitting undone. |
 | `accuracy/GoalsAnalytics.tsx` | Objective contribution, neglected goals, progress, and which linked goals held the harder or more enjoyable work. |
-| `meta/Observatory.tsx` | Classical findings + linked Cross-section (`data-ui-name="Observatory"`, `#studio-views`). Thin overlap watermarked. |
-| `meta/CrossSection.tsx` | Linked density (habits, tracking, sleep, completions, points, operations, regret, mood, joy, switches, places, goals, Screen Time occupancy). `data-ui-name="Cross-section"`, `#studio-views`. |
+| `meta/Observatory.tsx` | Classical findings + linked Cross-section (`data-ui-name="Observatory"`, `#studio-views`). Forest plot of every pair with Fisher-z intervals, sortable. Thin overlap watermarked. Docs: `docs/analytics/meta-observatory.md`. |
+| `meta/CrossSection.tsx` | Linked density (habits, tracking, sleep, completions, points, operations, regret, mood, joy, switches, places, goals, Screen Time occupancy). `data-ui-name="Cross-section"`, `#studio-views`. Row chips, sort, compare-to r column. Docs: `docs/analytics/meta-cross-section.md`. |
 | `meta/cross-section.ts` | Pure series builders: missing stays missing. |
-| `meta/MetricsTrends.tsx` | Small-multiples of all five wellbeing metrics + phosphor detail chart + **Log {name}**. |
-| `meta/CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics + habit % / tracking / sleep / points). Click a cell → scatter. |
-| `meta/SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
+| `meta/MetricsTrends.tsx` | Readouts, small multiples of all five wellbeing metrics (daily mean, shared 0–100), phosphor detail chart with smoothing slider and labelled high/low, **Log {name}**. Docs: `docs/analytics/meta-metrics.md`. |
+| `meta/CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics as daily means + habit % / tracking / sleep / points). Click a cell → scatter with fit line, CI, lag slider. Docs: `docs/analytics/meta-correlation.md`. |
+| `meta/SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1, Rhythm finder (correlogram with noise band, log-period periodogram; habit / sleep / tracked). Docs: `docs/analytics/meta-spectrum.md`. |
+| `meta/meta-math.ts` | Pure helpers for the Meta views: Fisher-z intervals, lagged r, ACF and its noise band, rolling mean, summary stats, daily means of timestamped readings, fit line. Tested in `meta/meta-math.test.ts`. |
+| `meta/meta-plots.tsx` / `meta/analytics-meta.css` | Shared SVG plates (forest plot, correlogram, log periodogram) and the light-paper ramps. Tested with the views in `meta/meta-views.test.tsx`. |
 | `library/ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
 | `sources/InstagramView.tsx` / `sources/instagram-view.css` | Sources → **Instagram**. Hosts the generated `report.html` in a frame. See **Instagram (Sources)** below. `data-testid="instagram-view"`. |
 | `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-28._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`; _2026-11-01:_ **Read the vault for written links** adds `extractProposals` rows, **Find repeating chains** adds `mineChainRules` rule proposals at the floor of 7, and a list counts accepted and dismissed per source from the inbox and `brain2-graph-usage`). Two chips add the Taxonomy pack and the Lexical pack; a pack already on does nothing. |
