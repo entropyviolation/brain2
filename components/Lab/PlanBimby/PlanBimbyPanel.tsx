@@ -348,7 +348,8 @@ function ConfirmView({ draft, onChange }: { draft: PlanDraft; onChange: (d: Plan
   )
 }
 
-function RunView() {
+/** The run list alone. Also drawn under a day plan in BIM chat (`components/Bim/day-card.tsx`). */
+export function RunView() {
   const { run, play, pause, complete, skip, reopen, toggleSub, fileConfirmation, end } = usePlanRunStore()
   const now = useNow(!!run?.items.some((i) => i.state === "running"))
   if (!run) return null

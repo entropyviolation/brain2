@@ -1,0 +1,233 @@
+/*
+ * The day plan card (day-card.tsx). It sits on the plan-card glass from report-card.css and adds
+ * its own rows: a weight, a title, a time with its source, and a fold of reasons. Weight is shown
+ * by the left rule: must is the BIM ink, important the cool blue, the rest a quiet line. No yellow.
+ */
+
+.dc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dc-head b {
+  color: #fff;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+.dc-head label,
+.dc-time label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: #9fb6bb;
+}
+
+.dc input,
+.dc select,
+.dc textarea {
+  min-height: 32px;
+  padding: 2px 6px;
+  font: 12px var(--bim-mono, ui-monospace, monospace);
+  color: #e8fbff;
+  background: #0e1b1a;
+  border: 1px solid #2c5650;
+  border-radius: 4px;
+}
+
+.dc input:disabled,
+.dc select:disabled,
+.dc textarea:disabled {
+  opacity: 0.6;
+}
+
+.dc input:focus-visible,
+.dc select:focus-visible,
+.dc textarea:focus-visible,
+.dc button:focus-visible {
+  outline: 2px solid var(--bim-ink, #5cf2d6);
+  outline-offset: 1px;
+}
+
+.dc-fit {
+  margin: 0;
+  color: #bfe9ff;
+}
+
+.dc-fit.is-bad {
+  color: var(--bim-fault, #ff6b6b);
+}
+
+.dc-item {
+  border-left-width: 3px;
+  border-left-color: #2c5650;
+}
+
+.dc-item[data-tier="must"] {
+  border-left-color: var(--bim-ink, #5cf2d6);
+}
+
+.dc-item[data-tier="important"] {
+  border-left-color: #8fd3ff;
+}
+
+.dc-item.is-over {
+  border-style: dashed;
+}
+
+.dc-item > header {
+  align-items: center;
+}
+
+.dc-tier {
+  flex: 0 0 auto;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px !important;
+}
+
+.dc-title {
+  flex: 1 1 14ch;
+  min-width: 0;
+  font-weight: 600 !important;
+  color: #fff !important;
+}
+
+.dc-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.dc-time input {
+  width: 7ch;
+}
+
+.dc-source {
+  padding: 1px 6px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9fb6bb;
+  border: 1px solid #2c5650;
+  border-radius: 3px;
+}
+
+/* Your own data and your own word are solid; a guess is dashed, so it reads as one. */
+.dc-source[data-source="history"],
+.dc-source[data-source="you"],
+.dc-source[data-source="said"] {
+  color: var(--bim-ink, #5cf2d6);
+  border-color: var(--bim-ink, #5cf2d6);
+}
+
+.dc-source[data-source="model"],
+.dc-source[data-source="rule"],
+.dc-source[data-source="default"] {
+  border-style: dashed;
+}
+
+.dc-clock {
+  margin-left: auto;
+  color: #bfe9ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-basis {
+  margin: 0;
+  font-size: 11px;
+  color: #9fb6bb;
+  overflow-wrap: anywhere;
+}
+
+.dc-reasons {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.dc-reasons label {
+  display: grid;
+  gap: 2px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: #9fb6bb;
+}
+
+.dc-reasons textarea {
+  width: 100%;
+  min-height: 40px;
+  resize: vertical;
+}
+
+.dc-reasons input[type="text"] {
+  width: 100%;
+}
+
+.dc-reasons > button {
+  justify-self: start;
+  min-height: 28px;
+  padding: 0 10px;
+  font: 10px var(--bim-mono, ui-monospace, monospace);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #e8fbff;
+  background: transparent;
+  border: 1px dashed #2c5650;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dc-reasons .dc-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.dc-reasons .dc-check input {
+  min-height: 0;
+}
+
+.dc .rc-actions {
+  flex-wrap: wrap;
+}
+
+.dc .rc-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dc-moves button {
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.dc.is-rejected > :not(.rc-actions) {
+  opacity: 0.55;
+}
+
+/* The Plan BIMBY's run list is a light task-card surface, so it gets its own light well inside the glass. */
+.dc-run {
+  padding: 10px;
+  border-radius: 6px;
+  background: #f4f6f8;
+  color: #16202a;
+  font: 14px/1.4 system-ui, sans-serif;
+}
+
+@media (pointer: coarse) {
+  .dc input,
+  .dc select,
+  .dc textarea,
+  .dc .rc-actions button {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}

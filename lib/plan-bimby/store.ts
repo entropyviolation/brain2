@@ -3,7 +3,7 @@
  *
  * One `Run` at a time. Each action takes a pure step from `run.ts`, then fires the effects it earned
  * (`apply.ts`): a closed play becomes time on a confirmed task, a finished intake item logs its intake once,
- * a filed confirmation becomes a Flight item. Effects are written onto the item so the list can say what happened.
+ * a filed confirmation becomes a Flight item, a finished day-plan row is written back (`day/track.ts`). Effects are written onto the item so the list can say what happened.
  */
 "use client"
 
@@ -12,6 +12,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { fileFlight, logIntakeFor, logSpanOnTask } from "./apply"
+import { noteRunItemDone } from "./day/track"
 import * as clock from "./run"
 import type { PlanItem, PlanLink, Run } from "./types"
 
@@ -49,6 +50,11 @@ export const usePlanRunStore = create<PlanRunState>()(
         const done = step.finished
         if (done?.link?.kind === "intake" && !done.effects.some((e) => e.startsWith("Logged intake"))) {
           const said = logIntakeFor(done, done.link, new Date(done.doneAt ?? Date.now()))
+          if (said) run = clock.addEffect(run, done.id, said)
+        }
+        // A row of a day plan (`day/`): its real minutes, the follow-through link and the To Do check-off.
+        if (done) {
+          const said = noteRunItemDone(done, run)
           if (said) run = clock.addEffect(run, done.id, said)
         }
         return run
