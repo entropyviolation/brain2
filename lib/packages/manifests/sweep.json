@@ -1,0 +1,13 @@
+{
+  "manifest": 1,
+  "id": "sweep",
+  "name": "Sweep",
+  "version": "1.0.0",
+  "description": "Caches, logs, Xcode leftovers, the Trash, and duplicate files on this Mac.",
+  "nativeTemplate": "sweep",
+  "views": [{ "title": "Sweep", "kind": "sweep" }],
+  "capabilities": {
+    "lists": {},
+    "bridges": [{ "bridge": "desktop", "door": "electron/sweep.js" }]
+  }
+}

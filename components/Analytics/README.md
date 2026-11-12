@@ -316,7 +316,7 @@ a full-repo screenshot pass while other tabs are in flight.
 
 ## Instagram (Sources)
 
-_Last mapped: 2026-10-25_
+_Last mapped: 2026-11-11_
 
 Sources → **Instagram** shows the person's Instagram report: the page that
 `build_report.py` writes from an Instagram data export. Brain2 does not redraw
@@ -330,6 +330,8 @@ last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`)
 - Desktop: `window.desktop.instagram` (IPC) and the `brain2-ig://report/` scheme (`electron/instagram-ipc.js`).
 - Chrome at localhost: `/api/instagram/*` from the dev server (`scripts/instagram-api.mjs`). It shows the last build. It never runs Python.
 - Web and iOS: one sentence that the desktop app builds the report.
+
+**Saved collections: links and new windows (2026-11-11).** A saved collection's dialog (also a hashtag's or an account's saves) has three keys in its header. **View all as links** shows the posts on screen as a plain list of URLs in a text box, with **Copy all** and an option to add the account and caption. **Open in new window** opens that collection in its own window (`report.html#coll=<i>`, `#tag=<tag>` or `#sacct=<user>`; the report opens it on load). **Report in new window** opens the whole report; the same key sits in the view's bar. On desktop a `brain2-ig://report/` window.open becomes a maximized report window with no preload (`reportWindowOpen` / `adoptReportWindow` in `electron/instagram-ipc.js`, wired in `installAppNavigationGuard`). Other links in it leave through the system browser. The report code lives in `~/instagram-analysis/build_report.py` (backup `build_report.before-links.py`).
 
 **Pipeline** (`electron/instagram-report.js`, Electron main only):
 

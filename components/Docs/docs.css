@@ -784,3 +784,33 @@
     max-width: 100%;
   }
 }
+
+/* "i" Document info key, beside the save pill. A round, clear info mark. */
+.docs95 .docs-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #000080;
+  background: var(--d-face);
+  box-shadow: var(--d-raised);
+  cursor: pointer;
+  flex: none;
+}
+
+.docs95 .docs-info-btn:hover {
+  color: #1084d0;
+}
+
+.docs95 .docs-info-btn:active {
+  box-shadow: var(--d-sunken);
+}
+
+.docs95 .docs-info-btn:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 2px;
+}

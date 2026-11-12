@@ -26,12 +26,19 @@ import { defaultUntil, layout, orderDay } from "./schedule"
 import { liveDayPlan, useDayPlanStore } from "./store"
 import { finishDayItem } from "./track"
 import { tweakDay } from "./tweak"
+import { looksLikeDayUpdate, readDayUpdate, updateCard } from "./update"
+import { looksLikeWebQuestion } from "@/lib/bim-flow/web-ask"
+import { useReportStore } from "@/lib/report-bimby/store"
 import { dayItemId, type DayItem, type DayPlan } from "./types"
 
 export interface DayReply {
   text: string
   route: string
   dayId?: string
+  /** An update read against the plan is a card of changes (`update.ts`), drawn by the Report card. */
+  reportId?: string
+  /** A question the message asked beside the list, for the Web BIMBY to answer in a line of its own. */
+  webQuestion?: string
   choices?: { label: string; text: string }[]
 }
 
@@ -125,13 +132,36 @@ function start(text: string, now: Date, llm: boolean): DayReply | null {
   const weights = [`${count("must")} must`, `${count("important")} important`, `${count("rest")} if there is time`].join(", ")
   const realism = realismLine(followLedger(), plan.items.length)
   const q = ask(plan.id)
+  const webQuestion = plan.remarks.find((r) => looksLikeWebQuestion(`${r}?`))
   const text2 = [
     `I read that as ${plan.items.length} things for the rest of today: ${weights}. ${fitLines(plan, now)}`,
     realism ?? "",
     `Every row is editable: the time, the weight, the order, and the reasons. Nothing is on To Do until you file it.${llm ? " A model is still working on better time guesses." : ""}`,
+    webQuestion ? `I am looking up "${webQuestion}" and will answer under this.` : "",
     q?.text ?? "",
   ].filter(Boolean).join("\n\n")
-  return { text: text2, route: `DAY · rules · ${((Date.now() - t0) / 1000).toFixed(1)}s`, dayId: plan.id, ...(q ? { choices: q.choices } : {}) }
+  return { text: text2, route: `DAY · rules · ${((Date.now() - t0) / 1000).toFixed(1)}s`, dayId: plan.id, ...(webQuestion ? { webQuestion: `${webQuestion}?` } : {}), ...(q ? { choices: q.choices } : {}) }
+}
+
+const hhmmOf = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+
+/** Read an update against the live plan into a card of changes. Null when it changes nothing. */
+function update(live: DayPlan, text: string, now: Date): DayReply | null {
+  const t0 = Date.now()
+  const since = hhmmOf(new Date(live.heardAt ?? live.at))
+  const read = readDayUpdate(live, text, { since, now })
+  if (!read.changes.length) return null
+  const card = updateCard(live.id, text, now, read)
+  useReportStore.getState().put(card)
+  useDayPlanStore.getState().patch(live.id, (p) => ({ ...p, heardAt: now.toISOString() }))
+  const count = (op: string) => read.changes.filter((c) => c.op === op).length
+  const lines = read.changes.filter((c) => c.op === "line").length
+  const parts = [count("add") ? `${count("add")} to add` : "", count("done") + read.changes.filter((c) => c.op === "add" && c.doneAt).length ? `${count("done") + read.changes.filter((c) => c.op === "add" && c.doneAt).length} done` : "", count("feel") ? `${count("feel")} feeling${count("feel") === 1 ? "" : "s"}` : "", lines ? `${lines} for Tracking, Notes or Shopping` : ""].filter(Boolean)
+  const text2 = [
+    `I read that as an update to today's plan: ${parts.join(", ")}. Nothing changes until you accept each one; edit a field first if it is off.`,
+    read.heard.length ? `${read.heard.length} line${read.heard.length === 1 ? "" : "s"} I heard but did not file (they are in "how I read it").` : "",
+  ].filter(Boolean).join("\n\n")
+  return { text: text2, route: `DAY · update · rules · ${((Date.now() - t0) / 1000).toFixed(1)}s`, dayId: live.id, reportId: card.id }
 }
 
 export async function tryDay(text: string, now = new Date(), opts: { llm?: boolean; lastBim?: string } = {}): Promise<DayReply | null> {
@@ -141,9 +171,14 @@ export async function tryDay(text: string, now = new Date(), opts: { llm?: boole
     awaitingList = false
     if (!/\?\s*$/.test(t) && !looksLikeVerb(t, now) && readDay(t).items.length) return start(t, now, !!opts.llm)
   }
+  const live = liveDayPlan(now)
+  // A long update about the day ("update on this plan- …") is changes to the plan, not a new plan and not a stream.
+  if (live && looksLikeDayUpdate(live, t) && (!looksLikeDayPlan(t) || /\bupdate/i.test(t))) {
+    const updated = update(live, t, now)
+    if (updated) return updated
+  }
   if (looksLikeDayPlan(t)) return start(t, now, !!opts.llm)
 
-  const live = liveDayPlan(now)
   if (live) {
     const store = useDayPlanStore.getState()
     // A change to the plan, said in chat.

@@ -44,7 +44,8 @@ Interiors: `DocumentEditor` and `LinkDialog`.
 | `selection-menu.tsx` | _Last mapped: 2026-11-07._ Right-click menu for highlighted text in a document: Add to Quick Add, Add to BIM chat, Add to list, Attach to item as note, Turn into log. Each send is recorded per document. |
 | `DocumentEditor.tsx` | contenteditable surface + formatting toolbar (fonts, sizes, lists, images, PDF ingest, links) |
 | `LinkDialog.tsx` | Ctrl/Cmd+K hyperlink dialog (optional display text + URL) |
-| `doc-actions.ts` | Create / rename / folder / font / body / status / delete helpers over `note` tasks |
+| `DocInfoDialog.tsx` | _Last mapped: 2026-11-12._ Read-only **Document info** sheet behind the round "i" key beside the save pill. Dates (created, last modified, last opened before this visit, opened now), size (words, characters, blocks, images and links, reading time, HTML size), and place (folder, status, font, secret, source, times text was sent out, tags, id). |
+| `doc-actions.ts` | Create / rename / folder / font / body / status / delete helpers over `note` tasks. `markDocumentOpened` stamps the open time. |
 | `doc-actions.test.ts` | Unit tests for doc-actions |
 | `docs.css` | Outer window chrome: milled caption bay, metal menubar keys, CRT status counts (paper untouched) |
 | `document-editor.css` | Page surface, list markers, toolbar, embedded link/video cards |
@@ -58,6 +59,7 @@ Interiors: `DocumentEditor` and `LinkDialog`.
 | `google-fonts.ts` | Allow-listed Google Fonts catalog + stylesheet loader |
 | `image-resize.ts` | Client-side downscale/compress for image uploads |
 | `pdf-to-html.ts` | pdfjs ingest → editable HTML paragraphs/headings/lists |
+| `doc-opened.ts` | Last-opened time per doc id, per device (localStorage). Kept off the item so opening is not an edit: no `docsUpdatedAt` bump, no History row, no sync write. |
 
 ## Behavior
 

@@ -63,6 +63,30 @@ Limits. The card has not been looked at in the running app; it is covered by a r
 
 **Planned:** a web search step for an estimate nobody has history for (the app has no search tool yet); the model reading changes the rules miss; the Today key in the panel opening the same card; a nudge when a row runs past its estimate; delivery waits ("dye hair waits on the Walmart order arriving"); Telegram once the hub runs flows.
 
-Files in `day/`: `types.ts`, `read.ts`, `estimate.ts`, `history.ts`, `schedule.ts`, `llm.ts`, `ask.ts`, `tweak.ts`, `store.ts` (`useDayPlanStore`, `liveDayPlan`), `apply.ts` (`fileDay`, `startDayRun`, `rejectDay`), `track.ts` (`finishDayItem`, `noteRunItemDone`), `run.ts` (`tryDay`, `buildDayPlan`, `reviseDay`), `day.test.ts`.
+### Updates to the day (the Day update BIMBY)
+
+_Last mapped: 2026-11-11_
+
+While a plan is live, a long message that talks about it ("update on this plan- … like asking the neighbor if i can use their laundry key? … Scary thing. … did make the order … (update as of 7pm). add to my to do list make shelby gift (orca) maybe do sewing fix sewing machine? … updated plan: -walmart incoming … 8:11 … (laundry key obtained)") is read **against the plan** (`day/update.ts`, rules only), not as a stream. `tryDay` checks it before a new plan and before the Stream BIMBY, which used to file each sentence as its own note (23 filings for that message).
+
+It becomes a Report card (`components/Bim/report-card.tsx`) of changes, one effect each, under a reply that also points at the day card:
+
+- **DAY add**: a new thing, with its weight, what it comes **before** or waits on, resistance, how it feels, a note, and "done at" when the same message says it got done. "like asking the neighbor …" right after a line about laundry is the way laundry can happen, so it comes before "do laundry". "do sewing fix sewing machine" is two things; the fix comes first. "gaining courage", "scary" set resistance 3 and "scared" on the thing just added. A flight or passport thing is a must. "maybe" is if-time.
+- **DAY done**: a thing on the plan done at a minute, or **inside a window** when the minute is not known. "Still haven't really done anything … did make the order … (update as of 7pm)" marks the order done sometime between the last message and 19:00 (`doneWindow`).
+- **DAY feel** / **DAY first**: resistance and words before an existing thing; "do key first".
+- **FILE lines** for the rest, through the Stream BIMBY's writer: the "so far" stretch as one `track:` block from the last message to the "as of" time; `log:` events at their minute ("walmart order arrived at 19:36", "laundry key obtained at 20:11", "putting in dry shampoo …, now cutting hair" as est); `note:` for a rule for every day ("1 scary thing per day") and where a thing is ("passport: under the red boxes"); `note: mood:` for how it felt after; `shopping:` for a thing to get ("need to get a case for that thing" after "where's my passport" is a passport case).
+- "updated plan:" lines restate the plan: only what is new is added ("shower", "oil up"); "walmart incoming" is a wait, not a task. Asides that name nothing and ask nothing ("get to the port at") are listed in "how I read it" as heard, not filed.
+
+Clocks are read against the send time: "7:36" sent at 20:12 is 19:36 (`lib/stream-bimby/parse.ts`). The plan keeps `heardAt`, so the next "so far" starts at this message.
+
+Accept (`day/update-apply.ts`, through `lib/report-bimby/apply.ts`) changes the plan. When the plan is already filed, an added thing is filed to To Do too, and a done thing is checked off there with `finishDayItem`, so To Do and follow-through agree.
+
+The first message's "also i prob will have to do my laundry can you find out …?" now puts "do laundry" on the list (`splitAside`) and keeps the question as a remark. The reply says it is looking it up, and the Web BIMBY answers in a line under the day card, asking where home is first when it does not know (`components/Bim/README.md`, "Web questions").
+
+Limits. Rules only, shaped on that day's messages; another person's phrasing will miss some changes, and what is missed is listed as heard. Not looked at in the running app; covered by `day/update.test.ts` and a render test in `components/Bim/day-card.test.tsx`.
+
+**Planned:** a model pass that lists the same changes (checked against the plan and the words, like the stream's), with the rules filling what it skips; one accept for the whole card.
+
+Files in `day/`: `types.ts`, `read.ts`, `estimate.ts`, `history.ts`, `schedule.ts`, `llm.ts`, `ask.ts`, `tweak.ts`, `store.ts` (`useDayPlanStore`, `liveDayPlan`), `apply.ts` (`fileDay`, `startDayRun`, `rejectDay`), `track.ts` (`finishDayItem`, `noteRunItemDone`), `run.ts` (`tryDay`, `buildDayPlan`, `reviseDay`), `update.ts` (`readDayUpdate`, `looksLikeDayUpdate`, `updateCard`), `update-apply.ts` (`applyDayEffect`), `day.test.ts`, `update.test.ts`.
 
 Test: `npx vitest run --exclude '.claude/**' lib/plan-bimby components/Bim/day-card.test.tsx`

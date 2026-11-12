@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { groundLine, looksGeneral, MAX_TOOL_HOPS, runChatLane, runChatTool } from "./chat-lane"
 import type { ModelCall } from "./ollama"
 import { NOW, SCENARIO_VAULT } from "./scenarios"
+import type { WebFound } from "./web-lane"
 
 type Req = Parameters<ModelCall>[0]
 
@@ -128,5 +129,60 @@ describe("chat lane", () => {
       expect(out, tool).not.toBeNull()
     }
     expect(await runChatTool(SCENARIO_VAULT, "none", "", "", g, NOW)).toBeNull()
+  })
+})
+
+describe("chat lane: the web tool", () => {
+  const found = (query: string): WebFound => ({
+    query,
+    results: [{ title: "Finals recap", url: "https://scores.example/recap", snippet: "The Wave won 3-1 last night." }],
+    pages: [],
+  })
+  const withWeb = (text: string, m: ReturnType<typeof scripted>, search: (q: string) => Promise<WebFound | null>, home?: string) =>
+    runChatLane({ text, now: NOW, snap: SCENARIO_VAULT, call: m.call, pick: ["pick"], main: "main", web: { search, ...(home ? { home } : {}) } })
+
+  it("a general question may be searched: the model writes the query, the reply sees the results and carries the sources", async () => {
+    const queries: string[] = []
+    const m = scripted([{ tool: "web", subject: "Wave final score last night" }], "The Wave won 3-1.", "web")
+    const out = await withWeb("who won the final last night?", m, async (q) => (queries.push(q), found(q)), "North Park, San Diego")
+    expect(queries).toEqual(["Wave final score last night"])
+    expect(m.picked()[0]!.user).toContain("HOME: North Park, San Diego")
+    expect((m.picked()[0]!.schema.properties as { tool: { enum: string[] } }).tool.enum).toContain("web")
+    expect(m.replied()[0]!.user).toContain("WEB RESULTS")
+    expect(m.replied()[0]!.user).toContain("The Wave won 3-1 last night.")
+    expect(out).toMatchObject({ general: false, web: { query: "Wave final score last night" }, hops: [{ tool: "web", subject: "Wave final score last night", found: 1 }] })
+    expect(out.evidence).toEqual(["searched the web: Wave final score last night", "Finals recap · https://scores.example/recap"])
+  })
+
+  it("plain general knowledge is still one call: no pick, no search", async () => {
+    const m = scripted([{ tool: "web", subject: "nitrogen" }], "It boils at about -196°C.", "general")
+    const out = await withWeb("what is the boiling point of nitrogen?", m, async () => { throw new Error("must not search") })
+    expect(m.picked()).toHaveLength(0)
+    expect(out).toMatchObject({ general: true, hops: [], evidence: [], calls: 1 })
+  })
+
+  it("a general question that may be newer than the model is put to the pick, and the query is tidied before it leaves", async () => {
+    const queries: string[] = []
+    const m = scripted([{ tool: "web", subject: "Disneyland day pass price now HOME 飀 one two three four five six seven" }], "Listed from $104.", "web")
+    const out = await withWeb("how much is a day pass at Disneyland right now?", m, async (q) => (queries.push(q), found(q)))
+    expect(m.picked()).toHaveLength(1)
+    expect(m.picked()[0]!.user).toContain("TODAY: ")
+    expect(queries).toEqual(["Disneyland day pass price now one two three four five"])
+    expect(out.web).toEqual({ query: "Disneyland day pass price now one two three four five" })
+  })
+
+  it("a statement is never offered the web", async () => {
+    const m = scripted([{ tool: "web", subject: "tired" }], "That sounds rough.", "general")
+    const out = await withWeb("so tired of everything", m, async () => { throw new Error("must not search") })
+    for (const req of m.picked()) expect((req.schema.properties as { tool: { enum: string[] } }).tool.enum).not.toContain("web")
+    expect(out.web).toBeUndefined()
+  })
+
+  it("a search that fails is said, and the reply is not marked as from the web", async () => {
+    const m = scripted([{ tool: "web", subject: "Wave final score" }, { tool: "none" }], "I could not search just now.", "web")
+    const out = await withWeb("who won the final last night?", m, async () => null)
+    expect(m.replied()[0]!.user).toContain("The web search failed or found nothing.")
+    expect(out).toMatchObject({ general: true, evidence: [], hops: [{ tool: "web", subject: "Wave final score", found: 0 }] })
+    expect(out.web).toBeUndefined()
   })
 })

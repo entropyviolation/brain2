@@ -20,7 +20,10 @@ import { crewModelPlan, type Crew } from "@/lib/bim-flow/crew"
 import { taughtExamples, taughtRoute } from "@/lib/bim-flow/route-verdicts"
 import { FLOW_REV, flowDef, FLOWS, type FlowId } from "@/lib/bim-flow/flows"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
+import { phoneSearch, useHomeStore } from "@/lib/bim-flow/web-ask"
 import { runFlow } from "@/lib/bim-flow/run-flow"
+import { traceOfFlowRun } from "@/lib/agents/trace-adapters"
+import { saveTrace } from "@/lib/agents/trace-store"
 import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
 import type { Answer, Flow } from "@/lib/bim-flow/types"
 import { useIngestStore } from "./ingest-store"
@@ -91,7 +94,7 @@ export interface SwitchboardResult {
   /** Set when the Ask lane answered. */
   answer?: SwitchboardAnswer
   /** Set when the chat lane replied: talk, with rows behind it or plainly general. Nothing was filed. */
-  chat?: Pick<ChatLaneReply, "text" | "general" | "evidence">
+  chat?: Pick<ChatLaneReply, "text" | "general" | "evidence" | "web">
   /** Set when the Ask lane ran and failed (a model error, a timeout): why, short. */
   failed?: string
   /** True when the executor must still run the line (any lane but a lone ask). */
@@ -105,8 +108,9 @@ async function askLane(text: string, crew: Crew, now: Date): Promise<{ answer: S
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), ASK_TIMEOUT_MS)
   try {
+    const flow = savedFlow("ask")
     const run = await runFlow(
-      savedFlow("ask"),
+      flow,
       [{ id: `bim-chat-${now.getTime()}`, text, at: now.toISOString(), prior: [] }],
       ollamaCall(crew.main, abort.signal),
       snapshotFromStores(),
@@ -118,6 +122,10 @@ async function askLane(text: string, crew: Crew, now: Date): Promise<{ answer: S
         getFlow: (id) => (FLOWS.some((f) => f.id === id) ? flowDef(id as FlowId).build() : undefined),
       },
     )
+    // The Ask flow's own Trace. It is not yet nested under the chat turn's Trace; both carry the same input.
+    try {
+      saveTrace(traceOfFlowRun(flow, run, { flowId: "ask", origin: "app", input: text }))
+    } catch {}
     const steps = run.messages[0]?.steps ?? []
     const failed = steps.find((s) => s.error)
     const answers = run.messages[0]?.answers ?? []
@@ -142,11 +150,15 @@ async function askLane(text: string, crew: Crew, now: Date): Promise<{ answer: S
 function chatChip(route: ChatRoute, ms: number, reply: ChatLaneReply): string {
   const looked = reply.hops.map((h) => `${h.tool}${h.found ? "" : " ∅"}`)
   const notes = [...looked, ...(reply.general ? ["general"] : [])]
-  return `${routeChip(route, ms, reply.models, { label: "chat", notes })} · ${reply.calls} call${reply.calls === 1 ? "" : "s"}`
+  return `${routeChip(route, ms, reply.models, { label: reply.web ? "web" : "chat", notes })} · ${reply.calls} call${reply.calls === 1 ? "" : "s"}`
 }
 
 async function chatLane(text: string, crew: Crew, now: Date, turns: ChatTurn[] | undefined, snap: ReturnType<typeof snapshotFromStores>): Promise<ChatLaneReply> {
-  return runChatLane({ text, turns, now, snap, call: ollamaCall(crew.main, AbortSignal.timeout(CHAT_TIMEOUT_MS)), pick: crew.pick, main: crew.main })
+  // The web is a tool the pick model may choose for a question with no code cue ("who won the game last night?").
+  // The search is the Web BIMBY's, and so is home (`web-ask.ts`); only the query leaves the Mac.
+  const home = useHomeStore.getState().home
+  const web = { search: async (q: string) => (await phoneSearch())(q), ...(home ? { home } : {}) }
+  return runChatLane({ text, turns, now, snap, call: ollamaCall(crew.main, AbortSignal.timeout(CHAT_TIMEOUT_MS)), pick: crew.pick, main: crew.main, web })
 }
 
 /**
@@ -181,7 +193,7 @@ export async function runSwitchboard(
   if (loneChat || general) {
     try {
       const reply = await chatLane(text, crew, now, opts.turns, snap ?? snapshotFromStores())
-      const chat = { text: reply.text, general: reply.general, evidence: reply.evidence }
+      const chat = { text: reply.text, general: reply.general, evidence: reply.evidence, ...(reply.web ? { web: reply.web } : {}) }
       return { route: chatChip(route, Date.now() - t0, reply), chat, passThrough: false, intent: "chat", sure: true }
     } catch {
       // A failed reply loses nothing: a chat line is filed as before, a question goes on to the Ask flow.

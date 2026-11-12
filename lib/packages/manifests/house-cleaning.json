@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "id": "house-cleaning",
+  "name": "Tidy",
+  "version": "1.0.0",
+  "description": "House cleaning tracker — pick an area, or start with one small task.",
+  "nativeTemplate": "house-cleaning",
+  "views": [{ "title": "Tidy", "kind": "house-cleaning" }],
+  "capabilities": {
+    "lists": {},
+    "bridges": [
+      { "bridge": "lists", "itemTypes": ["item"] },
+      { "bridge": "private-store", "where": "module.config", "keys": ["houseCleaning"] },
+      { "bridge": "network", "hosts": ["fonts.googleapis.com", "fonts.gstatic.com"] }
+    ]
+  }
+}

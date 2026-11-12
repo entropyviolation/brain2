@@ -22,7 +22,7 @@ const { resolveElectronUserData } = require("./user-data-path")
 const { createSharedPersistCache, hubRevArgument } = require("./persist-hub-cache")
 const { createStaticFileResolver } = require("./static-file")
 const { LINK_SCHEME_PRIVILEGES, registerFileLinkIpc } = require("./file-links")
-const { INSTAGRAM_SCHEME_PRIVILEGES, registerInstagramIpc } = require("./instagram-ipc")
+const { INSTAGRAM_SCHEME_PRIVILEGES, registerInstagramIpc, reportWindowOpen, adoptReportWindow, isReportUrl } = require("./instagram-ipc")
 const { isAppNavigationUrl, isBlankPopup, openExternalWeb } = require("./external-url")
 
 const isDev = !app.isPackaged
@@ -317,7 +317,13 @@ function installAppNavigationGuard(win) {
   }
   win.webContents.on("will-navigate", stayOrLeave)
   win.webContents.on("will-redirect", stayOrLeave)
+  // The Instagram report's "Open in new window" opens its own report window.
+  win.webContents.on("did-create-window", (child, { url }) => {
+    if (isReportUrl(url)) adoptReportWindow(child, (u) => openExternalWeb(shell, u))
+  })
   win.webContents.setWindowOpenHandler(({ url }) => {
+    const report = reportWindowOpen(url)
+    if (report) return report
     if (isBlankPopup(url)) {
       return {
         action: "allow",

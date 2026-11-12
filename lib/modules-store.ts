@@ -275,6 +275,11 @@ export interface ModulePackageConfig {
   version: string
   /** Slot role → list id minted for this instance. */
   slots: Record<string, string>
+  /**
+   * Slot role → what the module may do to that list. Written by
+   * `installModuleManifest` from `capabilities.lists`. Absent on a plain package.
+   */
+  access?: Record<string, "read" | "write">
 }
 
 export interface ModuleInstance {

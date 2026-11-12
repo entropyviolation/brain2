@@ -368,6 +368,16 @@ export function InstagramView() {
         ) : (
           <span className="an-ig-field">New exports are picked up by the desktop app.</span>
         )}
+        {status?.hasReport ? (
+          <button
+            type="button"
+            className="an-range-chip"
+            title="Open the Instagram report in its own full-size window. Collections there have the same Open in new window and View all as links keys."
+            onClick={() => window.open(`${status.reportBase}report.html`, "_blank")}
+          >
+            Report in new window ↗
+          </button>
+        ) : null}
       </div>
 
       {listsNote ? (

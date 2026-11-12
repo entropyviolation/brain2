@@ -7,6 +7,7 @@
  * words are kept as the titles. Nothing here reads a store.
  */
 
+import { splitAside } from "@/lib/bim-flow/web-lane"
 import type { DayTier } from "./types"
 
 export interface ReadItem {
@@ -34,7 +35,7 @@ const LEAD_VERB = /\b(have to|need to|needs to|gotta|got to|want to|wanna|must|s
 const ASK_PLAN = /\b(?:help me (?:plan|figure out|organi[sz]e)|plan (?:out )?(?:the rest of )?(?:my|the) day|what should i do (?:today|tonight|now|for the rest of the day))\b/i
 
 const VERBS = new Set(
-  "order buy get grab pick call text email reply respond read write plan pack dye bleach shave finish clean wash do make book send pay cook shower fold tidy start work fix update check review return schedule cancel print mail ship charge water feed walk run study practice edit record post upload download install renew sign fill submit drop bring take put organize sort wrap prep prepare go figure decide message answer trim paint cut vacuum mop iron hang unpack repack measure draft outline research look find apply file".split(" "),
+  "order buy get grab pick call text email ask borrow sew dance reply respond read write plan pack dye bleach shave finish clean wash do make book send pay cook shower fold tidy start work fix update check review return schedule cancel print mail ship charge water feed walk run study practice edit record post upload download install renew sign fill submit drop bring take put organize sort wrap prep prepare go figure decide message answer trim paint cut vacuum mop iron hang unpack repack measure draft outline research look find apply file".split(" "),
 )
 
 const STOP = new Set(
@@ -256,6 +257,18 @@ export function readDay(text: string): DayRead {
     }
     if (FEELING.test(s) && !VERBS.has(stem(firstWord(s)))) {
       remarks.push(s)
+      continue
+    }
+    // "also i prob will have to do my laundry can you find out …?": the thing to do is on the list, the question is kept.
+    const aside = splitAside(s)
+    if (aside.todo && aside.question !== s) {
+      const item = toItem(aside.todo)
+      if (item && !items.some((it) => nameScore(it.title, item.title) > 0)) {
+        item.reasons.push(`Said in passing: "${quote(s)}".`)
+        items.push(item)
+        trace.push(`"${item.title}" was said beside a question; the question is kept as a remark.`)
+      }
+      remarks.push(aside.question)
       continue
     }
     const more = listItems(stripLead(s))

@@ -4,7 +4,8 @@
  * Runs a downloaded package folder in a sandboxed frame. The sandbox flags
  * match an uploaded HTML page (`allow-scripts`, never `allow-same-origin`).
  * `window.brain2` is the bridge from `lib/module-html-bridge.ts`. This view
- * builds a wider grant for the lists the package bound. It does not change
+ * builds a wider grant for the lists the package bound, narrowed to the write
+ * slots when the module was installed from a manifest. It does not change
  * the grants the `html` view passes to `handleBridgeCall`.
  *
  * House cleaning, the trip, Film DNA, and GradSearch do not use this view.
@@ -12,7 +13,8 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef } from "react"
-import type { ModuleView } from "@/lib/modules-store"
+import { useModulesStore, type ModuleView } from "@/lib/modules-store"
+import { writableListIds } from "@/lib/module-manifest"
 import { useModulePackageAppStore } from "@/lib/module-package-app-store"
 import { useTaskStore } from "@/lib/task-store"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
@@ -33,7 +35,9 @@ export function PackageAppView({ view, onOpenItem }: { view: ModuleView; onOpenI
   const lists = useTaskStore((s) => s.lists)
   const tasks = useTaskStore((s) => s.tasks)
 
-  const grants = useMemo(() => packageAppGrants(view.config), [view.config])
+  // Set when the module came from a manifest: the slots it marked write.
+  const pkg = useModulesStore((s) => s.modules.find((m) => m.views?.some((v) => v.id === view.id))?.config.package)
+  const grants = useMemo(() => packageAppGrants(view.config, writableListIds(pkg)), [view.config, pkg])
 
   const html = app?.html
   const css = app?.css

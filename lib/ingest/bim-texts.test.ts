@@ -6,6 +6,8 @@ const people = [
   { id: "p1", title: "Shelby", names: ["Shelby", "Shelby Ross"], handles: ["+15550001"] },
   { id: "p2", title: "Elijah", names: ["Elijah"], handles: ["+15550002"] },
   { id: "p3", title: "Noor", names: ["Noor"], handles: [] },
+  { id: "p4", title: "self", names: ["self", "me"], handles: [] },
+  { id: "p5", title: "Shelby Seal", names: ["Shelby Seal"], handles: [] },
 ]
 const now = new Date(2026, 10, 11, 12, 0)
 const at = (day: number, h: number, m = 0) => new Date(2026, 10, day, h, m).toISOString()
@@ -38,6 +40,15 @@ describe("parseTextQuestion", () => {
     expect(parseTextQuestion("what was my last message to shelby?", people)?.dir).toBe("out")
     expect(parseTextQuestion("what were my last texts with shelby?", people)?.dir).toBe("both")
     expect(parseTextQuestion("what did shelby text me last, word for word?", people)?.verbatim).toBe(true)
+  })
+  it("a first name finds the full name; the self item never matches", () => {
+    const solo = people.filter((p) => p.id !== "p1")
+    expect(parseTextQuestion("what was shelby talking about in her last text to me?", solo)?.people.map((p) => p.id)).toEqual(["p5"])
+    expect(parseTextQuestion("what did shelby seal text me?", people)?.people.map((p) => p.id)).toEqual(["p5"])
+    // An item named exactly "Shelby" beats a first-name match on "Shelby Seal".
+    expect(parseTextQuestion("what did shelby text me?", people)?.people.map((p) => p.id)).toEqual(["p1"])
+    const twins = [...solo, { id: "p6", title: "Shelby Ford", names: ["Shelby Ford"], handles: [] }]
+    expect(parseTextQuestion("what did shelby text me?", twins)?.people.map((p) => p.id).sort()).toEqual(["p5", "p6"])
   })
   it("leaves commands and lines about no one alone", () => {
     expect(parseTextQuestion("text shelby back about saturday", people)).toBeNull()
@@ -81,7 +92,7 @@ describe("answerTextQuestion", () => {
     expect(a.text).not.toContain("tour bus")
   })
   it("says plainly what is missing", async () => {
-    expect((await answerTextQuestion("what did noor text me?", now, deps()))!.text).toContain("no phone number or email")
+    expect((await answerTextQuestion("what did noor text me?", now, deps()))!.text).toContain("no number saved")
     expect((await answerTextQuestion("what did shelby text me?", now, deps({ load: async () => null })))!.text).toContain("can't reach your texts")
     expect((await answerTextQuestion("what did shelby text me?", now, deps({ load: async () => [] })))!.text).toContain("don't see any texts from Shelby")
   })

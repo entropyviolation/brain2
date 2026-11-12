@@ -7,6 +7,8 @@
  */
 "use client"
 
+import { traceOfHelperRun } from "@/lib/agents/trace-adapters"
+import { saveTrace } from "@/lib/agents/trace-store"
 import { wantsTrack } from "@/lib/wire-bimby/plan"
 import { tryWire } from "@/lib/wire-bimby/run"
 import { create } from "zustand"
@@ -116,6 +118,10 @@ export const useTrackingHelper = create<HelperState>()(
           const bank = loadBank(HELPER_AGENT_ID, TRACKING_HELPER_SKILLS)
           const learned = { ...bank, skills: bank.skills.filter((s) => s.source !== "hand") }
           const run = await runHelper({ text, flow, ctx: buildContext(), call: crew ? ollamaCall(crew.main) : null, ladder, pending: pendingLine?.account ?? null, bank: learned })
+          // The common Trace (`lib/agents/trace.ts`), beside the stage trace the chat line keeps.
+          try {
+            saveTrace(traceOfHelperRun(run, { origin: "app", input: text, startedAt: new Date(t0).toISOString() }))
+          } catch {}
           const found = run.blocks.length
           const note =
             run.route === "question"

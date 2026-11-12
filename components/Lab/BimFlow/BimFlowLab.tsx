@@ -36,6 +36,8 @@ import { DriveSheet } from "./drive-sheet"
 import { FlowTests, type LiveTest } from "./flow-tests"
 import { FlowRuns } from "./flow-runs"
 import { archive } from "@/lib/bim-flow/archive"
+import { traceOfFlowRun } from "@/lib/agents/trace-adapters"
+import { saveTrace } from "@/lib/agents/trace-store"
 import { loadHistory, saveHistory, slimRun, type SavedRun } from "@/lib/bim-flow/run-history"
 import { AgentRail } from "../Agents/AgentRail"
 import { NodePalette } from "./node-palette"
@@ -333,6 +335,9 @@ export function BimFlowLab() {
       const got = felt.filter((x): x is DriveReading => x != null)
       if (got.length) setDrive((d) => saveDrive(d, got))
       archive("flow-run", { origin: "bench", flowId, flow, model, source, input: aug.messages, run: result })
+      try {
+        saveTrace(traceOfFlowRun(flow, result, { flowId, origin: "lab" }))
+      } catch {}
       setHistory((h) =>
         saveHistory([
           { id: `${flowId}-${Date.now()}`, flowId, flowName: flowId.startsWith("a:") ? flow.nodes[0]?.label ?? flowId : flowDef(flowId as FlowId).name, at: new Date().toISOString(), model, inputLabel: `${aug.messages.length} input${aug.messages.length === 1 ? "" : "s"} · ${source === "ask" ? "question" : source} · ${spec.grouping}`, flow, run: slimRun(result), origin: "bench" },

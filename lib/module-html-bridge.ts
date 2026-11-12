@@ -16,6 +16,12 @@ export interface HtmlBridgeGrants {
   /** Lists the page may read (and write, when `canWrite`). Empty = no list data. */
   listIds: string[]
   canWrite: boolean
+  /**
+   * Lists the page may write, when narrower than `listIds`. Set from a
+   * manifest's `capabilities.lists` (`lib/module-manifest.ts`). Absent means
+   * every attached list, as before.
+   */
+  writeListIds?: string[]
 }
 
 export interface BridgeList {
@@ -97,19 +103,23 @@ export class BridgeError extends Error {}
 /** Answer one call from the frame. Throws `BridgeError` when a grant is missing. */
 export function handleBridgeCall(call: BridgeCall, host: BridgeHost, grants: HtmlBridgeGrants): unknown {
   const allowed = new Set(grants.listIds)
+  const writable = new Set((grants.writeListIds ?? grants.listIds).filter((id) => allowed.has(id)))
   const mayTouch = (task: Task) => !!task.lists?.some((id) => allowed.has(id))
+  const mayWrite = (task: Task) => !!task.lists?.some((id) => writable.has(id))
   switch (call.method) {
     case "snapshot":
       return bridgeSnapshot(host.lists, host.tasks, grants)
     case "createItem": {
       if (!grants.canWrite) throw new BridgeError("This module was not allowed to edit items.")
       if (!allowed.has(call.listId)) throw new BridgeError("That list is not attached to this module.")
+      if (!writable.has(call.listId)) throw new BridgeError("This module may only read that list.")
       return host.createItem(call.listId, call.item)
     }
     case "updateItem": {
       if (!grants.canWrite) throw new BridgeError("This module was not allowed to edit items.")
       const task = host.tasks.find((t) => t.id === call.id)
       if (!task || !mayTouch(task)) throw new BridgeError("That item is not on an attached list.")
+      if (!mayWrite(task)) throw new BridgeError("This module may only read that item's list.")
       host.updateItem(task, call.patch)
       return true
     }

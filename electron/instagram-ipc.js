@@ -30,6 +30,62 @@ const INSTAGRAM_SCHEME_PRIVILEGES = {
   privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
 }
 
+/** A link into the report scheme (the report, a collection hash, a thumb). */
+function isReportUrl(url) {
+  return typeof url === "string" && url.startsWith(INSTAGRAM_REPORT_BASE)
+}
+
+/**
+ * Window options for the report popped out on its own ("Open in new window",
+ * "Report in new window"). No preload: the report needs no `window.desktop`.
+ */
+function reportWindowOptions() {
+  return {
+    width: 1440,
+    height: 960,
+    title: "Instagram",
+    backgroundColor: "#ffffff",
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      nodeIntegrationInWorker: false,
+      nodeIntegrationInSubFrames: false,
+      sandbox: true,
+      webSecurity: true,
+      webviewTag: false,
+    },
+  }
+}
+
+/**
+ * Let `owner` (a Brain2 window, or a report window) open report links as
+ * report windows, maximized. Anything else leaves through `openExternal`.
+ * Returns the window-open answer for one URL, or null when it is not a report link.
+ */
+function reportWindowOpen(url) {
+  return isReportUrl(url) ? { action: "allow", overrideBrowserWindowOptions: reportWindowOptions() } : null
+}
+
+function adoptReportWindow(child, openExternal) {
+  child.maximize()
+  const leave = (event, url) => {
+    if (isReportUrl(url)) return
+    event.preventDefault()
+    openExternal(url)
+  }
+  child.webContents.on("will-navigate", leave)
+  child.webContents.on("will-redirect", leave)
+  child.webContents.setWindowOpenHandler(({ url }) => {
+    const r = reportWindowOpen(url)
+    if (r) return r
+    openExternal(url)
+    return { action: "deny" }
+  })
+  child.webContents.on("did-create-window", (w, { url }) => {
+    if (isReportUrl(url)) adoptReportWindow(w, openExternal)
+  })
+}
+
 /** Call after `app` is ready. Returns the watcher so main can stop it on quit. */
 function registerInstagramIpc({ app, ipcMain, dialog, protocol, net, getWindow }) {
   const root = ig.defaultRoot(app.getPath("userData"))
@@ -112,5 +168,8 @@ module.exports = {
   INSTAGRAM_REPORT_BASE,
   INSTAGRAM_SCHEME,
   INSTAGRAM_SCHEME_PRIVILEGES,
+  adoptReportWindow,
+  isReportUrl,
   registerInstagramIpc,
+  reportWindowOpen,
 }

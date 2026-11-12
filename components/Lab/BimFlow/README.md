@@ -317,6 +317,8 @@ test states only the model replies it needs.
 
 ## Every run is archived
 
+_2026-11-11:_ a bench run also saves the common Trace (`lib/agents/trace-adapters.ts` `traceOfFlowRun`, origin `lab`), beside the run record. Test and Suggest runs do not yet.
+
 Each model call, flow run, and test result is also posted to
 `/api/bim-flow-archive` (`lib/bim-flow/archive.ts`), which appends one JSON
 line to `data/bim-flow-runs/YYYY-MM-DD.jsonl` (git-ignored, append only). The

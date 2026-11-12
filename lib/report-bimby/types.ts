@@ -13,6 +13,7 @@ import type { AcceptGrade } from "@/lib/accept-grade"
 /** `line`: one command the executor already runs (Stream BIMBY). Accept sends the field to the executor. */
 /** `verdict` and `feeling`: a plan-to-outcome link and a feeling on its scales (`lib/follow-through/`). Accept confirms the record. */
 /** `person`, `person-note`, `birthday`, `reminder`, `plan-entry`: the Social BIMBY (`lib/social-bimby/`). */
+/** `day`: a change to the live day plan (`lib/plan-bimby/day/update.ts`); `op` says which, `ref` is the plan id. */
 export type EffectKind =
   | "inventory"
   | "cycle"
@@ -27,6 +28,7 @@ export type EffectKind =
   | "birthday"
   | "reminder"
   | "plan-entry"
+  | "day"
 
 export type EffectStatus = "pending" | "working" | "applied" | "rejected" | "failed"
 
@@ -50,6 +52,8 @@ export interface Effect {
   evidence: string[]
   fields: EffectField[]
   status: EffectStatus
+  /** For a `day` effect: `add`, `done`, `feel` or `first`. */
+  op?: string
   /** The record this effect confirms (a step or feeling id in the follow-through ledger). */
   ref?: string
   /** What happened on accept: the writer's reply, or why it failed. */

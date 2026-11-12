@@ -9,7 +9,8 @@
  * Grants are decided here, not inside `handleBridgeCall`. An uploaded `html`
  * view still passes only `htmlListIds` and `htmlCanWrite`. A package-app may
  * also see the lists the package bound on the view, and may write them unless
- * `htmlCanWrite` is explicitly false.
+ * `htmlCanWrite` is explicitly false. When the module was installed from a
+ * manifest, `writeListIds` narrows writes to the slots it marked write.
  */
 import { buildSrcDoc, type HtmlBridgeGrants } from "@/lib/module-html-bridge"
 
@@ -41,7 +42,7 @@ export interface PackageAppGrantSource {
 }
 
 /** Lists a package-app frame may touch. Wider than an uploaded HTML page. */
-export function packageAppGrants(source: PackageAppGrantSource): HtmlBridgeGrants {
+export function packageAppGrants(source: PackageAppGrantSource, writeListIds?: string[]): HtmlBridgeGrants {
   const listIds: string[] = []
   const add = (id: string | undefined) => {
     if (!id || listIds.includes(id)) return
@@ -53,7 +54,10 @@ export function packageAppGrants(source: PackageAppGrantSource): HtmlBridgeGrant
     add(card.categoryId)
     add(card.subtract?.categoryId)
   }
-  return { listIds, canWrite: source.htmlCanWrite !== false && listIds.length > 0 }
+  if (!writeListIds) return { listIds, canWrite: source.htmlCanWrite !== false && listIds.length > 0 }
+  // A manifest recorded which slots are write. The frame may write only those.
+  const writable = listIds.filter((id) => writeListIds.includes(id))
+  return { listIds, canWrite: source.htmlCanWrite !== false && writable.length > 0, writeListIds: writable }
 }
 
 export interface PackageAppFolder {

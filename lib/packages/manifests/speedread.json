@@ -1,0 +1,20 @@
+{
+  "manifest": 1,
+  "id": "speedread",
+  "name": "Speed Read",
+  "version": "1.0.0",
+  "description": "Read any PDF page one word at a time, at your speed.",
+  "nativeTemplate": "speedread",
+  "views": [{ "title": "Reader", "kind": "speed-read" }],
+  "capabilities": {
+    "lists": {},
+    "bridges": [
+      { "bridge": "habits", "measures": ["pages"] },
+      { "bridge": "tracking" },
+      { "bridge": "items", "access": "write", "types": ["book"] },
+      { "bridge": "desktop", "door": "/api/speed-read" },
+      { "bridge": "network", "hosts": ["unpkg.com"] },
+      { "bridge": "private-store", "where": "localStorage", "keys": ["brain2-speed-read", "brain2-speed-read-open"] }
+    ]
+  }
+}

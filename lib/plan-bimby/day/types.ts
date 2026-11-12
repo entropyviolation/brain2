@@ -67,6 +67,8 @@ export interface DayItem {
   /** Set when its run row is finished. */
   actualMin?: number
   doneAt?: string
+  /** Done somewhere inside this window ("16:10-19:00"); the minute is not known. */
+  doneWindow?: string
 }
 
 export type AskKey = "why" | "resistance" | "blocker" | "ifNot"
@@ -97,6 +99,8 @@ export interface DayPlan {
   runId?: string
   rejected?: boolean
   revisions: number
+  /** ISO. The last update message read against this plan (`update.ts`). The next "so far" starts here. */
+  heardAt?: string
 }
 
 let seq = 0

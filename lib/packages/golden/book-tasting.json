@@ -1,4 +1,5 @@
 {
+  "manifest": 1,
   "id": "book-tasting",
   "name": "Book Tasting",
   "version": "1",
@@ -79,5 +80,9 @@
         { "kind": "throw", "message": "No matching book found — link this PDF in the Matcher view." }
       ]
     }
-  ]
+  ],
+  "capabilities": {
+    "lists": { "books": "write", "pdfs": "write" },
+    "bridges": []
+  }
 }

@@ -1,0 +1,121 @@
+{
+  "manifest": 1,
+  "id": "itinerary",
+  "name": "Trip Itinerary",
+  "version": "1.0.0",
+  "description": "Write a trip doc, build a day-by-day itinerary (weather + flights by number), map activities by city, and pack.",
+  "nativeTemplate": "itinerary",
+  "slots": [
+    {
+      "role": "places",
+      "name": "City Places",
+      "policy": "create",
+      "description": "Wishlist and landmarks plotted on the Activities map, grouped by city and list (Must do / Maybe).",
+      "color": "#ec4899",
+      "itemLabel": "place",
+      "attributes": [
+        { "id": "city", "name": "City", "type": "string" },
+        {
+          "id": "bucket",
+          "name": "List",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["Must do", "Maybe"],
+          "allowMultiple": true
+        },
+        {
+          "id": "placeKind",
+          "name": "Kind",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["Place", "Airport", "Landmark", "Stay", "Home", "Work", "Significant"]
+        },
+        { "id": "address", "name": "Address", "type": "string" },
+        { "id": "lat", "name": "Latitude", "type": "number", "allowFloat": true },
+        { "id": "lng", "name": "Longitude", "type": "number", "allowFloat": true },
+        { "id": "notes", "name": "Notes", "type": "string" }
+      ],
+      "displayedAttributes": ["city", "bucket", "placeKind", "address"],
+      "defaultAttributeValues": { "bucket": "Must do", "placeKind": "Place" }
+    },
+    {
+      "role": "packing",
+      "name": "Packing",
+      "policy": "create",
+      "color": "#8b5cf6",
+      "itemLabel": "item",
+      "attributes": [
+        {
+          "id": "packKind",
+          "name": "Category",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["Clothes", "Toiletries", "Electronics", "Documents", "Other"]
+        }
+      ],
+      "displayedAttributes": ["packKind"]
+    },
+    {
+      "role": "todo",
+      "name": "To Do Before Trip",
+      "policy": "create",
+      "description": "Everything to handle before you leave.",
+      "color": "#f59e0b",
+      "itemLabel": "task",
+      "attributes": [
+        {
+          "id": "priority",
+          "name": "Priority",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["High", "Medium", "Low"]
+        }
+      ],
+      "displayedAttributes": ["priority"]
+    }
+  ],
+  "views": [
+    { "title": "Plan", "kind": "doc" },
+    { "title": "Itinerary", "kind": "itinerary-doc" },
+    { "title": "Activities", "kind": "trip-map", "slot": "places", "config": { "placesCategoryId": "places" } },
+    { "title": "Packing", "kind": "checklist", "slot": "packing", "config": { "checklistStyle": "packing" } },
+    { "title": "Before Trip", "kind": "checklist", "slot": "todo", "config": { "checklistStyle": "pretrip" } }
+  ],
+  "workflows": [
+    {
+      "name": "Build pre-trip to-do list",
+      "scope": { "listIds": ["todo"] },
+      "trigger": { "kind": "manual", "buttonLabel": "Generate to-dos" },
+      "actions": [
+        { "kind": "createItem", "categoryId": "todo", "defaults": { "title": "Check passport expiry" } },
+        { "kind": "createItem", "categoryId": "todo", "defaults": { "title": "Arrange airport transfer" } }
+      ]
+    }
+  ],
+  "capabilities": {
+    "lists": { "places": "write", "packing": "write", "todo": "write" },
+    "bridges": [
+      { "bridge": "docs" },
+      { "bridge": "lists", "itemTypes": ["item", "flight"] },
+      { "bridge": "private-store", "where": "module.config", "keys": ["tripItinerary"] },
+      {
+        "bridge": "network",
+        "hosts": [
+          "api.open-meteo.com",
+          "archive-api.open-meteo.com",
+          "air-quality-api.open-meteo.com",
+          "geocoding-api.open-meteo.com",
+          "api.aviationstack.com",
+          "nominatim.openstreetmap.org",
+          "photon.komoot.io",
+          "places.googleapis.com",
+          "maps.googleapis.com",
+          "router.project-osrm.org",
+          "commons.wikimedia.org",
+          "*.tile.openstreetmap.org",
+          "cdnjs.cloudflare.com"
+        ]
+      }
+    ]
+  }
+}

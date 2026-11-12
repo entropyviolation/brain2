@@ -1,4 +1,5 @@
 {
+  "manifest": 1,
   "id": "budget",
   "name": "Budget",
   "version": "1",
@@ -163,5 +164,9 @@
       "slot": "expected",
       "config": { "categoryId": "expected" }
     }
-  ]
+  ],
+  "capabilities": {
+    "lists": { "accounts": "write", "payments": "write", "debts": "write", "expected": "write" },
+    "bridges": []
+  }
 }

@@ -49,30 +49,54 @@ export interface Clock {
 
 const WINDOW = /\b(\d{1,2}):(\d{2})\s*(am|pm)?\s*(?:-|–|—|to|until)\s*(\d{1,2}):(\d{2})\s*(am|pm)?\b/i
 const CLOCK = /\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/i
+/** "as of 7pm": an hour with am/pm and no minutes. */
+const HOUR_AMPM = /\b(\d{1,2})\s*(am|pm)\b/i
 /** "since 817" with no colon: only after one of these words, so a stray number is never a time. */
 const SINCE = /\b(?:since|at|around|from)\s+(\d{3,4})\b/i
 const EST = /\b(est|estimated|around|about)\b|~/i
+/** A stream is typed a little after the fact; a clock up to this far past the send time is still "earlier today". */
+const AHEAD_MIN = 20
 
-/** 24-hour HH:MM. "1:57 pm" is 13:57; a bare 1–6 is afternoon; 7–12 stays as written. */
-function hhmm(h: number, m: number, ampm?: string): string {
+/**
+ * 24-hour HH:MM. "1:57 pm" is 13:57. With no am/pm and a send time, the clock is the latest reading not after
+ * the send time (a stream says what already happened): "7:36" sent at 20:12 is 19:36, sent at 10:00 is 07:36.
+ * With no send time, a bare 1–6 is afternoon and 7–12 stays as written. `floor` (minutes) keeps an end after its start.
+ */
+function hhmm(h: number, m: number, ampm?: string, now?: Date, floor?: number): string {
   let hour = h
   if (ampm) hour = (h % 12) + (ampm.toLowerCase().startsWith("p") ? 12 : 0)
-  else if (h >= 1 && h <= 6) hour = h + 12
+  else if (floor !== undefined && h <= 12) {
+    const am = (h % 12) * 60 + m
+    hour = am >= floor ? h % 12 : am + 720 >= floor ? (h % 12) + 12 : h
+  } else if (now && h >= 1 && h <= 12) {
+    const limit = now.getHours() * 60 + now.getMinutes() + AHEAD_MIN
+    const pm = (h % 12) * 60 + 720 + m
+    hour = pm <= limit ? (h % 12) + 12 : h % 12
+    if (hour === 0 && h === 12) hour = 12
+  } else if (h >= 1 && h <= 6) hour = h + 12
   return `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")}`
 }
 
-export function readClock(s: string): Clock | null {
+const minutesOf = (t: string): number => Number(t.slice(0, 2)) * 60 + Number(t.slice(3))
+
+/** The first clock in a piece. `now` is the send time, used to read a clock with no am/pm. */
+export function readClock(s: string, now?: Date): Clock | null {
   const est = EST.test(s)
   const w = WINDOW.exec(s)
-  if (w) return { hhmm: hhmm(+w[1]!, +w[2]!, w[3]), end: hhmm(+w[4]!, +w[5]!, w[6] ?? w[3]), est }
+  if (w) {
+    const start = hhmm(+w[1]!, +w[2]!, w[3] ?? (w[6] && +w[1]! <= +w[4]! ? w[6] : undefined), now)
+    return { hhmm: start, end: hhmm(+w[4]!, +w[5]!, w[6] ?? w[3], undefined, w[6] ?? w[3] ? undefined : minutesOf(start)), est }
+  }
   const c = CLOCK.exec(s)
-  if (c) return { hhmm: hhmm(+c[1]!, +c[2]!, c[3]), est }
+  if (c) return { hhmm: hhmm(+c[1]!, +c[2]!, c[3], now), est }
+  const a = HOUR_AMPM.exec(s)
+  if (a && +a[1]! >= 1 && +a[1]! <= 12) return { hhmm: hhmm(+a[1]!, 0, a[2]), est }
   const since = SINCE.exec(s)
   if (since) {
     const digits = since[1]!
     const h = digits.length === 3 ? +digits[0]! : +digits.slice(0, 2)
     const m = +digits.slice(-2)
-    if (h >= 1 && h <= 12 && m < 60) return { hhmm: hhmm(h, m), est }
+    if (h >= 1 && h <= 12 && m < 60) return { hhmm: hhmm(h, m, undefined, now), est }
   }
   return null
 }
@@ -86,6 +110,7 @@ export function cleanPayload(s: string): string {
   let out = s
     .replace(new RegExp(WINDOW.source, "gi"), " ")
     .replace(/\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/gi, " ")
+    .replace(/\b(?:as of\s+)?\d{1,2}\s*(?:am|pm)\b/gi, " ")
     .replace(/[~()]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
@@ -282,7 +307,7 @@ export function pieces(text: string, now: Date): { pieces: Piece[]; timed: numbe
   let current: Clock | null = null
   let timed = 0
   for (const [index, seg] of segments(text).entries()) {
-    const own = readClock(seg)
+    const own = readClock(seg, now)
     if (own) {
       timed++
       current = own.end ? { hhmm: own.end, est: own.est } : own

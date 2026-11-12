@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest"
+import { afterEach, describe, it, expect, beforeEach, vi } from "vitest"
+import { HOME_ASK, resetWebAsk, useHomeStore } from "@/lib/bim-flow/web-ask"
 import { resetAllStores } from "@/tests/test-utils"
 import { useIngestStore } from "./ingest-store"
 import { BIM_CHAT_ID, bimChoices, sendToBim, useBimChatStore, useBimFactsStore } from "./bim-chat"
@@ -7,6 +8,55 @@ import type { ApplyResult } from "./types"
 import { useEventStore } from "@/lib/event-store"
 import { PASTED } from "@/lib/flight-bimby/fixture"
 import { useTaskStore } from "@/lib/task-store"
+
+describe("BIM Chat: a to-do said beside a web question", () => {
+  const SAID = "also i prob will have to do my laundry can you find out what time the laundromats by my house close? "
+  let queries: string[] = []
+
+  beforeEach(() => {
+    resetAllStores()
+    useBimChatStore.setState({ lines: [], busy: false })
+    useHomeStore.setState({ home: null })
+    resetWebAsk()
+    queries = []
+    vi.stubGlobal("fetch", async (url: string) => {
+      if (!String(url).includes("/api/web-search")) throw new Error("no network in tests")
+      const query = new URL(String(url), "http://hub").searchParams.get("q") ?? ""
+      queries.push(query)
+      return new Response(JSON.stringify({ ok: true, query, results: [{ title: "Spin Laundry", url: "https://spin.example.com", snippet: "Open daily 7am to 10pm" }], pages: [] }))
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it("asks for home, then answers the question alone and offers the to-do; nothing is filed until the key is tapped", async () => {
+    const asked = await sendToBim(SAID, new Date(), { llm: false })
+    expect(asked.text).toBe(HOME_ASK)
+    expect(asked.choices).toBeUndefined()
+    const answer = await sendToBim("North Park, San Diego", new Date(), { llm: false, lastBim: asked.text })
+    expect(useHomeStore.getState().home).toBe("North Park, San Diego")
+    // The search is the question, without the laundry aside.
+    expect(queries).toHaveLength(1)
+    expect(queries[0]).toContain("laundromats")
+    expect(queries[0]).toContain("North Park, San Diego")
+    expect(queries[0]).not.toMatch(/prob|have to/)
+    expect(answer.text).toContain("Spin Laundry")
+    expect(answer.text).toContain('Put "do laundry" on today\'s To Do?')
+    expect(answer.choices).toEqual([{ label: "add to do: do laundry", text: "todo today: do laundry" }])
+    expect(useTaskStore.getState().tasks.some((t) => /laundry/i.test(t.title ?? ""))).toBe(false)
+    const added = await sendToBim(answer.choices![0]!.text, new Date(), { llm: false })
+    expect(added.status).toBe("ok")
+    expect(useTaskStore.getState().tasks.some((t) => t.title === "do laundry")).toBe(true)
+  })
+
+  it("with home known, one turn answers and offers the to-do; a question alone offers nothing", async () => {
+    useHomeStore.setState({ home: "North Park, San Diego" })
+    const both = await sendToBim(SAID, new Date(), { llm: false })
+    expect(both.choices).toEqual([{ label: "add to do: do laundry", text: "todo today: do laundry" }])
+    const alone = await sendToBim("what time do the laundromats by my house close?", new Date(), { llm: false })
+    expect(alone.text).toContain("Spin Laundry")
+    expect(alone.choices).toBeUndefined()
+  })
+})
 
 describe("BIM Chat", () => {
   beforeEach(() => {

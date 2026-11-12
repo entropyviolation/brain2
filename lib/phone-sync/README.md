@@ -21,6 +21,7 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | --- | --- |
 | `types.ts` | `MessageRecord`, `CallRecord`, `PhoneSyncRun`. Readers produce these. |
 | `handles.ts` | One spelling per phone number (`+15551234567`) or email. Bare 10 digits get `+1`. |
+| `contact-names.mjs` (+ `.test.ts`) | _Last mapped: 2026-11-12._ The hub's names for texting numbers, read only from the Mac's Contacts databases (`node:sqlite`, cached ten minutes). `/api/phone-texts` sends `names` for the handles in its rows, so a person item with no number saved still gets its texts. No access: no names. `normalizeHandleMjs` matches `handles.ts` (tested). |
 | `people.ts` | Match a party to People I Know: saved phone/email first (`personProfile.phones` / `emails`), then the Contacts name through `resolveName`, else the number. |
 | `ids.ts` | Entry id from the source id, and the stamp `generatedBy: { kind: "phone-sync", id: "<source>:<sourceId>" }`. |
 | `to-entries.ts` | Texts → instants on iPhone Texts. Calls → intervals on iPhone Calls, sliced at midnight; missed calls are instants. Exact clocks. `mergePhoneEntries` skips ids already there or deleted. |

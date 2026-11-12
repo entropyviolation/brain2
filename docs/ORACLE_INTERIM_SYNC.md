@@ -167,6 +167,8 @@ Measured on the live vault (2026-11-02, copy): first build 0.5 s for 42,398 rows
 
 ### Stage 4 plan (**Planned**)
 
+What comes after the flip (rows as the truth, an operations door, the desktop as a client, retiring `lib/vault-guard.js`) is in [`STORAGE_MOVE_PLAN.md`](STORAGE_MOVE_PLAN.md).
+
 _Last mapped: 2026-11-02_
 
 Direct readers of `data/shared-persist.json` that stage 4 must keep working: `electron/preload.js` and `electron/persist-hub-cache.js`, the `scripts/bim-screentime-*.py` scripts, `scripts/backup-data.mjs`, `scripts/dump-chrome-localstorage.mjs`, and the mtime watch in `scripts/phone-hub.ts`. So the JSON file stays, as a generated export, until each is moved.

@@ -342,7 +342,7 @@ export function readText(text: string, at: Date, source: RecordSource): Reading 
   let current: string | null = null
   const pieces: ReadPiece[] = []
   for (const seg of segments(text)) {
-    const own = readClock(seg)
+    const own = readClock(seg, at)
     if (own) current = own.end ?? own.hhmm
     const route = own?.end ? "activity" : routeOf(seg)
     pieces.push({ text: seg, route, hhmm: own?.hhmm ?? current ?? fallback, ...(own?.end ? { end: own.end, payload: seg.replace(/\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/gi, " ").replace(/[-–—]/g, " ").replace(/\b(doing|went for a|went for)\b/gi, " ").replace(/\s+/g, " ").trim() } : {}) })

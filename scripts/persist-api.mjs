@@ -60,6 +60,8 @@ import path from "node:path"
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { guardVaultRequest, readHubToken, vaultRequestAllowed } from "../lib/ingest/lan-gate.mjs"
+import { webSearch } from "../lib/bim-flow/web-search.mjs"
 import { applyVaultPatch } from "../lib/vault-guard.js"
 import { readBody } from "./local-api-json.mjs"
 import { openVaultStore, closeVaultStore, loadAll, writeKeys, replaceAll, storeRev, storeIsEmpty } from "./vault-store.mjs"
@@ -1075,6 +1077,27 @@ async function handleBimFlowArchive(req, res) {
  */
 const TEXTS_FILE = path.join(ROOT, "data", "phone-sync", "messages.jsonl")
 const TEXTS_MAX_DAYS = 60
+/** BIM chat's web search (`lib/bim-flow/web-ask.ts`): the query goes to the web, nothing from the vault does. */
+async function handleWebSearch(req, res) {
+  if (req.method !== "GET") {
+    sendJson(res, 405, { ok: false, error: "Method not allowed" })
+    return true
+  }
+  const q = persistQuery(req)
+  const query = String(q.get("q") ?? "").trim()
+  if (!query) {
+    sendJson(res, 400, { ok: false, error: "q is required" })
+    return true
+  }
+  try {
+    const found = await webSearch(query, { read: Number(q.get("read")) || 3 })
+    sendJson(res, 200, { ok: true, ...found })
+  } catch (error) {
+    sendJson(res, 502, { ok: false, error: error instanceof Error ? error.message : String(error) })
+  }
+  return true
+}
+
 async function handlePhoneTexts(req, res) {
   if (req.method !== "GET") {
     sendJson(res, 405, { ok: false, error: "Method not allowed" })
@@ -1113,7 +1136,14 @@ async function handlePhoneTexts(req, res) {
     }
   }
   rows.sort((a, b) => a.at - b.at)
-  sendJson(res, 200, index ? { ok: true, days, counts } : { ok: true, days, rows })
+  if (index) {
+    sendJson(res, 200, { ok: true, days, counts })
+    return true
+  }
+  // Contacts names for the numbers in these rows, so a person item with no number saved still gets its texts.
+  const { namesFor } = await import("../lib/phone-sync/contact-names.mjs")
+  const names = await namesFor(rows.map((r) => r.h)).catch(() => ({}))
+  sendJson(res, 200, { ok: true, days, rows, names })
   return true
 }
 
@@ -1186,15 +1216,17 @@ async function handleFileActivity(req, res) {
 const OLLAMA_DAEMON = "http://127.0.0.1:11434"
 const OLLAMA_PATHS = new Set(["/api/ollama/api/chat", "/api/ollama/api/tags"])
 
-/** Bearer check for the model proxy. Open when no hub token is set, like the vault routes. */
+/** Read once at load: the env, or the gitignored `.env.local`. Tests pass their own. */
+let HUB_TOKEN = readHubToken()
+
+/** Tests only: set the hub token the vault routes check. */
+export function _setHubTokenForTests(token) {
+  HUB_TOKEN = typeof token === "string" ? token : readHubToken()
+}
+
+/** The model proxy: a caller on this Mac, or a remote caller with the hub token. */
 function ollamaProxyAuthorized(req) {
-  const token = process.env.BRAIN2_PHONE_HUB_TOKEN || ""
-  if (!token) return true
-  const header = Array.isArray(req.headers.authorization) ? req.headers.authorization[0] : req.headers.authorization
-  const given = typeof header === "string" ? header.replace(/^Bearer\s+/i, "") : ""
-  const a = Buffer.from(token)
-  const b = Buffer.from(given)
-  return a.length === b.length && require("node:crypto").timingSafeEqual(a, b)
+  return vaultRequestAllowed(req, HUB_TOKEN)
 }
 
 /**
@@ -1264,6 +1296,10 @@ export async function handlePersistApi(req, res, pathname) {
     if (!guardBrowserOrigin(req, res)) return true
     return handleFileActivity(req, res)
   }
+  if (pathname === "/api/web-search") {
+    if (!guardBrowserOrigin(req, res)) return true
+    return handleWebSearch(req, res)
+  }
   if (pathname === "/api/bim-flow-archive") {
     if (!guardBrowserOrigin(req, res)) return true
     return handleBimFlowArchive(req, res)
@@ -1272,6 +1308,7 @@ export async function handlePersistApi(req, res, pathname) {
   const persist = pathname === "/api/persist" || pathname === "/api/persist/health" || pathname === "/api/persist/rows"
   if (!recovery && !persist) return false
   if (!guardBrowserOrigin(req, res)) return true
+  if (!guardVaultRequest(req, res, HUB_TOKEN)) return true
   if (recovery) return handleRecoveryBackupsApi(req, res, pathname)
   if (pathname !== "/api/persist" && pathname !== "/api/persist/health" && pathname !== "/api/persist/rows") return false
 

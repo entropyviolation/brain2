@@ -1,0 +1,16 @@
+{
+  "manifest": 1,
+  "id": "gradsearch",
+  "name": "GradSearch",
+  "version": "1.0.0",
+  "description": "Graduate Program Explorer — search, score, compare, and verify.",
+  "nativeTemplate": "gradsearch",
+  "views": [{ "title": "Explorer", "kind": "grad-search" }],
+  "capabilities": {
+    "lists": {},
+    "bridges": [
+      { "bridge": "private-store", "where": "localStorage", "keys": ["gs-*"] },
+      { "bridge": "network", "hosts": ["fonts.googleapis.com", "fonts.gstatic.com"] }
+    ]
+  }
+}

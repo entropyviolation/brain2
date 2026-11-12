@@ -373,6 +373,8 @@ function commitBoundPackage(raw: JsonRecord, bindings: Record<string, string>, l
 export function installReviewedPackage(text: string, lists: readonly List[]): string | PackageBindBlock[] {
   const review = reviewPackageBind(text, lists)
   if (review.action === "stop") return review.blocks
-  if (review.action === "install") return installModulePackage(text)
+  if (review.action === "install") {
+    return looksLikeModuleManifest(text) ? installModuleManifest(text) : installModulePackage(text)
+  }
   return commitBoundPackage(review.raw, review.bindings, lists)
 }

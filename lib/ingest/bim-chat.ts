@@ -64,6 +64,8 @@ import { trySocial } from "@/lib/social-bimby/run"
 import { tryStream } from "@/lib/stream-bimby/run"
 import { tryWire } from "@/lib/wire-bimby/run"
 import { tryDay } from "@/lib/plan-bimby/day/run"
+import { answerWeb, looksLikeWebQuestion, takeHome, type WebAnswer } from "@/lib/bim-flow/web-ask"
+import { splitAside } from "@/lib/bim-flow/web-lane"
 import { nextQuestion } from "@/lib/follow-through/ask"
 import { observeLine, tryFollowAnswer, tryFollowCommand, type MineSources } from "@/lib/follow-through/run"
 import { followLedger } from "@/lib/follow-through/store"
@@ -670,6 +672,37 @@ type LaneCtx = { text: string; now: Date; opts: SendOpts }
 const bimLine = (text: string, extra: Partial<BimLine> = {}): BimLine => ({ id: lineId(), at: new Date().toISOString(), who: "bim", text, status: "ok", ...extra })
 const executorHolds = () => !!useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID)
 
+const webLine = (a: WebAnswer): BimLine => bimLine(a.text, { route: a.route, kind: "tell", ...(a.evidence.length ? { evidence: a.evidence } : {}) })
+
+/**
+ * A to-do said beside a web question ("i prob will have to do my laundry can you find out what time …?", `splitAside`).
+ * It is only offered, as one key that sends the executor's own `todo today:`; nothing is filed until it is tapped.
+ * While BIM waits for home, the to-do waits here and is offered with the answer. In memory only.
+ */
+let asideTodo: string | null = null
+const withTodo = (line: BimLine, todo: string | null | undefined): BimLine =>
+  todo ? { ...line, text: `${line.text}\n\nPut "${todo}" on today's To Do?`, choices: [...(line.choices ?? []), { label: `add to do: ${todo}`, text: `todo today: ${todo}` }] } : line
+
+/** A web answer that comes after the line that asked for it (the day plan's kept question). Appended when it is ready. */
+async function followWithWeb(question: string, now: Date, llm: boolean, afterDayId?: string): Promise<void> {
+  let line: BimLine
+  try {
+    line = webLine(await answerWeb(question, now, { llm }))
+  } catch (error) {
+    line = bimLine(`The web search failed: ${error instanceof Error ? error.message : String(error)}`, { status: "error" })
+  }
+  // `send` adds the line that asked only once `sendToBim` returns; wait for it (up to 10 s) so this one lands under it.
+  if (afterDayId && !useBimChatStore.getState().lines.some((l) => l.dayId === afterDayId)) {
+    await new Promise<void>((done) => {
+      const timer = setTimeout(() => (stop(), done()), 10_000)
+      const stop = useBimChatStore.subscribe((st) => {
+        if (st.lines.some((l) => l.dayId === afterDayId)) (clearTimeout(timer), stop(), done())
+      })
+    })
+  }
+  useBimChatStore.setState((s) => ({ lines: [...s.lines, line].slice(-TRANSCRIPT_CAP) }))
+}
+
 /** What each lane guard (`bim-lanes.ts`) means right now. Read when the lane comes up: `tell` closes the tell question as it runs. */
 function guardHolds(guard: LaneGuard, ctx: LaneCtx): boolean {
   switch (guard) {
@@ -732,6 +765,13 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     const handed = await tryHandoff(text)
     return handed ? bimLine(handed.text, { route: handed.route, ...(handed.habitLineId ? { habitLineId: handed.habitLineId } : {}), ...(handed.reportId ? { reportId: handed.reportId } : {}) }) : null
   },
+  "web-home": async ({ text, now, opts }) => {
+    const took = await takeHome(text, now, { llm: !!opts.llm, lastBim: opts.lastBim })
+    if (!took) return null
+    const todo = took.askedHome ? null : asideTodo
+    if (!took.askedHome) asideTodo = null
+    return withTodo(webLine(took), todo)
+  },
   "ask-back": ({ text, now }) => answerAskBack(text, now),
   "follow-through": ({ text, now }) => {
     const followed = tryFollowAnswer(text, now) ?? tryFollowCommand(text, now, mineSources)
@@ -765,7 +805,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
   },
   day: async ({ text, now, opts }) => {
     const day = await tryDay(text, now, { llm: !!opts.llm, lastBim: opts.lastBim })
-    return day ? bimLine(day.text, { route: day.route, ...(day.dayId ? { dayId: day.dayId } : {}), ...(day.choices?.length ? { choices: day.choices } : {}) }) : null
+    if (!day) return null
+    // The plan kept a question for the web ("can you find out when the laundromats close?"): answered in a line of its own.
+    if (day.webQuestion) void followWithWeb(day.webQuestion, now, !!opts.llm, day.dayId)
+    return bimLine(day.text, { route: day.route, ...(day.dayId ? { dayId: day.dayId } : {}), ...(day.reportId ? { reportId: day.reportId } : {}), ...(day.choices?.length ? { choices: day.choices } : {}) })
   },
   stream: async ({ text, now, opts }) => {
     const stream = await tryStream(text, now, { llm: !!opts.llm })
@@ -776,6 +819,15 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     return social ? bimLine(social.text, { route: social.route, reportId: social.reportId }) : null
   },
   texts: ({ text, now, opts }) => tryTexts(text, now, !!opts.llm),
+  web: async ({ text, now, opts }) => {
+    if (!looksLikeWebQuestion(text)) return null
+    // Two things in one line: only the question is searched, and the thing to do is offered beside the answer.
+    const aside = splitAside(text)
+    const split = !!aside.todo && looksLikeWebQuestion(aside.question)
+    const answer = await answerWeb(split ? aside.question : text, now, { llm: !!opts.llm })
+    asideTodo = split && answer.askedHome ? aside.todo! : null
+    return withTodo(webLine(answer), split && !answer.askedHome ? aside.todo : null)
+  },
   fact: ({ text, now }) => tryFact(text, now),
   tell: ({ text, now }) => tryTell(text, now),
   wire: ({ text, now }) => {
@@ -922,6 +974,7 @@ export const useBimChatStore = create<BimChatState>()(
       },
       clear: () => {
         pendingAsk = null
+        asideTodo = null
         lastTurn = null
         useBimThread.getState().setFocus(null)
         set({ lines: [] })

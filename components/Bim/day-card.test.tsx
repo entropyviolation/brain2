@@ -52,3 +52,20 @@ describe("day card", () => {
     expect(screen.getByText(/continues under a newer line/)).toBeTruthy()
   })
 })
+
+describe("an update to the day plan", () => {
+  it("draws as a card of DAY changes and lines, each with accept", async () => {
+    const { ReportCard } = await import("./report-card")
+    const t0 = new Date(2026, 10, 11, 16, 10)
+    await tryDay(`${MSG} also i prob will have to do my laundry can you find out what time the laundromats by my house close?`, t0, { llm: false })
+    const reply = await tryDay(
+      "update on this plan- either im not doing laundry orrr im doing it here somehow?!? like asking the neighbor if i can use their laundry key? Scary thing. add to my to do list make shelby gift (orca) maybe do sewing fix sewing machine?",
+      new Date(2026, 10, 11, 20, 12),
+      { llm: false },
+    )
+    render(<ReportCard reportId={reply!.reportId!} />)
+    expect(screen.getAllByText("DAY").length).toBeGreaterThanOrEqual(3)
+    expect(screen.getByText(/Add to today: ask the neighbor if i can use their laundry key \(before "do laundry"\)/)).toBeTruthy()
+    expect(screen.getByText(/Add to today: fix sewing machine \(before "do sewing"\)/)).toBeTruthy()
+  })
+})

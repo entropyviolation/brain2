@@ -1,0 +1,79 @@
+{
+  "manifest": 1,
+  "id": "filmrecs",
+  "name": "Film DNA Lab",
+  "version": "1.0.0",
+  "description": "Letterboxd taste map — DNA shelves, Watch ranking, Blend, and CSV import.",
+  "nativeTemplate": "filmrecs",
+  "slots": [
+    {
+      "role": "films",
+      "name": "Films",
+      "policy": "create",
+      "description": "Letterboxd watchlist + likes catalog for Film DNA Lab.",
+      "color": "#ff8000",
+      "icon": "clapperboard",
+      "itemLabel": "film",
+      "itemType": "film",
+      "attributes": [
+        { "id": "year", "name": "Year", "type": "number" },
+        {
+          "id": "shelf",
+          "name": "Shelf",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": [
+            "Time loops, doubles & puzzle-box sci-fi",
+            "Simulations, dystopias & sci-fi thrillers",
+            "Cosmic & transcendental",
+            "Math & obsessive genius",
+            "Surrealism & dream logic",
+            "Art-house canon & slow cinema",
+            "Maximalist fantasy & handmade worlds",
+            "Animation",
+            "Horror & the uncanny",
+            "Cult, camp & midnight",
+            "Hong Kong neon & Tokyo deep cuts",
+            "Balkan brass & wandering souls",
+            "Classics & New Hollywood",
+            "Warm & wry indies",
+            "Dramas that leave a mark",
+            "Music, showbiz & stranger-than-fiction",
+            "All-talk philosophy hangs",
+            "Docs & tone poems"
+          ]
+        },
+        {
+          "id": "source",
+          "name": "Source",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["watchlist", "likes", "both", "watched", "added"]
+        },
+        { "id": "liked", "name": "Liked", "type": "boolean", "booleanDisplay": "checkbox" },
+        { "id": "favorited", "name": "Favorited", "type": "boolean", "booleanDisplay": "checkbox" },
+        { "id": "rating", "name": "Rating", "type": "number", "allowFloat": true },
+        { "id": "genres", "name": "Genres", "type": "multistring" },
+        { "id": "poster", "name": "Poster", "type": "image" },
+        { "id": "letterboxdUrl", "name": "Letterboxd", "type": "string" },
+        { "id": "overview", "name": "Overview", "type": "string" },
+        { "id": "watchedDate", "name": "Watched", "type": "string" }
+      ],
+      "displayedAttributes": ["year", "shelf", "source", "liked", "rating", "poster"],
+      "defaultAttributeValues": { "liked": false, "favorited": false, "source": "watchlist" }
+    }
+  ],
+  "views": [
+    { "title": "Film DNA", "kind": "film-dna", "slot": "films" },
+    { "title": "Films", "kind": "spreadsheet", "slot": "films" },
+    { "title": "Posters", "kind": "gallery", "slot": "films" },
+    { "title": "Pick something", "kind": "randomizer", "slot": "films", "config": { "pickCount": 1, "framing": "Watch" } },
+    { "title": "By shelf", "kind": "summary", "slot": "films", "config": { "groupAttrId": "shelf" } }
+  ],
+  "capabilities": {
+    "lists": { "films": "write" },
+    "bridges": [
+      { "bridge": "network", "hosts": ["itunes.apple.com", "fonts.googleapis.com", "fonts.gstatic.com"] }
+    ]
+  }
+}

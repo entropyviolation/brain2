@@ -9,7 +9,7 @@
 
 import { SecretMark } from "@/components/Secrets/SecretMark"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { ArrowLeft, FileText, FileUp, Folder, Plus, Trash2, Download } from "lucide-react"
+import { ArrowLeft, FileText, FileUp, Folder, Info, Plus, Trash2, Download } from "lucide-react"
 import { orbFor } from "@/components/Icons"
 import { useTaskStore } from "@/lib/task-store"
 import { APP_NAV_KEYS, writeStoredTab, writeStoredId, readStoredId, DOCS_SIDEBAR_SCROLL_SLOT } from "@/lib/app-navigation"
@@ -19,6 +19,7 @@ import { exportDocumentAsPdf } from "@/lib/doc-export"
 import { listPersistedDocs } from "@/lib/doc-persist"
 import { DocumentEditor } from "@/components/Docs/DocumentEditor"
 import { DocsHome, docMatchesQuery } from "@/components/Docs/DocsHome"
+import { DocInfoDialog } from "@/components/Docs/DocInfoDialog"
 import { itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
 import {
   createDocument,
@@ -31,6 +32,7 @@ import {
   listDocumentFolders,
   listDocuments,
   loadDocumentBody,
+  markDocumentOpened,
   renameDocument,
   setDocumentBody,
   setDocumentFolder,
@@ -57,10 +59,13 @@ export function DocsPanel() {
   const [homeBodies, setHomeBodies] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
+  const [infoOpen, setInfoOpen] = useState(false)
+  const [openStamp, setOpenStamp] = useState<{ id: string; prev: Date | null; now: Date } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingBody = useRef<string | null>(null)
   const selectedIdRef = useRef<string | null>(selectedId)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+  const openStampRef = useRef<{ id: string; prev: Date | null; now: Date } | null>(null)
   const sidebarListRef = useRef<HTMLUListElement>(null)
 
   selectedIdRef.current = selectedId
@@ -130,11 +135,18 @@ export function DocsPanel() {
       setDraft("")
       setTitleDraft("")
       setFolderDraft("")
+      openStampRef.current = null
       pendingBody.current = null
       setSaveState("saved")
       return
     }
     pendingBody.current = null
+    setInfoOpen(false)
+    // One stamp per visit (a dev double-run of this effect must not eat "last opened").
+    if (openStampRef.current?.id !== selected.id) {
+      openStampRef.current = { id: selected.id, prev: markDocumentOpened(selected.id), now: new Date() }
+    }
+    setOpenStamp(openStampRef.current)
     setTitleDraft(itemTitle(selected))
     setFolderDraft(documentFolder(selected))
     setSaveState("saved")
@@ -502,7 +514,26 @@ export function DocsPanel() {
                   >
                     {saveLabel}
                   </span>
+                  <button
+                    type="button"
+                    className="docs-info-btn"
+                    onClick={() => setInfoOpen(true)}
+                    aria-label="Document info"
+                    aria-haspopup="dialog"
+                    title="Document info: created, modified, last opened, size"
+                  >
+                    <Info className="h-4 w-4" aria-hidden />
+                  </button>
                 </div>
+
+                <DocInfoDialog
+                  open={infoOpen}
+                  doc={selected}
+                  html={draft}
+                  previousOpenedAt={openStamp?.id === selected.id ? openStamp.prev : null}
+                  openedNowAt={openStamp?.id === selected.id ? openStamp.now : null}
+                  onClose={() => setInfoOpen(false)}
+                />
 
                 <div className="docs-editor-wrap">
                   <DocumentEditor

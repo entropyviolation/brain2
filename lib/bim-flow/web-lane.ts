@@ -8,6 +8,8 @@
  *   - `webCue`       sure signs a question is about the outside world (opening hours, "find out", "near me").
  *   - `needsHome`    the question leans on where the person lives ("by my house").
  *   - `parseHomeTell` "I live in North Park, San Diego" as a told fact.
+ *   - `freshCue`     a softer sign: the answer may be newer than a model's knowledge (a price, a score, "the latest").
+ *   - `tidyQuery`    a model-written query made plain and short before it leaves the Mac.
  *   - `webLines`     search results and page text cut to the passages that bear on the question.
  *   - `hubSearch`    the call to the Mac hub's `/api/web-search` (`web-search.mjs`). Only the query leaves the Mac.
  */
@@ -78,6 +80,28 @@ export function needsHome(text: string): boolean {
 /** Sure signs, in code, that a question is about the outside world and worth a web search. */
 export function webCue(text: string): boolean {
   return LOOKUP.test(text) || HOURS.test(text) || HOME.test(text)
+}
+
+const FRESH =
+  /\b(?:latest|newest|recent|recently|current|currently|right now|now|today|tonight|tomorrow|this (?:week|weekend|month|year|season)|last night|price|prices|cost|costs|how much|score|won|win|winner|news|release[ds]?|coming out|weather|forecast|open|hours|schedule|tickets?|in stock|available)\b/i
+
+/** A softer sign than `webCue`: the answer may have changed since a model was trained (a price, a score, "the latest"). */
+export function freshCue(text: string): boolean {
+  return FRESH.test(text)
+}
+
+/** A model-written query made safe to send: plain characters, HOME filled in or dropped, ten words at most. */
+export function tidyQuery(query: string, home?: string): string {
+  return query
+    .replace(/\bHOME\b/g, home ?? "")
+    // A line that says "near me" has a code cue and never gets here (`webCue`), so a model that adds it made it up.
+    .replace(/\bnear me\b/gi, " ")
+    .replace(/[^\x20-\x7E\u00C0-\u024F]/g, " ")
+    .replace(/["\\]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, home ? 14 : 10)
+    .join(" ")
 }
 
 /** "I live in North Park, San Diego" / "my address is 12 Elm St": where home is, in the person's words. Null otherwise. */

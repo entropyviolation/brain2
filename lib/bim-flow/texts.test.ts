@@ -41,3 +41,18 @@ describe("texts", () => {
     expect(old.total).toBe(0)
   })
 })
+
+import { nameResolver } from "./texts-client"
+describe("nameResolver with Contacts names", () => {
+  const people = [
+    { id: "a", title: "Shelby Seal", names: ["Shelby Seal"], handles: [] },
+    { id: "b", title: "Elijah", names: ["Elijah"], handles: ["555-000-0002"] },
+  ]
+  it("saved number, then the Contacts name as the person item, then the Contacts name, then the number", () => {
+    const name = nameResolver(people, { "+15550000001": "shelby seal", "+15550000003": "Pat Doe", "+15550000002": "Eli J" })
+    expect(name("+15550000002")).toBe("Elijah")
+    expect(name("(555) 000-0001")).toBe("Shelby Seal")
+    expect(name("+15550000003")).toBe("Pat Doe")
+    expect(name("+15550000009")).toBe("+1 (555) 000-0009")
+  })
+})

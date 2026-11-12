@@ -88,6 +88,7 @@ describe("CHAT_LANES", () => {
   it("keeps the order a line meets them in", () => {
     expect(CHAT_LANES.map((l) => l.id)).toEqual([
       "handoff",
+      "web-home",
       "ask-back",
       "follow-through",
       "flight-file",
@@ -98,6 +99,7 @@ describe("CHAT_LANES", () => {
       "stream",
       "social",
       "texts",
+      "web",
       "fact",
       "tell",
       "wire",

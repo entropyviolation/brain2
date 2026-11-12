@@ -16,10 +16,32 @@ export const TEXT_WINDOW_DAYS = 14
 /** Days loaded so company habits can be learned from the person's own marked hours. Only the last `TEXT_WINDOW_DAYS` are read as evidence. */
 export const TEXT_LEARN_DAYS = 60
 
-export function nameResolver(people: VaultSnapshot["people"]): (handle: string) => string {
+/**
+ * A handle's name: the person item that has it saved; else the Mac Contacts name (`names`, from the hub),
+ * as the person item of that name when there is exactly one; else the Contacts name; else the number.
+ */
+export function nameResolver(people: VaultSnapshot["people"], contacts: Record<string, string> = {}): (handle: string) => string {
   const byHandle = new Map<string, string>()
-  for (const p of people ?? []) for (const h of p.handles ?? []) byHandle.set(normalizeHandle(h), p.names[0] ?? p.title)
-  return (handle) => byHandle.get(normalizeHandle(handle)) ?? formatHandle(handle)
+  const byName = new Map<string, Set<string>>()
+  for (const p of people ?? []) {
+    const shown = p.names[0] ?? p.title
+    for (const h of p.handles ?? []) byHandle.set(normalizeHandle(h), shown)
+    for (const n of p.names) {
+      const k = n.trim().toLowerCase()
+      if (k) byName.set(k, (byName.get(k) ?? new Set()).add(shown))
+    }
+  }
+  const byContact = new Map<string, string>()
+  for (const [h, n] of Object.entries(contacts)) byContact.set(normalizeHandle(h), n)
+  return (handle) => {
+    const h = normalizeHandle(handle)
+    const saved = byHandle.get(h)
+    if (saved) return saved
+    const contact = byContact.get(h)
+    if (!contact) return formatHandle(handle)
+    const items = byName.get(contact.trim().toLowerCase())
+    return items?.size === 1 ? [...items][0]! : contact
+  }
 }
 
 /** `base`: the hub's address when the page is not served by it (the iPhone app); default same origin. */
@@ -29,10 +51,10 @@ export async function loadTexts(opts: { days?: number; day?: string; people?: Va
     if (opts.day) q.set("day", opts.day)
     const res = await fetch(`${opts.base ?? ""}/api/phone-texts?${q}`)
     if (!res.ok) return null
-    const body = (await res.json()) as { rows?: RawText[] }
+    const body = (await res.json()) as { rows?: RawText[]; names?: Record<string, string> }
     const hidden = new Set((opts.hideHandles ?? []).map((h) => normalizeHandle(h)))
     const rows = hidden.size ? (body.rows ?? []).filter((r) => !hidden.has(normalizeHandle(r.h))) : (body.rows ?? [])
-    return toRows(rows, nameResolver(opts.people))
+    return toRows(rows, nameResolver(opts.people, body.names))
   } catch {
     return null
   }

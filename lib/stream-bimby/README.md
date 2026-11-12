@@ -1,6 +1,6 @@
 # Stream BIMBY
 
-_Last mapped: 2026-11-10_
+_Last mapped: 2026-11-11_
 
 Brain2's direction: a continuous stream of thought, minute by minute, on plans and exact actions, with BIM easing the job of getting it down. One BIM chat message that runs through a day ("8:17 hit dab pen", "8:17 - 9:15 doing dishes", "coffee at around 9:15 add to drinks tracking", "add to inbox: …", a pasted link, "gonna eat …", a feeling) becomes a **plan card** of filings. Each filing is one line the BIM executor already runs, so an accepted line lands in the same store as if typed. **Nothing is filed until Accept.**
 
@@ -21,6 +21,8 @@ _2026-11-09:_ the same read also fills the follow-through ledger (`lib/follow-th
 
 ## Flow
 
+_2026-11-11:_ while a day plan is live, a long update about it goes to the day lane first and is read against the plan (`lib/plan-bimby/README.md`, "Updates to the day"), not here.
+
 `sendToBim` (`lib/ingest/bim-chat.ts`) calls `tryStream` after the handoff, ask-back, and flight lanes (so a pasted booking is still a flight) and before the tell, fact, and report lanes. `looksLikeStream` is true for an "add to …" directive or three or more lines with two clocks. `tryStream` (`run.ts`) builds the plan, keeps it in `useReportStore` (`bimchat-reports`), and returns a chat line with `reportId`. The console and phone draw `components/Bim/report-card.tsx` under it, as for the Report BIMBY.
 
 Accept on a `line` effect (`lib/report-bimby/apply.ts` → `apply.ts` here) sends the field `line` to `ingestIncomingAsync`. A line that would open a question is not left in chat: the question is dropped and the filing fails with the reason.
@@ -29,7 +31,7 @@ Accept on a `line` effect (`lib/report-bimby/apply.ts` → `apply.ts` here) send
 
 | File | Role |
 |------|------|
-| `parse.ts` | Pure, rules only. `segments` (lines, then sentences), `readClock` (24-hour; "1:57 pm" is 13:57; a bare 1–6 is afternoon; "since 817" only after since/at/around/from), `classify` (one piece → one filing), `buildStreamPlan` (the whole stream → `ReportPlan`). Tests: `parse.test.ts` |
+| `parse.ts` | Pure, rules only. `segments` (lines, then sentences), `readClock` (24-hour; "1:57 pm" is 13:57; "7pm" is 19:00; with the send time, a clock with no am/pm is the latest reading not after it, so "7:36" sent at 20:12 is 19:36; with no send time a bare 1–6 is afternoon; a window's end is never before its start; "since 817" only after since/at/around/from), `classify` (one piece → one filing), `buildStreamPlan` (the whole stream → `ReportPlan`). Tests: `parse.test.ts` |
 | `apply.ts` | Accept for one `line` effect, through the executor |
 | `llm.ts` | Model stage: `STREAM_SYSTEM`, `STREAM_SCHEMA`, `filingsFromModel` (the checks), `withCoverage` (rules backfill), `readWithModel` (crew ladder). Tests: `llm.test.ts` |
 | `run.ts` | `tryStream` (async, takes `{ llm }`), the chat door. Writes only the plan to the store |

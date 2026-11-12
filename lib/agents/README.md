@@ -5,9 +5,22 @@ _Last mapped: 2026-11-02_
 One description of an agent, whatever its mind is made of. Plan:
 [`docs/AGENT_LAB_PLAN.md`](../../docs/AGENT_LAB_PLAN.md) (slice `PH-1`).
 
-**Read-only.** Nothing here runs an agent, writes storage, or changes a saved
+**Read-only**, except `trace-store.ts`. Nothing else here runs an agent, writes storage, or changes a saved
 flow. An adapter reads a flow and fills the envelope. The flow inside the
 Blueprint is the same object the old runtime reads.
+
+## The Trace
+
+_Last mapped: 2026-11-11_ Slice `PH-2`. One record of a run for every agent: who ran (Blueprint id and rev), the input, each step in order, the cost, a closed stop reason, the result.
+
+- `trace.ts`: the types, `recorder` (builds a Trace as a run goes), `clip`, `costOf`, `takenBy`, `validateTrace`. Pure.
+- `trace-adapters.ts`: `traceOfFlowRun` and `traceOfHelperRun` read a finished BIM flow run or Tracking BIMBY run. Neither runtime changed. Pure.
+- `trace-store.ts`: `saveTrace`, `loadTraces`, `getTrace`, `tracesOf`. The newest 150 on the device (`agent-traces-v1`, outside the vault), and every one whole on disk through `lib/bim-flow/archive.ts` (kind `trace`).
+- `trace.test.ts`.
+
+Who saves one today: a BIM chat turn (`lib/ingest/bim-chat.ts`, one event per lane tried; the id rides on the reply as `BimLine.traceId`), the chat's Ask flow (`lib/ingest/bim-switchboard.ts`), a flow bench run (`components/Lab/BimFlow/BimFlowLab.tsx`), and a Tracking BIMBY chat run (`lib/tracking-helper/store.ts`).
+
+**Why it left the plan:** the plan keeps Traces in IndexedDB or the vault with a pin. This slice uses `localStorage` plus the disk archive, because the archive already is the long record. **Planned:** IndexedDB and pinning; the Ask flow's Trace nested under the chat turn (`parent`); model calls inside a chat lane as their own events (today a lane is one event and the route chip is its note, so a chat turn's `cost.calls` is 0); memory reads with row ids; tokens; `stall` events; the shared replay component; Traces for the Habits BIMBY and the card BIMBIES; the `test` and `eval` origins set by their runners.
 
 ## BIMBIES
 
@@ -83,6 +96,7 @@ Nothing here reads storage; to show a person's saved copy, pass it to
   `habitsBimbyOfBlueprint` each return null for the other.
 - `adapters/plan-bimby.ts`, `adapters/critic-bimby.ts`, `adapters/link-bimby.ts`, `adapters/inbox-bimby.ts` (_2026-11-07_): one `pipeline` Blueprint each, stages taken from each BIMBY's README, one built named pipeline that is also a tool. Only Plan has a lab page (`/lab/plan-bimby`). _2026-11-11:_ Plan has a second built pipeline, "Plan the rest of today" (`PLAN_DAY_STAGES`), which runs in BIM chat. Critic, Link and Inbox have none, so the desk shows no **Open lab** for them. Also (_2026-11-07_): `adapters/idea-swarm.ts` (lab `/lab/idea-swarm`), `adapters/swarm-vote.ts` (lab `/lab/swarm-vote`; a shared tool, not a BIMBY) and `adapters/skills-evolve.ts` (no lab page). Still unregistered: Flight and Report BIMBY (no model code yet). `adapters/finance-bimby.ts` (_2026-11-11_): the Financial BIMBY, four built pipelines (log a money line, attach a receipt, keep a verdict, before you buy) and two planned; lab `/lab/finance-bimby`. Its tools say `writes: true`: it files a sure reading directly, with undo, as the Flight BIMBY does. _2026-11-11:_ `adapters/social-bimby.ts`: the Social BIMBY, one built pipeline ("File a social message", all code) and two planned (birthday nudges, friends you haven't seen). It runs in BIM chat's `social` lane; no lab page.
 - `registry.ts`.
+- `adapters/bim-chat.ts` (_2026-11-11_): BIM chat's switchboard as a `pipeline` Blueprint, id `bim-chat`. Its stages are built from the lane table (`lib/ingest/bim-lanes.ts`), so a new lane shows on the Agents desk with no edit here. Bump `BIM_CHAT_REV` when the order or a guard changes. No lab page.
 - `info.ts`, `info.test.ts` (_2026-11-07_): `isInfoRequest`, `infoText(blueprint)`, and `INFO_EXAMPLES` (hand-written "try saying" lines by Blueprint id). The facts come from the Blueprint. A new BIMBY with its own chat calls both functions first, and adds its id to `INFO_EXAMPLES`.
 - `bench.ts` (_2026-11-02_): `Case`, `Variant`, `runSuite` → `Scorecard`, `compareCards` (gained / lost / stuck / held on shared lines), `confusions`, `trimHistory`. Pure, no model inside. A decline is never a pass; a thrown call is a named miss. Slice `EV-1` to `EV-4`, `EV-8` of the plan.
 - `bench-variants.ts`: `keywordBaseline` (free; declines on no overlap or a tie), `swarmVariant` (with `declineOnSplit`), `singleModelVariant`. A new idea from `docs/BIMBY_IDEAS.md` is one more `Variant`.
@@ -94,7 +108,7 @@ Nothing here reads storage; to show a person's saved copy, pass it to
 
 ## Planned
 
-The common Trace (slice 2), the Theater and Blueprint form (3), the tool
+The rest of the common Trace (slice 2; see The Trace above), the Theater and Blueprint form (3), the tool
 contracts (4), evals and compare (5). A `policy` adapter for the friend and
 Budget. The rail (`components/Lab/Agents/AgentRail.tsx`) and the
 `/lab/tracking-helper` and `/lab/habit-helper` routes have landed; they read Blueprints from here. The Tracking helper is now the **Tracking BIMBY** (2026-11-02): one `pipeline` mind with `pipelines: NamedPipeline[]` (`description-to-timeblock` and `generate-gap-questions` built, each also a tool; `gap-readings` and `account-to-other-kinds` planned). The **Agents** Go tab (`components/Lab/Agents/AgentsDesk.tsx`, added 2026-11-02) lists them and links to each lab.

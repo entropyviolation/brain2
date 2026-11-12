@@ -24,6 +24,7 @@ import {
 } from "@/lib/doc-persist"
 import { pdfArrayBufferToHtml } from "@/lib/pdf-to-html"
 import { hydrateDocumentsFromIdb } from "@/lib/doc-hydrate"
+import { useDocOpened } from "@/lib/doc-opened"
 
 function genId(prefix = "doc"): string {
   try {
@@ -174,6 +175,7 @@ export function setDocumentStatus(docId: string, status: "draft" | "evergreen" |
 
 export function deleteDocument(docId: string): void {
   useTaskStore.getState().deleteTask(docId)
+  useDocOpened.getState().forget(docId)
   void deletePersistedDoc(docId)
 }
 
@@ -209,6 +211,11 @@ export function documentUpdatedAt(doc: Task): Date | null {
     return Number.isNaN(d.getTime()) ? null : d
   }
   return doc.createdAt instanceof Date ? doc.createdAt : new Date(doc.createdAt)
+}
+
+/** Stamp "last opened" (per device, not an edit). Returns the previous open. */
+export function markDocumentOpened(docId: string): Date | null {
+  return useDocOpened.getState().markOpened(docId)
 }
 
 /** All note-typed items, newest first. */

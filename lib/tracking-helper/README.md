@@ -120,6 +120,8 @@ with an older saved copy gets the new one; its own is kept under `trackinghelper
 
 ## Planned
 
+_2026-11-11:_ each chat run also saves the common Trace (`lib/agents/trace-adapters.ts` `traceOfHelperRun`, called in `store.ts`). The lab's Try it and the tests do not yet.
+
 - Express the flow as a BIM flow graph (`lib/bim-flow`) once the engine can return a list from an extract.
 - Keep every lab run (like `run-history.ts`), and the person's verdicts as few-shot examples.
 - A `drive` proposal when the account says a task was resisted (`lib/bim-flow/drive.ts`).

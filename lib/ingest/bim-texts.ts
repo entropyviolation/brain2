@@ -41,22 +41,39 @@ const words = (s: string) => s.toLowerCase().replace(/[’']/g, "'").split(/[^\p
 /** Cheap first look, before any snapshot is built: the line says text or message. */
 export const mentionsTexts = (text: string): boolean => TEXT_WORD.test(text)
 
-/** People whose name (or nickname) appears in the line as whole words. Longest name wins a tie. */
+/** Names that are the person themself or a pronoun, never someone they text ("self", "me"). */
+const NOT_A_NAME = new Set(["self", "me", "myself", "i", "you", "her", "him", "she", "he", "they", "them", "us", "we", "my", "mine"])
+const isSelf = (p: Person) => [p.title, ...p.names].some((n) => ["self", "me", "myself"].includes(n.trim().toLowerCase()))
+
+/**
+ * People whose name appears in the line as whole words. A full name ("Shelby Seal") beats one word of
+ * it ("shelby"); a longer match beats a shorter. The person's own item ("self") is never a match.
+ */
 export function namedPeople(people: Person[], text: string): Person[] {
   const line = ` ${words(text).map((w) => w.replace(/'s$/, "")).join(" ")} `
-  const hits: { p: Person; len: number }[] = []
+  const hits: { p: Person; score: number }[] = []
   for (const p of people) {
+    if (isSelf(p)) continue
     let best = 0
     for (const n of p.names) {
-      const key = words(n).join(" ")
-      if (key.length >= 2 && line.includes(` ${key} `)) best = Math.max(best, key.length)
+      const parts = words(n).filter((w) => !NOT_A_NAME.has(w))
+      const full = parts.join(" ")
+      if (full.length >= 2 && line.includes(` ${full} `)) best = Math.max(best, 100 + full.length)
+      for (const w of parts) if (w.length >= 3 && line.includes(` ${w} `)) best = Math.max(best, w.length)
     }
-    if (best) hits.push({ p, len: best })
+    if (best) hits.push({ p, score: best })
   }
   if (!hits.length) return []
-  const top = Math.max(...hits.map((h) => h.len))
-  // "Shelby Ross" beats a second person called "Shelby"; two equal names stay ambiguous.
-  return hits.filter((h) => h.len === top).map((h) => h.p)
+  const top = Math.max(...hits.map((h) => h.score))
+  // The same name twice (duplicate items) is one person here: texts are matched by that name.
+  const seen = new Set<string>()
+  return hits
+    .filter((h) => h.score === top)
+    .map((h) => h.p)
+    .filter((p) => {
+      const k = (p.names[0] ?? p.title).toLowerCase()
+      return seen.has(k) ? false : (seen.add(k), true)
+    })
 }
 
 /** A question about texts that names someone. Null for anything else, including commands ("text Shelby back"). */
@@ -169,19 +186,13 @@ export async function answerTextQuestion(text: string, now: Date, deps: TextsDep
   }
   const person = q.people[0]!
   const name = displayName(person)
-  if (!person.handles?.length) {
-    return {
-      text: `${name} has no phone number or email saved in People I Know, so I can't tell which texts are from ${name}. Add one to ${name}'s person item and ask again.`,
-      route: chip(),
-      evidence: [],
-    }
-  }
   const rows = await deps.load(deps.snap.people, deps.snap.secretHandles).catch(() => null)
   if (!rows) return { text: "I can't reach your texts right now. They come from the Mac hub; is it running?", route: chip(), evidence: [] }
   const pick = pickLastTexts(rows, name, q.dir)
   if (!pick) {
     const what = q.dir === "out" ? `texts from you to ${name}` : q.dir === "both" ? `texts with ${name}` : `texts from ${name}`
-    return { text: `I don't see any ${what} in the last ${TEXTS_ASK_DAYS} days.`, route: chip(), evidence: [] }
+    const why = person.handles?.length ? "" : ` ${name}'s item has no number saved and no contact in Contacts has that name, so I may be missing them. Add the number to ${name}'s item.`
+    return { text: `I don't see any ${what} in the last ${TEXTS_ASK_DAYS} days.${why}`, route: chip(), evidence: [] }
   }
 
   const first = pick.quoted[0]!

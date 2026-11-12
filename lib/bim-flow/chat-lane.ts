@@ -12,6 +12,10 @@
  *   3. fetch   code. The tool is one of the existing `runCompute` / `retrieve` reads.
  *   4. reply   model, the main model. Sees the last turns and the tool result.
  *
+ * The `web` tool (`web-lane.ts`) is offered only when the caller hands in a search, and only for a question.
+ * It is the one tool that reads outside the vault: the pick model writes the query, the Mac hub searches, and
+ * the reply carries its sources. Questions with a sure code cue never get here; the Web BIMBY (`web-ask.ts`) takes them.
+ *
  * "General" leans on code, not on the model: a reply with no rows and no counted facts behind it is
  * always general, and the chat says so. With rows in hand the model may still say its reply did not
  * use them (general knowledge about a thing the vault happens to mention); it can only move a reply
@@ -26,9 +30,11 @@ import type { ModelCall } from "./ollama"
 import { retrieve } from "./retrieve"
 import type { Evidence } from "./types"
 import { contentWords, type VaultSnapshot } from "./vault-search"
+import { freshCue, tidyQuery, webLines, type WebLines, type WebSearch } from "./web-lane"
 
 export const CHAT_TOOLS = ["count", "last", "day", "person-days", "search", "texts-day", "none"] as const
-export type ChatTool = (typeof CHAT_TOOLS)[number]
+/** A vault read, or `web`: a search outside the vault, offered only when `ChatLaneInput.web` is set. */
+export type ChatTool = (typeof CHAT_TOOLS)[number] | "web"
 
 /** Most tool reads for one line. The second is asked for only when the first found nothing. */
 export const MAX_TOOL_HOPS = 2
@@ -83,18 +89,26 @@ const PICK_SYSTEM =
   "person-days: what happened on days a named person was around. " +
   "search: their messages, logs, notes and item titles that mention the subject. " +
   "texts-day: today's phone texts. " +
-  "none: the line needs no lookup (a feeling, an opinion, small talk, general knowledge). " +
-  "subject is one to three words taken from the line, the thing to look up; empty for day, texts-day and none. JSON only."
+  "none: the line needs no lookup (a feeling, an opinion, small talk, general knowledge). "
+const PICK_SUBJECT = "subject is one to three words taken from the line, the thing to look up; empty for day, texts-day and none. JSON only."
+const PICK_WEB =
+  "web: search the internet, only when the answer depends on the outside world right now or on a named place or business " +
+  "(what is nearby, a price, news, a score, a release date). Not for their own data, and not for general knowledge you already have. " +
+  "For web, subject is a short search query, three to eight plain keywords from the line; add the HOME place only for 'near me'; " +
+  "do not add a year or words the line does not need; never put a person's name in it. " +
+  "For the other tools, "
 
-const PICK_SCHEMA = {
+const pickSystem = (web: boolean) => PICK_SYSTEM + (web ? PICK_WEB : "") + PICK_SUBJECT
+
+const pickSchema = (web: boolean) => ({
   type: "object",
   properties: {
-    tool: { type: "string", enum: [...CHAT_TOOLS] },
-    subject: { type: "string", maxLength: 40 },
+    tool: { type: "string", enum: web ? [...CHAT_TOOLS, "web"] : [...CHAT_TOOLS] },
+    subject: { type: "string", maxLength: web ? 70 : 40 },
     why: { type: "string", maxLength: 80 },
   },
   required: ["tool", "subject", "why"],
-}
+})
 
 const REPLY_SYSTEM =
   "You are BIM, the assistant inside one person's own tracking app, talking with that person. Reply in one to three short plain sentences. " +
@@ -102,23 +116,30 @@ const REPLY_SYSTEM =
   "With no FACTS or ROWS you know nothing about their life: answer from general knowledge, or just respond to what they said, and do not pretend to know their data. " +
   "When they share a feeling, be warm and brief; offer a fact from FACTS only if it bears on it; never lecture or give advice they did not ask for. " +
   "Refer to people by name. Never use he, she, him, her, his or hers for anyone. " +
-  "basis is data only when the reply states something taken from FACTS or ROWS; otherwise general. " +
-  "No lists, no headings, no emoji. JSON only."
+  "basis is data only when the reply states something taken from FACTS or ROWS; otherwise general. "
+const REPLY_WEB =
+  "WEB RESULTS, when given, were fetched from the internet just now for this line: use them for facts about the outside world, " +
+  "name what they name, and say plainly what they do not state rather than guessing. With WEB RESULTS you may use up to five short sentences. " +
+  "basis is web when the reply states something taken from WEB RESULTS. " +
+  "If the web search failed, say you could not search the web just now, then answer from general knowledge if you can. "
+const REPLY_END = "No lists, no headings, no emoji. JSON only."
 
-const REPLY_SCHEMA = {
+const replySchema = (web: boolean) => ({
   type: "object",
-  properties: { reply: { type: "string", maxLength: 600 }, basis: { type: "string", enum: ["data", "general"] } },
+  properties: { reply: { type: "string", maxLength: web ? 900 : 600 }, basis: { type: "string", enum: web ? ["data", "web", "general"] : ["data", "general"] } },
   required: ["reply", "basis"],
-}
+})
 
 type RawPick = { tool?: string; subject?: string; why?: string }
-const isTool = (x: unknown): x is ChatTool => typeof x === "string" && (CHAT_TOOLS as readonly string[]).includes(x)
+const isTool = (x: unknown, web = false): x is ChatTool => typeof x === "string" && ((CHAT_TOOLS as readonly string[]).includes(x) || (web && x === "web"))
 
 /** Step 3, in code: run one tool with the existing reads. `none` reads nothing. */
 export async function runChatTool(snap: VaultSnapshot, tool: ChatTool, subject: string, text: string, g: ChatGround, now: Date): Promise<Evidence | null> {
   const terms = contentWords(subject)
   switch (tool) {
     case "none":
+    case "web":
+      // `web` reads outside the vault; `runChatLane` runs it through the search it was handed.
       return null
     case "count":
       return runCompute(snap, { fn: "minutes", limit: 6 }, { terms, now, text })
@@ -152,6 +173,8 @@ export interface ChatLaneReply {
   /** Every model asked, in order. */
   models: string[]
   calls: number
+  /** Set when the reply stands on a web search: the query that left the Mac. The sources are in `evidence`. */
+  web?: { query: string }
 }
 
 export interface ChatLaneInput {
@@ -165,6 +188,8 @@ export interface ChatLaneInput {
   pick: string[]
   /** The model that writes the reply. */
   main: string
+  /** A web search the pick model may choose for a question. Absent: the lane reads the vault only. `home` is where the person lives. */
+  web?: { search: WebSearch; home?: string }
 }
 
 const hasData = (e: Evidence | null): e is Evidence => !!e && e.total > 0
@@ -177,25 +202,41 @@ export async function runChatLane(input: ChatLaneInput): Promise<ChatLaneReply> 
   const hops: ChatHop[] = []
   let calls = 0
   let found: Evidence | null = null
+  // The web is offered for a question only: a feeling or a remark is never sent to a search engine.
+  const web = input.web && /\?\s*$/.test(text.trim()) ? input.web : undefined
+  let webTry: { query: string; got: WebLines | null } | null = null
 
-  // Nothing in the line points at the vault: no tool can help, so no model is asked to pick one.
-  const canLook = input.pick.length > 0 && !looksGeneral(g)
+  // Nothing in the line points at the vault: no vault tool can help, so no model is asked to pick one,
+  // unless the web is on hand and the question may be about the world right now (`freshCue`: a price, a score, "the latest").
+  // Plain general knowledge ("what is the boiling point of nitrogen?") is still one call and no search.
+  const canLook = input.pick.length > 0 && (!looksGeneral(g) || (!!web && freshCue(text)))
   for (let hop = 0; canLook && hop < MAX_TOOL_HOPS; hop++) {
     const tried = hops.map((h) => `${h.tool}${h.subject ? ` "${h.subject}"` : ""} found nothing`).join("; ")
     const user = [
       ...describeLinks(g.mentions).map((l) => `KNOWN ${l}`),
       g.known.length ? `WORDS THEIR DATA HAS SEEN: ${g.known.slice(0, 8).join(", ")}` : "",
       tried ? `ALREADY TRIED: ${tried}. Pick a different tool or subject, or none.` : "",
+      web?.home ? `HOME: ${web.home}` : "",
+      web ? `TODAY: ${now.toDateString()}` : "",
       `LINE: ${text}`,
     ].filter(Boolean).join("\n")
-    const { out, hops: asked } = await escalate<RawPick>(call, input.pick, { system: PICK_SYSTEM, user, schema: PICK_SCHEMA, maxTokens: 80 }, (r) => (isTool(r.tool) ? null : "tool off the list"))
+    const { out, hops: asked } = await escalate<RawPick>(call, input.pick, { system: pickSystem(!!web), user, schema: pickSchema(!!web), maxTokens: 80 }, (r) => (isTool(r.tool, !!web) ? null : "tool off the list"))
     calls += asked.length
     models.push(...asked.map((h) => h.model))
-    const tool: ChatTool = out && isTool(out.tool) ? out.tool : "none"
+    const tool: ChatTool = out && isTool(out.tool, !!web) ? out.tool : "none"
     if (tool === "none") break
-    const subject = String(out?.subject ?? "").trim().slice(0, 40)
+    const said = String(out?.subject ?? "").trim()
+    const subject = tool === "web" ? tidyQuery(said, web?.home) : said.slice(0, 40)
     // The same read twice finds the same nothing.
     if (hops.some((h) => h.tool === tool && h.subject === subject)) break
+    if (tool === "web") {
+      if (!subject) break
+      const hit = await web!.search(subject).catch(() => null)
+      webTry = { query: hit?.query ?? subject, got: hit?.results.length ? webLines(hit, text) : null }
+      hops.push({ tool, subject, found: hit?.results.length ?? 0 })
+      if (webTry.got) break
+      continue
+    }
     const result = await runChatTool(snap, tool, subject, text, g, now)
     hops.push({ tool, subject, found: result?.total ?? 0 })
     if (hasData(result)) {
@@ -205,27 +246,45 @@ export async function runChatLane(input: ChatLaneInput): Promise<ChatLaneReply> 
   }
 
   const turns = (input.turns ?? []).slice(-THREAD_TURNS)
+  const searched = webTry as { query: string; got: WebLines | null } | null
+  const webGot = searched?.got ?? null
   const user = [
     turns.length ? `EARLIER IN THIS CHAT:\n${turns.map((t) => `${t.who === "you" ? "THEM" : "BIM"}: ${t.text.slice(0, 300)}`).join("\n")}` : "",
     found ? `FACTS (counted by code):\n${found.facts.join("\n") || "(none)"}` : "",
     found?.rows.length ? `ROWS:\n${found.rows.slice(0, 8).map((r) => `${r.when} · ${r.source} · ${r.text}`).join("\n")}` : "",
     !found ? "No FACTS or ROWS: you know nothing about their life for this reply." : "",
+    webGot ? `WEB RESULTS (searched just now for "${searched!.query}"):\n${webGot.lines.join("\n")}` : "",
+    searched && !webGot ? "The web search failed or found nothing." : "",
     `TODAY: ${now.toDateString()}`,
     `THEM: ${text}`,
   ].filter(Boolean).join("\n\n")
-  const out = (await call({ model: input.main, system: REPLY_SYSTEM, user, schema: REPLY_SCHEMA, maxTokens: 220, temperature: 0.5 })) as { reply?: string; basis?: string }
+  const out = (await call({
+    model: input.main,
+    system: REPLY_SYSTEM + (searched ? REPLY_WEB : "") + REPLY_END,
+    user,
+    schema: replySchema(!!searched),
+    // Room for five sentences inside JSON: at 360 a longer web answer was cut off mid-string.
+    maxTokens: searched ? 520 : 220,
+    temperature: searched ? 0.2 : 0.5,
+  })) as { reply?: string; basis?: string }
   calls += 1
   models.push(input.main)
   const reply = String(out?.reply ?? "").trim()
   if (!reply) throw new Error("the chat lane gave no reply")
 
   const grounded = !!found && out.basis !== "general"
+  // Like data, the web can only be claimed with results in hand; the model may still say it did not use them.
+  const fromWeb = !!webGot && out.basis !== "general" && out.basis !== "data"
   return {
     text: reply,
-    general: !grounded,
+    general: !grounded && !fromWeb,
     hops,
-    evidence: found && grounded ? [...found.facts, ...found.rows.slice(0, 8).map((r) => `${r.when} · ${r.source} · ${r.text}`)].slice(0, 12) : [],
+    evidence: [
+      ...(found && grounded ? [...found.facts, ...found.rows.slice(0, 8).map((r) => `${r.when} · ${r.source} · ${r.text}`)].slice(0, 12) : []),
+      ...(fromWeb ? webGot!.sources : []),
+    ],
     models,
     calls,
+    ...(fromWeb ? { web: { query: searched!.query } } : {}),
   }
 }

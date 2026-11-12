@@ -38,6 +38,8 @@ const PLAIN = ["tell-open", "question-open", "verb"] as const
 /** The lanes, in the order a line meets them. The reason for each place is beside it. */
 export const CHAT_LANES = [
   { id: "handoff", cost: "code", does: "“Send this to tracking bimby: …” hands the words, unread, to that BIMBY's own chat." },
+  // Before ask-back and the day plan's answers: the line under "Where do you live?" is home, not an answer to them.
+  { id: "web-home", cost: "code", does: "The line under BIM's “where do you live?”, or “I live in …”, is kept as home, and the held web question is run." },
   { id: "ask-back", cost: "code", does: "The line answers a question BIM asked (a check-in, or a fact it could not find) and is filed as that." },
   { id: "follow-through", cost: "code", does: "A one-tap follow-through answer, or “day's end”, “findings”, “mine follow-through”." },
   // Before the fact and tell shapes, which would read a booking's clocks as facts.
@@ -52,6 +54,8 @@ export const CHAT_LANES = [
   // Before texts, fact and tell, which would read "dmd her yesterday" or "on Friday" as a question or a fact.
   { id: "social", agent: "social-bimby", cost: "code", skipWhen: OPEN, does: "A line about a person (a new friend, a DM, a hang-out you want, a birthday) becomes a plan card: the person, their Instagram, a note, a reminder and a plan-log entry." },
   { id: "texts", cost: "local-model", skipWhen: OPEN, does: "A question about someone's texts is read from the texts themselves." },
+  // Before fact and tell, which would answer “what time does X close?” from your own data or a kept fact.
+  { id: "web", cost: "local-model", skipWhen: OPEN, does: "A question about the outside world (opening hours, “find out”, “near my house”) is searched on the web through the Mac hub and answered from the pages, with the sources in the fold." },
   // Before the tell shapes, which would answer “when does X?” from events.
   { id: "fact", cost: "code", skipWhen: ["tell-open"], does: "A fact told in passing is kept; a question about a kept fact is answered from it." },
   { id: "tell", cost: "code", does: "Facts, questions and widget commands in plain words, and the answer to an open tell question." },
