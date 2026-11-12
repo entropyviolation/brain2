@@ -56,7 +56,7 @@ _Last mapped: 2026-10-29_
 - `keyboard/` — `mobile-keyboard.tsx`, `mobile-keyboard.css`, `keyboard-logic.ts`, and their tests. The deck replaces the system keyboard while a text field is focused.
 - `hub/` — Mobile hub page and its CSS
 - `nfc-hub/` — phone NFC hub page, its CSS, and its test
-- `read/` — _Last mapped: 2026-11-05._ `MobileSpeedRead.tsx` and `mobile-read.css`: the Speed Read module (`components/Modules/workspace/speedread/SpeedReadView.tsx`) as a phone page at `/mobile/read/` (`app/mobile/read/page.tsx`), with a **Desk** back key under the status bar. Its home lists the PDF library kept on the Mac (`data/speed-read/`), so every PDF opened on the desk can be read on the phone. A PDF picked on the phone joins the library too. Opened from **Speed read** in the desk Menu's Phone group. Needs the Mac running `npm run dev` or `electron:dev`, like the rest of the window; with `BRAIN2_PHONE_HUB_TOKEN` set, the phone sends its saved hub token.
+- `read/` — _Last mapped: 2026-11-05._ `MobileSpeedRead.tsx` and `mobile-read.css`: the Speed Read module (`components/Modules/workspace/speedread/SpeedReadView.tsx`) as a phone page at `/mobile/read/` (`app/mobile/read/page.tsx`), with a **Desk** back key under the status bar. Its home lists the PDF library kept on the Mac (`data/speed-read/`), so every PDF opened on the desk can be read on the phone. A PDF picked on the phone joins the library too. The reading spot (page and word) is shared through the Mac, so a book opens where the desk or phone left it (_2026-11-11_). Opened from **Speed read** in the desk Menu's Phone group. Needs the Mac running `npm run dev` or `electron:dev`, like the rest of the window; with `BRAIN2_PHONE_HUB_TOKEN` set, the phone sends its saved hub token.
 
 ## Entry points
 

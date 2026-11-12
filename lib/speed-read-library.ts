@@ -15,6 +15,10 @@ export interface SpeedReadEntry {
   openedAt: number
   /** Page the book was left on (1-based). Absent until it has been read. */
   page?: number
+  /** Word on that page (0-based) where reading stopped. */
+  word?: number
+  /** When `page`/`word` were last saved, from any device. */
+  savedAt?: number
 }
 
 async function route(): Promise<{ base: string; headers: Record<string, string> }> {
@@ -70,16 +74,22 @@ export async function fetchSpeedReadPdf(id: string): Promise<ArrayBuffer> {
   return res.arrayBuffer()
 }
 
-/** Remember the page a book was left on, so it opens there next time. */
-export async function saveSpeedReadPage(id: string, page: number): Promise<void> {
+/** The library's current entry for one book (fresh from the Mac), or null. */
+export async function getSpeedReadEntry(id: string): Promise<SpeedReadEntry | null> {
+  return (await listSpeedReadLibrary()).find((x) => x.id === id) ?? null
+}
+
+/** Remember where a book was left (page, and word on it), so any device opens there next time. */
+export async function saveSpeedReadPage(id: string, page: number, word = 0): Promise<SpeedReadEntry | null> {
   const { base, headers } = await route()
   const res = await fetch(`${base}/api/speed-read/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({ page }),
+    body: JSON.stringify({ page, word }),
     keepalive: true,
   })
   if (!res.ok) throw new Error(await failText(res))
+  return ((await res.json().catch(() => ({}))) as { item?: SpeedReadEntry }).item ?? null
 }
 
 export async function removeFromSpeedReadLibrary(id: string): Promise<void> {

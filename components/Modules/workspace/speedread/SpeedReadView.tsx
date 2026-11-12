@@ -6,7 +6,8 @@
  * read in the browser. Every PDF opened here is also posted once to the
  * library on the Mac (`lib/speed-read-library.ts` → `scripts/speed-read-api.mjs`),
  * so the iPhone app lists and opens the same files. Reading settings persist in
- * localStorage.
+ * localStorage. Where you are (page and word) is saved on the Mac, so any device
+ * reopens there; the book left open on this device reopens after a reload.
  */
 "use client"
 
@@ -28,6 +29,7 @@ import { speedReadFaces, SPEED_READ_FONTS } from "@/lib/fonts/speed-read-faces"
 import {
   fetchSpeedReadPdf,
   formatPdfSize,
+  getSpeedReadEntry,
   listSpeedReadLibrary,
   removeFromSpeedReadLibrary,
   saveSpeedReadPage,
@@ -65,7 +67,36 @@ interface Settings {
 
 const DEFAULTS: Settings = { wpm: 350, fontId: "fraunces", size: 84, chunk: 1, pauses: true, carry: true, theme: "paper" }
 const STORE_KEY = "brain2-speed-read"
+/** Library id of the book left open on this device, so a reload (or coming back to the module) reopens it. */
+const OPEN_KEY = "brain2-speed-read-open"
 const SPEED_STEPS = [200, 300, 450, 600, 800, 1000]
+
+/** Where reading stands in one book: page (1-based) and word on it (0-based). */
+interface Spot {
+  page: number
+  word: number
+}
+
+function rememberOpen(id: string | null) {
+  try {
+    if (id) window.localStorage.setItem(OPEN_KEY, id)
+    else window.localStorage.removeItem(OPEN_KEY)
+  } catch {
+    /* storage can be blocked; the module just opens on the library */
+  }
+}
+
+function lastOpen(): string | null {
+  try {
+    return window.localStorage.getItem(OPEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+function spotOf(entry: SpeedReadEntry, numPages: number): Spot {
+  return { page: Math.min(numPages, Math.max(1, entry.page ?? 1)), word: Math.max(0, entry.word ?? 0) }
+}
 
 function loadSettings(): Settings {
   try {
@@ -185,6 +216,12 @@ export function SpeedReadView() {
   const textCache = useRef(new Map<number, string>())
   const rootRef = useRef<HTMLDivElement>(null)
   const pageBtns = useRef(new Map<number, HTMLButtonElement>())
+  /** Word to land on once this page's text has loaded (a book reopened mid-page). */
+  const pendingSpot = useRef<Spot | null>(null)
+  /** Where the reader is now, once the page text is in. This is what gets saved. */
+  const spotRef = useRef<Spot | null>(null)
+  /** The spot the Mac holds for the open book, and its `savedAt`. Equal spots are not sent again. */
+  const savedSpot = useRef<{ id: string; page: number; word: number; at: number } | null>(null)
 
   useEffect(() => {
     setSettings(loadSettings())
@@ -205,21 +242,20 @@ export function SpeedReadView() {
 
   const font = SPEED_READ_FONTS.find((f) => f.id === settings.fontId) ?? SPEED_READ_FONTS[0]
 
-  const refreshLibrary = useCallback(async () => {
+  const refreshLibrary = useCallback(async (): Promise<SpeedReadEntry[] | null> => {
     setLibState("loading")
     try {
-      setLibrary(await listSpeedReadLibrary())
+      const items = await listSpeedReadLibrary()
+      setLibrary(items)
       setLibState("ok")
       setLibNote("")
+      return items
     } catch (e) {
       setLibState("error")
       setLibNote(e instanceof Error ? e.message : "The Mac did not answer.")
+      return null
     }
   }, [])
-
-  useEffect(() => {
-    if (hydrated) void refreshLibrary()
-  }, [hydrated, refreshLibrary])
 
   const endSession = useCallback(() => {
     const open = sessionRef.current
@@ -235,7 +271,10 @@ export function SpeedReadView() {
   }, [playing, endSession])
   useEffect(() => endSession, [endSession])
 
-  const showDoc = useCallback((next: PdfDoc, name: string, at = 1) => {
+  const showDoc = useCallback((next: PdfDoc, name: string, at: Spot = { page: 1, word: 0 }) => {
+    const spot = { page: Math.min(next.numPages, Math.max(1, at.page)), word: Math.max(0, at.word) }
+    pendingSpot.current = spot.word > 0 ? spot : null
+    spotRef.current = spot
     setDoc((prev) => {
       void prev?.destroy().catch(() => undefined)
       return next
@@ -248,7 +287,7 @@ export function SpeedReadView() {
     setPagesRead([])
     setFileName(name)
     fileNameRef.current = name
-    setPage(Math.min(next.numPages, Math.max(1, at)))
+    setPage(spot.page)
     setWords([])
     setWordsPage(0)
     setIdx(0)
@@ -263,15 +302,23 @@ export function SpeedReadView() {
         if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) throw new Error("That is not a PDF.")
         const data = await file.arrayBuffer()
         bookId.current = null
+        savedSpot.current = null
         const opened = await openPdf(data.slice(0))
         showDoc(opened, file.name.replace(/\.pdf$/i, ""))
         setSaveNote("Saving to the library…")
         uploadToSpeedReadLibrary(file.name, data)
           .then((entry) => {
             bookId.current = entry.id
-            // A book already in the library comes back on the page it was left on.
-            if (entry.page && entry.page > 1) setPage(Math.min(opened.numPages, entry.page))
-            setSaveNote("In the library. The iPhone app can open it.")
+            rememberOpen(entry.id)
+            // A book already in the library comes back where it was left.
+            const spot = spotOf(entry, opened.numPages)
+            savedSpot.current = { id: entry.id, ...spot, at: entry.savedAt ?? 0 }
+            if (spot.page > 1 || spot.word > 0) {
+              pendingSpot.current = spot
+              spotRef.current = spot
+              setPage(spot.page)
+            }
+            setSaveNote(spot.page > 1 ? `In the library, back on page ${spot.page}.` : "In the library. The iPhone app can open it.")
             void refreshLibrary()
           })
           .catch((e) => setSaveNote(`Not saved to the library: ${e instanceof Error ? e.message : "the Mac did not answer."}`))
@@ -290,10 +337,15 @@ export function SpeedReadView() {
       setLoading(true)
       setPlaying(false)
       try {
+        // The list on screen can be old (another device read on since), so ask for the current spot.
+        const fresh = (await getSpeedReadEntry(entry.id).catch(() => null)) ?? entry
         const opened = await openPdf(await fetchSpeedReadPdf(entry.id))
+        const spot = spotOf(fresh, opened.numPages)
         bookId.current = entry.id
-        showDoc(opened, entry.name, entry.page ?? 1)
-        setSaveNote(entry.page && entry.page > 1 ? `From the library, back on page ${entry.page}.` : "From the library.")
+        savedSpot.current = { id: entry.id, ...spot, at: fresh.savedAt ?? 0 }
+        rememberOpen(entry.id)
+        showDoc(opened, fresh.name, spot)
+        setSaveNote(spot.page > 1 ? `From the library, back on page ${spot.page}.` : "From the library.")
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not open that PDF.")
       } finally {
@@ -302,6 +354,19 @@ export function SpeedReadView() {
     },
     [showDoc],
   )
+
+  // First load: list the library, and reopen the book this device left open.
+  const reopened = useRef(false)
+  useEffect(() => {
+    if (!hydrated) return
+    void refreshLibrary().then((items) => {
+      if (reopened.current || !items) return
+      reopened.current = true
+      const hit = items.find((x) => x.id === lastOpen())
+      if (hit) void openEntry(hit)
+      else rememberOpen(null)
+    })
+  }, [hydrated, refreshLibrary, openEntry])
 
   const removeEntry = useCallback(
     async (entry: SpeedReadEntry) => {
@@ -316,7 +381,28 @@ export function SpeedReadView() {
     [],
   )
 
+  /** Send the current spot to the Mac if it moved since the last save. */
+  const flushSpot = useCallback(() => {
+    const id = bookId.current
+    const s = spotRef.current
+    if (!id || !s) return
+    const last = savedSpot.current
+    if (last && last.id === id && last.page === s.page && last.word === s.word) return
+    const prevSaved = last
+    savedSpot.current = { id, page: s.page, word: s.word, at: last?.at ?? 0 }
+    void saveSpeedReadPage(id, s.page, s.word)
+      .then((item) => {
+        const cur = savedSpot.current
+        if (item?.savedAt && cur && cur.id === id && cur.page === s.page && cur.word === s.word) cur.at = item.savedAt
+      })
+      .catch(() => {
+        // Try again on the next change or flush.
+        if (savedSpot.current?.id === id) savedSpot.current = prevSaved
+      })
+  }, [])
+
   const closeDoc = useCallback(() => {
+    flushSpot()
     setPlaying(false)
     setDoc((prev) => {
       void prev?.destroy().catch(() => undefined)
@@ -324,8 +410,12 @@ export function SpeedReadView() {
     })
     setSaveNote("")
     bookId.current = null
+    rememberOpen(null)
+    pendingSpot.current = null
+    spotRef.current = null
+    savedSpot.current = null
     void refreshLibrary()
-  }, [refreshLibrary])
+  }, [refreshLibrary, flushSpot])
 
   // Read the chosen page's text layer (cached).
   useEffect(() => {
@@ -343,9 +433,16 @@ export function SpeedReadView() {
         textCache.current.set(page, text)
       }
       if (cancelled) return
-      setWords(tokenizeWords(text))
+      const list = tokenizeWords(text)
+      const pend = pendingSpot.current
+      let at = 0
+      if (pend && pend.page === page) {
+        at = Math.min(pend.word, Math.max(0, list.length - 1))
+        pendingSpot.current = null
+      }
+      setWords(list)
       setWordsPage(page)
-      setIdx(0)
+      setIdx(at)
     })()
     return () => {
       cancelled = true
@@ -356,25 +453,66 @@ export function SpeedReadView() {
     pageBtns.current.get(page)?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" })
   }, [page])
 
-  // Remember the page on the Mac, a moment after it settles (and when leaving).
-  const savedPage = useRef(0)
-  useEffect(() => {
-    if (!doc || page === savedPage.current) return
-    const t = window.setTimeout(() => {
-      const id = bookId.current
-      if (!id) return
-      savedPage.current = page
-      void saveSpeedReadPage(id, page).catch(() => {
-        savedPage.current = 0
-      })
-    }, 800)
-    return () => window.clearTimeout(t)
-  }, [doc, page])
-  useEffect(() => {
-    if (!doc) savedPage.current = 0
-  }, [doc])
-
   const ready = !!doc && wordsPage === page
+
+  // Remember the spot (page and word) on the Mac: a moment after it settles while paused,
+  // every few seconds while playing, and when the page is hidden, closed, or left.
+  useEffect(() => {
+    if (!doc) return
+    if (ready && !(pendingSpot.current && pendingSpot.current.page === page)) spotRef.current = { page, word: idx }
+    if (playing) return
+    const t = window.setTimeout(flushSpot, 800)
+    return () => window.clearTimeout(t)
+  }, [doc, ready, page, idx, playing, flushSpot])
+  useEffect(() => {
+    if (!playing) return
+    const t = window.setInterval(flushSpot, 5000)
+    return () => window.clearInterval(t)
+  }, [playing, flushSpot])
+  useEffect(() => () => flushSpot(), [flushSpot])
+
+  // Coming back to this window: if another device read on in the open book, pick up there.
+  const lastCatchUp = useRef(0)
+  const catchUp = useCallback(async () => {
+    if (Date.now() - lastCatchUp.current < 3000) return
+    lastCatchUp.current = Date.now()
+    if (!doc) {
+      void refreshLibrary()
+      return
+    }
+    const id = bookId.current
+    if (!id || playing) return
+    const entry = await getSpeedReadEntry(id).catch(() => null)
+    const mine = savedSpot.current
+    if (!entry || bookId.current !== id || !entry.savedAt || (mine && mine.id === id && entry.savedAt <= mine.at)) return
+    const spot = spotOf(entry, doc.numPages)
+    savedSpot.current = { id, ...spot, at: entry.savedAt }
+    const cur = spotRef.current
+    if (cur && cur.page === spot.page && cur.word === spot.word) return
+    spotRef.current = spot
+    if (spot.page === page) {
+      setIdx(Math.min(spot.word, Math.max(0, words.length - 1)))
+    } else {
+      pendingSpot.current = spot
+      setPage(spot.page)
+    }
+    setSaveNote(`Picked up on page ${spot.page}, where another device left it.`)
+  }, [doc, playing, page, words.length, refreshLibrary])
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flushSpot()
+      else void catchUp()
+    }
+    const onFocus = () => void catchUp()
+    window.addEventListener("pagehide", flushSpot)
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVis)
+    return () => {
+      window.removeEventListener("pagehide", flushSpot)
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVis)
+    }
+  }, [flushSpot, catchUp])
   const chunk = useMemo(
     () => (words.length ? chunkAt(words, Math.min(idx, words.length - 1), settings.chunk) : null),
     [words, idx, settings.chunk],
@@ -383,6 +521,7 @@ export function SpeedReadView() {
   const goPage = useCallback(
     (n: number) => {
       if (!doc) return
+      pendingSpot.current = null
       setPage(Math.min(doc.numPages, Math.max(1, Math.round(n) || 1)))
     },
     [doc],
@@ -558,6 +697,7 @@ export function SpeedReadView() {
                   <span className="sr-library-name">{entry.name}</span>
                   <span className="sr-library-meta">
                     {formatPdfSize(entry.bytes)} · {new Date(entry.addedAt).toLocaleDateString()}
+                    {entry.page && entry.page > 1 ? ` · p. ${entry.page}` : ""}
                   </span>
                 </button>
                 <button data-no95 type="button" className="sr-btn sr-btn-small" onClick={() => void removeEntry(entry)} aria-label={`Remove ${entry.name}`}>

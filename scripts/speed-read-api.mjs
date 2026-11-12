@@ -8,7 +8,8 @@
  * - `POST /api/speed-read`            raw PDF body, `X-File-Name` (URI-encoded). Same bytes = same id, so a
  *                                     re-upload only bumps `openedAt`.
  * - `GET  /api/speed-read/file/<id>`  the PDF.
- * - `PATCH  /api/speed-read/<id>`     JSON `{ page }` saves where the book was left (1-based).
+ * - `PATCH  /api/speed-read/<id>`     JSON `{ page, word? }` saves where the book was left (page 1-based,
+ *                                     word 0-based on that page) and stamps `savedAt`.
  * - `DELETE /api/speed-read/<id>`     removes one from the library.
  *
  * Files live in `data/speed-read/` (gitignored), the list in `data/speed-read/library.json`.
@@ -108,13 +109,19 @@ export function addPdf(dir, bytes, rawName, now = Date.now()) {
   return entry
 }
 
-/** Save the page a book was left on. Returns the entry, or null for an unknown id. */
-export function setPdfPage(dir, id, page) {
+/**
+ * Save where a book was left: `page` (1-based) and, when given, `word` (0-based index on that page).
+ * `savedAt` lets another device tell its copy is older. Returns the entry, or null for an unknown id.
+ */
+export function setPdfPage(dir, id, page, word, now = Date.now()) {
   if (!validId(id)) return null
   const items = loadLibrary(dir)
   const hit = items.find((x) => x.id === id)
   if (!hit) return null
   hit.page = Math.min(100000, Math.max(1, Math.round(Number(page)) || 1))
+  const w = Math.round(Number(word))
+  hit.word = Number.isFinite(w) ? Math.min(1000000, Math.max(0, w)) : 0
+  hit.savedAt = now
   saveLibrary(dir, items)
   return hit
 }
@@ -214,7 +221,7 @@ export async function handleSpeedReadApi(req, res, pathname, deps = {}) {
       sendJson(res, 400, { ok: false, error: "bad body" })
       return true
     }
-    const item = setPdfPage(dir, route.slice(`${PREFIX}/`.length), body?.page)
+    const item = setPdfPage(dir, route.slice(`${PREFIX}/`.length), body?.page, body?.word)
     sendJson(res, item ? 200 : 404, item ? { ok: true, item } : { ok: false, error: "not found" })
     return true
   }

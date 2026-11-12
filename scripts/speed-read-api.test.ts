@@ -74,6 +74,17 @@ describe("speed-read library", () => {
     expect(setPdfPage(dir, "0000000000000000", 3)).toBeNull()
   })
 
+  it("remembers the word on that page and when it was saved", async () => {
+    const a = addPdf(dir, PDF, "One.pdf", 1)
+    const res = mockRes()
+    await handleSpeedReadApi(mockReq("PATCH", { body: Buffer.from(JSON.stringify({ page: 4, word: 37 })) }), res, `/api/speed-read/${a.id}`, { dir })
+    const [entry] = loadLibrary(dir)
+    expect(entry.page).toBe(4)
+    expect(entry.word).toBe(37)
+    expect(entry.savedAt).toBeGreaterThan(0)
+    expect(setPdfPage(dir, a.id, 5, -3, 9)).toMatchObject({ page: 5, word: 0, savedAt: 9 })
+  })
+
   it("refuses a file that is not a PDF", () => {
     expect(() => addPdf(dir, Buffer.from("hello"), "x.pdf")).toThrow("That is not a PDF.")
   })
