@@ -55,6 +55,25 @@ export function useBimChat() {
     if (log) log.scrollTop = log.scrollHeight
   }, [lines.length, busy])
 
+  // When the glass shrinks (the keyboard opens), keep the newest line in view if it was in view.
+  useEffect(() => {
+    const log = logRef.current
+    if (!log || typeof ResizeObserver === "undefined") return
+    let pinned = true
+    const onScroll = () => {
+      pinned = log.scrollHeight - log.scrollTop - log.clientHeight < 32
+    }
+    const watch = new ResizeObserver(() => {
+      if (pinned) log.scrollTop = log.scrollHeight
+    })
+    log.addEventListener("scroll", onScroll, { passive: true })
+    watch.observe(log)
+    return () => {
+      log.removeEventListener("scroll", onScroll)
+      watch.disconnect()
+    }
+  }, [])
+
   /** Pick or shoot photos; they wait in the compose well with the caption until sent. */
   const addPhotos = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name))

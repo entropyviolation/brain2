@@ -282,9 +282,10 @@
 /* ---- MODE switch: router or LLM, on top of the chat glass ---- */
 
 .bim-mode {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 0 2px 2px;
   min-width: 0;
 }
@@ -295,8 +296,158 @@
   color: #3d4246;
 }
 
-.bim-mode button {
-  min-width: 72px;
+/* The slide switch. A CRT-glass groove with a silver keycap knob; the words either side are
+   lamps, lit on the chosen side. Selectors outrank the keycap skin (`.bim-crt button…`). */
+.bim-sw {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.bim-sw-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 10px/1 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6a7075;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 160ms ease;
+}
+
+.bim-sw-word::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #9aa3a1, #3a4341);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.bim-sw-word.is-lit {
+  color: #12171a;
+}
+
+.bim-sw-word.is-lit::before {
+  background: radial-gradient(circle at 35% 35%, #f4fff8, #7dffc4 55%, #0b4a32);
+  box-shadow: 0 0 6px #7dffc4;
+}
+
+.ui-dialog-content.bim-crt .bim-mode button.bim-sw-track,
+.ui-dialog-content.bim-crt .bim-mode button.bim-sw-track:active {
+  position: relative;
+  display: block;
+  width: 58px;
+  min-width: 0;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid #000;
+  border-radius: 6px;
+  background: #070c0a;
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(125, 255, 196, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.75);
+  transform: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 200ms ease;
+}
+
+.ui-dialog-content.bim-crt .bim-mode .is-llm button.bim-sw-track {
+  background:
+    radial-gradient(ellipse at 28% 50%, rgba(125, 255, 196, 0.32), transparent 62%),
+    #070c0a;
+}
+
+.ui-dialog-content.bim-crt .bim-mode button.bim-sw-track:focus-visible {
+  outline: 2px solid #000080;
+  outline-offset: 2px;
+}
+
+.bim-sw-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 22px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 2px, rgba(0, 0, 0, 0.16) 2px 3px, transparent 3px 5px) center / 11px 10px no-repeat,
+    linear-gradient(180deg, #f6f7f8, #d6dade);
+  box-shadow:
+    inset 2px 0 0 #c3c8cd,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -3px 0 #b3b8be,
+    inset 0 1px 0 #fff,
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  transition: left 180ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.bim-sw.is-llm .bim-sw-knob {
+  left: 28px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bim-sw-knob {
+    transition: none;
+  }
+}
+
+/* "Include secrets": the plain checkbox, not a keycap; Lock reads as a link. */
+.bim-secrets {
+  flex: none;
+  font: 12px/1.3 var(--bim-mono);
+  color: #2b3034;
+}
+
+.bim-secrets label {
+  white-space: nowrap;
+}
+
+.ui-dialog-content.bim-crt .bim-secrets button[role="checkbox"],
+.ui-dialog-content.bim-crt .bim-secrets button[role="checkbox"]:active {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  min-width: 0;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid #55595d;
+  border-radius: 3px;
+  background: #f1f3f5;
+  color: #070c0a;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transform: none;
+}
+
+.ui-dialog-content.bim-crt .bim-secrets button[role="checkbox"][data-state="checked"] {
+  background: #070c0a;
+  color: #7dffc4;
+}
+
+.ui-dialog-content.bim-crt .bim-secrets label button:not([role="checkbox"]),
+.ui-dialog-content.bim-crt .bim-secrets label button:not([role="checkbox"]):active {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+  text-decoration: underline;
+  font: 11px/1 var(--bim-mono) !important;
+  text-transform: none;
+}
+
+.bim-secrets > div > span {
+  font-size: 11px;
 }
 
 .bim-mode-says {
@@ -895,8 +1046,66 @@
     height: calc(100dvh - var(--bim-sheet-top) - var(--m-keyboard-h, 280px) - 6px) !important;
   }
 
-  html.m-keyboard-open .bim-crt .bim-quick {
+  html.m-keyboard-open .bim-crt .bim-quick,
+  html.m-keyboard-open .bim-crt .bim-mode {
     display: none;
+  }
+
+  /* Header: the four live tabs share the row evenly; the planned ones stay on desktop. */
+  .bim-crt-tabs {
+    gap: 5px;
+    padding: 0;
+  }
+
+  .bim-crt-tabs button.is-soon {
+    display: none;
+  }
+
+  .bim-crt-tabs button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 4px 4px 7px;
+  }
+
+  .ui-dialog-content.bim-crt .bim-crt-tabs button {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+
+  .bim-crt-tabs button.is-on::before {
+    width: 6px;
+    height: 6px;
+  }
+
+  .bim-crt-top {
+    padding: 0 0 2px;
+  }
+
+  /* MODE row: the switch left, secrets right, one line. The sentence is on desktop only. */
+  .bim-mode {
+    flex: none;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px 10px;
+    padding: 2px 2px 0;
+  }
+
+  .bim-mode-label,
+  .bim-mode-says,
+  .bim-secrets > div > span {
+    display: none;
+  }
+
+  .bim-secrets {
+    font-size: 12px;
+  }
+
+  /* Send: no navy ring or edge on the round arrow key. */
+  .bim-crt .bim-send button.is-primary,
+  .bim-crt .bim-send button.is-primary:focus-visible {
+    --cap-edge: #6e7378;
+    outline: none;
+    color: #1f2226;
   }
 
   .bim-crt-name,

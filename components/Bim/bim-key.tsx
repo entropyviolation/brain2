@@ -6,12 +6,15 @@
  */
 "use client"
 
-import { useEffect, useState, type ComponentType } from "react"
+import { useCallback, useEffect, useState, type ComponentType } from "react"
 import { SquareTerminal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { backfillFlightsFromChat, confirmFlightsLanded, FLIGHT_BACKFILL_KEY, whenFlightStoresReady } from "@/lib/flight-bimby/backfill"
 import { useBimChatStore } from "@/lib/ingest/bim-chat"
 import { BIM_CHAT_ADD_EVENT } from "@/lib/doc-selection/doc-selection-bus"
+
+/** Phone bar only: "1" while BIM Chat is open, so a relaunch of the app comes back to it. */
+export const BIM_CHAT_OPEN_KEY = "brain2-bim-chat-open"
 
 /** One catch-up per page load, however many times this key mounts. */
 let flightBackfillStarted = false
@@ -23,8 +26,33 @@ type ConsoleProps = { open: boolean; onOpenChange: (open: boolean) => void }
  * phone header key beside Menu: a plain button that wears that bar's keycap.
  */
 export function BimKey({ word, phoneBar }: { word?: string; phoneBar?: string } = {}) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpenState] = useState(false)
   const [Console, setConsole] = useState<ComponentType<ConsoleProps> | null>(null)
+
+  // The phone bar key remembers open/closed. Closing the app leaves it open; only the close key clears it.
+  const setOpen = useCallback(
+    (next: boolean) => {
+      setOpenState(next)
+      if (phoneBar === undefined) return
+      try {
+        if (next) localStorage.setItem(BIM_CHAT_OPEN_KEY, "1")
+        else localStorage.removeItem(BIM_CHAT_OPEN_KEY)
+      } catch {
+        /* without storage it just opens closed next time */
+      }
+    },
+    [phoneBar],
+  )
+
+  useEffect(() => {
+    if (phoneBar === undefined) return
+    try {
+      const narrow = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 767px)").matches
+      if (narrow && localStorage.getItem(BIM_CHAT_OPEN_KEY)) setOpenState(true)
+    } catch {
+      /* stays closed */
+    }
+  }, [phoneBar])
 
   // Once per device: file flights that were pasted into BIM Chat before the Flight BIMBY could read them.
   useEffect(() => {
@@ -65,7 +93,7 @@ export function BimKey({ word, phoneBar }: { word?: string; phoneBar?: string } 
     }
     window.addEventListener(BIM_CHAT_ADD_EVENT, onAdd)
     return () => window.removeEventListener(BIM_CHAT_ADD_EVENT, onAdd)
-  }, [phoneBar])
+  }, [phoneBar, setOpen])
 
   useEffect(() => {
     if (!open || Console) return

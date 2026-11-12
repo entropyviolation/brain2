@@ -45,9 +45,15 @@ function touchFirst(): boolean {
   return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches
 }
 
-function clock(iso: string): string {
+/** The time alone for today; "Nov 9 · 11:40" for another day, with the year when it is not this year. */
+export function clock(iso: string, now = new Date()): string {
   const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  if (Number.isNaN(d.getTime())) return ""
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  if (d.toDateString() === now.toDateString()) return time
+  const sameYear = d.getFullYear() === now.getFullYear()
+  const day = d.toLocaleDateString([], { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) })
+  return `${day} · ${time}`
 }
 
 /** The chat history. Memoized: a keystroke in the well does not repaint every line under the glass. */
@@ -204,20 +210,36 @@ function ChatPane() {
  */
 function ModeSwitch({ llm, setLlm }: { llm: boolean; setLlm: (on: boolean) => void }) {
   return (
-    <div className="bim-mode" role="radiogroup" aria-label="How BIM reads a line">
+    <div className="bim-mode">
       <span className="bim-mode-label">MODE</span>
-      <button data-no95 type="button" role="radio" aria-checked={!llm} className={llm ? undefined : "is-on"} onClick={() => setLlm(false)}>
-        router
-      </button>
-      <button data-no95 type="button" role="radio" aria-checked={llm} className={llm ? "is-on" : undefined} onClick={() => setLlm(true)}>
-        llm
-      </button>
+      {/* One slide switch: ROUTER on the left, LLM on the right. The words are lamps you can tap too. */}
+      <div className={`bim-sw${llm ? " is-llm" : ""}`}>
+        <span className={`bim-sw-word${llm ? "" : " is-lit"}`} aria-hidden="true" onClick={() => setLlm(false)}>
+          router
+        </span>
+        <button
+          data-no95
+          type="button"
+          role="switch"
+          aria-checked={llm}
+          aria-label="LLM mode (off is plain routing)"
+          className="bim-sw-track"
+          onClick={() => setLlm(!llm)}
+        >
+          <span className="bim-sw-knob" aria-hidden="true" />
+        </button>
+        <span className={`bim-sw-word${llm ? " is-lit" : ""}`} aria-hidden="true" onClick={() => setLlm(true)}>
+          llm
+        </span>
+      </div>
       <span className="bim-mode-says">
         {llm
           ? "Local models answer questions from your data, and ask you when they don't know."
           : "Plain routing, like the Telegram bot: commands run, lines are filed. No models."}
       </span>
-      <SecretsToggle surface="chat" label="Include secrets in answers" />
+      <div className="bim-secrets">
+        <SecretsToggle surface="chat" label="Include secrets in answers" />
+      </div>
     </div>
   )
 }
