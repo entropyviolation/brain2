@@ -11,6 +11,8 @@ A BIM chat sentence that says "connect module X to habit Y" or "make the habit's
 
 `tryWire` (`run.ts`) is called from `sendToBim` (`lib/ingest/bim-chat.ts`) after the flights lane and the tell shapes, before the report lane. Skipped when a clarify is open or the line is a command. `looksLikeWire` wants a cue ("connect", "make it so", "detail view", "attach"), a habit or a named module, and a measure or module. It builds a plan, keeps it in `useWireStore`, and returns a chat line with `wireId`. `components/Bim/wire-card.tsx` draws it.
 
+_2026-11-11:_ `acceptStep(planId, id, "ok")` and `acceptAllSteps(planId, "ok")` are the **Neutral** accept: the same write, with `WireStep.grade = "ok"`; a tweak keeps it on an applied step (`lib/accept-grade.ts`).
+
 ## Files
 
 | File | Role |

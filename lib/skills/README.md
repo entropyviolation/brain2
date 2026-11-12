@@ -13,6 +13,9 @@ they were. New skills arrive `proposed` and reach no prompt until a person makes
 
 1. **Record.** The person accepts, tweaks, dismisses or corrects. `learn.ts` writes an `Experience` (success, or a
    failure with severity 1 to 3 and the better move) and credits `uses` / `wins` to the skills that were in the prompt.
+   _2026-11-11:_ a **Neutral** accept (`lib/accept-grade.ts`) sets `Reaction.neutral` and is kept as outcome
+   `neutral`: no use or win is credited, `statsByCategory` skips it, and `distillUser` leaves it out. A Neutral
+   accept that also corrected something is still a failure.
 2. **Find the weak spot.** `evolve.ts` counts success per category and keeps categories under 0.8 with at least 3 cases.
 3. **Distill.** Failures are sampled round-robin across weak categories, worst first. `distill.ts` turns them into
    failure lessons: in code (`lessonOf`, no model) or with a local model on the ladder (`distillWithModel`).

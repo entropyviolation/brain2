@@ -8,6 +8,8 @@ One BIM chat message that says several things ("started my period today. been wo
 
 `tryReport` (`run.ts`) is called from `sendToBim` (`lib/ingest/bim-chat.ts`) after the tell and fact lanes and before the router. Skipped when a clarify is open or the line is a command. It builds a plan, keeps it in `useReportStore`, and returns a short chat line with `reportId`. The console (`components/Bim/console/bim-console.tsx`) and phone (`components/Bim/phone/bim-phone.tsx`) draw `components/Bim/report-card.tsx` under that line.
 
+_2026-11-11:_ `acceptEffect(planId, id, "ok")` and `acceptAll(planId, "ok")` are the **Neutral** accept: the same write, with `Effect.grade = "ok"` kept on the applied effect so nothing learns from it as right (`lib/accept-grade.ts`).
+
 ## Files
 
 | File | Role |

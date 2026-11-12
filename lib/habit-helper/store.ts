@@ -14,6 +14,7 @@ import { createJSONStorage, persist } from "zustand/middleware"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
 import { dateKey } from "@/lib/tracking-helper/clock"
+import type { AcceptGrade } from "@/lib/accept-grade"
 import { applyProposals, buildContext } from "./accept"
 import { computeItem, editProposal, reviseProposal, type ProposalPatch } from "./compute"
 import { loadFlow } from "./flow"
@@ -36,6 +37,8 @@ export interface BimbyLine {
   route?: HabitRoute
   proposals?: Proposal[]
   decided?: Record<string, Decision>
+  /** Rows accepted with the Neutral key (`lib/accept-grade.ts`): written, never a good example. */
+  grades?: Record<string, AcceptGrade>
   asks?: Ask[]
   /** Ask id → the habit picked. */
   chosen?: Record<string, string>
@@ -67,7 +70,8 @@ interface BimbyState {
   edit: (lineId: string, proposalId: string, raw: string) => void
   /** Change any part of a row (habit, day, state, amount, text, reason, times) before Accept. */
   revise: (lineId: string, proposalId: string, patch: ProposalPatch) => void
-  accept: (lineId: string, ids?: string[]) => string
+  /** `grade` "ok" is the Neutral accept: the same write, marked so it is never learned from as right. */
+  accept: (lineId: string, ids?: string[], grade?: AcceptGrade) => string
   dismiss: (lineId: string, proposalId: string) => void
   choose: (lineId: string, askId: string, habitId: string) => void
   clear: () => void
@@ -177,12 +181,12 @@ export const useHabitsBimby = create<BimbyState>()(
         set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, proposals: l.proposals?.map((p) => (p.id === proposalId ? reviseProposal(p, patch, ctx) : p)) } : l)) }))
       },
 
-      accept: (lineId, ids) => {
+      accept: (lineId, ids, grade = "good") => {
         const line = get().lines.find((l) => l.id === lineId)
         if (!line) return ""
         const pick = openProposals(line).filter((p) => !ids || ids.includes(p.id))
         const result = applyProposals(pick)
-        set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, ...Object.fromEntries(result.wrote.map((id) => [id, "accepted" as const])) } } : l)) }))
+        set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, ...Object.fromEntries(result.wrote.map((id) => [id, "accepted" as const])) }, ...(grade === "ok" ? { grades: { ...l.grades, ...Object.fromEntries(result.wrote.map((id) => [id, grade])) } } : {}) } : l)) }))
         return result.message
       },
 

@@ -2,7 +2,8 @@
  * lib/skills/learn.ts — Record a reaction and credit the skills that were in the prompt
  *
  * The one impure seam between an agent's surface and the bank: append the experience, then add a use (and a win on an
- * accept) to every skill that rode in the prompt. Per device, never throws.
+ * accept) to every skill that rode in the prompt. A neutral reaction is kept but credits nothing: no use, no win.
+ * Per device, never throws.
  */
 
 import { recordUse, loadBank, saveBank } from "./bank"
@@ -13,7 +14,7 @@ export function recordReaction(r: Reaction, seeds: Skill[] = [], storage?: Stora
   const e = makeExperience(r)
   try {
     saveExperiences(r.agentId, appendExperience(loadExperiences(r.agentId, storage), e), storage)
-    if (r.skillsUsed.length) saveBank(recordUse(loadBank(r.agentId, seeds, storage), r.skillsUsed, e.outcome === "success"), storage)
+    if (r.skillsUsed.length && e.outcome !== "neutral") saveBank(recordUse(loadBank(r.agentId, seeds, storage), r.skillsUsed, e.outcome === "success"), storage)
   } catch {
     // The reaction still happened; it just will not be remembered.
   }

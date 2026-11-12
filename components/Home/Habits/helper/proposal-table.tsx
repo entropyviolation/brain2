@@ -9,6 +9,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { NEUTRAL_HINT, NEUTRAL_LABEL } from "@/lib/accept-grade"
 import { buildContext } from "@/lib/habit-helper/accept"
 import { displayName } from "@/lib/habit-helper/words"
 import { openAsks, openProposals, useHabitsBimby, type BimbyLine } from "@/lib/habit-helper/store"
@@ -170,10 +171,11 @@ export function ProposalTable({ line, onReasons }: { line: BimbyLine; onReasons:
                   <td className="hh-words">“{p.words}”</td>
                   <td className="hh-act">
                     {state ? (
-                      <span className="hh-state">{state}</span>
+                      <span className="hh-state">{state}{line.grades?.[p.id] === "ok" ? " · neutral" : ""}</span>
                     ) : (
                       <>
                         <button type="button" className="hh-cap hh-go" data-no95="" onClick={() => setSaid(accept(line.id, [p.id]))}>Accept</button>
+                        <button type="button" className="hh-cap" data-no95="" title={NEUTRAL_HINT} onClick={() => setSaid(accept(line.id, [p.id], "ok"))}>{NEUTRAL_LABEL}</button>
                         <button type="button" className="hh-cap" data-no95="" aria-label={`Dismiss ${p.habit}`} onClick={() => dismiss(line.id, p.id)}>×</button>
                       </>
                     )}
@@ -187,6 +189,7 @@ export function ProposalTable({ line, onReasons }: { line: BimbyLine; onReasons:
       {open.length > 1 ? (
         <div className="hh-foot">
           <button type="button" className="hh-cap hh-go" data-no95="" onClick={() => setSaid(accept(line.id))}>Accept all {open.length}</button>
+          <button type="button" className="hh-cap" data-no95="" title={NEUTRAL_HINT} onClick={() => setSaid(accept(line.id, undefined, "ok"))}>{NEUTRAL_LABEL} all</button>
         </div>
       ) : null}
       {said ? <p className="hh-said" role="status">{said}</p> : null}

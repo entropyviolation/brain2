@@ -9,6 +9,7 @@
 "use client"
 
 import { useState } from "react"
+import { NEUTRAL_HINT, NEUTRAL_LABEL } from "@/lib/accept-grade"
 import { clockText, parseTyped } from "@/lib/tracking-helper/clock"
 import { openBlocks, useTrackingHelper, type HelperLine } from "@/lib/tracking-helper/store"
 import type { Cert, ProposedBlock } from "@/lib/tracking-helper/types"
@@ -133,7 +134,7 @@ function Card({ line, block }: { line: HelperLine; block: ProposedBlock }) {
         ) : (
           <Inline label="place" value="" onCommit={(v) => patch({ place: { name: v.trim(), source: "stated", isNew: true } })} validate={(v) => !!v.trim()} />
         )}
-        {decided ? <span className="th-verdict">{decided}</span> : null}
+        {decided ? <span className="th-verdict">{decided}{line.grades?.[block.id] === "ok" ? " · neutral" : ""}</span> : null}
       </header>
       <div className="th-times">
         <Inline label="start" value={block.startMin === null ? "" : clockText(block.startMin)} onCommit={(v) => setTime("start", v)} validate={(v) => parseTyped(v) !== null} />
@@ -158,6 +159,7 @@ function Card({ line, block }: { line: HelperLine; block: ProposedBlock }) {
       {!decided ? (
         <footer className="th-actions">
           <button type="button" className="th-key th-key-go" data-no95="" disabled={bad || working} onClick={() => void add(line.id, [block.id])}>{working ? "Adding…" : "Add"}</button>
+          <button type="button" className="th-key" data-no95="" disabled={bad || working} title={NEUTRAL_HINT} onClick={() => void add(line.id, [block.id], false, "ok")}>{NEUTRAL_LABEL}</button>
           <button type="button" className="th-key" data-no95="" disabled={working} onClick={() => dismiss(line.id, block.id)}>Dismiss</button>
           {msg.includes("OVER TIME") && !working ? (
             <button type="button" className="th-key th-key-warn" data-no95="" onClick={() => void add(line.id, [block.id], true)}>Add anyway</button>
@@ -195,6 +197,7 @@ export function ProposalBoard({ line }: { line: HelperLine }) {
       {open.length > 1 ? (
         <div className="th-all">
           <button type="button" className="th-key th-key-go" data-no95="" disabled={workingAll} onClick={() => void add(line.id)}>{workingAll ? "Adding…" : `Add all ${open.length}`}</button>
+          {workingAll ? null : <button type="button" className="th-key" data-no95="" title={NEUTRAL_HINT} onClick={() => void add(line.id, undefined, false, "ok")}>{NEUTRAL_LABEL} all</button>}
           {workingAll ? <span className="th-progress" role="progressbar" aria-label="Adding to Tracking" aria-busy="true"><i /></span> : null}
         </div>
       ) : null}

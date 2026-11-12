@@ -7,12 +7,13 @@
  */
 "use client"
 
+import { NEUTRAL_HINT, NEUTRAL_LABEL } from "@/lib/accept-grade"
 import { acceptAll, acceptEffect, reconsiderEffect, rejectAll, rejectEffect } from "@/lib/report-bimby/decide"
 import { useReportStore } from "@/lib/report-bimby/store"
 import type { Effect, EffectField } from "@/lib/report-bimby/types"
 import "./report-card.css"
 
-const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY", sleep: "SLEEP", line: "FILE", verdict: "LINK", feeling: "FEEL" }
+const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY", sleep: "SLEEP", line: "FILE", verdict: "LINK", feeling: "FEEL", person: "PERSON", "person-note": "NOTE", birthday: "BIRTHDAY", reminder: "REMIND", "plan-entry": "PLAN" }
 const STATUS_LABEL: Record<Effect["status"], string> = { pending: "WAITING", working: "SAVING…", applied: "SAVED", rejected: "REJECTED", failed: "FAILED" }
 
 function FieldInput({ planId, effectId, field, locked }: { planId: string; effectId: string; field: EffectField; locked: boolean }) {
@@ -47,7 +48,7 @@ function EffectBlock({ planId, effect }: { planId: string; effect: Effect }) {
       <header>
         <span className="rc-kind">{KIND_LABEL[effect.kind]}</span>
         <b>{effect.title}</b>
-        <span className="rc-status">{STATUS_LABEL[effect.status]}</span>
+        <span className="rc-status">{STATUS_LABEL[effect.status]}{effect.grade === "ok" ? " · NEUTRAL" : ""}</span>
       </header>
       <details open={effect.status === "pending"}>
         <summary>why ({effect.reasoning.length}){effect.evidence.length ? ` · evidence (${effect.evidence.length})` : ""}</summary>
@@ -63,6 +64,7 @@ function EffectBlock({ planId, effect }: { planId: string; effect: Effect }) {
         {effect.status === "pending" || effect.status === "failed" ? (
           <>
             <button type="button" data-no95 className="rc-accept" onClick={() => acceptEffect(planId, effect.id)}>{effect.status === "failed" ? "Try again" : "Accept"}</button>
+            <button type="button" data-no95 title={NEUTRAL_HINT} onClick={() => acceptEffect(planId, effect.id, "ok")}>{NEUTRAL_LABEL}</button>
             <button type="button" data-no95 onClick={() => rejectEffect(planId, effect.id)}>Reject</button>
           </>
         ) : null}
@@ -87,6 +89,7 @@ export function ReportCard({ reportId }: { reportId: string }) {
       {pending > 1 && !saving ? (
         <div className="rc-actions rc-all">
           <button type="button" data-no95 className="rc-accept" onClick={() => acceptAll(plan.id)}>Accept all {pending}</button>
+          <button type="button" data-no95 title={NEUTRAL_HINT} onClick={() => acceptAll(plan.id, "ok")}>{NEUTRAL_LABEL} all</button>
           <button type="button" data-no95 onClick={() => rejectAll(plan.id)}>Reject all</button>
         </div>
       ) : null}

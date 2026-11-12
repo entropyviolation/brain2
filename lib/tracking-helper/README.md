@@ -92,6 +92,10 @@ per-device log `skillexp:tracking-helper`. Skills never touch a write: they only
 The shipped seeds (`TRACKING_HELPER_SKILLS`) restate `WIRE_SYSTEM`, so only learned skills (`source` not `hand`)
 are put in the prompt, and an empty bank leaves the prompt byte for byte as it was. Review and the evolve key live in the lab's Skills panel.
 
+_2026-11-11:_ **Neutral** (beside Add; `add(lineId, ids, force, "ok")`) writes the same blocks. `reactionsOfAdd` then
+records an untouched aspect as `neutral` instead of a success, and a changed one as a failure as before. The line
+keeps `grades[blockId] = "ok"`. See "Neutral accept" in `components/Bim/README.md`.
+
 ## Tags and the daily habit
 
 _Last mapped: 2026-11-07_ "…should also be tagged music and count for the daily habit" is read in code (`count.ts`, after PLACE, no model). `tagged X` gives `ProposedBlock.tags`. A habit is proposed only when the words ask ("count as/for …", "daily habit"): the words after "count as" are scored against the daily habits with the Habits BIMBY's lexicon; a tie or no hit proposes nothing. The card shows tags (editable) and "Counts for habit: X" with a remove key. On Add, the tag names become Tracking tags (made if new) and go on the Activity row's `tagIds`; the habit's Tracking tags go there too, so the existing sync (`lib/habit-tracking-sync.ts`) credits the minutes. A habit with no link yet gets one (`trackingLink`) on a tag named for the habit, shown as "(will link)". The model's note "music, daily habit" is dropped from the notes.

@@ -17,6 +17,22 @@ const bank = (...skills: Skill[]): SkillBank => ({ agentId: "a", skills })
 let n = 0
 const exp = (over: Partial<Experience> = {}): Experience => ({ id: `e${n++}`, agentId: "a", at: n, category: "c", input: "walked from 4 until 5", outcome: "failure", severity: 1, chose: "walking", should: "a walk", skillsUsed: [], ...over })
 
+describe("Neutral accepts (lib/accept-grade.ts)", () => {
+  it("are kept as neutral, credit no skill, and stay out of the success rate and distill", () => {
+    const st = store()
+    saveBank(bank(skill({ uses: 2, wins: 1 })), st)
+    const e = recordReaction({ agentId: "a", category: "c", input: "x", chose: "y", skillsUsed: ["s1"], neutral: true }, [], st)
+    expect(e.outcome).toBe("neutral")
+    expect(loadExperiences("a", st).map((x) => x.outcome)).toEqual(["neutral"])
+    expect(loadBank("a", [], st).skills[0]).toMatchObject({ uses: 2, wins: 1 })
+    const stats = statsByCategory([exp({ outcome: "neutral" }), exp({ outcome: "neutral" }), exp({ outcome: "success", severity: 1 })])
+    expect(stats[0]).toMatchObject({ n: 1, success: 1, rate: 1 })
+  })
+  it("a correction stays a failure even when the key was Neutral", () => {
+    expect(makeExperience({ agentId: "a", category: "c", input: "x", chose: "y", skillsUsed: [], neutral: true, severity: 1, should: "z" }).outcome).toBe("failure")
+  })
+})
+
 describe("seeds", () => {
   it("have unique ids and are all hand-written and active", () => {
     for (const list of [TRACKING_HELPER_SKILLS, LISTS_HELPER_SKILLS]) {

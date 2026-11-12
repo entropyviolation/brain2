@@ -11,7 +11,7 @@ saved until **Add**. Logic and reasoning: [`lib/tracking-helper/README.md`](../.
 |------|------|
 | `tracking-helper-key.tsx` | The Chat key (`.trk-helper-key`). Loads the dialog on first press. Mounted in `tracking-desk.tsx`. The phone shell does not have it yet |
 | `tracking-helper-dialog.tsx` | Transcript, compose well (Enter sends, Shift+Enter a new line), starter chips, **Flow lab** door (`/lab/tracking-helper`), Clear |
-| `proposal-board.tsx` | Per day: a ruler with one lane per block and a place strip under it; then one editable card per block; **Add all N** |
+| `proposal-board.tsx` | Per day: a ruler with one lane per block and a place strip under it; then one editable card per block (**Add**, **Neutral**, Dismiss); **Add all N**, **Neutral all**. _2026-11-11:_ Neutral adds the same block but is not learned from as right (`lib/accept-grade.ts`) |
 | `tracking-helper.css` | Cool paper with a graph rule, silver keycaps, hue per activity from the teal-to-violet half of the wheel (never yellow) |
 
 ## How a block reads

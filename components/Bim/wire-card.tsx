@@ -10,6 +10,7 @@
 "use client"
 
 import { useState } from "react"
+import { NEUTRAL_HINT, NEUTRAL_LABEL } from "@/lib/accept-grade"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -54,7 +55,7 @@ function StepBlock({ planId, step }: { planId: string; step: WireStep }) {
       <header>
         <span className="rc-kind">{KIND_LABEL[step.kind]}</span>
         <b>{step.title}</b>
-        <span className="rc-status">{STATUS_LABEL[step.status]}</span>
+        <span className="rc-status">{STATUS_LABEL[step.status]}{step.grade === "ok" ? " · NEUTRAL" : ""}</span>
       </header>
       <details open={step.status === "pending"}>
         <summary>why ({step.reasoning.length}) · checks ({checks.filter((c) => c.ok).length}/{checks.length})</summary>
@@ -71,6 +72,7 @@ function StepBlock({ planId, step }: { planId: string; step: WireStep }) {
         {step.status === "pending" || step.status === "failed" ? (
           <>
             <button type="button" data-no95 className="rc-accept" disabled={!passes} onClick={() => acceptStep(planId, step.id)}>{step.status === "failed" ? "Try again" : "Accept"}</button>
+            <button type="button" data-no95 disabled={!passes} title={NEUTRAL_HINT} onClick={() => acceptStep(planId, step.id, "ok")}>{NEUTRAL_LABEL}</button>
             <button type="button" data-no95 onClick={() => rejectStep(planId, step.id)}>Reject</button>
           </>
         ) : null}
@@ -96,6 +98,7 @@ export function WireCard({ wireId }: { wireId: string }) {
       {pending > 1 ? (
         <div className="rc-actions rc-all">
           <button type="button" data-no95 className="rc-accept" onClick={() => acceptAllSteps(plan.id)}>Accept all {pending}</button>
+          <button type="button" data-no95 title={NEUTRAL_HINT} onClick={() => acceptAllSteps(plan.id, "ok")}>{NEUTRAL_LABEL} all</button>
           <button type="button" data-no95 onClick={() => rejectAllSteps(plan.id)}>Reject all</button>
         </div>
       ) : null}

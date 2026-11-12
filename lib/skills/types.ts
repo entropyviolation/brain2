@@ -42,7 +42,8 @@ export interface Experience {
   category: string
   /** The line the person gave the agent. */
   input: string
-  outcome: "success" | "failure"
+  /** `neutral`: accepted with the Neutral key (`lib/accept-grade.ts`). Kept, but never counted as a success or credited. */
+  outcome: "success" | "failure" | "neutral"
   severity: Severity
   /** What the agent did, short. */
   chose: string

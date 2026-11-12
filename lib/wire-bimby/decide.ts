@@ -3,20 +3,22 @@
  *
  * Accept writes the step as its fields stand now (`apply.ts`). Reject writes nothing. Tweak
  * rebuilds the plan from the original sentence plus the new instruction, keeping the same card
- * and keeping any step already applied exactly as it was.
+ * and keeping any step already applied exactly as it was. The Neutral accept (`grade` "ok",
+ * `lib/accept-grade.ts`) writes the same and marks the step, so nothing learns from it as right.
  */
 "use client"
 
+import type { AcceptGrade } from "@/lib/accept-grade"
 import { liveDeps, applyStep } from "./apply"
 import { planWire, signature } from "./plan"
 import { useWireStore } from "./store"
 
-export function acceptStep(planId: string, stepId: string): void {
+export function acceptStep(planId: string, stepId: string, grade: AcceptGrade = "good"): void {
   const store = useWireStore.getState()
   const step = store.plans[planId]?.steps.find((s) => s.id === stepId)
   if (!step || step.status === "applied") return
   const done = applyStep(step)
-  store.setStatus(planId, stepId, done.ok ? "applied" : "failed", done.message)
+  store.setStatus(planId, stepId, done.ok ? "applied" : "failed", done.message, done.ok ? grade : undefined)
 }
 
 export function rejectStep(planId: string, stepId: string): void {
@@ -29,8 +31,8 @@ export function reconsiderStep(planId: string, stepId: string): void {
   if (step && (step.status === "rejected" || step.status === "failed")) useWireStore.getState().setStatus(planId, stepId, "pending")
 }
 
-export function acceptAllSteps(planId: string): void {
-  for (const s of useWireStore.getState().plans[planId]?.steps ?? []) if (s.status === "pending") acceptStep(planId, s.id)
+export function acceptAllSteps(planId: string, grade: AcceptGrade = "good"): void {
+  for (const s of useWireStore.getState().plans[planId]?.steps ?? []) if (s.status === "pending") acceptStep(planId, s.id, grade)
 }
 
 export function rejectAllSteps(planId: string): void {
@@ -52,7 +54,7 @@ export function reviseWire(planId: string, instruction: string, now = new Date()
     revisions: old.revisions + 1,
     steps: next.steps.map((s) => {
       const kept = applied.get(signature(s))
-      return kept ? { ...s, status: "applied", result: kept.result } : s
+      return kept ? { ...s, status: "applied", result: kept.result, grade: kept.grade } : s
     }),
   })
   return true

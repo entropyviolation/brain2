@@ -7,6 +7,7 @@
  */
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import type { AcceptGrade } from "@/lib/accept-grade"
 import type { WirePlan, WireStatus } from "./types"
 
 const KEEP = 30
@@ -16,7 +17,8 @@ type State = {
   order: string[]
   put: (plan: WirePlan) => void
   setField: (planId: string, stepId: string, key: string, value: string) => void
-  setStatus: (planId: string, stepId: string, status: WireStatus, result?: string) => void
+  /** `grade` is kept on an applied step; a Neutral accept is "ok". Any other status clears it. */
+  setStatus: (planId: string, stepId: string, status: WireStatus, result?: string, grade?: AcceptGrade) => void
 }
 
 const mapStep = (plan: WirePlan, stepId: string, fn: (s: WirePlan["steps"][number]) => WirePlan["steps"][number]): WirePlan => ({
@@ -42,11 +44,11 @@ export const useWireStore = create<State>()(
           if (!plan) return s
           return { plans: { ...s.plans, [planId]: mapStep(plan, stepId, (st) => ({ ...st, fields: st.fields.map((f) => (f.key === key ? { ...f, value } : f)) })) } }
         }),
-      setStatus: (planId, stepId, status, result) =>
+      setStatus: (planId, stepId, status, result, grade) =>
         set((s) => {
           const plan = s.plans[planId]
           if (!plan) return s
-          return { plans: { ...s.plans, [planId]: mapStep(plan, stepId, (st) => ({ ...st, status, result })) } }
+          return { plans: { ...s.plans, [planId]: mapStep(plan, stepId, (st) => ({ ...st, status, result, grade: status === "applied" && grade === "ok" ? grade : undefined })) } }
         }),
     }),
     { name: "bimchat-wires", storage: createJSONStorage(() => localStorage), partialize: (s) => ({ plans: s.plans, order: s.order }) },

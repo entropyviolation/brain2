@@ -2,7 +2,7 @@
  * lib/skills/experience.ts — What happened to an agent's proposals, kept small
  *
  * One row per person reaction: accepted (a success), or tweaked / rejected / rolled back (a failure, with how bad).
- * That is the reward signal. No model judges it. The newest rows stay; reads and writes never throw.
+ * That is the reward signal. A Neutral accept (`lib/accept-grade.ts`) is kept as `neutral`: no reward either way. No model judges it. The newest rows stay; reads and writes never throw.
  */
 
 import type { Experience, Severity } from "./types"
@@ -21,6 +21,8 @@ export interface Reaction {
   /** Set for a failure. */
   severity?: Severity
   should?: string
+  /** Accepted with the Neutral key. Ignored when `severity` is set: a correction is still a failure. */
+  neutral?: boolean
 }
 
 export function makeExperience(r: Reaction, now = Date.now()): Experience {
@@ -30,7 +32,7 @@ export function makeExperience(r: Reaction, now = Date.now()): Experience {
     at: now,
     category: r.category,
     input: r.input.slice(0, 400),
-    outcome: r.severity ? "failure" : "success",
+    outcome: r.severity ? "failure" : r.neutral ? "neutral" : "success",
     severity: r.severity ?? 1,
     chose: r.chose.slice(0, 200),
     should: r.should?.slice(0, 200),

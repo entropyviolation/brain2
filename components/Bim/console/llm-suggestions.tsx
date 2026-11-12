@@ -18,6 +18,7 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { acceptSuggestion, llmOverlaps } from "@/lib/bim-flow/accept"
 import { saveButtonRun } from "@/lib/bim-flow/run-history"
+import { NEUTRAL_HINT, NEUTRAL_LABEL, type AcceptGrade } from "@/lib/accept-grade"
 import { decidedIds, loadVerdicts, recordVerdict, type Verdict } from "@/lib/bim-flow/suggestion-verdicts"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { loadFileEvents } from "@/lib/bim-flow/file-activity-client"
@@ -201,21 +202,23 @@ export function LlmSuggestions() {
     setProgress("Stopped")
   }
 
-  const decide = (s: Suggestion, verdict: Verdict["verdict"]) => {
-    const next = recordVerdict({ suggestionId: s.id, verdict, reason: (words[s.id] ?? "").trim(), at: new Date().toISOString(), runId, suggestion: s })
+  const decide = (s: Suggestion, verdict: Verdict["verdict"], grade?: AcceptGrade) => {
+    const next = recordVerdict({ suggestionId: s.id, verdict, reason: (words[s.id] ?? "").trim(), at: new Date().toISOString(), runId, suggestion: s, ...(grade === "ok" ? { grade } : {}) })
     setVerdicts(next)
     setDecided((d) => new Set(d).add(s.id))
     setRejecting(null)
   }
 
-  const accept = (s: Suggestion) => {
+  /** `grade` "ok" is the Neutral key: the same write, kept as a verdict that is never a good example. */
+  const accept = (s: Suggestion, grade: AcceptGrade = "good") => {
     const r = acceptSuggestion(s, words[s.id] ?? "")
-    setNote(`${r.ok ? "" : "Not saved: "}${r.message}`)
-    if (r.ok) decide(s, "accepted")
+    setNote(`${r.ok ? "" : "Not saved: "}${r.message}${r.ok && grade === "ok" ? " (neutral: not learned from)" : ""}`)
+    if (r.ok) decide(s, "accepted", grade)
   }
 
   const shown = useMemo(() => suggestions.filter((s) => !decided.has(s.id)), [suggestions, decided])
   const rejectedCount = verdicts.filter((v) => v.verdict === "rejected").length
+  const neutralCount = verdicts.filter((v) => v.verdict === "accepted" && v.grade === "ok").length
   const busy = phase === "loading" || phase === "running"
   const today = formatLocalDateKey(new Date())
 
@@ -239,7 +242,7 @@ export function LlmSuggestions() {
       {progress && phase !== "no-ollama" ? <p className="bim-dim">{progress}</p> : null}
       {verdicts.length || runId ? (
         <p className="bim-dim">
-          {verdicts.length} verdicts kept ({rejectedCount} rejected with reasons){runId ? " · this pass is kept as a run" : ""} · review and annotate in Flow bench → Runs
+          {verdicts.length} verdicts kept ({rejectedCount} rejected with reasons{neutralCount ? `, ${neutralCount} neutral` : ""}){runId ? " · this pass is kept as a run" : ""} · review and annotate in Flow bench → Runs
         </p>
       ) : null}
       {phase === "idle" ? null : SUGGESTION_KINDS.map(({ kind, label, empty }) => {
@@ -262,6 +265,9 @@ export function LlmSuggestions() {
                 </button>
                 <button data-no95 type="button" className="bim-act bim-yes" aria-label={`Accept ${s.title}`} onClick={() => accept(s)}>
                   Accept
+                </button>
+                <button data-no95 type="button" className="bim-act" aria-label={`Accept ${s.title} neutrally`} title={NEUTRAL_HINT} onClick={() => accept(s, "ok")}>
+                  {NEUTRAL_LABEL}
                 </button>
                 <button data-no95 type="button" className="bim-act" aria-label={`Reject ${s.title}`} onClick={() => { setRejecting(s.id); setOpen(s.id) }}>
                   Reject

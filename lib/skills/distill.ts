@@ -84,6 +84,7 @@ export function distillSchema(maxSkills: number): Record<string, unknown> {
 
 export function distillUser(list: Experience[], existing: Skill[]): string {
   const cases = list
+    .filter((e) => e.outcome !== "neutral")
     .map((e, i) => `CASE ${i + 1}\nCATEGORY: ${e.category}\nINPUT: ${clip(e.input, 200)}\nDID: ${e.chose}\n${e.should ? `INSTEAD: ${e.should}\n` : ""}OUTCOME: ${e.outcome}`)
     .join("\n\n")
   const have = existing.length ? `\n\nEXISTING SKILLS (do not repeat)\n${existing.map((s) => `- ${s.name}`).join("\n")}` : ""

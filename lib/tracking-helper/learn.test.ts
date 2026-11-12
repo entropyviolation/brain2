@@ -24,6 +24,16 @@ describe("reactionsOfAdd", () => {
   })
 })
 
+describe("reactionsOfAdd, Neutral", () => {
+  it("an untouched aspect is neutral, not a success; a changed one is still a failure", () => {
+    const r = reactionsOfAdd(block(), block({ endMin: 330 }), base, "ok")
+    expect(r.map((x) => [x.category, !!x.neutral, x.severity ?? null])).toEqual([
+      ["wire:activity-name", true, null],
+      ["wire:time-edge", true, 1],
+    ])
+  })
+})
+
 describe("dismiss and correction", () => {
   it("a dismissal is a failure with no better move, a correction carries the new words", () => {
     expect(reactionOfDismiss(block(), base)).toMatchObject({ category: "wire:extra-entry", severity: 2 })

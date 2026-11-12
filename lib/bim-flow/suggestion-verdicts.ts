@@ -5,9 +5,12 @@
  * that showed it, and the person's own words (why it is wrong, or a note on an accept). Kept on this
  * device (`bimsuggest-verdicts-v1`) and appended to the disk archive (`archive.ts`, kind
  * `suggestion-verdict`), so mistakes can be read back when the flow is improved. A suggestion with a
- * verdict is not shown again. **Planned:** feed rejected reasons back to the flow as examples.
+ * verdict is not shown again. An accept made with the Neutral key has `grade: "ok"` (`lib/accept-grade.ts`):
+ * it was written, but `goodAccepts` leaves it out, so it is never fed back as a good example.
+ * **Planned:** feed rejected reasons and good accepts back to the flow as examples.
  */
 
+import { teaches, type AcceptGrade } from "@/lib/accept-grade"
 import { archive } from "./archive"
 import type { Suggestion } from "./suggestions"
 
@@ -20,6 +23,8 @@ export interface Verdict {
   /** The Suggest pass that showed it (`run-history.ts`), when there was one. */
   runId?: string
   suggestion: Suggestion
+  /** On an accept: "ok" when the Neutral key was used. Missing is the plain Accept. */
+  grade?: AcceptGrade
 }
 
 const KEY = "bimsuggest-verdicts-v1"
@@ -33,6 +38,11 @@ export function loadVerdicts(): Verdict[] {
   } catch {
     return []
   }
+}
+
+/** Accepts a learner may use as good examples: plain Accepts only, never Neutral ones. */
+export function goodAccepts(verdicts: Verdict[]): Verdict[] {
+  return verdicts.filter((v) => v.verdict === "accepted" && teaches(v.grade))
 }
 
 /** Ids that should not be shown again: any verdict, plus old dismissals. */

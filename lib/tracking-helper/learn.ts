@@ -4,10 +4,12 @@
  * Read when a block is added or dismissed. The block as proposed is compared with the block as added:
  * unchanged is a success; a changed activity, edge or place is a failure the person already corrected, which
  * is exactly what a failure lesson needs (what was chosen, what should have been). A dismissed block is a
- * failure with no better move. A correction line ("actually it was 5") is a failure for the blocks it replaced.
+ * failure with no better move. A Neutral add (`lib/accept-grade.ts`) keeps the failures (a changed aspect was still
+ * wrong), but an untouched aspect is `neutral`, not a success: "ok to keep" is not "right". A correction line ("actually it was 5") is a failure for the blocks it replaced.
  * Pure: `lib/skills/learn.ts` does the saving.
  */
 
+import { teaches, type AcceptGrade } from "@/lib/accept-grade"
 import type { Reaction } from "@/lib/skills/experience"
 import { clockText } from "./clock"
 import type { ProposedBlock } from "./types"
@@ -23,8 +25,8 @@ const edge = (m: number | null) => (m === null ? "none" : clockText(m))
  * changed it, a success when they left it. Each aspect is its own category, so a category's success rate means
  * "how often this was right", which is what `weakCategories` reads.
  */
-export function reactionsOfAdd(was: ProposedBlock, now: ProposedBlock, base: Omit<Base, "agentId">): Reaction[] {
-  const common = { agentId: HELPER_AGENT_ID, ...base }
+export function reactionsOfAdd(was: ProposedBlock, now: ProposedBlock, base: Omit<Base, "agentId">, grade: AcceptGrade = "good"): Reaction[] {
+  const common = { agentId: HELPER_AGENT_ID, ...base, ...(teaches(grade) ? {} : { neutral: true }) }
   const out: Reaction[] = []
   const name = (b: ProposedBlock) => b.activity.trim().toLowerCase()
   out.push(name(was) !== name(now) ? { ...common, category: "wire:activity-name", chose: was.activity, should: now.activity, severity: 1 } : { ...common, category: "wire:activity-name", chose: was.activity })

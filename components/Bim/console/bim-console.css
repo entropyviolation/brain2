@@ -944,7 +944,7 @@
 
 .bim-llm-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 6px;
   align-items: start;
   margin: 0 0 6px;
@@ -1216,7 +1216,12 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .bim-llm-row .bim-act:last-of-type {
+  /* Accept, Neutral and Reject stack in the right column beside the row. */
+  .bim-llm-row .bim-llm-main {
+    grid-row: 1 / span 3;
+  }
+
+  .bim-llm-row .bim-act {
     grid-column: 2;
   }
 }

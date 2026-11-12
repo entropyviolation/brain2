@@ -22,6 +22,8 @@ export interface CategoryStat {
 export function statsByCategory(list: Experience[]): CategoryStat[] {
   const by = new Map<string, CategoryStat>()
   for (const e of list) {
+    // A neutral accept is neither right nor wrong; it stays out of the rate.
+    if (e.outcome === "neutral") continue
     const s = by.get(e.category) ?? { category: e.category, n: 0, success: 0, rate: 0 }
     s.n++
     if (e.outcome === "success") s.success++

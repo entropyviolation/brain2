@@ -21,6 +21,7 @@ import { acceptBlocks, buildContext } from "./accept"
 import { loadFlow } from "./flow"
 import { helperBlueprint } from "@/lib/agents/adapters/tracking-helper"
 import { infoText, isInfoRequest } from "@/lib/agents/info"
+import type { AcceptGrade } from "@/lib/accept-grade"
 import { HELPER_AGENT_ID, reactionOfCorrection, reactionOfDismiss, reactionsOfAdd } from "./learn"
 import { QUESTION_REPLY, runHelper } from "./run"
 import type { HelperRoute, ProposedBlock, TraceStage } from "./types"
@@ -35,6 +36,8 @@ export interface HelperLine {
   route?: HelperRoute
   blocks?: ProposedBlock[]
   decided?: Record<string, Decision>
+  /** Blocks added with the Neutral key (`lib/accept-grade.ts`): written, but not learned from as right. */
+  grades?: Record<string, AcceptGrade>
   /** The account these blocks were read from, so a correction can re-read it. */
   account?: string
   model?: string
@@ -68,7 +71,7 @@ interface HelperState {
   send: (text: string, opts?: { fromBim?: boolean }) => Promise<void>
   edit: (lineId: string, blockId: string, patch: Partial<ProposedBlock>) => void
   /** Starts the write and returns at once; the write runs after the next paint, in the store, so leaving the screen does not stop it. Resolves with the message. */
-  add: (lineId: string, blockIds?: string[], force?: boolean) => Promise<string>
+  add: (lineId: string, blockIds?: string[], force?: boolean, grade?: AcceptGrade) => Promise<string>
   dismiss: (lineId: string, blockId: string) => void
   clear: () => void
 }
@@ -144,7 +147,7 @@ export const useTrackingHelper = create<HelperState>()(
       edit: (lineId, blockId, patch) =>
         set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, blocks: l.blocks?.map((b) => (b.id === blockId ? { ...b, ...patch } : b)) } : l)) })),
 
-      add: async (lineId, blockIds, force) => {
+      add: async (lineId, blockIds, force, grade = "good") => {
         const line = get().lines.find((l) => l.id === lineId)
         if (!line) return ""
         const pick = openBlocks(line).filter((b) => !blockIds || blockIds.includes(b.id)).filter((b) => !get().adding[b.id])
@@ -164,11 +167,11 @@ export const useTrackingHelper = create<HelperState>()(
           const refused = new Set(result.refused.map((r) => r.id))
           const wrote = pick.filter((b) => !refused.has(b.id))
           const was = new Map((line.proposed ?? []).map((b) => [b.id, b]))
-          learn(wrote.flatMap((b) => (was.has(b.id) ? [reactionsOfAdd(was.get(b.id)!, b, reactionBase(line))] : [])))
+          learn(wrote.flatMap((b) => (was.has(b.id) ? [reactionsOfAdd(was.get(b.id)!, b, reactionBase(line), grade)] : [])))
           message = result.message + (result.refused.length ? ` (${result.refused.map((r) => r.why).join(", ")})` : "")
           set((s) => ({
             msgs: { ...s.msgs, ...Object.fromEntries(pick.map((b) => [b.id, message])) },
-            lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, ...Object.fromEntries(wrote.map((b) => [b.id, "added" as const])) } } : l)),
+            lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, ...Object.fromEntries(wrote.map((b) => [b.id, "added" as const])) }, ...(grade === "ok" ? { grades: { ...l.grades, ...Object.fromEntries(wrote.map((b) => [b.id, grade])) } } : {}) } : l)),
           }))
         } catch (err) {
           message = `FAILED: ${err instanceof Error ? err.message.toUpperCase() : "ERROR"}`

@@ -3,10 +3,12 @@
  *
  * Accept applies the effect with the fields as they are now (`apply.ts`) and records the outcome on
  * the plan. Reject writes nothing. Both are reversible in the card: a rejected effect can be
- * reconsidered, and an applied one is one undo step for BIM's `undo`.
+ * reconsidered, and an applied one is one undo step for BIM's `undo`. The Neutral accept (`grade` "ok",
+ * `lib/accept-grade.ts`) applies the same way and marks the effect, so nothing learns from it as right.
  */
 "use client"
 
+import type { AcceptGrade } from "@/lib/accept-grade"
 import { applyEffectPaced } from "./apply"
 import { useReportStore } from "./store"
 import { rejectFollowEffect } from "@/lib/follow-through/run"
@@ -32,7 +34,7 @@ const warnOnClose = (e: BeforeUnloadEvent) => {
  * Accept one effect. It shows "saving" at once, paints, then writes; the write is queued behind any
  * other save. A save over 1 s says how long it took, so a slow writer is named instead of felt.
  */
-export function acceptEffect(planId: string, effectId: string): Promise<void> {
+export function acceptEffect(planId: string, effectId: string, grade: AcceptGrade = "good"): Promise<void> {
   const store = useReportStore.getState()
   const effect = store.plans[planId]?.effects.find((e) => e.id === effectId)
   if (!effect || effect.status === "applied" || effect.status === "working") return Promise.resolve()
@@ -54,7 +56,7 @@ export function acceptEffect(planId: string, effectId: string): Promise<void> {
     const ms = performance.now() - started
     if (ms > 1000) console.warn(`[report-bimby] ${current.kind} took ${(ms / 1000).toFixed(1)}s`)
     const slow = ms > 1000 ? ` (took ${(ms / 1000).toFixed(1)} s)` : ""
-    useReportStore.getState().setStatus(planId, effectId, done.ok ? "applied" : "failed", `${done.message}${slow}`)
+    useReportStore.getState().setStatus(planId, effectId, done.ok ? "applied" : "failed", `${done.message}${slow}`, done.ok ? grade : undefined)
     await nextPaint()
   }
   queue = queue.then(run, run)
@@ -75,10 +77,10 @@ export function reconsiderEffect(planId: string, effectId: string): void {
 }
 
 /** Accept every effect still pending, in order (an Inventory count before the Intake line, blocks newest first). */
-export function acceptAll(planId: string): Promise<void> {
+export function acceptAll(planId: string, grade: AcceptGrade = "good"): Promise<void> {
   const pending = (useReportStore.getState().plans[planId]?.effects ?? []).filter((e) => e.status === "pending")
   // Every row shows "saving" now; the queue writes them one by one in this order.
-  return Promise.all(pending.map((e) => acceptEffect(planId, e.id))).then(() => undefined)
+  return Promise.all(pending.map((e) => acceptEffect(planId, e.id, grade))).then(() => undefined)
 }
 
 export function rejectAll(planId: string): void {

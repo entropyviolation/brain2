@@ -5,6 +5,8 @@
  * plan of small steps. Each step is plain data (a feed row or a detail-view panel for one habit)
  * with the checks it passed or failed. Nothing is written until the person accepts a step.
  */
+
+import type { AcceptGrade } from "@/lib/accept-grade"
 export type WireStepKind = "feed" | "breakdown" | "entry" | "track"
 export type WireStatus = "pending" | "applied" | "rejected" | "failed"
 
@@ -32,6 +34,8 @@ export interface WireStep {
   fields: WireField[]
   status: WireStatus
   result?: string
+  /** `ok`: accepted with the Neutral key (`lib/accept-grade.ts`). Applied the same, never a good example. */
+  grade?: AcceptGrade
 }
 
 export interface WirePlan {

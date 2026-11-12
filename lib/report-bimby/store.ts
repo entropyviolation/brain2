@@ -7,6 +7,7 @@
  */
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import type { AcceptGrade } from "@/lib/accept-grade"
 import type { EffectStatus, ReportPlan } from "./types"
 
 const KEEP = 40
@@ -16,7 +17,8 @@ type State = {
   order: string[]
   put: (plan: ReportPlan) => void
   setField: (planId: string, effectId: string, key: string, value: string) => void
-  setStatus: (planId: string, effectId: string, status: EffectStatus, result?: string) => void
+  /** `grade` is kept on an applied effect; a Neutral accept is "ok". Any other status clears it. */
+  setStatus: (planId: string, effectId: string, status: EffectStatus, result?: string, grade?: AcceptGrade) => void
 }
 
 const mapEffect = (plan: ReportPlan, effectId: string, fn: (e: ReportPlan["effects"][number]) => ReportPlan["effects"][number]): ReportPlan => ({
@@ -44,11 +46,11 @@ export const useReportStore = create<State>()(
             plans: { ...s.plans, [planId]: mapEffect(plan, effectId, (e) => ({ ...e, fields: e.fields.map((f) => (f.key === key ? { ...f, value } : f)) })) },
           }
         }),
-      setStatus: (planId, effectId, status, result) =>
+      setStatus: (planId, effectId, status, result, grade) =>
         set((s) => {
           const plan = s.plans[planId]
           if (!plan) return s
-          return { plans: { ...s.plans, [planId]: mapEffect(plan, effectId, (e) => ({ ...e, status, result })) } }
+          return { plans: { ...s.plans, [planId]: mapEffect(plan, effectId, (e) => ({ ...e, status, result, grade: status === "applied" && grade === "ok" ? grade : undefined })) } }
         }),
     }),
     { name: "bimchat-reports", storage: createJSONStorage(() => localStorage), partialize: (s) => ({
