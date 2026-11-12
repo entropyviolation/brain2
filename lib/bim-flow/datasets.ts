@@ -16,6 +16,8 @@ import type { OperationReview } from "@/lib/reviews-store"
 import type { PeriodReview, Task, WeeklyData, WeeklyTask } from "@/lib/types"
 import type { ResistanceEntry } from "@/lib/overcome-bimby/types"
 import type { Dataset, DatasetRow, VaultHistory } from "./vault-search"
+import { followRows } from "@/lib/follow-through/rows"
+import type { Ledger } from "@/lib/follow-through/types"
 
 export interface DatasetInput {
   tasks: Task[]
@@ -29,6 +31,8 @@ export interface DatasetInput {
   history?: VaultHistory
   /** The Overcome BIMBY's resistance log, if the caller has it. */
   overcomeLog?: ResistanceEntry[]
+  /** The follow-through ledger: plans, what happened to each step, and feelings before and after. */
+  followThrough?: Ledger
   now: Date
 }
 
@@ -130,6 +134,13 @@ export function buildDatasets(input: DatasetInput): Record<string, Dataset> {
       source: `${r.reading.barrier}${r.tried ? ` · ${r.tried.tacticId} ${r.tried.outcome}` : ""}`,
       text: clip(`${r.reading.task} — ${r.said}`),
     })),
+  }
+
+  out["follow-through"] = {
+    id: "follow-through",
+    label: "Plans, outcomes and feelings",
+    blurb: "Each planned step with what happened to it (done, late, displaced, dropped, open), the pull and resistance before, and how it sat afterwards.",
+    rows: input.followThrough ? followRows(input.followThrough) : [],
   }
 
   out["thoughts"] = {

@@ -8,9 +8,11 @@
  * person accepts an effect, and an accept reads the fields as they are then.
  */
 
-export type EffectKind = "inventory" | "cycle" | "intake" | "timeblock"
+/** `line`: one command the executor already runs (Stream BIMBY). Accept sends the field to the executor. */
+/** `verdict` and `feeling`: a plan-to-outcome link and a feeling on its scales (`lib/follow-through/`). Accept confirms the record. */
+export type EffectKind = "inventory" | "cycle" | "intake" | "timeblock" | "sleep" | "line" | "verdict" | "feeling"
 
-export type EffectStatus = "pending" | "applied" | "rejected" | "failed"
+export type EffectStatus = "pending" | "working" | "applied" | "rejected" | "failed"
 
 export interface EffectField {
   key: string
@@ -32,6 +34,8 @@ export interface Effect {
   evidence: string[]
   fields: EffectField[]
   status: EffectStatus
+  /** The record this effect confirms (a step or feeling id in the follow-through ledger). */
+  ref?: string
   /** What happened on accept: the writer's reply, or why it failed. */
   result?: string
 }

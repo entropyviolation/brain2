@@ -116,6 +116,14 @@ export const BUILTIN_ANALYSES: AnalysisDef[] = [
   def("drive-vs-pushed", "Drive", "Drive vs what gets pushed", "drive", "Compare the tasks the person resists with the tasks they push or miss elsewhere. Is the resistance the real reason, and does the stated reason match?", { kinds: ["question", "idea"], minRows: 4 }),
   def("drive-scores", "Drive", "Where the scores stand", "drive", "Read the 'score now' rows. Which next actions have high excitement and low resistance (start there), and which have high resistance that a smaller first step could lower?", { sources: ["score now"], kinds: ["pattern", "idea"], minRows: 3 }),
 
+  // Follow-through: plan → outcome, and the feeling before against the feeling after
+  def("follow-displaced", "Follow-through", "What displaces what", "follow-through", "Which planned steps were displaced, and by what? Does the same thing take the place of different plans, and what reason is given for being pulled away?", { sources: ["displaced"], minRows: 3 }),
+  def("follow-dread", "Follow-through", "Dreaded, then how it went", "follow-through", "For steps with high resistance before, how did they sit afterwards in the rows that have both? Quote the before and the after. Is the dread a good predictor?", { focus: "resistance", kinds: ["pattern", "thought_pattern", "question"], minRows: 4 }),
+  def("follow-open", "Follow-through", "Steps that keep coming back", "follow-through", "Which steps are planned again and again without being done? What do they share, and what is named as in the way?", { sources: ["open", "dropped"], minRows: 4 }),
+  def("follow-late", "Follow-through", "Done late", "follow-through", "Which steps get done but late, and how late? What sat between the plan and the start, according to the other rows of the same day?", { sources: ["late"], kinds: ["pattern", "question", "idea"], minRows: 3 }),
+  def("follow-good-days", "Follow-through", "What sets up a good day", "follow-through", "On days where most planned steps were done, what happened early in the day and what feelings were said? Compare to days where plans were dropped. Name the days.", { kinds: ["pattern", "question", "idea"], minRows: 8 }),
+  def("follow-unplanned", "Follow-through", "Unplanned things", "follow-through", "What gets done that no plan predicted? Are the unplanned things rest, avoidance, or real work that should be in the plan next time?", { sources: ["unplanned"], kinds: ["pattern", "idea"], minRows: 4 }),
+
   // Loop
   def("loop-answers", "Loop", "What your answers changed", "insight-log", "Look at the questions BIM asked and the answers given. Which answers change what the person should do or track?", { kinds: ["idea", "question"], minRows: 3 }),
   def("loop-kept", "Loop", "Kept insights that return", "insight-log", "Which kept patterns say nearly the same thing? Merge them into one stronger statement and say what to watch.", { kinds: ["pattern", "idea"], minRows: 4 }),

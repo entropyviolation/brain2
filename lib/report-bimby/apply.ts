@@ -9,17 +9,22 @@
  */
 "use client"
 
-import { runAsAction } from "@/lib/action-history"
+import { runAsAction, withoutUndo } from "@/lib/action-history"
 import { withItemWriteSource } from "@/lib/item-write-source"
 import { setCycleFlag, isCycleDayKey, isCycleFlag } from "@/lib/cycle-marks"
 import { INVENTORY_QTY_ATTR, ensureInventoryList } from "@/lib/ingest/apply-inventory"
 import { applyIntake } from "@/lib/ingest/apply-discrete-event"
 import { resolveName } from "@/lib/ingest/name-resolve"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { useSleepStore } from "@/lib/sleep-store"
+import { syncSleepNight } from "@/lib/sleep-sync"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 import { acceptSuggestion } from "@/lib/bim-flow/accept"
 import type { Suggestion } from "@/lib/bim-flow/suggestions"
+import { applyStreamLine } from "@/lib/stream-bimby/apply"
+import { applyFollowEffect } from "@/lib/follow-through/run"
 import { fmtClock, parseDateTime } from "./time"
 import { fieldValue, type Effect } from "./types"
 
@@ -105,6 +110,64 @@ function applyTimeblock(effect: Effect): Applied {
   return { ok: done.ok, message: done.message }
 }
 
+/** The pieces of a sleep save, so a caller can let the screen answer between them. */
+function sleepSteps(effect: Effect, now: Date): { error: string } | { steps: (() => void)[]; check: () => Applied } {
+  const bed = parseDateTime(fieldValue(effect, "bed"))
+  const wake = parseDateTime(fieldValue(effect, "wake"))
+  const sure = fieldValue(effect, "wakeSure") === "definite" ? "definite" : "estimated"
+  if (Number.isNaN(bed) || Number.isNaN(wake)) return { error: "Times must look like 2026-11-07T01:30." }
+  if (wake <= bed) return { error: "The wake must be after the bedtime." }
+  if (wake - bed > 20 * 3_600_000) return { error: "A night over 20 hours is not sleep. Check the times." }
+  // A night is keyed by the morning it ends in, and both ends are signed minutes from that morning's midnight.
+  const morning = new Date(wake)
+  const date = formatLocalDateKey(morning)
+  const midnight = new Date(morning.getFullYear(), morning.getMonth(), morning.getDate()).getTime()
+  const sleptMin = Math.round((bed - midnight) / 60_000)
+  const wokeMin = Math.round((wake - midnight) / 60_000)
+  if (wokeMin < 0 || wokeMin > 1439) return { error: "The wake must fall on the morning it names." }
+  const store = () => useSleepStore.getState()
+  return {
+    // The first step takes the undo snapshot; the rest ride on it so one undo reverses the whole night.
+    steps: [
+      () => runAsAction(`Report: sleep ${date}`, () => store().setBedtime(date, sleptMin, "estimated")),
+      () => withoutUndo(() => store().setWakeTime(date, wokeMin, sure)),
+      () => withoutUndo(() => syncSleepNight(date, now)),
+    ],
+    check: () => {
+      const saved = store().nights[date]
+      if (saved?.sleptMin !== sleptMin || saved?.wokeMin !== wokeMin) return fail("The sleep log did not keep those times.")
+      return { ok: true, message: `Sleep saved for the night ending ${date}: ${fmtClock(bed)}–${fmtClock(wake)}.` }
+    },
+  }
+}
+
+function applySleep(effect: Effect, now: Date): Applied {
+  const plan = sleepSteps(effect, now)
+  if ("error" in plan) return fail(plan.error)
+  for (const step of plan.steps) step()
+  return plan.check()
+}
+
+/**
+ * Apply one effect, letting `pause` run between the pieces of a heavy one. Only a night of sleep has
+ * pieces (log the bedtime, log the wake, paint the blocks); the rest are one write. Never throws.
+ */
+export async function applyEffectPaced(effect: Effect, pause: () => Promise<void>, now = new Date()): Promise<Applied> {
+  if (effect.kind === "line") return applyStreamLine(effect, now)
+  if (effect.kind !== "sleep") return applyEffect(effect, now)
+  try {
+    const plan = sleepSteps(effect, now)
+    if ("error" in plan) return fail(plan.error)
+    for (const step of plan.steps) {
+      step()
+      await pause()
+    }
+    return plan.check()
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : String(error))
+  }
+}
+
 /** Apply one effect with its current fields. Never throws. */
 export function applyEffect(effect: Effect, now = new Date()): Applied {
   try {
@@ -117,6 +180,13 @@ export function applyEffect(effect: Effect, now = new Date()): Applied {
         return applyIntakeEffect(effect)
       case "timeblock":
         return applyTimeblock(effect)
+      case "sleep":
+        return applySleep(effect, now)
+      case "line":
+        return fail("A line is filed through the chat, not here.")
+      case "verdict":
+      case "feeling":
+        return applyFollowEffect(effect)
     }
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error))

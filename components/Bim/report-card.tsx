@@ -12,8 +12,8 @@ import { useReportStore } from "@/lib/report-bimby/store"
 import type { Effect, EffectField } from "@/lib/report-bimby/types"
 import "./report-card.css"
 
-const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY" }
-const STATUS_LABEL: Record<Effect["status"], string> = { pending: "WAITING", applied: "SAVED", rejected: "REJECTED", failed: "FAILED" }
+const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY", sleep: "SLEEP", line: "FILE", verdict: "LINK", feeling: "FEEL" }
+const STATUS_LABEL: Record<Effect["status"], string> = { pending: "WAITING", working: "SAVING…", applied: "SAVED", rejected: "REJECTED", failed: "FAILED" }
 
 function FieldInput({ planId, effectId, field, locked }: { planId: string; effectId: string; field: EffectField; locked: boolean }) {
   const setField = useReportStore((s) => s.setField)
@@ -41,7 +41,7 @@ function FieldInput({ planId, effectId, field, locked }: { planId: string; effec
 }
 
 function EffectBlock({ planId, effect }: { planId: string; effect: Effect }) {
-  const locked = effect.status === "applied" || effect.status === "rejected"
+  const locked = effect.status === "applied" || effect.status === "rejected" || effect.status === "working"
   return (
     <article className={`rc-effect is-${effect.status}`} data-kind={effect.kind}>
       <header>
@@ -57,6 +57,7 @@ function EffectBlock({ planId, effect }: { planId: string; effect: Effect }) {
       <div className="rc-fields">
         {effect.fields.map((f) => <FieldInput key={f.key} planId={planId} effectId={effect.id} field={f} locked={locked} />)}
       </div>
+      {effect.status === "working" ? <div className="rc-bar" role="progressbar" aria-label="Saving" aria-busy="true"><i /></div> : null}
       {effect.result ? <p className={`rc-result${effect.status === "failed" ? " is-bad" : ""}`}>{effect.result}{effect.status === "applied" ? " Send undo to reverse it." : ""}</p> : null}
       <div className="rc-actions">
         {effect.status === "pending" || effect.status === "failed" ? (
@@ -75,6 +76,7 @@ export function ReportCard({ reportId }: { reportId: string }) {
   const plan = useReportStore((s) => s.plans[reportId])
   if (!plan) return <p className="rc-gone">This plan is no longer kept on this device.</p>
   const pending = plan.effects.filter((e) => e.status === "pending").length
+  const saving = plan.effects.some((e) => e.status === "working")
   return (
     <section className="rc" aria-label="BIM's plan for your report">
       <details className="rc-trace" open>
@@ -82,7 +84,7 @@ export function ReportCard({ reportId }: { reportId: string }) {
         <ol>{plan.trace.map((t, i) => <li key={i}>{t}</li>)}</ol>
       </details>
       {plan.effects.map((e) => <EffectBlock key={e.id} planId={plan.id} effect={e} />)}
-      {pending > 1 ? (
+      {pending > 1 && !saving ? (
         <div className="rc-actions rc-all">
           <button type="button" data-no95 className="rc-accept" onClick={() => acceptAll(plan.id)}>Accept all {pending}</button>
           <button type="button" data-no95 onClick={() => rejectAll(plan.id)}>Reject all</button>
