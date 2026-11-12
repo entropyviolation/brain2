@@ -13,6 +13,7 @@ import { SKILLS_EVOLVE_HREF, SKILLS_EVOLVE_ID } from "@/lib/agents/adapters/skil
 import { IDEA_SWARM_HREF, IDEA_SWARM_ID } from "@/lib/agents/adapters/idea-swarm"
 import { SWARM_VOTE_HREF, SWARM_VOTE_ID } from "@/lib/agents/adapters/swarm-vote"
 import { OVERCOME_HREF, OVERCOME_ID } from "@/lib/agents/adapters/overcome-bimby"
+import { FINANCE_BIMBY_HREF, FINANCE_BIMBY_ID } from "@/lib/agents/adapters/finance-bimby"
 
 export function agentLabHref(agent: Blueprint): string | null {
   if (agent.id === "tracking-helper") return "/lab/tracking-helper"
@@ -25,6 +26,7 @@ export function agentLabHref(agent: Blueprint): string | null {
   if (agent.id === CRITIC_BIMBY_ID) return CRITIC_BIMBY_HREF
   if (agent.id === LINK_BIMBY_ID) return LINK_BIMBY_HREF
   if (agent.id === INBOX_BIMBY_ID) return INBOX_BIMBY_HREF
+  if (agent.id === FINANCE_BIMBY_ID) return FINANCE_BIMBY_HREF
   if (agent.id === SKILLS_EVOLVE_ID) return SKILLS_EVOLVE_HREF
   return null
 }

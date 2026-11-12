@@ -1,0 +1,20 @@
+/* The Financial BIMBY lab: a plain chat well and ledger rows on the shared lab page look (`../bimby-lab.css`). */
+.fb-log { max-height: 46vh; overflow-y: auto; display: grid; gap: 8px; padding: 12px; border: 1px solid color-mix(in srgb, currentColor 15%, transparent); border-radius: 6px; }
+.fb-line { max-width: 88%; }
+.fb-line p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fb-line[data-who="you"] { justify-self: end; padding: 6px 10px; border-radius: 6px; background: color-mix(in srgb, currentColor 8%, transparent); }
+.fb-line[data-who="bimby"] { justify-self: start; padding-left: 10px; border-left: 2px solid color-mix(in srgb, currentColor 30%, transparent); }
+.fb-line .bl-row { margin-top: 6px; }
+.fb-compose { display: grid; gap: 8px; margin-top: 8px; }
+.fb-lab button { font: inherit; padding: 4px 10px; cursor: pointer; }
+.fb-purchase { display: grid; gap: 4px; padding: 8px 0 8px 10px; border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-left: 2px solid transparent; }
+.fb-purchase[data-verdict="regret"] { border-left-color: #b4462f; }
+.fb-purchase[data-verdict="mixed"] { border-left-color: #7d8794; }
+.fb-purchase[data-verdict="satisfied"] { border-left-color: #2f7f6a; }
+.fb-purchase-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.fb-why { margin: 0; opacity: 0.8; }
+.fb-keys { display: inline-flex; gap: 4px; margin-left: auto; }
+.fb-keys button[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: -2px; font-weight: 600; }
+.fb-receipt { display: inline-block; width: 44px; height: 56px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 3px; overflow: hidden; font-size: 0.65rem; text-align: center; line-height: 56px; }
+.fb-receipt img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fb-receipt-missing { opacity: 0.5; }

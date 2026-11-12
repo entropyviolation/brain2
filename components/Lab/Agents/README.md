@@ -18,4 +18,6 @@ _Last mapped: 2026-11-02_
 
 **Bench Planned:** more closed-list questions than the Lists BIMBY's (a `ClosedList` is all a new one needs); variants for paraphrase stability, logprob confidence and a critic pass (`docs/BIMBY_IDEAS.md` §2, §3, §4); a per-stage verdict (§5); cases built from the person's chat corrections; a sweep over voter count.
 
+_2026-11-11:_ The Financial BIMBY has a lab page (`/lab/finance-bimby`, `components/Lab/FinanceBimby/`). Unlike the dry-run pages it is the BIMBY's real chat: lines and receipts sent there are filed. It also lists debts, purchases with receipt thumbnails and verdict keys, discounts waiting and open cues.
+
 _2026-11-07:_ Lab pages now exist for the Critic (`/lab/critic-bimby`), Link (`/lab/link-bimby`), Inbox (`/lab/inbox-bimby`) BIMBIES and the Skills evolver (`/lab/skills-evolve`); `agent-href.ts` opens each, so the desk's **Open lab** works for every agent except Flight and Report. Each page is a dry run that writes nothing (components in `components/Lab/{CriticBimby,LinkBimby,InboxBimby,SkillsEvolve}/`, shared style `components/Lab/bimby-lab.css`). Link and Inbox read your real tasks and lists; the Critic page also runs the gold bench and can qualify a critic model (the one thing it stores, as the plan panel does). The Skills evolver shows proposals only and does not save them.
