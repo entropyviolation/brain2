@@ -12,6 +12,7 @@ const lastWrite = new Map<string, string>()
 
 const NOT_A_WRITE = new Set<IngestIntentKind>([
   "help",
+  "ping",
   "info",
   "read",
   "lists",
@@ -33,6 +34,11 @@ const NOT_A_WRITE = new Set<IngestIntentKind>([
   "unknown",
   "cancel",
 ])
+
+/** True for a kind that changes something (a log, a capture, a habit mark), false for a readout such as `ping` or `today`. */
+export function isWriteKind(kind: IngestIntentKind): boolean {
+  return !NOT_A_WRITE.has(kind)
+}
 
 export const UNNAMED_UNDO = "I can't name the last text write for this chat, so nothing was undone."
 

@@ -13,6 +13,8 @@ import { BIM_FULL, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
 import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
+import { DayCard } from "@/components/Bim/day-card"
+import { HabitCard } from "@/components/Bim/habit-card"
 import "@/components/Bim/bim-ink.css"
 import "./bim-phone.css"
 
@@ -51,9 +53,13 @@ export function BimPhoneScreen() {
               <p className={`bim-phone-line is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
                 <b>{line.who === "you" ? "YOU" : "BIM"}</b> {line.text}
               </p>
+              {line.readAs ? <span className="bim-phone-route">read as: {line.readAs}</span> : null}
               {line.route ? <span className="bim-phone-route">{line.route}</span> : null}
+              {line.general ? <span className="bim-phone-route">general, not from your data</span> : null}
               {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
               {line.wireId ? <WireCard wireId={line.wireId} /> : null}
+              {line.dayId ? <DayCard dayId={line.dayId} lineId={line.id} /> : null}
+            {line.habitLineId ? <HabitCard lineId={line.habitLineId} /> : null}
               {line.evidence?.length ? (
                 <details className="bim-phone-ev">
                   <summary>evidence ({line.evidence.length})</summary>

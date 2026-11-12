@@ -67,6 +67,8 @@ habit missed `threshold` of the last `window` days; one per habit; `maxQuestions
 per open habit: usual time, amount so far, streak, rate, last done; most specific first), `reasonsOf`
 (reasons with days, common words, themes). `shorthand.ts` names habits in code: no model.
 
+_2026-11-11:_ `accept(lineId, ids, "ok")` is the **Neutral** accept (Habits chat and the BIM chat card): the same write, and the line keeps `grades[id] = "ok"` so the row is never a good example (`lib/accept-grade.ts`).
+
 ## Files
 
 | File | Role |
@@ -78,6 +80,7 @@ per open habit: usual time, amount so far, streak, rate, last done; most specifi
 | `match.ts` | `matchSchema`, `systemText`, `habitLines`, `match` (ladder via `escalate`), `matchByRules`, `fillFromRules`, `headOf` |
 | `compute.ts` | `computeAll`, `computeItem`, `convert`, `editProposal`, `reviseProposal`, `trustWords` (private) |
 | `evidence.ts` | `findEvidence`, `readSpanAnswer`, `spanQuestion`, `PendingSpan` |
+| `auto.ts`, `auto.test.ts` | `readHabitLog`, `readsAsHabitLog`: does a plain BIM chat line read as a habit log (see "Automatic hand-off from BIM chat") |
 | `logs.ts` | `bimLogs`: the person's BIM lines with times |
 | `evidence.ts` | `findEvidence`, `readSpanAnswer`, `spanQuestion`, `PendingSpan` |
 | `logs.ts` | `bimLogs`: the person's BIM lines with times |
@@ -104,6 +107,14 @@ Each credit goes through `applyModuleOutput` as module `doc-words` with `origin:
 
 **Planned:** an editor for `wordFeeds` in the Add / Edit Habit window; word rules for weekly habits (they sum the daily one); a ledger that follows a renamed document by id; other measures (minutes typing).
 
+## Automatic hand-off from BIM chat
+
+_Last mapped: 2026-11-11_
+
+BIM chat hands a plain line to this BIMBY without being told to when the line reads as a daily-habit log (`auto.ts`, `readHabitLog`; code only, the same tags and lexicon as the flow). A clause names a habit when the habit's words cover at least half of its content words. The line is taken when two or more clauses name habits and they are at least half of the clauses ("did skincare, stretched, drank water"), or when its one clause names a habit, covers every content word, has an amount and is not negated ("read 10 pages"). A question, a line with a colon or a clock, and more than one line are left to BIM's other lanes. It is strict because a line taken here is filed nowhere else.
+
+The lane is `habit-auto` in `lib/ingest/bim-lanes.ts`, after the wire lane and before the report lane; `tryHabitAuto` (`lib/ingest/bimby-handoff.ts`) runs it. BIM's own `did <habit>` command keeps a one-habit line; `did` with two or more habits comes here. A busy BIMBY takes nothing. BIM chat draws the proposals under its reply (`components/Bim/habit-card.tsx`), so they can be accepted there. The rows live only in this store; the Habits chat shows the same line in the same state.
+
 ## Writes
 
 `applyProposals` writes a cell through `useHabitsStore.updateCompletion` (`{ completed }`, `{ value }`,
@@ -121,7 +132,7 @@ with an older saved copy gets the new one; its own is kept under `habithelper-fl
 
 - **Planned:** ask which log line when several fit; read a clock typed in the question itself.
 - **Planned:** ask which log line when several fit.
-- **Planned:** BIM hands a habit message to the BIMBY without being told to (today it needs "tell habits bimby …").
+- **Planned:** the automatic hand-off below also takes a lone miss ("didn't go outside because it was dark") and a lone yes/no habit ("stretched"); "that wasn't a habit" in BIM chat teaches it; a switch to turn it off.
 - **Planned:** push or notification reminders for open habits.
 - **Planned:** weekly, monthly and season habits; exemptions read when counting misses.
 - **Planned:** swap `pausedOn` for session A's `isPausedOn`.

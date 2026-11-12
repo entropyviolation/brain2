@@ -22,11 +22,12 @@ export function nameResolver(people: VaultSnapshot["people"]): (handle: string) 
   return (handle) => byHandle.get(normalizeHandle(handle)) ?? formatHandle(handle)
 }
 
-export async function loadTexts(opts: { days?: number; day?: string; people?: VaultSnapshot["people"]; hideHandles?: string[] }): Promise<TextRow[] | null> {
+/** `base`: the hub's address when the page is not served by it (the iPhone app); default same origin. */
+export async function loadTexts(opts: { days?: number; day?: string; people?: VaultSnapshot["people"]; hideHandles?: string[]; base?: string }): Promise<TextRow[] | null> {
   try {
     const q = new URLSearchParams({ days: String(opts.days ?? TEXT_LEARN_DAYS) })
     if (opts.day) q.set("day", opts.day)
-    const res = await fetch(`/api/phone-texts?${q}`)
+    const res = await fetch(`${opts.base ?? ""}/api/phone-texts?${q}`)
     if (!res.ok) return null
     const body = (await res.json()) as { rows?: RawText[] }
     const hidden = new Set((opts.hideHandles ?? []).map((h) => normalizeHandle(h)))

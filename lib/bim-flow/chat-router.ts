@@ -66,14 +66,16 @@ type Raw = { intent?: string; second?: string; sure?: string; why?: string }
 
 const isIntent = (x: unknown): x is ChatIntent => typeof x === "string" && (CHAT_INTENTS as readonly string[]).includes(x)
 
-/** Route one line. `ladder` is the crew's `route` rungs; empty means code only. */
-export async function routeChat(text: string, call: ModelCall | null, ladder: string[], lastBim?: string): Promise<ChatRoute> {
+/** Route one line. `ladder` is the crew's `route` rungs; empty means code only. `taught` is `taughtExamples()`. */
+export async function routeChat(text: string, call: ModelCall | null, ladder: string[], lastBim?: string, taught: string[] = []): Promise<ChatRoute> {
   const hint = routeByCode(text)
   if (hint?.sure) return { ...hint, answeredBy: "code", hops: [] }
   if (!call || !ladder.length) {
     return hint ? { ...hint, answeredBy: "code", hops: [] } : { intent: "log", sure: false, answeredBy: "code", why: "no model", hops: [] }
   }
-  const user = `${lastBim ? `BIM's last reply: ${lastBim.slice(0, 200)}\n` : ""}LINE: ${text}`
+  // Lines the person corrected before (`route-verdicts.ts`): their label is the right one for lines like them.
+  const examples = taught.length ? `LINES THIS PERSON CORRECTED BEFORE (the label after the arrow is right):\n${taught.join("\n")}\n\n` : ""
+  const user = `${examples}${lastBim ? `BIM's last reply: ${lastBim.slice(0, 200)}\n` : ""}LINE: ${text}`
   const { out, hops } = await escalate<Raw>(call, ladder, { system: SYSTEM, user, schema: SCHEMA, maxTokens: 80 }, (r) => {
     if (!isIntent(r.intent)) return "label off the list"
     if (r.sure !== "high") return "unsure"

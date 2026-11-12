@@ -199,7 +199,7 @@ export function parseBareWhen(text: string, now: Date): number | null {
 
 /** A plain fact to keep: "remember that the gate code is 4412". */
 export function parseNoteStatement(text: string): Omit<Fact, "id" | "toldAt"> | null {
-  const m = /^(?:please\s+)?(?:remember|keep in mind|make a note)(?:\s+that)?[:,]?\s+(.{3,240})$/i.exec(text.trim())
+  const m = /^(?:please\s+)?(?:remember|keep in mind|make a note|(?:don'?t|do not) forget(?=\s+that\b))(?:\s+that)?[:,]?\s+(.{3,240})$/i.exec(text.trim())
   if (!m) return null
   const body = m[1]!.trim().replace(/[.!]+$/g, "")
   const tokens = factTokens(body)
