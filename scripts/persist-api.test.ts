@@ -350,6 +350,17 @@ describe("persist HTTP canon and phone patch", () => {
     expect(beat.contentSource).toBe("phone")
   })
 
+  it("health contentAt ignores the GPS cursor the phone hub rewrites every fix", async () => {
+    setup({ updatedAt: "t0", source: "desk", items: { legacy: "L" } })
+    mergeSharedPersistItems({ legacy: "L2" }, "electron")
+    const data = (await persistHttp("GET", "/api/persist/health")).body as Record<string, string>
+    await new Promise((r) => setTimeout(r, 5))
+    mergeSharedPersistItems({ "brain2-last-gps": JSON.stringify({ lat: 1, lon: 2 }) }, "phone-hub")
+    const beat = (await persistHttp("GET", "/api/persist/health")).body as Record<string, string>
+    expect(beat.contentAt).toBe(data.contentAt)
+    expect(beat.contentSource).toBe("electron")
+  })
+
   it("GET ?canon=1 omits cogs twins and leaves the file unchanged", async () => {
     const file = setup({
       updatedAt: "t0",

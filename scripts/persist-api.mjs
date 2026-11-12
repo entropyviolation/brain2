@@ -604,9 +604,15 @@ function touch(key, source) {
   scheduleFlush()
 }
 
-/** Stamps a writer refreshes on its own; they say nothing changed in the vault. */
+/**
+ * Stamps a writer refreshes on its own; they say nothing changed in the vault.
+ * `last-gps` is the GPS dedupe cursor: the phone hub rewrites it with every
+ * fix (about every 10 s), and counting it made an open phone see a "desk edit"
+ * each poll and re-download the whole vault once a minute.
+ */
+const HEARTBEAT_KEY_SUFFIXES = ["last-persist-ok", "last-gps"]
 function isHeartbeatKey(key) {
-  return typeof key === "string" && key.endsWith("last-persist-ok")
+  return typeof key === "string" && HEARTBEAT_KEY_SUFFIXES.some((suffix) => key.endsWith(suffix))
 }
 
 function expandedKeyCount() {
