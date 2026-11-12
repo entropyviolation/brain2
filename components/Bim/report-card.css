@@ -173,3 +173,32 @@
 .rc-tweak textarea { opacity: 1; }
 .rc-rev { opacity: 1; color: #9fb6bb; }
 .rc-gone { color: #9fb6bb; }
+
+/* Saving: an indeterminate bar while the write runs, so the card answers at once. */
+.rc-effect.is-working {
+  border-style: dashed;
+}
+
+.rc-bar {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--bim-ink, #5cf2d6) 18%, transparent);
+}
+
+.rc-bar i {
+  display: block;
+  width: 35%;
+  height: 100%;
+  background: var(--bim-ink, #5cf2d6);
+  animation: rc-slide 1s ease-in-out infinite alternate;
+}
+
+@keyframes rc-slide {
+  from { transform: translateX(-10%); }
+  to { transform: translateX(190%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-bar i { animation: none; width: 100%; opacity: 0.5; }
+}

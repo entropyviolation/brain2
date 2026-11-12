@@ -9,6 +9,13 @@
  */
 "use client"
 
+import { loadFileEvents } from "@/lib/bim-flow/file-activity-client"
+import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
+import { sleepOffsets } from "@/lib/bim-flow/text-sleep"
+import { loadTexts } from "@/lib/bim-flow/texts-client"
+import { formatSleepDuration, offsetToLabel, sleepMinutes } from "@/lib/sleep-log"
+import { useSleepStore } from "@/lib/sleep-store"
+import { buildEvidence, type Evidence } from "./evidence"
 import { loadKeptVisits } from "@/lib/browser-history-store"
 import type { Visit } from "@/lib/browser-history"
 import { INVENTORY_QTY_ATTR, findInventoryList } from "@/lib/ingest/apply-inventory"
@@ -32,9 +39,48 @@ async function keptVisits(): Promise<Visit[] | null> {
   }
 }
 
-export function storeDeps(visits: Visit[] | null): PlanDeps {
+/** Wait for a source, but never past `ms`: a slow hub must not hold up the card. */
+const within = <T,>(p: Promise<T | null>, ms: number): Promise<T | null> => Promise.race([p.catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), ms))])
+
+/**
+ * Gather every sign of life the app holds for the last days: Tracking entries (Mac and iPhone Screen
+ * Time, existing blocks), BIM chat and log lines, items created, Chrome visits, and, from the hub, the
+ * texts and file changes. A source that cannot be reached is named on the card, not skipped silently.
+ */
+export async function gatherEvidence(visits: Visit[] | null, now: Date): Promise<{ evidence: Evidence; offsets: ReturnType<typeof sleepOffsets> }> {
+  const snap = snapshotFromStores()
+  const history = snap.history
+  const sinceMs = now.getTime() - 4 * 24 * 60 * 60_000
+  const [texts, files] = await Promise.all([
+    within(loadTexts({ days: 60, people: snap.people, hideHandles: snap.secretHandles }), 6000),
+    within(loadFileEvents(4), 6000),
+  ])
+  const evidence = buildEvidence({
+    visits,
+    entries: (history?.entries ?? []).filter((e) => !e.date || new Date(`${e.date}T00:00:00`).getTime() >= sinceMs - 24 * 60 * 60_000),
+    texts: texts ? texts.filter((r) => new Date(r.at).getTime() >= sinceMs) : null,
+    files,
+    feed: (history?.feed ?? []).filter((f) => new Date(f.at).getTime() >= sinceMs),
+    logs: (history?.logs ?? []).filter((l) => new Date(l.at).getTime() >= sinceMs),
+    items: useTaskStore
+      .getState()
+      .tasks.map((t) => ({ at: t.createdAt ? new Date(t.createdAt as unknown as string).getTime() : NaN, title: itemTitleOrUntitled(t) }))
+      .filter((i) => Number.isFinite(i.at) && i.at >= sinceMs),
+  })
+  const offsets = texts ? sleepOffsets(texts, (history?.entries ?? []).filter((e) => e.scope === "activity")) : null
+  return { evidence, offsets }
+}
+
+export function storeDeps(visits: Visit[] | null, extra: Partial<PlanDeps> = {}): PlanDeps {
   return {
     visits,
+    existingSleep: (date) => {
+      const n = useSleepStore.getState().nights[date]
+      if (!n || (n.sleptMin === undefined && n.wokeMin === undefined)) return null
+      const mins = sleepMinutes(n)
+      return `${n.sleptMin !== undefined ? offsetToLabel(n.sleptMin) : "?"} to ${n.wokeMin !== undefined ? offsetToLabel(n.wokeMin) : "?"}${mins !== null ? ` (${formatSleepDuration(mins)})` : ""}`
+    },
+    ...extra,
     inventory: (name) => {
       const list = findInventoryList()
       if (!list) return null
@@ -73,7 +119,11 @@ export interface ReportReply {
 export async function tryReport(text: string, now: Date): Promise<ReportReply | null> {
   if (!looksLikeReport(text)) return null
   const started = Date.now()
-  const plan = buildPlan(text, parseReport(text), now, storeDeps(await keptVisits()))
+  const visits = await keptVisits()
+  const parsed = parseReport(text)
+  // Only a report that places something in time needs the wide search: a night, or an activity.
+  const wide = !!parsed.wake || !!parsed.bed || parsed.segments.length > 0 ? await gatherEvidence(visits, now).catch(() => null) : null
+  const plan = buildPlan(text, parsed, now, storeDeps(visits, wide ? { evidence: wide.evidence, sleepOffsets: wide.offsets } : {}))
   if (!plan.effects.length) return null
   useReportStore.getState().put(plan)
   const n = plan.effects.length

@@ -51,6 +51,11 @@ export const useReportStore = create<State>()(
           return { plans: { ...s.plans, [planId]: mapEffect(plan, effectId, (e) => ({ ...e, status, result })) } }
         }),
     }),
-    { name: "bimchat-reports", storage: createJSONStorage(() => localStorage), partialize: (s) => ({ plans: s.plans, order: s.order }) },
+    { name: "bimchat-reports", storage: createJSONStorage(() => localStorage), partialize: (s) => ({
+        // A save cut off by a reload never finished; it comes back as pending, not stuck on "working".
+        plans: Object.fromEntries(Object.entries(s.plans).map(([id, p]) => [id, { ...p, effects: p.effects.map((e) => (e.status === "working" ? { ...e, status: "pending" as const } : e)) }])),
+        order: s.order,
+      }),
+    },
   ),
 )

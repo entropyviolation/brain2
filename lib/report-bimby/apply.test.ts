@@ -33,16 +33,16 @@ describe("Report BIMBY end to end", () => {
 
     const inv = plan.effects.find((e) => e.kind === "inventory")!
     useReportStore.getState().setField(plan.id, inv.id, "qty", "2")
-    acceptEffect(plan.id, inv.id)
+    await acceptEffect(plan.id, inv.id)
     expect(adderallQty()).toBe(2)
 
     const cycle = plan.effects.find((e) => e.kind === "cycle")!
-    acceptEffect(plan.id, cycle.id)
+    await acceptEffect(plan.id, cycle.id)
     expect(readCycleMarks()[cycle.fields[0]!.value]?.bleeding).toBe(true)
 
     const blocks = plan.effects.filter((e) => e.kind === "timeblock")
     rejectEffect(plan.id, blocks[1]!.id)
-    acceptAll(plan.id)
+    await acceptAll(plan.id)
     const after = useReportStore.getState().plans[plan.id]!
     expect(after.effects.find((e) => e.id === blocks[1]!.id)!.status).toBe("rejected")
     expect(after.effects.filter((e) => e.kind !== "timeblock" || e.id !== blocks[1]!.id).every((e) => e.status === "applied")).toBe(true)
@@ -51,14 +51,25 @@ describe("Report BIMBY end to end", () => {
     expect(painted[0]!.endMin - painted[0]!.startMin).toBe(180)
   })
 
-  it("refuses a bad edit and keeps the effect retryable", () => {
+  it("refuses a bad edit and keeps the effect retryable", async () => {
     const plan = buildPlan("took 1 adderall", parseReport("took 1 adderall"), new Date(), storeDeps(null))
     useReportStore.getState().put(plan)
     const inv = plan.effects[0]!
     useReportStore.getState().setField(plan.id, inv.id, "qty", "-4")
-    acceptEffect(plan.id, inv.id)
+    await acceptEffect(plan.id, inv.id)
     const got = useReportStore.getState().plans[plan.id]!.effects[0]!
     expect(got.status).toBe("failed")
     expect(got.result).toMatch(/0 or more/)
+  })
+})
+
+describe("accept does not block", () => {
+  it("shows saving at once and lets the screen paint before it writes", async () => {
+    const plan = buildPlan("took 1 adderall", parseReport("took 1 adderall"), new Date(), storeDeps(null))
+    useReportStore.getState().put(plan)
+    const pending = acceptEffect(plan.id, plan.effects[0]!.id)
+    expect(useReportStore.getState().plans[plan.id]!.effects[0]!.status).toBe("working")
+    await pending
+    expect(useReportStore.getState().plans[plan.id]!.effects[0]!.status).toBe("applied")
   })
 })
