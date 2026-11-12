@@ -38,6 +38,7 @@ import { startTaggedTaskSync } from "@/lib/habit-tagged-count"
 import { startDailyCompletionAverageSync } from "@/lib/habit-daily-completion-average"
 import { startListSentSync } from "@/lib/list-sent-sync"
 import { startKeywordSync } from "@/lib/habit-keyword-sync"
+import { startPharmacySync } from "@/lib/pharmacy-sync"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
@@ -198,5 +199,6 @@ export function useHabitTrackingSync(): void {
     startDailyCompletionAverageSync()
     startListSentSync()
     startKeywordSync()
+    startPharmacySync()
   }, [])
 }

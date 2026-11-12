@@ -5,6 +5,7 @@
  * Kitchen stays `KitchenPhone` — the room list, not the diorama.
  * Shopping is four vault lists, not the kitchen store.
  * Gems and Trinkets is the earned-loot bag.
+ * Pharmacy is the bottle board without the 3D shelf.
  */
 "use client"
 
@@ -14,6 +15,7 @@ import { BookshelfPhone } from "./bookshelf-phone"
 import { ClosetPhone } from "./closet-phone"
 import { ShoppingPhone } from "../shopping/shopping-phone"
 import { GemsScene } from "../gems/gems-scene"
+import { PharmacyScene } from "../pharmacy/pharmacy-scene"
 import "./inventory-phone.css"
 
 export function InventoryPhone({
@@ -47,6 +49,7 @@ export function InventoryPhone({
       {scene === "kitchen" ? <KitchenPhone /> : null}
       {scene === "shopping" ? <ShoppingPhone /> : null}
       {scene === "gems" ? <GemsScene surface="phone" /> : null}
+      {scene === "pharmacy" ? <PharmacyScene surface="phone" /> : null}
     </div>
   )
 }

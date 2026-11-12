@@ -83,6 +83,11 @@ Desktop test: Settings → Message ingest → Simulate `nfc:adderall 2`.
   (`1 10 mg adderall`, `2 10 mg adderall`). Anything else is an event on
   Text log. A plain event keeps its title when the count is 1, and gains the
   count in front when it is more than 1.
+- Pharmacy bottle, when bound: the scan's Intake line takes that many doses
+  from the bottle (Inventory → Pharmacy → the bottle → **Make an NFC tag**,
+  or link a saved tag there). The reply ends with the count left. If the tag
+  is also bound to a habit that draws from the same bottle, the dose is taken
+  once.
 - Optional minutes: an estimated block on an Activity pen named for that
   logged title, ending at the scan.
 - Door toggle: first scan logs `left`, the next `back`, then `left` again.

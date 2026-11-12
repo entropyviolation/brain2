@@ -2,8 +2,9 @@
  * components/Inventory/InventoryView.tsx — Inventory desk
  *
  * Go tab. Bookshelf (one existing list), Closet (wardrobe store),
- * Kitchen (kitchen store), Shopping (named views over vault lists), and Gems and
- * Trinkets (finished daily habits and tasks). A viewport
+ * Kitchen (kitchen store), Shopping (named views over vault lists), Gems and
+ * Trinkets (finished daily habits and tasks), and Pharmacy (bottles that doses,
+ * habits, and NFC taps draw from). A viewport
  * at or under 767px mounts the phone layout instead.
  */
 "use client"
@@ -15,6 +16,7 @@ import { ClosetScene } from "./closet-scene"
 import { KitchenScene } from "./kitchen/kitchen-scene"
 import { ShoppingScene } from "./shopping/shopping-scene"
 import { GemsScene } from "./gems/gems-scene"
+import { PharmacyScene } from "./pharmacy/pharmacy-scene"
 import { INVENTORY_SCENES, useBookshelfListId, useInventoryScene, type InventorySceneId } from "./inventory-scenes"
 import { InventoryPhone } from "./phone/inventory-phone"
 import { useInventoryPhone } from "./phone/use-inventory-phone"
@@ -56,8 +58,10 @@ export function InventoryView() {
         <KitchenScene />
       ) : scene === "shopping" ? (
         <ShoppingScene />
-      ) : (
+      ) : scene === "gems" ? (
         <GemsScene surface="desk" />
+      ) : (
+        <PharmacyScene surface="desk" />
       )}
     </div>
   )

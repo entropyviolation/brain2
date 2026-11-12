@@ -86,6 +86,7 @@ import { useCountStatusesStore } from "@/lib/count-statuses"
 import { useKitchenDayNotes } from "@/lib/kitchen-day-note"
 import { useKitchenNeeds } from "@/lib/kitchen-needs"
 import { useKitchenStore } from "@/lib/kitchen-store"
+import { usePharmacyStore } from "@/lib/pharmacy-store"
 import { useWardrobeStore } from "@/lib/wardrobe"
 import {
   exportAllAttachments,
@@ -215,6 +216,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("kitchen"), rehydrate: persistRehydrate(useKitchenStore) },
   { key: persistKey("kitchen-day-note"), rehydrate: persistRehydrate(useKitchenDayNotes) },
   { key: persistKey("kitchen-needs"), rehydrate: persistRehydrate(useKitchenNeeds) },
+  { key: persistKey("pharmacy"), rehydrate: persistRehydrate(usePharmacyStore) },
 ]
 
 /** Human labels for Settings restore preview (same keys as BACKUP_STORES, plus cogs-* aliases). */
@@ -307,6 +309,7 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-kitchen-day-note": "Kitchen day notes",
   [persistKey("kitchen-needs")]: "Kitchen nutrient needs",
   "cogs-kitchen-needs": "Kitchen nutrient needs",
+  [persistKey("pharmacy")]: "Pharmacy",
 }
 
 export function backupStoreLabel(key: string): string {
@@ -568,6 +571,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("kitchen")]: asLiveStore(useKitchenStore),
   [persistKey("kitchen-day-note")]: asLiveStore(useKitchenDayNotes),
   [persistKey("kitchen-needs")]: asLiveStore(useKitchenNeeds),
+  [persistKey("pharmacy")]: asLiveStore(usePharmacyStore),
 }
 
 /**

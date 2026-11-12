@@ -38,6 +38,8 @@ export interface NfcTag {
   /** Daily habit only. Weekly and monthly ids are stored and skipped at scan time. */
   habitId?: string
   habitCredit: NfcHabitCredit
+  /** A Pharmacy bottle this tag takes from (`lib/pharmacy-store.ts`). Instant tags only. */
+  pharmacyId?: string
 }
 
 /** Letters, digits, and single hyphens. Empty when nothing usable remains. */
@@ -127,6 +129,8 @@ export function sanitizeNfcTag(raw: Partial<NfcTag> | null | undefined): NfcTag 
   const lastSide = raw.lastSide === "out" || raw.lastSide === "in" ? raw.lastSide : undefined
   const lastAt = typeof raw.lastAt === "string" && raw.lastAt.trim() ? raw.lastAt : undefined
   const habitId = typeof raw.habitId === "string" && raw.habitId.trim() ? raw.habitId.trim() : undefined
+  const pharmacyId =
+    kind === "instant" && typeof raw.pharmacyId === "string" && raw.pharmacyId.trim() ? raw.pharmacyId.trim() : undefined
   return {
     id,
     name,
@@ -140,6 +144,7 @@ export function sanitizeNfcTag(raw: Partial<NfcTag> | null | undefined): NfcTag 
     ...(lastSide ? { lastSide } : {}),
     ...(lastAt ? { lastAt } : {}),
     ...(habitId ? { habitId } : {}),
+    ...(pharmacyId ? { pharmacyId } : {}),
     habitCredit: raw.habitCredit === "add" ? "add" : "done",
   }
 }

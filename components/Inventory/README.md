@@ -1,10 +1,10 @@
 # Inventory
 
-_Last mapped: 2026-10-29_
+_Last mapped: 2026-11-07_
 
 A Go-room over data that already exists. The key in the header is the same pale silver keycap as the other tabs (`data-tab="inventory"` in `app/page.tsx`). The room interior is the house chrome face on the desk, and a separate phone layout at `max-width: 767px`. The bookshelf case stays wood.
 
-Five scenes, switched in the room and stored with `usePersistedTab` on `APP_NAV_KEYS.inventoryScene`:
+Six scenes, switched in the room and stored with `usePersistedTab` on `APP_NAV_KEYS.inventoryScene`:
 
 | Scene | What it reads | This stream |
 |-------|----------------|-------------|
@@ -13,8 +13,9 @@ Five scenes, switched in the room and stored with `usePersistedTab` on `APP_NAV_
 | Kitchen | `useKitchenStore` in `lib/kitchen-store.ts`. No list. | `KitchenScene` on the desk, `KitchenPhone` at 767px and under. |
 | Shopping | Named views over lists in `useTaskStore`. Bindings are `APP_NAV_KEYS.inventoryShoppingLists`. | `ShoppingScene` on the desk, `ShoppingPhone` at 767px and under. |
 | Gems and Trinkets | Finished daily habits in `useHabitsStore` and finished tasks in `useTaskStore`. No list. | `GemsScene` on the desk and at 767px and under. |
+| Pharmacy | `usePharmacyStore` in `lib/pharmacy-store.ts`. No list. | `PharmacyScene` on the desk (3D shelf) and `surface="phone"` (no Three.js). |
 
-The contract later streams import is `inventory-scenes.ts`: `InventorySceneId`, `BookshelfBinding` (`listId`, optional `coverAttrId`), `ClosetBinding`, `KitchenBinding`, `ShoppingBinding`, `GemsBinding`, `InventorySceneBinding`, `INVENTORY_SCENES`, and the read/write helpers. `coverAttrId` is on the type only. This stream does not persist it. `readInventoryBinding()` uses `""` for a bookshelf with no list stored, `{ scene: "kitchen" }` when the kitchen is open, `{ scene: "shopping" }` when shopping is open, and `{ scene: "gems" }` when Gems and Trinkets is open. The bookshelf scene prop is `listId: string | null`. The shopping views are not on that binding.
+The contract later streams import is `inventory-scenes.ts`: `InventorySceneId`, `BookshelfBinding` (`listId`, optional `coverAttrId`), `ClosetBinding`, `KitchenBinding`, `ShoppingBinding`, `GemsBinding`, `PharmacyBinding`, `InventorySceneBinding`, `INVENTORY_SCENES`, and the read/write helpers. `coverAttrId` is on the type only. This stream does not persist it. `readInventoryBinding()` uses `""` for a bookshelf with no list stored, `{ scene: "kitchen" }` when the kitchen is open, `{ scene: "shopping" }` when shopping is open, `{ scene: "gems" }` when Gems and Trinkets is open, and `{ scene: "pharmacy" }` when Pharmacy is open. The bookshelf scene prop is `listId: string | null`. The shopping views are not on that binding.
 
 `lib/screen-location.ts` already restores the desk tab through `APP_TABS`, so the new id is enough. Grocery may bind to `list-inventory` when that list already exists. Ingest in `lib/ingest/apply-inventory.ts` is unchanged.
 
@@ -77,6 +78,13 @@ Owned by later streams:
 | `gems/gems-scene.tsx` | Desk and phone bag. Reads the habit store and the task store. |
 | `gems/gems-scene.test.tsx` | A stacked gem and an assigned trinket. |
 | `gems/gems.css` | Dark chest on the desk. Flat large slots on the phone. |
+| `pharmacy/pharmacy-scene.tsx` | Desk (3D shelf above the board) and phone (board only). Owns the picked bottle. |
+| `pharmacy/pharmacy-board.tsx` | Add form, bottle list, and the bottle panel: Take, Refilled, counts, habit link, NFC tag, recent changes. `takeDose` is the Take key. |
+| `pharmacy/pharmacy-rows.ts` | Items as rows and diorama bottles, cap colour, filter, summary line. |
+| `pharmacy/pharmacy-diorama.ts` | Three.js apothecary shelf. Bottle with a face, pills piled to the fill, hop on pick. |
+| `pharmacy/pharmacy-stage.tsx` | Lazy-loads the diorama and remounts when a fill, face, or label changes. |
+| `pharmacy/pharmacy-scene.test.tsx` | Diorama helpers, add and take, habit link, make an NFC tag. |
+| `pharmacy/pharmacy.css` | Prefix `inv-rx-`. |
 
 ## Bookshelf
 
@@ -96,7 +104,7 @@ Fetch covers runs from its button on the desk and on the phone, through `lib/boo
 
 _Last mapped: 2026-10-28_
 
-At 767px and under, `InventoryView` mounts `InventoryPhone` instead of the desk scenes. The switch is Bookshelf, Closet, Kitchen, Shopping, and Gems and Trinkets. The scene bar scrolls sideways so the full names stay on one line. Kitchen stays `kitchen/kitchen-phone.tsx`. Shopping stays `shopping/shopping-phone.tsx`. Gems and Trinkets stays `gems/gems-scene.tsx` with the phone paint.
+At 767px and under, `InventoryView` mounts `InventoryPhone` instead of the desk scenes. The switch is Bookshelf, Closet, Kitchen, Shopping, Gems and Trinkets, and Pharmacy. The scene bar scrolls sideways so the full names stay on one line. Kitchen stays `kitchen/kitchen-phone.tsx`. Shopping stays `shopping/shopping-phone.tsx`. Gems and Trinkets stays `gems/gems-scene.tsx` with the phone paint. Pharmacy is `PharmacyScene surface="phone"`: the bottle board, 44px targets, no Three.js.
 
 Bookshelf (`phone/bookshelf-phone.tsx`) is a cover browser. It does not load Three.js. Items are tasks whose `lists` includes the persisted shelf list (`useBookshelfListId`), finished items included, through `tasksForShelf` in `bookshelf/shelf-books.ts`. Titles are `itemTitle`. A cover is the type's hero image when that cell has a picture, and otherwise `BOOK_ATTR.cover`, including on a task. The picture is `useAttachmentSrc`, cropped into a 2:3 jacket with a spine shadow (a gradient on the jacket, not the desktop binding). Fetch covers is the same lookup as the desk (`useShelfCovers`). Search is `shelfMatchIds` (`filterListItemsBySearch`). It dims non-matches and does not pull or open. The first tap pulls one cover forward. The second tap on that cover calls `openItemDetailPopup`, the same popup as the desk. No list: a quiet line and `SingleListPicker` on `APP_NAV_KEYS.inventoryBookshelfList`.
 
@@ -144,3 +152,23 @@ A fifth scene, id `gems`. No list and no second store.
 A daily habit leaves one copy of its current gem (`resolveTaskGem`) for each day the goal is met in `weeklyData`. A habit-done row counts that day when the cell is missing, and does not count it twice. Weekly and monthly habits stay out. A finished task leaves one trinket: the Lists orb from `iconFor`, the same picture Plan's gem-and-trinket month uses. A custom icon replaces that orb. The same photograph stacks, and the corner shows the count when that stack is more than one. Changing a gem or icon later moves the copies already earned, because the bag rebuilds from the records that exist now.
 
 The desk is a dark chest of silver-rimmed slots (`gems/gems.css`, pixel type, one weight). The phone is the same grid with large flat slots. A tap names the stack under the title: the source, the kind, and the count. An empty bag reads "No gems or trinkets."
+
+## Pharmacy
+
+_Last mapped: 2026-11-07_
+
+A sixth scene, id `pharmacy`. Pill bottles, supplements, and over-the-counter medicine, each with a count on hand. The store is `usePharmacyStore` (`brain2-pharmacy`, persist v1, in the full backup). The maths is `lib/pharmacy-math.ts`, the follower is `lib/pharmacy-sync.ts`. `lib/README.md` has the file rows.
+
+**One dose is one dose.** Every draw has a source key in a ledger: `intake:{entryId}`, `habit:{habitId}:{date}`. Writing the same key twice takes it once. A smaller value gives units back. Deleting the Intake line, or unmarking the habit, refunds. Four doors reach a bottle:
+
+- **Take** (the key on the bottle panel). It writes an Intake line (class drug) through `applyIntake`, so the dose shows on the day in Tracking, and the bottle follows that line.
+- **Intake lines by name.** Any Intake instant whose title names a bottle (its name or an "also called") takes that many doses: `2 adderall` takes 2 × units per dose. A number before a unit word (`10 mg adderall`) is strength, not a count. When two bottles share a name, the one whose strength is in the title wins. Lines from before the bottle was added never draw.
+- **NFC.** A tag has an optional `pharmacyId` (`lib/ingest/nfc-tag.ts`). The scan's Intake line draws from that bottle and the reply ends with "{name}: N left". "Make an NFC tag" on the panel creates the tag (Drug, quantity 1); the signed shortcut download stays in Settings → NFC tags. A tag already saved can be linked from the panel too.
+- **A daily habit.** The bottle panel picks one. Marking it done draws "units per done" (a count habit draws that for each counted unit), so a Chlorophyll habit with 2 per done takes 2 when it is checked and gives them back when unchecked. Weekly and monthly habits cannot link. Days before the link never draw. A habit draws only what the Intake lines of that day have not already taken, so an NFC tap bound to both the habit and the bottle takes one dose, not two.
+
+The count never goes under zero. Refilled sets a full bottle, or adds. "I have" fixes the count by hand. Fixes and refills are not use. "About N days left" is the count over the average daily use of the last 14 days. A bottle at or under "Warn at" (default 20% of the full size) reads Low, and at 0 Empty.
+
+The desk shelf (`pharmacy-diorama.ts`) is a pale apothecary cabinet with a green cross. Each bottle has a face on its label: happy, worried when low, sleepy when empty. Pills inside pile up to the fill, so a dose lowers the heap. Form picks the shape: amber bottle for pills and capsules, a jar for gummies and powder, a dropper bottle for liquid. Click a bottle to pick it; it hops. Two shelves, a third past ten bottles, five per shelf. The list under it shows every bottle if WebGL does not.
+
+**Planned:** a low bottle adding itself to the Shopping list, expiry dates, and a drug interaction note. None is built.
+

@@ -9,6 +9,8 @@
 import { recordCountForKeyword } from "@/lib/count-statuses"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { useHabitsStore } from "@/lib/habits-store"
+import { usePharmacyStore } from "@/lib/pharmacy-store"
+import { drawIntakeEntry } from "@/lib/pharmacy-sync"
 import { TaskType } from "@/lib/types"
 import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { applyDiscreteLog, applyIntake } from "./apply-discrete-event"
@@ -70,13 +72,14 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
   stampGenerated(painted.itemIds, stamp)
   const spanId = tag.kind === "instant" && tag.minutes ? paintDuration(title, tag.minutes, now, tag.id) : undefined
   const habitNote = tag.habitId ? creditHabit(tag.habitId, tag.habitCredit, now, quantity) : null
+  const bottleNote = tag.pharmacyId ? takeFromBottle(tag.pharmacyId, painted.itemIds?.[0], quantity) : null
 
   useIngestStore.getState().touchNfcTag(tag.id, {
     lastAt: now.toISOString(),
     ...(tag.kind === "toggle" ? { lastSide: goingOut ? "out" : "in" } : {}),
   })
 
-  const reply = [`Logged ${title}`, habitNote, tag.minutes ? `${tag.minutes} min` : null]
+  const reply = [`Logged ${title}`, habitNote, bottleNote, tag.minutes ? `${tag.minutes} min` : null]
     .filter((part): part is string => Boolean(part))
     .join(" · ")
   const itemIds = [...(painted.itemIds ?? []), ...(spanId ? [spanId] : [])]
@@ -87,6 +90,16 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
     summary: `NFC → ${title}`,
     itemIds: itemIds.length ? itemIds : undefined,
   }
+}
+
+/** The scan's Intake line draws from the bottle. A name match may already have drawn it: same key, taken once. */
+function takeFromBottle(pharmacyId: string, entryId: string | undefined, quantity: number): string | null {
+  const item = usePharmacyStore.getState().items.find((row) => row.id === pharmacyId)
+  if (!item) return null
+  const entry = entryId ? useTimeTrackingStore.getState().entries.find((row) => row.id === entryId) : undefined
+  if (entry) drawIntakeEntry(entry, item.id, quantity)
+  const left = usePharmacyStore.getState().items.find((row) => row.id === pharmacyId)?.count ?? item.count
+  return `${item.name}: ${left} left`
 }
 
 function stampGenerated(ids: string[] | undefined, stamp: string): void {
