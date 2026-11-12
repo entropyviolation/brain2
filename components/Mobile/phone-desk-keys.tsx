@@ -14,6 +14,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AutoTrackRunner } from "@/components/Mobile/auto-track/auto-track-runner"
 import { openCaptureDoor } from "@/components/capture-door-bus"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
 import { MobileKeyboard } from "@/components/Mobile/keyboard/mobile-keyboard"
@@ -34,11 +35,19 @@ function isIosApp(): boolean {
   return typeof cap?.isNativePlatform === "function" && cap.isNativePlatform()
 }
 
-/** The keycap deck for the desk page in the iOS app. Lives outside the Menu sheet, so closing the sheet never touches it. */
+/**
+ * The keycap deck for the desk page in the iOS app. Lives outside the Menu sheet, so closing the sheet never touches it.
+ * The automatic Health and location sync rides along, since this is the one piece always mounted in the app.
+ */
 export function PhoneKeyboard() {
   const [onPhone, setOnPhone] = useState(false)
   useEffect(() => setOnPhone(isIosApp()), [])
-  return onPhone ? <MobileKeyboard /> : null
+  return onPhone ? (
+    <>
+      <MobileKeyboard />
+      <AutoTrackRunner />
+    </>
+  ) : null
 }
 
 export function PhoneDeskKeys() {

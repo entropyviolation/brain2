@@ -21,6 +21,7 @@ import { MobileLogin } from "@/components/Mobile/MobileLogin"
 import { MobilePullCard } from "@/components/Mobile/MobilePullCard"
 import { MobileLocationCard } from "@/components/Mobile/location/MobileLocationCard"
 import { MobileHealthCard } from "@/components/Mobile/health/MobileHealthCard"
+import { AutoTrackRunner } from "@/components/Mobile/auto-track/auto-track-runner"
 import { MobileNfcCard } from "@/components/Mobile/nfc/MobileNfcCard"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
@@ -172,6 +173,7 @@ export function MobileApp() {
 
       <main className="cogs-mobile-body">
         <PersistStatusBanner />
+        <AutoTrackRunner />
         {tab === "bim" ? null : (
           <>
             <MobilePullCard />

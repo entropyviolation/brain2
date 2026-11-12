@@ -55,6 +55,12 @@ To switch it on:
 2. Run the hub with `BRAIN2_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
 3. In Xcode: build to the phone. On the Location card, fill in and save Upload setup; saving goes straight on to asking for location and starting. Allow location, and pick "Always" when iOS offers it. iOS may grant "While Using" first and offer "Always" later; recording starts either way, and the chip says "set to Always" until then.
 
+## Without the box
+
+_Last mapped: 2026-11-10_
+
+The Oracle box is no longer required to see Location. Every event also goes in a journal on the phone (the last 2,000). With no upload set, **Turn on** still starts recording, the upload queue stays empty, and the app paints Location from the journal each time it opens (`lib/mobile/auto-track.ts`). The cost: nothing lands while the app stays closed. With an upload set, the hub lands location as before and the phone does not paint.
+
 ## Job
 
 Record every significant move and every visit (arrive / leave), including while the Mac is asleep. This is not continuous GPS: iOS wakes the app on a move of roughly 500 m or more and on visits, so short trips and indoor moves can leave gaps.

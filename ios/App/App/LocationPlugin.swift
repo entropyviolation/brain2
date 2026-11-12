@@ -7,6 +7,10 @@
 //  capture public key (same format as scripts/sealed-box.mjs) and posts it to
 //  the Oracle box's POST /upload. The box cannot read it.
 //
+//  Every event also goes in a journal file (the last 2,000). With no upload
+//  set, that journal is the only record: the app reads it when it opens and
+//  paints Location itself. Turn on works without an upload for that reason.
+//
 //  Recording and upload live in LocationRecorder, not the plugin, because iOS
 //  relaunches the app in the background for a location event with no web view.
 //  AppDelegate calls LocationRecorder.shared.resumeIfEnabled() at launch and
@@ -81,6 +85,12 @@ struct QueuedLocationEvent: Codable {
     var acc: Double?
 }
 
+/// One journal row. `seq` only grows, so the JS side can ask for what it has not landed yet.
+private struct LocationJournalRow: Codable {
+    var seq: Int
+    var event: QueuedLocationEvent
+}
+
 private struct LocationBatchBody: Codable {
     var v: Int
     var kind: String
@@ -96,6 +106,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
 
     static let maxQueued = 5000
     static let batchSize = 200
+    static let maxJournal = 2000
 
     private enum Key {
         static let enabled = "brain2.location.enabled"
@@ -107,6 +118,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         static let lastUploadAt = "brain2.location.lastUploadAt"
         static let lastError = "brain2.location.lastError"
         static let dropped = "brain2.location.dropped"
+        static let journalSeq = "brain2.location.journalSeq"
     }
 
     private let manager = CLLocationManager()
@@ -321,9 +333,69 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         try? data.write(to: queueURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
 
+    // MARK: Journal
+    //
+    // The last events, kept on the phone whether or not an upload is set. With no
+    // relay, the app reads this when it opens and paints Location itself
+    // (`lib/mobile/auto-track.ts`). The upload queue is separate and unchanged.
+
+    private var journalURL: URL {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("brain2-location-journal.json")
+    }
+
+    /// Events that arrived while the journal could not be read (locked phone).
+    private var journalPending: [QueuedLocationEvent] = []
+
+    /// nil means the file is there but cannot be read now. A file that will not decode starts over.
+    private func readJournalFile() -> [LocationJournalRow]? {
+        let url = journalURL
+        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return (try? JSONDecoder().decode([LocationJournalRow].self, from: data)) ?? []
+    }
+
+    /// Call on `work`.
+    private func appendJournal(_ events: [QueuedLocationEvent]) {
+        guard var rows = readJournalFile() else {
+            journalPending += events
+            return
+        }
+        var seq = defaults.integer(forKey: Key.journalSeq)
+        for event in journalPending + events {
+            seq += 1
+            rows.append(LocationJournalRow(seq: seq, event: event))
+        }
+        journalPending = []
+        if rows.count > Self.maxJournal { rows.removeFirst(rows.count - Self.maxJournal) }
+        guard let data = try? JSONEncoder().encode(rows) else { return }
+        try? data.write(to: journalURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        defaults.set(seq, forKey: Key.journalSeq)
+    }
+
+    /// Journal rows after `afterSeq`, oldest first, in the upload's event shape.
+    func journal(after afterSeq: Int, _ done: @escaping ([String: Any]) -> Void) {
+        work.async {
+            let rows = (self.readJournalFile() ?? []).filter { $0.seq > afterSeq }
+            let events: [[String: Any]] = rows.map { row in
+                var out: [String: Any] = ["seq": row.seq, "type": row.event.type, "lat": row.event.lat, "lon": row.event.lon]
+                if let at = row.event.at { out["at"] = at }
+                if let arriveAt = row.event.arriveAt { out["arriveAt"] = arriveAt }
+                if let departAt = row.event.departAt { out["departAt"] = departAt }
+                if let acc = row.event.acc { out["acc"] = acc }
+                return out
+            }
+            done(["events": events, "lastSeq": self.defaults.integer(forKey: Key.journalSeq)])
+        }
+    }
+
     private func enqueue(_ events: [QueuedLocationEvent]) {
         guard !events.isEmpty else { return }
         work.async {
+            self.appendJournal(events)
+            // No relay set: the journal is the record, and the upload queue stays empty.
+            guard self.isConfigured else { return }
             guard let existing = self.readQueue() else {
                 self.pending += events
                 if self.pending.count > Self.maxQueued { self.pending.removeFirst(self.pending.count - Self.maxQueued) }
@@ -458,7 +530,13 @@ public class LocationPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "flush", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "readJournal", returnType: CAPPluginReturnPromise),
     ]
+
+    @objc func readJournal(_ call: CAPPluginCall) {
+        let after = (call.options["afterSeq"] as? NSNumber)?.intValue ?? 0
+        LocationRecorder.shared.journal(after: after) { call.resolve($0) }
+    }
 
     @objc func getStatus(_ call: CAPPluginCall) {
         LocationRecorder.shared.status { call.resolve($0) }

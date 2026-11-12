@@ -2,7 +2,10 @@
  * components/Mobile/location/MobileLocationCard.tsx — Turn on iPhone location from the app.
  *
  * Shows only in the iOS build, where the `BrainLocation` plugin exists
- * (`lib/mobile/location-bridge.ts`). Setup takes the capture box's upload URL,
+ * (`lib/mobile/location-bridge.ts`). Turn on works with no setup: the phone
+ * keeps a journal and the app paints Location from it when it opens
+ * (`lib/mobile/auto-track.ts`). Upload setup is the optional relay, for Location
+ * that lands while the app stays closed. Setup takes the capture box's upload URL,
  * the upload-only token and the capture public key. The plugin keeps them on
  * the phone, so this card stores nothing itself. Saving the setup goes straight
  * on to Turn on, which asks for "While Using", then "Always", then starts
@@ -46,9 +49,7 @@ export function MobileLocationCard() {
 
   useEffect(() => {
     if (!isLocationPluginAvailable()) return
-    void refresh().then((s) => {
-      if (!s.configured) setSetupOpen(true)
-    })
+    void refresh()
     const id = window.setInterval(() => void refresh(), POLL_MS)
     return () => window.clearInterval(id)
   }, [refresh])
@@ -160,7 +161,7 @@ export function MobileLocationCard() {
             Turn off
           </Button>
         ) : (
-          <Button type="button" size="sm" disabled={busy || !status.configured} onClick={turnOn}>
+          <Button type="button" size="sm" disabled={busy} onClick={turnOn}>
             Turn on
           </Button>
         )}

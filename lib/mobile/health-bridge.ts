@@ -4,6 +4,7 @@
  * The native side is `ios/App/App/HealthPlugin.swift` (jsName `BrainHealth`).
  * It reads Apple Health. It does not write HealthKit. Each call asks for one
  * page. `importAllHealth` walks from the oldest sample to now.
+ * `syncHealthSince` reads a recent window for the automatic sync.
  *
  * On the web and in Electron the plugin is missing. The import then reports
  * that it runs in the iPhone app, and it does not touch the stores.
@@ -12,10 +13,14 @@ import { Capacitor, registerPlugin } from "@capacitor/core"
 import { rememberWorld } from "@/lib/action-history"
 import { commitHealthPage } from "@/lib/phone-sync/health-apply"
 import {
+  addTally,
   healthPageLabel,
+  healthPages,
   runHealthImport,
   type HealthImportResult,
   type HealthKitClient,
+  type HealthMergeOptions,
+  type HealthTally,
 } from "@/lib/phone-sync/health"
 
 interface BrainHealthPlugin {
@@ -25,6 +30,7 @@ interface BrainHealthPlugin {
     days?: unknown
     sleeps?: unknown
     workouts?: unknown
+    stepMinutes?: unknown
     denied?: boolean
     error?: string
   }>
@@ -56,7 +62,10 @@ const client: HealthKitClient = {
 }
 
 /** Import the full Health history. One page at a time. `onProgress` is a line for the card. */
-export async function importAllHealth(onProgress?: (line: string) => void): Promise<HealthImportResult> {
+export async function importAllHealth(
+  onProgress?: (line: string) => void,
+  merge: HealthMergeOptions = {},
+): Promise<HealthImportResult> {
   if (!isHealthPluginAvailable()) {
     return {
       status: "unavailable",
@@ -73,12 +82,42 @@ export async function importAllHealth(onProgress?: (line: string) => void): Prom
         rememberWorld("health import")
         remembered = true
       }
-      return commitHealthPage(raw)
+      return commitHealthPage(raw, undefined, merge)
     },
     onProgress: (progress) => {
       onProgress?.(`Reading ${healthPageLabel(progress.startMs)} · ${progress.index + 1} of ${progress.total}`)
     },
   })
+}
+
+export interface HealthSyncResult {
+  status: "synced" | "denied" | "unavailable" | "failed"
+  written: HealthTally
+  error?: string
+}
+
+/**
+ * Read Health from `sinceMs` to now and land it. The automatic sync calls
+ * this with a short window each time the app opens. It leaves the undo stack
+ * alone, since nobody pressed a key.
+ */
+export async function syncHealthSince(sinceMs: number, merge: HealthMergeOptions = {}, untilMs = Date.now()): Promise<HealthSyncResult> {
+  let written: HealthTally = { days: 0, nights: 0, workouts: 0 }
+  if (!isHealthPluginAvailable()) return { status: "unavailable", written }
+  try {
+    const access = await client.requestAccess()
+    if (access.denied) return { status: "denied", written }
+    if (access.ok === false) return { status: "failed", written, error: access.error || "Health access could not be requested." }
+    for (const page of healthPages(sinceMs, untilMs)) {
+      const fetched = await client.readPage(page.startMs, page.endMs)
+      if (fetched.denied) return { status: "denied", written }
+      if (fetched.error) return { status: "failed", written, error: fetched.error }
+      written = addTally(written, commitHealthPage(fetched.raw, undefined, merge).written)
+    }
+    return { status: "synced", written }
+  } catch (err) {
+    return { status: "failed", written, error: err instanceof Error ? err.message : String(err) }
+  }
 }
 
 /** Open Brain2's page in iPhone Settings. Health sharing itself lives in the Health app. */

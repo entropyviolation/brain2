@@ -37,7 +37,8 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `location.ts` | iPhone location batches → Location rows. This is the primary location share. A closed visit is a block, sliced at midnight; a half-known visit is an "arrived" / "left" instant; a significant move is a "moved ±N m" instant. Pens follow `gps:`; an unknown move goes on one fixed "On the move" pen (`phone-location-moving`). `applyLocationBatch` is its own door, since `types.ts` has no location record. Built 2026-10-22. |
 | `location-share-order.ts` | _Last mapped: 2026-10-28._ Order is iOS app, then BIM. A Live Location update paints only when the phone share did not happen, Settings has location off, or the last iOS time is more than 12 hours from the sample. A typed `gps:` still paints. |
 | `health.ts` | _Last mapped: 2026-10-28._ Apple Health pages. `healthPages` walks from the oldest sample to now, 30 days at a time, with no recent-day cap. A page becomes daily totals (steps, walking and running distance, flights, active energy, heart rate), sleep mornings, and Exercise workouts. A logged morning is left alone. Re-reading a page writes nothing new. |
-| `health-apply.ts` | Lands one page in the sleep log, the Activity grid, and `health-store.ts`. |
+| `health-apply.ts` | Lands one page in the sleep log, the Activity grid, and `health-store.ts`. Takes `HealthMergeOptions` (walks on or off, shortest walk, place names). |
+| `walks.ts` | _Last mapped: 2026-11-10._ Walks that were never a workout. Reads the page's `stepMinutes` (steps and meters per minute, merged across iPhone and watch). A minute counts at 60 steps; a stop of up to 2 minutes stays inside the walk; a walk is kept at the shortest length set (5 minutes by default) and only after it has been over for 5 minutes. 140 steps a minute or more is a run. `walkEntries` paints free Activity minutes only. `tagHealthPlaces` adds the place to a bare automatic title. Pure. |
 | `health-store.ts` | Daily totals and the ledger of mornings this import wrote. Persist key `health-import`. |
 | `location-drain.ts` | Node only. `startLocationDrain` pulls sealed batches from the Oracle box (`GET /uploads?kind=location`), opens them, applies, flushes, moves the `location` cursor, then acks that kind only. Started by the hub when `BRAIN2_CAPTURE_BOX_URL` is set. |
 
@@ -75,7 +76,7 @@ LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upl
 
 _Last mapped: 2026-10-28_
 
-The iPhone app imports Apple Health. It does not write HealthKit, and the Mac hub does not read it. On `/mobile/`, **Import all history** asks for the types below, finds the oldest sample, and reads forward to now in 30-day pages so a long history is not one query.
+The iPhone app imports Apple Health. It does not write HealthKit, and the Mac hub does not read it. Recent days sync on their own (see **Walks and automatic sync**). On `/mobile/`, **Import all history** asks for the types below, finds the oldest sample, and reads forward to now in 30-day pages so a long history is not one query.
 
 Included: steps, walking and running distance, flights climbed, active energy, heart rate (daily average, min, and max), sleep, and workouts.
 
@@ -86,6 +87,24 @@ Included: steps, walking and running distance, flights climbed, active energy, h
 A page shows its month and how far along the run is. The result says how many days, nights, and workouts were imported, that nothing new was found, that Health returned nothing, or that access is off. Real HealthKit data needs the iPhone app. The browser control only says the import runs there.
 
 Brief: [`docs/phone-sync/04-health.md`](../../docs/phone-sync/04-health.md).
+
+## Walks and automatic sync
+
+_Last mapped: 2026-11-10_
+
+Before this, Health reached Tracking only when **Import all history** was tapped, and a walk showed only if it had been started as a workout. Now the iPhone app syncs on its own and finds walks in the steps.
+
+- **When.** `lib/mobile/auto-track.ts` runs when the app opens, when it comes to the front, and every five minutes while open, once the Mac's data has loaded. Each run reads from two days before the last run through now (a week back the first time). Nothing runs in the background. Health keeps the record, so the next open catches up.
+- **Walks.** A walk goes on Activity → **Walking** (`act-walk`, no tags; whether walking counts as exercise is set in pen settings). A run goes on Exercise, titled Run. Notes hold the steps and the distance.
+- **Tracked time wins.** A walk never covers minutes already on Activity: hand paint, a clock, a workout, or sleep. It keeps the free pieces that are still long enough. A workout is landed first, so it keeps its minutes.
+- **Ids.** `walk:<date>:<start minute>`. A second read writes nothing, and a deleted walk stays deleted.
+- **Place names.** A walk or workout whose title is still the automatic one gets the Location block within 10 minutes of its start and end: `Walk · Home → Park`, `Yoga · Studio`. A coordinate pen and **On the move** are not names. Location can land later; the next sync adds the name then. A renamed block is left alone.
+- **Location without a relay.** `LocationPlugin.swift` keeps a journal of the last 2,000 events. With no upload set, the automatic sync reads the journal and calls `applyLocationBatch` on the phone. With an upload set, the hub lands location and the phone does not, so one new place never gets two pens.
+- **Switches** are on the phone (`brain2-auto-track` in localStorage): Tracking settings → General → iPhone auto tracking, and the Health card.
+
+Not checked on a phone yet: that Health splits a long step sample across the minutes it covers. If it puts the whole sample in one minute, walks recorded only by the iPhone would be missed and the reader needs raw samples.
+
+**Planned:** HealthKit background delivery, so a walk lands without opening the app. It needs the background-delivery entitlement. A visit still in progress is an "arrived" instant until iOS reports the departure.
 
 ## Hub
 

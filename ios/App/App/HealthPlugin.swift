@@ -4,7 +4,9 @@
 //  Read only. The JS side (`lib/mobile/health-bridge.ts`, jsName "BrainHealth")
 //  asks for one time window at a time, from the oldest sample through now.
 //  This file does not cap history to a recent week. A page is statistics for
-//  the days in that window, plus the sleep samples and workouts that overlap it.
+//  the days in that window, plus the sleep samples and workouts that overlap it,
+//  plus steps and distance per minute (`stepMinutes`), which the JS side reads
+//  for walks that were never started as a workout (`lib/phone-sync/walks.ts`).
 //
 //  Types: steps, walking + running distance, flights, active energy, heart rate,
 //  sleep, workouts. Nothing here is written back to HealthKit.
@@ -107,7 +109,7 @@ private enum HealthReader {
         let start = Date(timeIntervalSince1970: startMs / 1000)
         let end = Date(timeIntervalSince1970: endMs / 1000)
         guard end > start else {
-            done(["days": [], "sleeps": [], "workouts": []])
+            done(["days": [], "sleeps": [], "workouts": [], "stepMinutes": []])
             return
         }
         let calendar = Calendar.current
@@ -117,6 +119,8 @@ private enum HealthReader {
         var days: [String: [String: Any]] = [:]
         var sleeps: [[String: Any]] = []
         var workouts: [[String: Any]] = []
+        /// Minute start (epoch ms) → [steps, meters]. Only minutes with steps.
+        var minutes: [Double: [Double]] = [:]
         var denied = false
         var message: String?
 
@@ -190,6 +194,45 @@ private enum HealthReader {
         }
 
         let overlap = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+
+        // One bucket per minute. Statistics merge the iPhone and the watch, so steps are not counted twice.
+        // Longer than a page is not asked for: that would be millions of buckets.
+        if end.timeIntervalSince(start) <= 32 * 86400 {
+            let perMinute: [(HKQuantityTypeIdentifier, HKUnit, Int)] = [
+                (.stepCount, .count(), 0),
+                (.distanceWalkingRunning, .meter(), 1),
+            ]
+            for (id, unit, slot) in perMinute {
+                guard let type = HKObjectType.quantityType(forIdentifier: id) else { continue }
+                group.enter()
+                let query = HKStatisticsCollectionQuery(
+                    quantityType: type,
+                    quantitySamplePredicate: overlap,
+                    options: .cumulativeSum,
+                    anchorDate: from,
+                    intervalComponents: DateComponents(minute: 1)
+                )
+                query.initialResultsHandler = { _, collection, error in
+                    note(error)
+                    var rows: [(Double, Double)] = []
+                    collection?.enumerateStatistics(from: start, to: end) { stats, _ in
+                        guard let qty = stats.sumQuantity() else { return }
+                        let value = qty.doubleValue(for: unit)
+                        if value > 0 { rows.append((healthMillis(stats.startDate), value)) }
+                    }
+                    lock.lock()
+                    for (at, value) in rows {
+                        var row = minutes[at] ?? [0, 0]
+                        row[slot] = value
+                        minutes[at] = row
+                    }
+                    lock.unlock()
+                    group.leave()
+                }
+                store.execute(query)
+            }
+        }
+
         if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
             group.enter()
             let query = HKSampleQuery(sampleType: sleep, predicate: overlap, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
@@ -248,6 +291,10 @@ private enum HealthReader {
                 "days": days.values.sorted { ($0["date"] as? String ?? "") < ($1["date"] as? String ?? "") },
                 "sleeps": sleeps,
                 "workouts": workouts,
+                "stepMinutes": minutes
+                    .filter { $0.value[0] >= 1 }
+                    .sorted { $0.key < $1.key }
+                    .map { [$0.key, $0.value[0].rounded(), $0.value[1].rounded()] },
             ]
             if let message = message, days.isEmpty && sleeps.isEmpty && workouts.isEmpty {
                 out["error"] = message

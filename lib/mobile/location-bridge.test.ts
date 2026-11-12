@@ -31,7 +31,7 @@ describe("locationChip", () => {
     expect(locationChip({ ...on, permission: "denied" }).tone).toBe("warn")
     expect(locationChip({ ...on, permission: "whenInUse" }).label).toBe("Location: set to Always")
     expect(locationChip({ ...on, recording: false }).label).toBe("Location: off")
-    expect(locationChip({ ...on, configured: false }).label).toBe("Location: no upload set")
+    expect(locationChip({ ...on, configured: false }).label).toBe("Location: on, lands when the app opens")
     expect(locationChip({ ...on, queued: 4, lastError: "offline" }).label).toBe("Location: 4 waiting")
     expect(locationChip({ ...on, lastUploadAt: now - 5 * 60000 }, now).label).toBe("Location: sent 5 min ago")
     expect(locationChip(on).label).toBe("Location: on")

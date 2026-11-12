@@ -2,15 +2,16 @@
  * lib/phone-sync/health-apply.ts — Land one Health page in the stores
  *
  * Pure merging lives in `health.ts`. This is the door the phone calls after
- * each page: daily totals, sleep mornings, and Exercise blocks.
+ * each page: daily totals, sleep mornings, Exercise blocks, and walks found in
+ * the steps (`walks.ts`).
  */
 import { syncSleepNight } from "@/lib/sleep-sync"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { mergeHealthPage, type HealthPageWrite } from "./health"
+import { mergeHealthPage, type HealthMergeOptions, type HealthPageWrite } from "./health"
 import { useHealthImportStore } from "./health-store"
 
-export function commitHealthPage(raw: unknown, now = new Date().toISOString()): HealthPageWrite {
+export function commitHealthPage(raw: unknown, now = new Date().toISOString(), opts: HealthMergeOptions = {}): HealthPageWrite {
   const health = useHealthImportStore.getState()
   const tracking = useTimeTrackingStore.getState()
   const sleep = useSleepStore.getState()
@@ -24,6 +25,7 @@ export function commitHealthPage(raw: unknown, now = new Date().toISOString()): 
       scopes: tracking.scopes,
     },
     raw,
+    opts,
   )
   if (merged.state.days !== health.days || merged.state.ledger !== health.nights) {
     useHealthImportStore.setState({ days: merged.state.days, nights: merged.state.ledger })

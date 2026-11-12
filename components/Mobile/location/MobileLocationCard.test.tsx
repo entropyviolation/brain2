@@ -53,7 +53,9 @@ describe("MobileLocationCard", () => {
   it("saving the upload goes straight on to asking for location and starting", async () => {
     render(<MobileLocationCard />)
     await screen.findByText("Location: allow access")
-    expect(screen.getByRole("button", { name: "Turn on" })).toBeDisabled()
+    // No relay is needed to turn on: without one the app lands location itself.
+    expect(screen.getByRole("button", { name: "Turn on" })).toBeEnabled()
+    fireEvent.click(screen.getByRole("button", { name: "Upload setup" }))
 
     fireEvent.change(screen.getByLabelText("Upload URL"), { target: { value: " http://100.1.2.3:8788/upload " } })
     fireEvent.change(screen.getByLabelText("Upload token"), { target: { value: "tok" } })

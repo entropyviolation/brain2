@@ -40,6 +40,7 @@ import {
   type TrackingSpan,
 } from "@/components/Home/Tracking/tracking-view-prefs"
 import { BimCommandsGuide } from "@/components/Home/Tracking/settings/bim-commands-guide"
+import { AutoTrackSettings } from "./auto-track-settings"
 import { PenGalleryDialog } from "@/components/Home/Tracking/pen-gallery-dialog"
 import { LevelCategoriesSettings } from "@/components/Home/Tracking/settings/level-categories-settings"
 import "../tracking-chrome.css"
@@ -227,6 +228,9 @@ export function TrackingSettingsDialog({
                         Open pen gallery
                       </button>
                     </div>
+                  </Group>
+                  <Group title="iPhone auto tracking">
+                    <AutoTrackSettings />
                   </Group>
                   <Group title="Level categories">
                     <p className="trk-set-row-help">

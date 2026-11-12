@@ -17,6 +17,16 @@ import { phoneEntryId, phoneStamp } from "./ids"
 import { mergePhoneEntries } from "./to-entries"
 import type { TimeEntry } from "@/lib/time-entries"
 import type { TrackPen, TrackScope } from "@/lib/time-tracking-store"
+import {
+  DEFAULT_WALK_MIN_MINUTES,
+  RUN_TITLE,
+  WALK_TITLE,
+  parseStepMinutes,
+  tagHealthPlaces,
+  walkBouts,
+  walkEntries,
+  type StepMinute,
+} from "./walks"
 
 /** One page of HealthKit. Thirty days, not a short recent window. */
 export const HEALTH_PAGE_MS = 30 * 24 * 60 * 60 * 1000
@@ -36,6 +46,26 @@ export const HEALTH_READ_TYPES = [
 
 const ACTIVITY_SCOPE_ID = "activity"
 const EXERCISE_PEN_ID = "act-exercise"
+export const WALK_PEN_ID = "act-walk"
+/** Workout names `HealthPlugin.swift` sends. With Walk and Run, the titles this import writes. */
+export const WORKOUT_TITLES = [
+  "Running",
+  "Walking",
+  "Cycling",
+  "Swimming",
+  "Hiking",
+  "Yoga",
+  "Strength",
+  "HIIT",
+  "Dance",
+  "Elliptical",
+  "Rowing",
+  "Stairs",
+  "Cardio",
+  "Mind and body",
+  "Workout",
+] as const
+const AUTO_TITLES: ReadonlySet<string> = new Set([...WORKOUT_TITLES, WALK_TITLE, RUN_TITLE])
 const MINUTES_PER_DAY = 1440
 const SLEEP_GAP_MS = 3 * 60 * 60 * 1000
 const MAX_SLEEP_MINUTES = 20 * 60
@@ -53,6 +83,16 @@ export interface HealthTally {
   days: number
   nights: number
   workouts: number
+  /** Walks found in the steps. Left out when zero. */
+  walks?: number
+}
+
+/** How one page is landed. Omitted: walks on at the default length, place names on. */
+export interface HealthMergeOptions {
+  /** False keeps walks out. `nowMs` is the clock a walk must have ended before. */
+  walks?: false | { minMinutes?: number; nowMs?: number }
+  /** False leaves titles bare. */
+  places?: boolean
 }
 
 export interface HealthDay {
@@ -125,11 +165,14 @@ export interface HealthKitClient {
 const ZERO: HealthTally = { days: 0, nights: 0, workouts: 0 }
 
 export function addTally(a: HealthTally, b: HealthTally): HealthTally {
-  return { days: a.days + b.days, nights: a.nights + b.nights, workouts: a.workouts + b.workouts }
+  const sum: HealthTally = { days: a.days + b.days, nights: a.nights + b.nights, workouts: a.workouts + b.workouts }
+  const walks = (a.walks ?? 0) + (b.walks ?? 0)
+  if (walks) sum.walks = walks
+  return sum
 }
 
 function tallyEmpty(t: HealthTally): boolean {
-  return t.days === 0 && t.nights === 0 && t.workouts === 0
+  return t.days === 0 && t.nights === 0 && t.workouts === 0 && !t.walks
 }
 
 /**
@@ -235,13 +278,18 @@ function parseWorkout(raw: unknown): HealthWorkout | null {
 }
 
 /** The plugin's page. Bad rows are dropped. A non-object is an empty page. */
-export function parseHealthPage(raw: unknown): { days: HealthDay[]; sleeps: HealthSleepSample[]; workouts: HealthWorkout[] } {
-  if (!raw || typeof raw !== "object") return { days: [], sleeps: [], workouts: [] }
+export function parseHealthPage(raw: unknown): {
+  days: HealthDay[]
+  sleeps: HealthSleepSample[]
+  workouts: HealthWorkout[]
+  stepMinutes: StepMinute[]
+} {
+  if (!raw || typeof raw !== "object") return { days: [], sleeps: [], workouts: [], stepMinutes: [] }
   const obj = raw as Record<string, unknown>
   const days = Array.isArray(obj.days) ? obj.days.map(parseDay).filter((d): d is HealthDay => !!d) : []
   const sleeps = Array.isArray(obj.sleeps) ? obj.sleeps.map(parseSleep).filter((s): s is HealthSleepSample => !!s) : []
   const workouts = Array.isArray(obj.workouts) ? obj.workouts.map(parseWorkout).filter((w): w is HealthWorkout => !!w) : []
-  return { days, sleeps, workouts }
+  return { days, sleeps, workouts, stepMinutes: parseStepMinutes(obj.stepMinutes) }
 }
 
 /** Morning key for a cluster whose last moment is `endMs`. An evening end belongs to the next morning. */
@@ -343,13 +391,20 @@ function findActivity(scopes: readonly TrackScope[]): TrackScope | undefined {
   return scopes.find((s) => s.id === ACTIVITY_SCOPE_ID || s.name.trim().toLowerCase() === "activity")
 }
 
-function withExercisePen(scopes: TrackScope[]): { scopes: TrackScope[]; scopeId: string; penId: string } | null {
+const EXERCISE_PEN: TrackPen = { id: EXERCISE_PEN_ID, name: "Exercise", color: "#f59e0b", tags: ["tag-exercise"] }
+/** No tags: whether a walk counts as exercise is the person's call, in pen settings. */
+const WALK_PEN: TrackPen = { id: WALK_PEN_ID, name: "Walking", color: "#0d9488" }
+
+function withActivityPen(scopes: TrackScope[], pen: TrackPen): { scopes: TrackScope[]; scopeId: string; penId: string } | null {
   const scope = findActivity(scopes)
   if (!scope) return null
-  if (scope.pens.some((p) => p.id === EXERCISE_PEN_ID)) return { scopes, scopeId: scope.id, penId: EXERCISE_PEN_ID }
-  const pen: TrackPen = { id: EXERCISE_PEN_ID, name: "Exercise", color: "#f59e0b", tags: ["tag-exercise"] }
+  if (scope.pens.some((p) => p.id === pen.id)) return { scopes, scopeId: scope.id, penId: pen.id }
   const next = scopes.map((s) => (s.id === scope.id ? { ...s, pens: [...s.pens, pen] } : s))
-  return { scopes: next, scopeId: scope.id, penId: EXERCISE_PEN_ID }
+  return { scopes: next, scopeId: scope.id, penId: pen.id }
+}
+
+function withExercisePen(scopes: TrackScope[]): { scopes: TrackScope[]; scopeId: string; penId: string } | null {
+  return withActivityPen(scopes, EXERCISE_PEN)
 }
 
 function sameDay(a: HealthDay | undefined, b: HealthDay): boolean {
@@ -388,7 +443,11 @@ function hasClock(night: SleepNight | undefined): boolean {
  * replaced. A morning this import already wrote can widen when a later page
  * holds the other half of the same night.
  */
-export function mergeHealthPage(state: HealthMergeState, raw: unknown): { state: HealthMergeState; write: HealthPageWrite; nightDates: string[] } {
+export function mergeHealthPage(
+  state: HealthMergeState,
+  raw: unknown,
+  opts: HealthMergeOptions = {},
+): { state: HealthMergeState; write: HealthPageWrite; nightDates: string[] } {
   const page = parseHealthPage(raw)
   const read: HealthTally = { days: page.days.length, nights: 0, workouts: page.workouts.length }
   const written: HealthTally = { days: 0, nights: 0, workouts: 0 }
@@ -455,6 +514,42 @@ export function mergeHealthPage(state: HealthMergeState, raw: unknown): { state:
     }
   }
 
+  // Walks come after workouts, so a logged workout keeps its minutes.
+  if (opts.walks !== false && page.stepMinutes.length) {
+    const minMinutes = opts.walks?.minMinutes ?? DEFAULT_WALK_MIN_MINUTES
+    const bouts = walkBouts(page.stepMinutes, { minMinutes, nowMs: opts.walks?.nowMs ?? Date.now() })
+    const activity = findActivity(scopes)
+    if (bouts.length && activity) {
+      read.walks = bouts.length
+      const drafted = walkEntries(bouts, {
+        scopeId: activity.id,
+        walkPenId: WALK_PEN_ID,
+        runPenId: EXERCISE_PEN_ID,
+        entries,
+        removedEntryIds: state.removedEntryIds,
+        minMinutes,
+      })
+      const merged = mergePhoneEntries(entries, state.removedEntryIds, drafted.entries)
+      if (merged.added) {
+        entries = merged.entries
+        for (const pen of [WALK_PEN, EXERCISE_PEN]) {
+          if (drafted.entries.some((e) => e.penId === pen.id)) scopes = withActivityPen(scopes, pen)?.scopes ?? scopes
+        }
+        written.walks = drafted.bouts
+      }
+    }
+  }
+
+  // A Location block beside a workout or a walk names it. Location can land after the block did.
+  if (opts.places !== false) {
+    let firstMs = Infinity
+    for (const w of page.workouts) firstMs = Math.min(firstMs, w.startMs)
+    for (const m of page.stepMinutes) firstMs = Math.min(firstMs, m.at)
+    if (Number.isFinite(firstMs)) {
+      entries = tagHealthPlaces(entries, scopes, { sinceDate: formatLocalDateKey(new Date(firstMs)), bases: AUTO_TITLES })
+    }
+  }
+
   return {
     state: { ...state, days, ledger, sleep, entries, scopes },
     write: { read, written },
@@ -475,7 +570,9 @@ export function healthResultMessage(result: {
   const { status, written, read, error, capped } = result
   if (status === "unavailable") return "Health import runs in the iPhone app."
   if (status === "denied") return `Health access is off. ${DENIED_HINT}`
-  const imported = `Imported ${written.days} days, ${written.nights} nights, and ${written.workouts} workouts.`
+  const imported = written.walks
+    ? `Imported ${written.days} days, ${written.nights} nights, ${written.workouts} workouts, and ${written.walks} walks.`
+    : `Imported ${written.days} days, ${written.nights} nights, and ${written.workouts} workouts.`
   if (status === "failed") {
     const why = error?.trim() || "Health import stopped."
     return tallyEmpty(written) ? why : `${why} ${imported}`

@@ -7,6 +7,9 @@
  * capture public key, and posts it to the Oracle box. Recording and upload
  * run in Swift, so they keep going when the web view is not loaded.
  *
+ * With no upload set, events stay in a journal on the phone and
+ * `readLocationJournal` hands them to the app, which paints Location itself.
+ *
  * On the web and in Electron every call is a no-op that reports
  * `available: false`. Nothing here reads coordinates.
  *
@@ -58,6 +61,7 @@ interface BrainLocationPlugin {
   stop(): Promise<void>
   flush(): Promise<{ ok: boolean }>
   openSettings(): Promise<void>
+  readJournal(options: { afterSeq: number }): Promise<{ events?: unknown; lastSeq?: number }>
 }
 
 const BrainLocation = registerPlugin<BrainLocationPlugin>("BrainLocation")
@@ -114,6 +118,20 @@ export async function flushLocationQueue(): Promise<boolean> {
   return (await BrainLocation.flush()).ok
 }
 
+/**
+ * Events the phone recorded after `afterSeq`, in the upload's shape, and the
+ * newest sequence number. With no upload set this is how Location lands: the
+ * app reads the journal when it opens (`lib/mobile/auto-track.ts`).
+ */
+export async function readLocationJournal(afterSeq: number): Promise<{ events: unknown[]; lastSeq: number }> {
+  if (!isLocationPluginAvailable()) return { events: [], lastSeq: afterSeq }
+  const row = await BrainLocation.readJournal({ afterSeq })
+  return {
+    events: Array.isArray(row.events) ? row.events : [],
+    lastSeq: typeof row.lastSeq === "number" && Number.isFinite(row.lastSeq) ? row.lastSeq : afterSeq,
+  }
+}
+
 /** Open Brain2's page in iPhone Settings, where Location can be set to Always. */
 export async function openLocationSettings(): Promise<boolean> {
   if (!isLocationPluginAvailable()) return false
@@ -143,7 +161,7 @@ export function locationChip(status: LocationStatus, now = Date.now()): Location
   if (status.permission === "notDetermined" || status.permission === "unknown") return { label: "Location: allow access", tone: "warn" }
   if (!status.recording) return { label: "Location: off", tone: "off" }
   if (status.permission === "whenInUse") return { label: "Location: set to Always", tone: "warn" }
-  if (!status.configured) return { label: "Location: no upload set", tone: "warn" }
+  if (!status.configured) return { label: "Location: on, lands when the app opens", tone: "ok" }
   if (status.lastError && status.queued > 0) return { label: `Location: ${status.queued} waiting`, tone: "warn" }
   if (status.queued > 0) return { label: `Location: ${status.queued} to send`, tone: "ok" }
   if (status.lastUploadAt) {
