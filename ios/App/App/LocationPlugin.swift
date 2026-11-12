@@ -16,8 +16,9 @@
 //  AppDelegate calls LocationRecorder.shared.resumeIfEnabled() at launch and
 //  keepOn() each time the app comes to the front.
 //
-//  On by default: once the upload is set up and location is allowed, recording
-//  starts and stays on until the person taps Turn off. While permission is only
+//  On by default: the first time the app comes forward it asks for location,
+//  and once allowed, recording starts (upload relay or not) and stays on until
+//  the person taps Turn off. While permission is only
 //  "While Using", keepOn() asks for "Always" again (iOS shows that prompt at
 //  most once; after that only Settings can change it, see openSettings).
 //
@@ -200,6 +201,8 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
             return
         }
         if status != .notDetermined { answerPermissionWaiters() }
+        // Allowed from the first-launch prompt or from iPhone Settings: start now.
+        if status == .authorizedAlways || status == .authorizedWhenInUse { keepOn() }
     }
 
     // MARK: Start / stop
@@ -225,14 +228,20 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         DispatchQueue.main.async { self.beginMonitoring() }
     }
 
-    /// Call when the app comes to the front. Starts recording if it is set up,
-    /// allowed and not turned off by the person, and asks for "Always" while
-    /// permission is only "While Using".
+    /// Call when the app comes to the front. Starts recording if it is allowed
+    /// and not turned off by the person. No upload relay is needed: without one
+    /// the journal is the record. Asks for location the first time (iOS shows
+    /// that prompt once), and for "Always" while permission is only "While Using".
     func keepOn() {
         DispatchQueue.main.async {
             let status = self.manager.authorizationStatus
+            let stopped = self.defaults.bool(forKey: Key.userStopped)
+            if status == .notDetermined && !stopped {
+                self.manager.requestWhenInUseAuthorization()
+                return
+            }
             let allowed = status == .authorizedAlways || status == .authorizedWhenInUse
-            if allowed && self.isConfigured && !self.defaults.bool(forKey: Key.userStopped) && !self.defaults.bool(forKey: Key.enabled) {
+            if allowed && !stopped && !self.defaults.bool(forKey: Key.enabled) {
                 self.start()
             }
             if status == .authorizedWhenInUse && self.defaults.bool(forKey: Key.enabled) {

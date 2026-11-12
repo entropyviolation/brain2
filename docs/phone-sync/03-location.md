@@ -8,7 +8,7 @@ _Last mapped: 2026-10-22_
 
 _Last mapped: 2026-10-22_
 
-**Built and on the phone, not yet switched on.** _Last mapped: 2026-10-22._ Recording is on by default once set up and allowed (`keepOn()` in `LocationPlugin.swift`, called when the app comes to the front). The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, then the **Location** card on the phone's Home (`components/Mobile/location/MobileLocationCard.tsx`) takes the upload URL, upload token and capture public key, asks for Always, and starts recording.
+**Built and on the phone, not yet switched on.** _Last mapped: 2026-10-22._ Recording is on by default once allowed, relay or not (`keepOn()` in `LocationPlugin.swift`, called when the app comes to the front). The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, then the **Location** card on the phone's Home (`components/Mobile/location/MobileLocationCard.tsx`) takes the upload URL, upload token and capture public key, asks for Always, and starts recording.
 
 | Piece | File | State |
 | --- | --- | --- |
@@ -57,9 +57,9 @@ To switch it on:
 
 ## Without the box
 
-_Last mapped: 2026-11-10_
+_Last mapped: 2026-11-11_
 
-The Oracle box is no longer required to see Location. Every event also goes in a journal on the phone (the last 2,000). With no upload set, **Turn on** still starts recording, the upload queue stays empty, and the app paints Location from the journal each time it opens (`lib/mobile/auto-track.ts`). The cost: nothing lands while the app stays closed. With an upload set, the hub lands location as before and the phone does not paint.
+The Oracle box is no longer required to see Location. Recording starts by itself: the first time the app comes forward it asks for location, and once allowed `keepOn()` starts recording with or without a relay. Before 2026-11-11 `keepOn()` started only when a relay was set, so with no relay nothing recorded until **Turn on** was tapped under Menu → Hub. Every event also goes in a journal on the phone (the last 2,000). With no upload set, **Turn on** still starts recording, the upload queue stays empty, and the app paints Location from the journal each time it opens (`lib/mobile/auto-track.ts`). The cost: nothing lands while the app stays closed. With an upload set, the hub lands location as before and the phone does not paint.
 
 ## Job
 
