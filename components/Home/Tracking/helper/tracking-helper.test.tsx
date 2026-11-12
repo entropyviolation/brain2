@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { buildContext } from "@/lib/tracking-helper/accept"
 import { assemble } from "@/lib/tracking-helper/assemble"
 import { SHIPPED_TESTS } from "@/lib/tracking-helper/tests"
@@ -51,15 +51,17 @@ describe("Tracking Helper dialog", () => {
     expect(b.openEnd).toBe(false)
   })
 
-  it("Add writes one block, Dismiss drops another, Add all writes the rest", () => {
+  it("Add writes one block, Dismiss drops another, Add all writes the rest", async () => {
     render(<TrackingHelperDialog open onOpenChange={() => {}} />)
     const cards = () => [...document.querySelectorAll<HTMLElement>(".th-card")]
     fireEvent.click(within(cards()[0]!).getByRole("button", { name: "Add" }))
-    expect(useTimeTrackingStore.getState().entries.filter((e) => e.scopeId === "activity")).toHaveLength(1)
+    // The write runs after the next paint, with a loading bar meanwhile.
+    expect(within(cards()[0]!).getByRole("progressbar")).toBeTruthy()
+    await waitFor(() => expect(useTimeTrackingStore.getState().entries.filter((e) => e.scopeId === "activity")).toHaveLength(1))
     fireEvent.click(within(cards()[1]!).getByRole("button", { name: "Dismiss" }))
     expect(useTrackingHelper.getState().lines[1]!.decided).toMatchObject({ [useTrackingHelper.getState().lines[1]!.blocks![0]!.id]: "added" })
     fireEvent.click(screen.getByRole("button", { name: /Add all 5/ }))
-    expect(useTimeTrackingStore.getState().entries.filter((e) => e.scopeId === "activity")).toHaveLength(6)
+    await waitFor(() => expect(useTimeTrackingStore.getState().entries.filter((e) => e.scopeId === "activity")).toHaveLength(6))
   })
 
   it("a question is answered with no blocks and the lab door is there", () => {

@@ -11,7 +11,9 @@ import type { ModelCall } from "@/lib/bim-flow/ollama"
 import { idsOf, pickSkills, renderSkills } from "@/lib/skills/bank"
 import type { SkillBank } from "@/lib/skills/types"
 import { assemble, type Assembled } from "./assemble"
+import { readCounts } from "./count"
 import type { HelperFlow } from "./flow"
+import { readSleep, withSleep } from "./sleep"
 import { tokenize } from "./tokens"
 import type { HelperContext, HelperRoute, TraceStage } from "./types"
 import { wire } from "./wire"
@@ -88,7 +90,12 @@ export async function runHelper(input: RunInput): Promise<HelperRun> {
 
   const t3 = Date.now()
   const placeCtx = flow.place.learnPlaces ? ctx : { ...ctx, history: [] }
-  const out = assemble(wired.wiring, tokens, text, placeCtx, flow.place.openMin)
+  // Sleep is read by code: bed and wake clocks by the words before them, the block built here.
+  const sleep = readSleep(text, tokens)
+  const wiring = { segments: withSleep(wired.wiring.segments, sleep) }
+  const out = assemble(wiring, tokens, text, placeCtx, flow.place.openMin, sleep.readings)
+  // Tags and the daily habit are read from the person's words, in code.
+  out.blocks = out.blocks.map((b) => ({ ...b, ...readCounts(b, ctx.habits ?? []) }))
   trace.push({ stage: "place", ms: Date.now() - t3, note: `${out.blocks.length} blocks`, output: out.blocks })
   return { route, text, marked, trace, ...out, model: wired.model, fallback: wired.fallback, skillsUsed: idsOf(picked) }
 }

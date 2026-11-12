@@ -108,13 +108,13 @@ export function adoptOrphans(segments: WiredSegment[], tokens: Token[]): WiredSe
   })
 }
 
-export function assemble(raw: Wiring, tokens: Token[], text: string, ctx: HelperContext, openMin = DEFAULT_OPEN_MIN): Assembled {
+export function assemble(raw: Wiring, tokens: Token[], text: string, ctx: HelperContext, openMin = DEFAULT_OPEN_MIN, fixed?: Map<string, number>): Assembled {
   const wiring: Wiring = { segments: adoptOrphans(raw.segments.filter((s) => s.activity.trim()), tokens) }
   // A "maybe until" tag that is another entry's start or end is a mix-up, not a possible end.
   const edgeIds = new Set(wiring.segments.flatMap((s) => [s.start, s.end]).filter(Boolean))
   wiring.segments = wiring.segments.map((s) => (edgeIds.has(s.maybeEnd) ? { ...s, maybeEnd: "" } : s))
   const byId = new Map(tokens.map((t) => [t.id, t]))
-  const minutes = placeClocks(tokens)
+  const minutes = placeClocks(tokens, fixed)
   const clockOf = (id: string) => (byId.get(id)?.kind === "clock" ? minutes.get(id) ?? null : null)
   const tokenOf = (id: string) => (byId.get(id)?.kind === "clock" ? byId.get(id) : undefined)
 

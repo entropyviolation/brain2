@@ -232,3 +232,27 @@ describe("untimed entries", () => {
     expect(by("getting ice cream").with).toBe("elijah")
   })
 })
+
+describe("sleep is read by code", () => {
+  // Saturday 7 Nov 2026, 2:17 PM, as in the report.
+  const now = new Date(2026, 10, 7, 14, 17)
+  const run = (text: string) => runHelper({ text, flow: starterFlow(), ctx: ctx({ now }), call: null, ladder: [] })
+  it("files bed at 9 PM yesterday and wake at 1:30 AM, not 9 AM to 9:05", async () => {
+    const { blocks } = await run("woke up at 1:30 am after going to bed yesterday at around 9")
+    expect(blocks).toHaveLength(1)
+    const b = blocks[0]!
+    expect(b.activity).toBe("sleeping")
+    expect(b.day).toBe("2026-11-06")
+    expect([b.startMin, b.endMin]).toEqual([21 * 60, 24 * 60 + 90])
+    expect(b.startCert).toBe("estimated")
+    expect(b.openEnd).toBeUndefined()
+  })
+  it("reads a range: slept from 10 to 6", async () => {
+    const { blocks } = await run("slept from 10 to 6 last night")
+    expect([blocks[0]!.startMin, blocks[0]!.endMin]).toEqual([22 * 60, 24 * 60 + 360])
+  })
+  it("reads bed at 1 as after midnight and wake at 9 as morning", async () => {
+    const { blocks } = await run("today I went to bed at 1 and woke up at 9")
+    expect([blocks[0]!.startMin, blocks[0]!.endMin]).toEqual([60, 540])
+  })
+})

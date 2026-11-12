@@ -1,6 +1,6 @@
 # `lib/tracking-helper/` — the Tracking BIMBY's pipelines
 
-_Last mapped: 2026-11-02_
+_Last mapped: 2026-11-07_
 
 The Tracking BIMBY (formerly the Tracking Helper; file, route and id names stay `tracking-helper`) has two built pipelines, each also a tool of the whole agent: **description to timeblock** (`## The flow` below) and **generate gap questions** (`gaps.ts`). Planned: gap readings (`docs/BIMBY_IDEAS.md` §10.4) and account to other kinds (intake, mood, company).
 
@@ -38,6 +38,7 @@ Activity and Location blocks. Pure code except one model call. Plan and reasonin
      given to the entry that lacks a start or end ("by 6:22 the trash stuff was done");
    - **untimed entries**: an entry with only a length ("walked for 5 hours") takes the neighbour's edge and counts back or forward by the length; one with no time at all ("then I got ice cream") starts where the one before ended. Both edges are estimated. Only an entry with no neighbour to lean on is `unplaced`;
    - **overnight**: an end that reads earlier than its start ("from 9 until about 6am") ends the next day (`endMin` past 1440, written as one entry per day), when the block is 16 hours or less; before, it was dropped and became a 30 minute stand-in;
+   - **sleep** (`sleep.ts`): code reads bed and wake clocks by the word before them (after woke/got up: morning; after bed/slept: 6–11 PM, 12 midnight, 1–5 AM; "slept from 10 to 6" takes the second as the wake; written am/pm wins) and, with both, builds the `sleeping` block itself, replacing the model's sleep entry. The small model once filed "woke at 1:30 am after bed yesterday around 9" as 9 AM to 9:05 AM. With one clock, only its reading is fixed;
    - **stand-ins**: a start with no end gets `openMin` (30) minutes, estimated, flagged `openEnd`.
 5. **WHERE** (`places.ts`). A stated place is matched to a Location pen. A missing place is **learned from the
    person's own history** (the place that overlapped this activity on past days, at least 2 sightings and 60%),
@@ -67,6 +68,8 @@ empty answer. Questions, corrections' routing, clocks, days, certainty, chaining
 | `clock.ts` | `resolveDay`, `placeClocks` (continuity), `clockText`, `parseTyped` |
 | `places.ts` | `matchPen`, `learnedPlace`, `resolvePlace` |
 | `wire.ts` | `wireSchema`, `systemText(flow, skills?)`, `wire` (ladder via `escalate`), `wireByRules`, `cleanWiring` |
+| `count.ts` | `readTagWords`, `readHabit`, `readCounts`: tags and the daily habit a block counts for, read from the words in code |
+| `sleep.ts` | `readSleep`, `withSleep`: bed/wake clocks and the sleep block, in code |
 | `assemble.ts` | `assemble`, `adoptOrphans`: wiring → `ProposedBlock[]` |
 | `gaps.ts` | `runGapQuestions`, `pastDates`, `windowFor`, `GAP_DEFAULTS`: the gap questions pipeline |
 | `flow.ts` | `HelperFlow` (editable prompts, routes, ladder, defaults), `starterFlow`, `loadFlow`/`saveFlow` (`trackinghelper-flow-v1`), `TRACKING_HELPER_REV` |
@@ -88,6 +91,14 @@ failure that carries the corrected value. A dismissed block and a revise line ar
 per-device log `skillexp:tracking-helper`. Skills never touch a write: they only add a block to the WIRE prompt.
 The shipped seeds (`TRACKING_HELPER_SKILLS`) restate `WIRE_SYSTEM`, so only learned skills (`source` not `hand`)
 are put in the prompt, and an empty bank leaves the prompt byte for byte as it was. Review and the evolve key live in the lab's Skills panel.
+
+## Tags and the daily habit
+
+_Last mapped: 2026-11-07_ "…should also be tagged music and count for the daily habit" is read in code (`count.ts`, after PLACE, no model). `tagged X` gives `ProposedBlock.tags`. A habit is proposed only when the words ask ("count as/for …", "daily habit"): the words after "count as" are scored against the daily habits with the Habits BIMBY's lexicon; a tie or no hit proposes nothing. The card shows tags (editable) and "Counts for habit: X" with a remove key. On Add, the tag names become Tracking tags (made if new) and go on the Activity row's `tagIds`; the habit's Tracking tags go there too, so the existing sync (`lib/habit-tracking-sync.ts`) credits the minutes. A habit with no link yet gets one (`trackingLink`) on a tag named for the habit, shown as "(will link)". The model's note "music, daily habit" is dropped from the notes.
+
+## Add does not block the screen
+
+`useTrackingHelper.add` returns at once. It marks the blocks `adding`, waits one paint (the card shows a loading bar), then writes inside `deferSyncs`, so habit and pen syncs run after the next paint instead of inside the write. The write lives in the store, not the card: scrolling, clicking elsewhere or leaving the tab does not stop it, and the result is kept in `msgs`. **Planned:** chunk a very large "Add all" per block if the syncs still stall.
 
 ## Writes
 

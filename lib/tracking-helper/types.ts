@@ -79,6 +79,10 @@ export interface ProposedBlock {
   with?: string
   /** How they felt. */
   mood?: string
+  /** Tracking tags to put on the block (names; made if new). */
+  tags?: string[]
+  /** A daily habit this block counts for. `linked` is false when the habit has no Tracking link yet and Add will make one. */
+  habit?: { id: string; name: string; linked: boolean }
   /** The words this block was read from. */
   from: string
 }
@@ -90,6 +94,8 @@ export interface HelperContext {
   locationPens: { id: string; name: string }[]
   /** Saved Activity and Location entries, so a place can be learned from what usually happens there. */
   history: HistoryRow[]
+  /** Daily habits, so "count for the daily habit" can find one (`count.ts`). */
+  habits?: import("./count").CountHabit[]
 }
 
 export interface HistoryRow {

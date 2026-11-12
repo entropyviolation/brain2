@@ -61,9 +61,14 @@ const reactionBase = (line: HelperLine) => ({ input: line.account ?? line.text, 
 interface HelperState {
   lines: HelperLine[]
   busy: boolean
+  /** Block ids being written right now. Not persisted. The card shows a loading bar for these. */
+  adding: Record<string, true>
+  /** The last Add message per block (shown on its card, kept if the person navigates away and back). Not persisted. */
+  msgs: Record<string, string>
   send: (text: string, opts?: { fromBim?: boolean }) => Promise<void>
   edit: (lineId: string, blockId: string, patch: Partial<ProposedBlock>) => void
-  add: (lineId: string, blockIds?: string[], force?: boolean) => string
+  /** Starts the write and returns at once; the write runs after the next paint, in the store, so leaving the screen does not stop it. Resolves with the message. */
+  add: (lineId: string, blockIds?: string[], force?: boolean) => Promise<string>
   dismiss: (lineId: string, blockId: string) => void
   clear: () => void
 }
@@ -79,6 +84,8 @@ export const useTrackingHelper = create<HelperState>()(
     (set, get) => ({
       lines: [],
       busy: false,
+      adding: {},
+      msgs: {},
 
       send: async (raw, opts) => {
         const text = raw.trim()
@@ -137,17 +144,39 @@ export const useTrackingHelper = create<HelperState>()(
       edit: (lineId, blockId, patch) =>
         set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, blocks: l.blocks?.map((b) => (b.id === blockId ? { ...b, ...patch } : b)) } : l)) })),
 
-      add: (lineId, blockIds, force) => {
+      add: async (lineId, blockIds, force) => {
         const line = get().lines.find((l) => l.id === lineId)
         if (!line) return ""
-        const pick = openBlocks(line).filter((b) => !blockIds || blockIds.includes(b.id))
-        const result = acceptBlocks(pick, { force })
-        const refused = new Set(result.refused.map((r) => r.id))
-        const wrote = pick.filter((b) => !refused.has(b.id))
-        const was = new Map((line.proposed ?? []).map((b) => [b.id, b]))
-        learn(wrote.flatMap((b) => (was.has(b.id) ? [reactionsOfAdd(was.get(b.id)!, b, reactionBase(line))] : [])))
-        set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, ...Object.fromEntries(wrote.map((b) => [b.id, "added" as const])) } } : l)) }))
-        return result.message + (result.refused.length ? ` (${result.refused.map((r) => r.why).join(", ")})` : "")
+        const pick = openBlocks(line).filter((b) => !blockIds || blockIds.includes(b.id)).filter((b) => !get().adding[b.id])
+        if (!pick.length) return ""
+        const mark = (on: boolean) => set((s) => {
+          const adding = { ...s.adding }
+          for (const b of pick) on ? (adding[b.id] = true) : delete adding[b.id]
+          return { adding }
+        })
+        mark(true)
+        // Let the loading bar paint before the write starts. The write and the syncs it wakes then run
+        // without the screen waiting, and a card that is no longer mounted does not stop them.
+        await new Promise<void>((resolve) => (typeof requestAnimationFrame === "function" ? requestAnimationFrame(() => setTimeout(resolve, 0)) : setTimeout(resolve, 0)))
+        let message = ""
+        try {
+          const result = acceptBlocks(pick, { force })
+          const refused = new Set(result.refused.map((r) => r.id))
+          const wrote = pick.filter((b) => !refused.has(b.id))
+          const was = new Map((line.proposed ?? []).map((b) => [b.id, b]))
+          learn(wrote.flatMap((b) => (was.has(b.id) ? [reactionsOfAdd(was.get(b.id)!, b, reactionBase(line))] : [])))
+          message = result.message + (result.refused.length ? ` (${result.refused.map((r) => r.why).join(", ")})` : "")
+          set((s) => ({
+            msgs: { ...s.msgs, ...Object.fromEntries(pick.map((b) => [b.id, message])) },
+            lines: s.lines.map((l) => (l.id === lineId ? { ...l, decided: { ...l.decided, ...Object.fromEntries(wrote.map((b) => [b.id, "added" as const])) } } : l)),
+          }))
+        } catch (err) {
+          message = `FAILED: ${err instanceof Error ? err.message.toUpperCase() : "ERROR"}`
+          set((s) => ({ msgs: { ...s.msgs, ...Object.fromEntries(pick.map((b) => [b.id, message])) } }))
+        } finally {
+          mark(false)
+        }
+        return message
       },
 
       dismiss: (lineId, blockId) => {

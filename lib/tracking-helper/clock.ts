@@ -80,7 +80,7 @@ function firstReading(t: Token, options: number[]): number {
  * clocks after "october 31st" do not have to follow the ones before it. Tokens that are not clocks
  * are skipped. A clock with no reading at or after the one before it takes its latest reading.
  */
-export function placeClocks(tokens: Token[]): Map<string, number> {
+export function placeClocks(tokens: Token[], fixed?: Map<string, number>): Map<string, number> {
   const out = new Map<string, number>()
   let prev: number | null = null
   for (const t of tokens) {
@@ -90,7 +90,8 @@ export function placeClocks(tokens: Token[]): Map<string, number> {
     }
     if (t.kind !== "clock") continue
     const options = candidates(t)
-    const min: number = prev === null ? firstReading(t, options) : options.find((o) => o >= prev!) ?? options[options.length - 1]!
+    // `fixed` readings (sleep.ts: a bed or wake clock) are set by words, not continuity.
+    const min: number = fixed?.get(t.id) ?? (prev === null ? firstReading(t, options) : options.find((o) => o >= prev!) ?? options[options.length - 1]!)
     out.set(t.id, min)
     prev = min
   }

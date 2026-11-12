@@ -109,7 +109,8 @@ function Card({ line, block }: { line: HelperLine; block: ProposedBlock }) {
   const edit = useTrackingHelper((s) => s.edit)
   const add = useTrackingHelper((s) => s.add)
   const dismiss = useTrackingHelper((s) => s.dismiss)
-  const [msg, setMsg] = useState("")
+  const working = useTrackingHelper((s) => !!s.adding[block.id])
+  const msg = useTrackingHelper((s) => s.msgs[block.id] ?? "")
   const decided = line.decided?.[block.id]
   const patch = (p: Partial<ProposedBlock>) => edit(line.id, block.id, p)
   const setTime = (edge: "start" | "end", v: string) => {
@@ -145,16 +146,23 @@ function Card({ line, block }: { line: HelperLine; block: ProposedBlock }) {
       {bad ? <p className="th-warn">End is not after start.</p> : null}
       <Inline label="with" value={block.with ?? ""} onCommit={(v) => patch({ with: v.trim() })} />
       <Inline label="mood" value={block.mood ?? ""} onCommit={(v) => patch({ mood: v.trim() })} />
+      <Inline label="tags" value={(block.tags ?? []).join(", ")} onCommit={(v) => patch({ tags: v.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean) })} />
+      {block.habit ? (
+        <p className="th-habit" title={block.habit.linked ? "Its Tracking tags are put on this block" : "The habit has no Tracking link yet. Add makes one, on a tag with the habit's name"}>
+          Counts for habit: <b>{block.habit.name}</b>{block.habit.linked ? "" : " (will link)"}{" "}
+          <button type="button" className="th-inline" data-no95="" onClick={() => patch({ habit: undefined })}>remove</button>
+        </p>
+      ) : null}
       <Inline label="note" value={block.notes} onCommit={(v) => patch({ notes: v })} />
       <p className="th-from">“{block.from}”</p>
       {!decided ? (
         <footer className="th-actions">
-          <button type="button" className="th-key th-key-go" data-no95="" disabled={bad} onClick={() => setMsg(add(line.id, [block.id]))}>Add</button>
-          <button type="button" className="th-key" data-no95="" onClick={() => dismiss(line.id, block.id)}>Dismiss</button>
-          {msg.includes("OVER TIME") ? (
-            <button type="button" className="th-key th-key-warn" data-no95="" onClick={() => setMsg(add(line.id, [block.id], true))}>Add anyway</button>
+          <button type="button" className="th-key th-key-go" data-no95="" disabled={bad || working} onClick={() => void add(line.id, [block.id])}>{working ? "Adding…" : "Add"}</button>
+          <button type="button" className="th-key" data-no95="" disabled={working} onClick={() => dismiss(line.id, block.id)}>Dismiss</button>
+          {msg.includes("OVER TIME") && !working ? (
+            <button type="button" className="th-key th-key-warn" data-no95="" onClick={() => void add(line.id, [block.id], true)}>Add anyway</button>
           ) : null}
-          {msg ? <span className="th-msg">{msg}</span> : null}
+          {working ? <span className="th-progress" role="progressbar" aria-label="Adding to Tracking" aria-busy="true"><i /></span> : msg ? <span className="th-msg">{msg}</span> : null}
         </footer>
       ) : null}
     </article>
@@ -163,7 +171,7 @@ function Card({ line, block }: { line: HelperLine; block: ProposedBlock }) {
 
 export function ProposalBoard({ line }: { line: HelperLine }) {
   const add = useTrackingHelper((s) => s.add)
-  const [msg, setMsg] = useState("")
+  const workingAll = useTrackingHelper((s) => (line.blocks ?? []).some((b) => s.adding[b.id]))
   const blocks = (line.blocks ?? []).filter((b) => b.startMin !== null && b.endMin !== null)
   if (!blocks.length) return null
   const days = [...new Set(blocks.map((b) => b.day))]
@@ -186,8 +194,8 @@ export function ProposalBoard({ line }: { line: HelperLine }) {
       })}
       {open.length > 1 ? (
         <div className="th-all">
-          <button type="button" className="th-key th-key-go" data-no95="" onClick={() => setMsg(add(line.id))}>Add all {open.length}</button>
-          {msg ? <span className="th-msg">{msg}</span> : null}
+          <button type="button" className="th-key th-key-go" data-no95="" disabled={workingAll} onClick={() => void add(line.id)}>{workingAll ? "Adding…" : `Add all ${open.length}`}</button>
+          {workingAll ? <span className="th-progress" role="progressbar" aria-label="Adding to Tracking" aria-busy="true"><i /></span> : null}
         </div>
       ) : null}
       <p className="th-legend">

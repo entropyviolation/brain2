@@ -60,3 +60,36 @@ describe("awaitingFromBim", () => {
     expect(awaitingFromBim(lines)).toBe(1)
   })
 })
+
+import { useHabitsStore } from "@/lib/habits-store"
+import { TaskType, type WeeklyTask } from "@/lib/types"
+import { readCounts, readTagWords } from "./count"
+
+describe("tags and the daily habit", () => {
+  const SAID = "12:07 - 12:23 was practicing guitar which should count as practicing an instrument which should also be tagged music and count for the daily habit"
+  beforeEach(() => resetAllStores())
+
+  it("reads tags from the words", () => {
+    expect(readTagWords(SAID)).toEqual(["music"])
+    expect(readTagWords("should be tagged music and focus, and count for the habit")).toEqual(["music", "focus"])
+  })
+
+  it("finds the habit, tags the block, and credits the habit", () => {
+    useHabitsStore.getState().addTask({ id: "h-inst", name: "Practice an instrument", type: TaskType.BOOLEAN, frequency: "daily" } as WeeklyTask)
+    const habit = useHabitsStore.getState().tasks.find((t) => t.id === "h-inst")!
+    const base = { id: "g", day: "2026-11-07", activity: "practicing guitar", startMin: 727, endMin: 743, startCert: "exact" as const, endCert: "exact" as const, notes: "music, daily habit", from: SAID }
+    const ctx = buildContext(new Date("2026-11-07T14:27:00"))
+    const b = { ...base, ...readCounts(base, ctx.habits ?? []) }
+    expect(b.tags).toEqual(["music"])
+    expect(b.habit?.id).toBe(habit.id)
+    expect(b.notes).toBe("")
+    expect(acceptBlocks([b]).ok).toBe(true)
+    const e = rows("activity")[0]!
+    const tags = useTimeTrackingStore.getState().tags
+    const names = (e.tagIds ?? []).map((id) => tags.find((t) => t.id === id)?.name.toLowerCase())
+    expect(names).toContain("music")
+    const linked = useHabitsStore.getState().tasks.find((t) => t.id === habit.id)!
+    expect(linked.trackingLink?.tagIds?.length).toBeGreaterThan(0)
+    expect((e.tagIds ?? []).some((id) => linked.trackingLink!.tagIds.includes(id))).toBe(true)
+  })
+})

@@ -12,6 +12,10 @@
 "use client"
 
 import { runAsAction } from "@/lib/action-history"
+import { deferSyncs } from "@/lib/defer-sync"
+import { briefOf } from "@/lib/habit-helper/accept"
+import { activeTrackingLink, supportsTrackingLink } from "@/lib/habit-tracking"
+import { useHabitsStore } from "@/lib/habits-store"
 import { dayPieces } from "@/lib/bim-flow/accept"
 import { ensureActivityPen } from "@/lib/ingest/apply-activity-span"
 import { ensureLocationPen } from "@/lib/ingest/apply-discrete-event"
@@ -20,6 +24,7 @@ import type { TimeEntry } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { clockText } from "./clock"
 import { matchPen } from "./places"
+import type { CountHabit } from "./count"
 import type { HistoryRow, HelperContext, ProposedBlock } from "./types"
 
 export const HELPER_SURFACE = "tracking-helper"
@@ -45,7 +50,47 @@ export function buildContext(now = new Date(), days = 180): HelperContext {
   const history: HistoryRow[] = entries
     .filter((e) => (e.scopeId === ACTIVITY || e.scopeId === LOCATION) && e.kind !== "instant" && e.endMin > e.startMin && e.date >= since)
     .map((e) => ({ date: e.date, scopeId: e.scopeId, pen: name.get(e.penId) ?? "", startMin: e.startMin, endMin: e.endMin }))
-  return { now, activityPens: pensOf(ACTIVITY), locationPens: pensOf(LOCATION), history }
+  return { now, activityPens: pensOf(ACTIVITY), locationPens: pensOf(LOCATION), history, habits: countHabits() }
+}
+
+/** Daily habits as `count.ts` reads them: words from the name, keywords and the tags that fill them. */
+function countHabits(): CountHabit[] {
+  const { tasks } = useHabitsStore.getState()
+  const tags = useTimeTrackingStore.getState().tags ?? []
+  const tagName = (id: string) => tags.find((t) => t.id === id)?.name
+  return tasks
+    .filter((t) => (t.frequency || "daily") === "daily")
+    .map((t) => ({ brief: briefOf(t, {}, tagName), tagIds: activeTrackingLink(t)?.tagIds ?? [], linkable: supportsTrackingLink(t) }))
+}
+
+/**
+ * Tag ids for one block: the tags the person named (made if new) plus the habit's Tracking tags, so the
+ * habit's existing sync credits the minutes. A habit with no link yet gets one, on a tag named for it.
+ * Returns the ids to put on the block's `tagIds`, and a line for the notes.
+ */
+function tagIdsFor(b: ProposedBlock): { ids: string[]; note: string } {
+  const tt = useTimeTrackingStore.getState()
+  const ids = new Set<string>()
+  for (const name of b.tags ?? []) {
+    const id = tt.addTag(name)
+    if (id) ids.add(id)
+  }
+  let note = ""
+  if (b.habit) {
+    const hs = useHabitsStore.getState()
+    const task = hs.tasks.find((t) => t.id === b.habit!.id)
+    if (task && supportsTrackingLink(task)) {
+      let link = activeTrackingLink(task)
+      if (!link) {
+        const tagId = useTimeTrackingStore.getState().addTag(task.name)
+        if (tagId) hs.updateTask({ ...task, trackingLink: { ...(task.trackingLink ?? { unit: "minutes", mode: "add" as const }), tagIds: [...new Set([...(task.trackingLink?.tagIds ?? []), tagId])], enabled: true } })
+        link = tagId ? { tagIds: [tagId] } : undefined
+      }
+      for (const id of link?.tagIds ?? []) ids.add(id)
+      note = `Counts for the habit “${task.name}”.`
+    }
+  }
+  return { ids: [...ids], note }
 }
 
 const pieces = (b: ProposedBlock) => (b.startMin === null || b.endMin === null ? [] : dayPieces(isoOf(b.day, b.startMin), isoOf(b.day, b.endMin)))
@@ -56,13 +101,14 @@ export function conflictsOf(b: ProposedBlock, entries: TimeEntry[]): TimeEntry[]
   return entries.filter((e) => e.scopeId === ACTIVITY && e.kind !== "instant" && e.generatedBy?.kind !== "llm" && ps.some((p) => e.date === p.date && e.startMin < p.endMin && e.endMin > p.startMin))
 }
 
-function notesOf(b: ProposedBlock): string {
+function notesOf(b: ProposedBlock, extra = ""): string {
   const edge = (min: number, cert: string, chained?: boolean, open?: boolean) => `${clockText(min)}${cert === "estimated" ? " (est)" : ""}${chained ? " (from the next/previous block)" : ""}${open ? " (not given)" : ""}`
   return [
     "Created from Tracking helper.",
     b.with ? `With ${b.with}.` : "",
     b.mood ? `Felt ${b.mood}.` : "",
     b.notes,
+    extra,
     `Said: “${b.from}”`,
     `Start ${edge(b.startMin!, b.startCert, b.startChained, b.openStart)}; end ${edge(b.endMin!, b.endCert, b.endChained, b.openEnd)}.`,
     b.place?.source === "assumed" ? `Place ${b.place.name} assumed, not said.` : b.place?.source === "learned" ? `Place ${b.place.name} learned from past days.` : "",
@@ -91,7 +137,8 @@ export function acceptBlocks(blocks: ProposedBlock[], opts: { force?: boolean } 
   if (!todo.length) return { ok: false, wrote: 0, refused, message: refused[0]?.why ?? "NOTHING TO ADD" }
   let wrote = 0
   try {
-    runAsAction(`Tracking Helper: add ${todo.length} block${todo.length === 1 ? "" : "s"}`, () => {
+    // Habit and pen syncs run after the next paint, not inside the write, so the screen never waits on them.
+    deferSyncs(() => runAsAction(`Tracking Helper: add ${todo.length} block${todo.length === 1 ? "" : "s"}`, () => {
       withItemWriteSource({ surface: HELPER_SURFACE }, () => {
         const store = useTimeTrackingStore.getState()
         const scopes = store.scopes
@@ -99,17 +146,18 @@ export function acceptBlocks(blocks: ProposedBlock[], opts: { force?: boolean } 
         for (const b of todo) {
           const actPens = scopes.find((s) => s.id === ACTIVITY)?.pens ?? []
           const penId = matchPen(b.activity, actPens)?.id ?? ensureActivityPen(b.activity)
+          const counts = tagIdsFor(b)
           const placePen = b.place ? matchPen(b.place.name, scopes.find((s) => s.id === LOCATION)?.pens ?? [])?.id || ensureLocationPen(b.place.name) : ""
           for (const p of pieces(b)) {
             const base = { date: p.date, startMin: p.startMin, endMin: p.endMin, ...(b.startCert === "estimated" ? { startCertainty: "estimated" as const } : {}), ...(b.endCert === "estimated" ? { endCertainty: "estimated" as const } : {}) }
-            add.push({ ...base, scopeId: ACTIVITY, penId, notes: notesOf(b), generatedBy: { kind: "llm", id: `${HELPER_SURFACE}:${b.id}` } })
+            add.push({ ...base, scopeId: ACTIVITY, penId, ...(counts.ids.length ? { tagIds: counts.ids } : {}), notes: notesOf(b, counts.note), generatedBy: { kind: "llm", id: `${HELPER_SURFACE}:${b.id}` } })
             if (placePen) add.push({ ...base, scopeId: LOCATION, penId: placePen, notes: "Created from Tracking helper.", generatedBy: { kind: "llm", id: `${HELPER_SURFACE}:${b.id}:place` } })
           }
           wrote += 1
         }
         useTimeTrackingStore.getState().layerEntries(add)
       })
-    })
+    }))
   } catch (err) {
     return { ok: false, wrote: 0, refused, message: `FAILED: ${err instanceof Error ? err.message.toUpperCase() : "ERROR"}` }
   }
