@@ -39,6 +39,18 @@ export const INFO_EXAMPLES: Record<string, string[]> = {
   "plan-bimby": ["Describe your day; it makes a plan you can edit before it runs"],
   "link-bimby": ["Save a link in the Inbox; it guesses what it is and where it goes"],
   "inbox-bimby": ["Open an Inbox item and ask for help; it suggests a list or a match"],
+  "social-bimby": [
+    "“serious potential new friend Masha, dmd her yesterday (loureedstrash) … I need to hang out with her as soon as I get back”",
+    "“Kai's birthday is March 3”",
+    "“send this to social bimby: met Jo at the show, want to get coffee next week”",
+  ],
+  "finance-bimby": [
+    "“spent 90 on the amex getting hairdye and other stuff on instacart” (then send the receipt as a photo)",
+    "“foxtide owes me 600 for the cd designs”, and later “foxtide paid me”",
+    "“i regret the instacart order, didn't need half of it”",
+    "“thinking about ordering from instacart” (it says how the last ones sat)",
+    "“who owes me?”, “how much did i spend this week?”, “what do i regret?”",
+  ],
   "critic-bimby": ["Finish a plan; it gives a second look against your own words"],
 }
 

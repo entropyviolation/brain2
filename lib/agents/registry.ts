@@ -6,9 +6,12 @@
  * The lab passes the person's saved copies to the adapters when it wants to show those instead.
  */
 
+import { bimChatBlueprint } from "./adapters/bim-chat"
 import { criticBimbyBlueprint } from "./adapters/critic-bimby"
+import { financeBimbyBlueprint } from "./adapters/finance-bimby"
 import { ideaSwarmBlueprint } from "./adapters/idea-swarm"
 import { inboxBimbyBlueprint } from "./adapters/inbox-bimby"
+import { socialBimbyBlueprint } from "./adapters/social-bimby"
 import { linkBimbyBlueprint } from "./adapters/link-bimby"
 import { planBimbyBlueprint } from "./adapters/plan-bimby"
 import { bimBlueprints } from "./adapters/bim-flow"
@@ -24,7 +27,7 @@ const added = new Map<string, Blueprint>()
 
 /** The agents that ship with Brain2. */
 export function builtinBlueprints(): Blueprint[] {
-  return [helperBlueprint(), listsHelperBlueprint(), overcomeBlueprint(), habitsBimbyBlueprint(), planBimbyBlueprint(), criticBimbyBlueprint(), linkBimbyBlueprint(), inboxBimbyBlueprint(), ideaSwarmBlueprint(), swarmVoteBlueprint(), skillsEvolveBlueprint(), ...bimBlueprints()]
+  return [helperBlueprint(), listsHelperBlueprint(), overcomeBlueprint(), habitsBimbyBlueprint(), planBimbyBlueprint(), criticBimbyBlueprint(), linkBimbyBlueprint(), inboxBimbyBlueprint(), socialBimbyBlueprint(), financeBimbyBlueprint(), ideaSwarmBlueprint(), swarmVoteBlueprint(), skillsEvolveBlueprint(), bimChatBlueprint(), ...bimBlueprints()]
 }
 
 /** Add an agent. Throws on a Blueprint that does not validate or reuses an id. */
