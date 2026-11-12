@@ -43,7 +43,7 @@ export function parseWordRule(raw: string): WordRule | null {
   const bare = /(?:document|doc|note|file)\s+(?:called|named|titled)\s+(.+?)(?:\s+(?:that|which|and|so)\b|,|$)/i.exec(text)
   const docTitle = (quoted?.[1] ?? bare?.[1] ?? "").trim()
   if (!docTitle) return null
-  const counts = /\bcount(?:s|ing)?\s+(?:for|as|towards?)\s+(\d+(?:\.\d+)?|an?|one|two|three|four|five|ten)\s*([a-z]+)?/i.exec(text)
+  const counts = /\bcount(?:s|ing)?\s+(?:(?:for|as|towards?)\s+)?(\d+(?:\.\d+)?|an?|one|two|three|four|five|ten)\s*([a-z]+)?/i.exec(text)
   const amount = counts ? toNum(counts[1]!) : undefined
   if (!amount || amount <= 0) return null
   const unit = counts?.[2] && !/^(for|of|in|on|toward|towards|written|read|that|the|this|my)$/i.test(counts[2]) ? counts[2].toLowerCase() : undefined

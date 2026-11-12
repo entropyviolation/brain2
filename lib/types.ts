@@ -1472,7 +1472,7 @@ export type HabitDetailPanel =
   /** What made up the number, grouped by the item it was about (a Book). */
   | { kind: "breakdown"; measure: string; subjectType?: string }
   /** A small form: how much, and which item of `subjectType` it was about. */
-  | { kind: "entry"; measure: string; subjectType?: string }
+  | { kind: "entry"; measure: string; subjectType?: string; attach?: boolean; verb?: string; label?: string }
 
 export interface HabitDetailView {
   panels: HabitDetailPanel[]

@@ -1967,3 +1967,48 @@ html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-knobs,
   max-height: none;
   overflow: visible;
 }
+
+/* Detail view: where an amount came from (by hand / auto from a document / from a module), and its scans. */
+.habit95-origins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 6px;
+}
+.habit95-origin {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  color: var(--chrome-ink-soft);
+}
+.habit95-origin.is-doc {
+  color: #2f6f8f;
+}
+.habit95-origin.is-hand {
+  color: #4a4f57;
+}
+.habit95-origin.is-module {
+  color: #5b6f86;
+}
+.habit95-origin.is-none {
+  border-style: dashed;
+  opacity: 0.7;
+}
+.habit95-scans {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 6px;
+}
+.habit95-scan {
+  padding: 0 6px;
+  border: 1px solid var(--chrome-ink-soft);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}

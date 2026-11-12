@@ -46,6 +46,8 @@ A module can log into a daily habit, and the habit's cell then explains itself o
 
 Speed Read is the first module: each finished page reports one page with its time (`lib/speed-read-output.ts`). The Book type's own "pages read" rules still run for a hand edit of a Book; the module door holds them (`withoutImpliedActions`) so a page is not counted twice.
 
+**Origins and scans (2026-11-07).** Every session in a log row carries `origin`: `hand` (the entry form), `doc` (words counted from a Docs document, `lib/habit-word-feed-apply.ts`), or `module`. A doc session also keeps its word count; a hand session may keep `files` (scans or photos, stored through `lib/attachments.ts`). The breakdown panel shows the day's split by origin as chips, each source with its sessions and scans, and says "no scans or photos" when a hand entry has none. `originSplit` in `lib/habit-contributions.ts` answers the data question over any span: hand vs docs vs modules, with scan and word counts. An `entry` panel with `attach` takes files; with no `subjectType` it logs under "By hand".
+
 **Fixed 2026-11-07: "Read at least 5 pages per day (+1/week)" drew no cell.** It is a climb habit whose `incrementalData` was `null`, and the cell returned nothing for a climb with no settings (so no target either). `incrementalDataForTask` now reads start, step, and cadence from the name when the settings are empty (`inferIncrementalFromName`: 5, +1, weekly), and the cell falls back to a plain number box if even that fails. Nothing is written back; the edit form still saves real settings. **Planned:** a one-time repair that saves the inferred settings.
 
 **Planned:** a feed row editor in the Add / Edit Habit window; a model that reshapes a module's free-text output into `ModuleOutput`; the Book rule's manual edits writing the same log rows.
@@ -395,6 +397,8 @@ Climb and Text habits are out of scope (`supportsTrackingLink`); their targets a
 _Last mapped: 2026-10-27_
 
 A phone tap does not edit the habit form. Settings → **NFC tags** binds a tag to one daily habit. `nfc:vitamin-d` (the signed shortcuts in [`docs/shortcuts/nfc-tags.md`](../../../docs/shortcuts/nfc-tags.md)) writes a Tracking instant and, when that tag is bound, fills today’s cell: done, or plus the scan’s quantity on a count (`nfc:adderall 2` adds 2). Weekly and monthly habits are left alone. The line is not a BIM keyword, so a keyword source does not count it again. Reading the sticker from the phone app, without Telegram, is planned in that shortcut doc.
+
+**Pharmacy link.** A daily habit can draw from a bottle in Inventory → Pharmacy (`lib/pharmacy-sync.ts`). Marking it done takes the bottle's "units per done" (a count habit takes that for each counted unit), and unmarking gives them back. The link lives on the bottle, not on the habit, so the habit form is unchanged. Weekly and monthly habits cannot link, and days before the link never draw.
 
 ## Tags
 

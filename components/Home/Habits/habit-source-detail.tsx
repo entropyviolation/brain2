@@ -220,7 +220,7 @@ export function HabitSourceDetail({
             panel.kind === "breakdown" ? (
               <BreakdownPanel key={`b-${panel.measure}`} task={task} measure={panel.measure} date={date} completion={completion} />
             ) : panel.kind === "entry" ? (
-              <EntryPanel key={`e-${panel.measure}`} task={task} measure={panel.measure} subjectType={panel.subjectType} date={date} />
+              <EntryPanel key={`e-${panel.measure}`} task={task} measure={panel.measure} subjectType={panel.subjectType} date={date} attach={panel.attach} verb={panel.verb} label={panel.label} />
             ) : null,
           )}
           <button type="button" className="habit95-btn" aria-label="Close source detail" onClick={() => onOpenChange(false)}>

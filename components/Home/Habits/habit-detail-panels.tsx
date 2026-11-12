@@ -10,7 +10,9 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { breakdownForCell, describeGroup } from "@/lib/habit-contributions"
+import { breakdownForCell, describeGroup, ENTRY_MODULE_ID, ORIGIN_LABEL, originOf, totalsOf } from "@/lib/habit-contributions"
+import { getAttachmentObjectUrl, putAttachment, attachmentUri } from "@/lib/attachments"
+import type { OutputFile } from "@/lib/module-output"
 import { connectFeed, habitTakesOutput } from "@/lib/habit-feeds"
 import { applyModuleOutput } from "@/lib/module-output-apply"
 import { describeAmount, localDayKey, measureDef } from "@/lib/module-output"
@@ -19,7 +21,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
 import type { TaskCompletion, WeeklyTask } from "@/lib/types"
 
-export const ENTRY_MODULE_ID = "habit-entry"
+export { ENTRY_MODULE_ID }
 
 function clock(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
@@ -46,8 +48,9 @@ export function BreakdownPanel({
       <p className="habit95-hint">
         {describeAmount(measure, cell)} on {day}
       </p>
+      {view.groups.length > 0 ? <OriginChips sessions={view.groups.flatMap((g) => g.sessions)} typed={view.rest > 0 ? view.rest : 0} measure={measure} /> : null}
       {view.groups.length === 0 ? (
-        <p className="habit95-hint">Nothing logged by a module yet today. Pages read in Speed Read show up here by book.</p>
+        <p className="habit95-hint">Nothing logged by a module or document yet today. Pages from Speed Read or an auto-counted document show up here by source.</p>
       ) : (
         <ul className="habit95-stat-readout">
           {view.groups.map((group) => (
@@ -57,7 +60,11 @@ export function BreakdownPanel({
                 <small className="habit95-breakdown-sessions">
                   {describeGroup(group, measure)}
                   {" · "}
-                  {group.sessions.map((s) => `${s.amount} at ${clock(s.at)}`).join(", ")}
+                  {group.sessions.map((s) => `${s.amount} at ${clock(s.at)}${s.words ? ` (${s.words} words)` : ""}`).join(", ")}
+                </small>
+                <small className="habit95-breakdown-sessions">
+                  <span className={`habit95-origin is-${originOf(group.sessions[0]!)}`}>{ORIGIN_LABEL[originOf(group.sessions[0]!)]}</span>
+                  <Scans files={group.sessions.flatMap((s) => s.files ?? [])} />
                 </small>
               </span>
               <span>{group.amount}</span>
@@ -77,11 +84,50 @@ export function BreakdownPanel({
   )
 }
 
-export function EntryPanel({ task, measure, subjectType, date }: { task: WeeklyTask; measure: string; subjectType?: string; date: Date }) {
+/** Hand / document / module totals for the day, so the split reads at a glance. `typed` is the part of the cell no log explains. */
+function OriginChips({ sessions, typed, measure }: { sessions: Parameters<typeof totalsOf>[0]; typed: number; measure: string }) {
+  const t = totalsOf(sessions)
+  const rows = ([ ["doc", t.doc], ["hand", t.hand + typed], ["module", t.module] ] as const).filter(([, n]) => n > 0)
+  if (rows.length < 1) return null
+  return (
+    <p className="habit95-origins">
+      {rows.map(([k, n]) => (
+        <span key={k} className={`habit95-origin is-${k}`}>
+          {ORIGIN_LABEL[k]} · {describeAmount(measure, n)}
+        </span>
+      ))}
+    </p>
+  )
+}
+
+/** Scans and photos that back a log row. A pdf or image opens in a new tab. */
+function Scans({ files }: { files: OutputFile[] }) {
+  if (!files.length) return <span className="habit95-origin is-none">no scans or photos</span>
+  return (
+    <span className="habit95-scans">
+      {files.map((f) => (
+        <button
+          key={f.id}
+          type="button"
+          className="habit95-scan"
+          onClick={async () => {
+            const url = await getAttachmentObjectUrl(f.uri).catch(() => "")
+            if (url) window.open(url, "_blank", "noopener,noreferrer")
+          }}
+        >
+          {f.mime.startsWith("image/") ? "Photo" : "Scan"}: {f.name}
+        </button>
+      ))}
+    </span>
+  )
+}
+
+export function EntryPanel({ task, measure, subjectType, date, attach, verb, label }: { task: WeeklyTask; measure: string; subjectType?: string; date: Date; attach?: boolean; verb?: string; label?: string }) {
   const items = useTaskStore((s) => s.tasks)
   const [amount, setAmount] = useState("")
   const [subject, setSubject] = useState("")
   const [note, setNote] = useState("")
+  const [picked, setPicked] = useState<File[]>([])
   const options = useMemo(
     () => (subjectType ? items.filter((t) => t.type === subjectType).map((t) => itemTitle(t as unknown as TitledRecord)) : []),
     [items, subjectType],
@@ -89,8 +135,14 @@ export function EntryPanel({ task, measure, subjectType, date }: { task: WeeklyT
   const def = measureDef(measure)
   const n = Number(amount)
   const ready = Number.isFinite(n) && n > 0 && (!subjectType || subject.trim().length > 0)
-  const submit = () => {
+  const submit = async () => {
     if (!ready) return
+    const files: OutputFile[] = []
+    for (const f of picked) {
+      const id = `habit-scan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+      await putAttachment(id, f, { name: f.name, mime: f.type })
+      files.push({ id, name: f.name, mime: f.type || "application/octet-stream", uri: attachmentUri(id) })
+    }
     // The form is a module too: connect it once, so the same routing rule applies to it.
     const fresh = useHabitsStore.getState().tasks.find((t) => t.id === task.id) ?? task
     if (!habitTakesOutput(fresh, { moduleId: ENTRY_MODULE_ID, measure })) {
@@ -106,7 +158,10 @@ export function EntryPanel({ task, measure, subjectType, date }: { task: WeeklyT
         measure,
         amount: n,
         at: at.toISOString(),
-        ...(subjectType ? { subject: { type: subjectType, title: subject.trim() } } : {}),
+        origin: "hand",
+        ...(verb ? { verb } : {}),
+        ...(files.length ? { files } : {}),
+        subject: subjectType ? { type: subjectType, title: subject.trim() } : { type: "by-hand", title: label ?? "By hand", key: "by-hand" },
       },
       { undo: "step" },
     )
@@ -114,6 +169,7 @@ export function EntryPanel({ task, measure, subjectType, date }: { task: WeeklyT
     if (done.ok) {
       setAmount("")
       setSubject("")
+      setPicked([])
     }
   }
   return (
@@ -121,7 +177,7 @@ export function EntryPanel({ task, measure, subjectType, date }: { task: WeeklyT
       className="habit95-entry"
       onSubmit={(e) => {
         e.preventDefault()
-        submit()
+        void submit()
       }}
       aria-label={`Log ${def?.unit[1] ?? measure}`}
     >
@@ -138,6 +194,12 @@ export function EntryPanel({ task, measure, subjectType, date }: { task: WeeklyT
               <option key={o} value={o} />
             ))}
           </datalist>
+        </label>
+      ) : null}
+      {attach ? (
+        <label className="habit95-entry-field">
+          <span>scans or photos</span>
+          <input type="file" multiple accept="image/*,application/pdf" onChange={(e) => setPicked(Array.from(e.target.files ?? []))} aria-label="Attach scans or photos" />
         </label>
       ) : null}
       <button type="submit" className="habit95-btn" disabled={!ready}>

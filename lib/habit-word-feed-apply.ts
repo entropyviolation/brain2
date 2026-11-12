@@ -3,7 +3,8 @@
  *
  * `noteDocWords` is called after a Docs body is saved (`components/Docs/doc-actions.ts`). It steps the
  * ledger (`lib/habit-word-feed.ts`) for that document and adds only the newly earned units to each
- * daily habit with a matching `wordFeeds` row. A habit with no row for the document costs one filter.
+ * daily habit with a matching `wordFeeds` row, through `applyModuleOutput` (origin `doc`), so the day's log
+ * row, the cell, and the double-click breakdown all see it. A habit with no row for the document costs one filter.
  * `seedDocWords` records the starting count when a rule is accepted, so words already there do not count.
  */
 "use client"
@@ -11,6 +12,9 @@
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { useHabitsStore } from "@/lib/habits-store"
 import { persistKey } from "@/lib/storage-keys"
+import { DOC_WORDS_MODULE_ID } from "@/lib/habit-contributions"
+import { connectFeed, habitMeasure, habitTakesOutput } from "@/lib/habit-feeds"
+import { applyModuleOutput } from "@/lib/module-output-apply"
 import { htmlWordCount } from "@/lib/doc-html"
 import { activeWordFeeds, feedMatchesDoc, owed, stepLedger, type WordLedger } from "@/lib/habit-word-feed"
 
@@ -53,8 +57,27 @@ export function noteDocWords(doc: { id: string; title: string }, html: string, n
     for (const feed of activeWordFeeds(task).filter((f) => feedMatchesDoc(f, doc))) {
       const { add, total } = owed(entry, task.id, feed)
       if (add <= 0) continue
-      const have = useHabitsStore.getState().weeklyData[day]?.[task.id]?.value ?? 0
-      useHabitsStore.getState().updateCompletion(task.id, now, { value: have + add })
+      const measure = habitMeasure(task) ?? "pages"
+      const fresh = useHabitsStore.getState().tasks.find((t) => t.id === task.id) ?? task
+      // The feed row makes the habit take this output, and opens its breakdown on a double-click.
+      if (!habitTakesOutput(fresh, { moduleId: DOC_WORDS_MODULE_ID, measure })) {
+        useHabitsStore.getState().updateTask({ ...fresh, moduleFeeds: connectFeed(fresh, DOC_WORDS_MODULE_ID, measure) })
+      }
+      const done = applyModuleOutput(
+        {
+          id: `docwords-${doc.id}-${task.id}-${day}-${total}`,
+          moduleId: DOC_WORDS_MODULE_ID,
+          measure,
+          amount: add,
+          at: now.toISOString(),
+          origin: "doc",
+          verb: "wrote",
+          words: Math.round((add / feed.amount) * feed.wordsPer),
+          subject: { type: "document-words", title: doc.title, key: doc.id },
+        },
+        { habitIds: [task.id] },
+      )
+      if (!done.ok) continue
       entry.credited[task.id] = total
       wrote.push({ habitId: task.id, add })
     }

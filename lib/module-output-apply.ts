@@ -110,16 +110,16 @@ export type ApplyResult =
     }
   | { ok: false; errors: string[] }
 
-export function applyModuleOutput(raw: RawModuleOutput, opts: { undo?: "none" | "step" } = {}): ApplyResult {
+export function applyModuleOutput(raw: RawModuleOutput, opts: { undo?: "none" | "step"; habitIds?: string[] } = {}): ApplyResult {
   const checked = normalizeModuleOutput(raw)
   if (!checked.ok) return { ok: false, errors: checked.errors }
   const run = opts.undo === "step" ? (fn: () => ApplyResult) => runAsAction("Log reading", fn) : (fn: () => ApplyResult) => withoutUndo(fn)
   return run(() =>
-    withItemWriteSource({ surface: "module", name: checked.output.moduleId }, () => withoutImpliedActions(() => write(checked.output))),
+    withItemWriteSource({ surface: "module", name: checked.output.moduleId }, () => withoutImpliedActions(() => write(checked.output, opts.habitIds))),
   )
 }
 
-function write(output: ModuleOutput): ApplyResult {
+function write(output: ModuleOutput, only?: string[]): ApplyResult {
   const at = new Date(output.at)
   let subject = output.subject
   let resolved: SubjectResolution | undefined
@@ -128,7 +128,7 @@ function write(output: ModuleOutput): ApplyResult {
     if (resolved) subject = { ...subject, itemId: resolved.item.id }
   }
   const withSubject: ModuleOutput = { ...output, ...(subject ? { subject } : {}) }
-  const habits = habitsForOutput(useHabitsStore.getState().tasks, withSubject)
+  const habits = habitsForOutput(useHabitsStore.getState().tasks, withSubject).filter((h) => !only || only.includes(h.id))
   const day = localDayKey(withSubject.at)
   const rowId = contributionItemId(withSubject.measure, day, subject)
   const existing = taskRepository.getById(rowId)
@@ -146,7 +146,7 @@ function write(output: ModuleOutput): ApplyResult {
     } as ItemRecord)
   } else {
     const source = (resolved?.item ?? {}) as unknown as Task
-    const row = buildLoggedActionItem(source, contributionTitle(withSubject.measure, subject), false, at)
+    const row = buildLoggedActionItem(source, contributionTitle(withSubject.measure, subject, withSubject.verb), false, at)
     taskRepository.add({
       ...row,
       id: rowId,

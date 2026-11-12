@@ -17,6 +17,9 @@ import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { activityForHabit } from "@/lib/habit-logged-span"
 import { TaskType, type TaskCompletion, type WeeklyData, type WeeklyTask } from "@/lib/types"
 import { getPersistedDoc } from "@/lib/doc-persist"
+import { DOC_WORDS_MODULE_ID } from "@/lib/habit-contributions"
+import { connectFeed, habitMeasure } from "@/lib/habit-feeds"
+import { withPanel } from "@/lib/habit-detail-view"
 import { seedDocWords } from "@/lib/habit-word-feed-apply"
 import { itemTitle } from "@/lib/item-utils"
 import { NOTE_TYPE_ID } from "@/lib/note-types"
@@ -106,7 +109,14 @@ export function applyProposals(list: Proposal[]): ApplyResult {
       const task = store.tasks.find((t) => t.id === p.habitId)
       if (!task) continue
       const rest = (task.wordFeeds ?? []).filter((f) => f.docTitle.trim().toLowerCase() !== p.rule!.docTitle.trim().toLowerCase())
-      store.updateTask({ ...task, wordFeeds: [...rest, { ...p.rule }] })
+      const measure = habitMeasure(task) ?? "pages"
+      store.updateTask({
+        ...task,
+        wordFeeds: [...rest, { ...p.rule }],
+        moduleFeeds: connectFeed(task, DOC_WORDS_MODULE_ID, measure),
+        // A writing habit's double-click view: the number by source (documents vs by hand) and a form for hand-written pages with scans.
+        detailView: writingView(task, measure),
+      })
       void seedFromDoc(p.rule.docTitle)
       wrote.push(p.id)
       continue
@@ -165,4 +175,11 @@ async function seedFromDoc(title: string): Promise<void> {
   if (!doc) return
   const rec = await getPersistedDoc(doc.id).catch(() => null)
   seedDocWords(doc.id, rec?.body ?? doc.body ?? "")
+}
+
+/** A writing habit's double-click view: sources, the number by origin (documents vs by hand), and the by-hand form with scans. */
+function writingView(task: WeeklyTask, measure: string) {
+  const base = { ...task, detailView: task.detailView ?? { panels: [{ kind: "sources" as const }] } }
+  const withBreakdown = withPanel(base, { kind: "breakdown", measure })
+  return withPanel({ ...base, detailView: withBreakdown }, { kind: "entry", measure, attach: true, verb: "wrote", label: "By hand" })
 }

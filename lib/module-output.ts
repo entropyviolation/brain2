@@ -62,6 +62,17 @@ export interface ModuleOutputSubject {
   itemId?: string
 }
 
+/** How a quantity got into the house. The vocabulary the data side groups by. */
+export type OutputOrigin = "hand" | "doc" | "module"
+
+/** A scan or photo that backs an amount. Same shape as an attached file (`FileValue`). */
+export interface OutputFile {
+  id: string
+  name: string
+  mime: string
+  uri: string
+}
+
 export interface ModuleOutput {
   /** Idempotency key. The same id applied twice counts once. */
   id: string
@@ -76,6 +87,14 @@ export interface ModuleOutput {
   /** How long it took, when the module knows. */
   durationMs?: number
   subject?: ModuleOutputSubject
+  /** Typed by hand, counted from a document's words, or reported by a module. Absent: read from `moduleId`. */
+  origin?: OutputOrigin
+  /** The verb for the log row ("wrote"); absent: the measure's own ("read"). */
+  verb?: string
+  /** Words behind the amount, for a document feed. */
+  words?: number
+  /** Scans or photos of the thing (handwritten pages). */
+  files?: OutputFile[]
 }
 
 /** What a module hands over before it is checked. Same fields, nothing trusted. */
@@ -123,7 +142,21 @@ export function normalizeModuleOutput(raw: RawModuleOutput): NormalizeResult {
   const durationMs = typeof raw.durationMs === "number" && raw.durationMs > 0 ? Math.round(raw.durationMs) : undefined
   return {
     ok: true,
-    output: { id, moduleId, measure, amount, at: new Date(atMs).toISOString(), ...(durationMs ? { durationMs } : {}), ...(subject ? { subject } : {}) },
+    output: {
+      id,
+      moduleId,
+      measure,
+      amount,
+      at: new Date(atMs).toISOString(),
+      ...(durationMs ? { durationMs } : {}),
+      ...(subject ? { subject } : {}),
+      ...(raw.origin === "hand" || raw.origin === "doc" || raw.origin === "module" ? { origin: raw.origin } : {}),
+      ...(typeof raw.verb === "string" && raw.verb.trim() ? { verb: raw.verb.trim() } : {}),
+      ...(typeof raw.words === "number" && raw.words > 0 ? { words: Math.round(raw.words) } : {}),
+      ...(Array.isArray(raw.files)
+        ? { files: (raw.files as OutputFile[]).filter((f) => f && typeof f.uri === "string" && typeof f.name === "string").map((f) => ({ id: String(f.id ?? f.uri), name: f.name, mime: String(f.mime ?? ""), uri: f.uri })) }
+        : {}),
+    },
   }
 }
 

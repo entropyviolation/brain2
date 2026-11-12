@@ -16,7 +16,11 @@
  * This file is pure: record math and reads over a list of items. Writing is
  * `lib/module-output-apply.ts`.
  */
-import { describeAmount, localDayKey, measureDef, type ModuleOutput, type ModuleOutputSubject } from "@/lib/module-output"
+import { describeAmount, localDayKey, measureDef, type ModuleOutput, type ModuleOutputSubject, type OutputFile, type OutputOrigin } from "@/lib/module-output"
+
+/** Module ids the house itself speaks as. */
+export const ENTRY_MODULE_ID = "habit-entry"
+export const DOC_WORDS_MODULE_ID = "doc-words"
 
 /** Attribute key on the logged-action item that holds the record. */
 export const CONTRIBUTION_ATTR = "habitContribution"
@@ -29,7 +33,19 @@ export interface ContributionSession {
   at: string
   amount: number
   durationMs?: number
+  origin?: OutputOrigin
+  /** Words behind the amount (a document feed). */
+  words?: number
+  /** Scans or photos that back it. */
+  files?: OutputFile[]
 }
+
+/** Where a session came from: stored, else read from the module id. */
+export function originOf(s: Pick<ContributionSession, "origin" | "moduleId">): OutputOrigin {
+  return s.origin ?? (s.moduleId === ENTRY_MODULE_ID ? "hand" : s.moduleId === DOC_WORDS_MODULE_ID ? "doc" : "module")
+}
+
+export const ORIGIN_LABEL: Record<OutputOrigin, string> = { hand: "By hand", doc: "Auto, from a document", module: "From a module" }
 
 export interface ContributionRecord {
   measure: string
@@ -50,8 +66,8 @@ export function contributionItemId(measure: string, day: string, subject: Module
 }
 
 /** "read Dune", "spent Meditation". */
-export function contributionTitle(measure: string, subject: ModuleOutputSubject | undefined): string {
-  const verb = measureDef(measure)?.verb ?? "logged"
+export function contributionTitle(measure: string, subject: ModuleOutputSubject | undefined, verbOverride?: string): string {
+  const verb = verbOverride ?? measureDef(measure)?.verb ?? "logged"
   return subject ? `${verb} ${subject.title}` : `${verb} ${measure}`
 }
 
@@ -76,6 +92,9 @@ export function foldOutput(
     at: output.at,
     amount: output.amount,
     ...(output.durationMs ? { durationMs: output.durationMs } : {}),
+    origin: output.origin ?? (output.moduleId === ENTRY_MODULE_ID ? "hand" : output.moduleId === DOC_WORDS_MODULE_ID ? "doc" : "module"),
+    ...(output.words ? { words: output.words } : {}),
+    ...(output.files?.length ? { files: output.files } : {}),
   }
   const sessions = [...base.sessions, session].sort((a, b) => a.at.localeCompare(b.at))
   const merged = [...new Set([...base.habitIds, ...habitIds])]
@@ -125,6 +144,41 @@ export interface BreakdownGroup {
   sessions: ContributionSession[]
 }
 
+/** Amount per origin, for a breakdown or a span of days. */
+export type OriginTotals = Record<OutputOrigin, number>
+
+export const emptyTotals = (): OriginTotals => ({ hand: 0, doc: 0, module: 0 })
+
+export function totalsOf(sessions: ContributionSession[]): OriginTotals {
+  const t = emptyTotals()
+  for (const s of sessions) t[originOf(s)] = Math.round((t[originOf(s)] + s.amount) * 100) / 100
+  return t
+}
+
+/**
+ * Hand vs document vs module, over any span of days, for one habit or for every habit (`habitId` absent).
+ * This is the data-side question: how much "writing" came from docs, how much from the pen.
+ * Also counts the scans and photos that back the hand part.
+ */
+export function originSplit(
+  items: ItemWithAttrs[],
+  opts: { measure: string; habitId?: string; from?: string; to?: string },
+): { totals: OriginTotals; files: number; words: number } {
+  const sessions: ContributionSession[] = []
+  for (const item of items) {
+    const rec = recordOf(item)
+    if (!rec || rec.measure !== opts.measure) continue
+    if (opts.habitId && !rec.habitIds.includes(opts.habitId)) continue
+    if ((opts.from && rec.day < opts.from) || (opts.to && rec.day > opts.to)) continue
+    sessions.push(...rec.sessions)
+  }
+  return {
+    totals: totalsOf(sessions),
+    files: sessions.reduce((n, s) => n + (s.files?.length ?? 0), 0),
+    words: sessions.reduce((n, s) => n + (s.words ?? 0), 0),
+  }
+}
+
 export interface CellBreakdown {
   measure: string
   groups: BreakdownGroup[]
@@ -152,7 +206,7 @@ export function breakdownForCell(
     const key = rec.subject?.itemId ?? rec.subject?.key ?? rec.subject?.title ?? "none"
     const group = byKey.get(key) ?? {
       key,
-      title: rec.subject?.title ?? "No book named",
+      title: rec.subject?.title ?? "No item named",
       ...(rec.subject?.itemId ? { itemId: rec.subject.itemId } : {}),
       amount: 0,
       sessions: [],
