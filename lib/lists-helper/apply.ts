@@ -91,6 +91,7 @@ export function applyPlan(port: Port, call: ToolCall, approved: Plan): ApplyOutc
 function doneText(plan: Plan): string {
   if (plan.merge) return `Merged. ${plan.merge.discardedIds.length} folded into "${plan.title.split('"')[1] ?? "the survivor"}". Say "undo" to bring them back.`
   if (plan.tool === "merge-lists") return `Merged ${plan.dropLists?.length ?? 0} ${plan.dropLists?.length === 1 ? "list" : "lists"} into "${plan.title.split('"')[1] ?? "one list"}", ${plan.changes.length} ${plan.changes.length === 1 ? "item" : "items"} edited${plan.setup?.type ? `, item type "${plan.setup.type.name}" made` : ""}. Say "undo" to bring it all back.`
+  if (plan.tool === "shopping-list") return `${plan.setup?.list ? `Made the list "${plan.setup.list.name}" with` : "Added"} ${plan.changes.length} ${plan.changes.length === 1 ? "thing" : "things"} from your buy lists${plan.creates?.length ? ` and ${plan.creates.length} new must-have${plan.creates.length === 1 ? "" : "s"}` : ""}. Say "undo" to take it all back.`
   if (plan.setup?.list) return `Made the list "${plan.setup.list.name}" and added ${plan.total} ${plan.total === 1 ? "item" : "items"} to it. Say "undo" to take it all back.`
   if (plan.tool === "collect-items") return `Added ${plan.total} ${plan.total === 1 ? "item" : "items"} to the list. Say "undo" to take them off again.`
   if (plan.tool === "retype-items" && plan.setup?.type) return `Made the item type "${plan.setup.type.name}" and applied it to ${plan.total} ${plan.total === 1 ? "item" : "items"}. Say "undo" to take it all back.`

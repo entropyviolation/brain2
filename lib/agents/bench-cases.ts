@@ -14,6 +14,7 @@ export const LISTS_CASES: BenchCase[] = [
   { id: "retype-1", input: "change all Note items to Book", expect: "retype-items", tags: ["plain"] },
   { id: "find-1", input: "how many Book items lack an author?", expect: "find-items", tags: ["question"] },
   { id: "lookup-1", input: "what is the list id for the All Items list of Next actions folder?", expect: "lookup-id", tags: ["question", "names"] },
+  { id: "shopping-1", input: "Help me find all the things I need to get or want or need to buy (create a consolidated nov 8th shopping list). it must have at least modafinil, brow bleach, hair dye", expect: "shopping-list", tags: ["free form", "must-haves"] },
   { id: "collect-1", input: "add all task items due from now until Dec 25 to list Soon", expect: "collect-items", tags: ["dates", "two verbs"] },
   { id: "dup-2", input: "are there any items I saved twice?", expect: "find-duplicates", tags: ["no jargon", "question"] },
   { id: "mergel-1", input: "combine my Reading and Books lists into one", expect: "merge-lists", tags: ["plain"] },

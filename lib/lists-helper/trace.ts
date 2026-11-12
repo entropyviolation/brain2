@@ -56,6 +56,11 @@ export function describeCall(w: World, c: ToolCall): string[] {
       }
       break
     }
+    case "shopping-list":
+      add("to list", q(c.name))
+      add("must have", c.mustHave.length ? c.mustHave.join(", ") : undefined)
+      add("skip", names(c.skipListIds, ln))
+      break
     case "lookup-id":
       add("kind", c.what)
       add("name", q(c.words))

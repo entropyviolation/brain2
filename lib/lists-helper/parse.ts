@@ -168,6 +168,9 @@ export function parseIntent(w: World, text: string, ctx: Context = {}): Intent {
   const merge = parseMergeLists(w, t)
   if (merge) return merge
 
+  const shopping = parseShopping(w, t, ctx.now ?? new Date())
+  if (shopping) return shopping
+
   const collect = parseCollect(w, t, ctx.now ?? new Date())
   if (collect) return collect
 
@@ -519,5 +522,82 @@ function parseMergeLists(w: World, t: string): Intent | null {
       else return failed(t, typeWords, ty)
     }
   }
+  return { kind: "tool", call }
+}
+
+
+// ---------------------------------------------------------------- shopping list
+
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+const MONTH_RE = `(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?`
+const monthName = (m: string) => {
+  const i = MONTHS.indexOf(m.slice(0, 3).toLowerCase())
+  return i < 0 ? m : `${m.slice(0, 1).toUpperCase()}${m.slice(1, 3).toLowerCase()}`
+}
+const dayName = (d: Date) => `${monthName(MONTHS[d.getMonth()]!)} ${d.getDate()}`
+
+/** What the list is called: "called X", else "<date> shopping list", else "Shopping list <today>". */
+function shoppingName(t: string, now: Date): string {
+  const quoted = /\b(?:called|named|titled)\s+["“]([^"”]+)["”]/i.exec(t)
+  if (quoted) return quoted[1]!.trim()
+  const called = /\b(?:called|named|titled)\s+([^,.;()"“”]+?)(?=\s*(?:[,.;()]|\b(?:so|it|and|with|that|skip|except|leave|not|but|must|should)\b|$))/i.exec(t)
+  if (called) return unquote(called[1]!)
+  const noun = `(shopping|buy|to-?buy|order|orders|online order|purchase|wish ?)\\s*list`
+  const md = new RegExp(`\\b(${MONTH_RE})\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:['’]s)?\\s+${noun}`, "i").exec(t)
+  if (md) return `${monthName(md[1]!)} ${Number(md[2])} ${md[3]!.toLowerCase().replace(/\s+/g, " ").trim()} list`
+  const dm = new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MONTH_RE})(?:['’]s)?\\s+${noun}`, "i").exec(t)
+  if (dm) return `${monthName(dm[2]!)} ${Number(dm[1])} ${dm[3]!.toLowerCase().replace(/\s+/g, " ").trim()} list`
+  const rel = new RegExp(`\\b(today|tonight|tomorrow)(?:['’]s)?\\s+${noun}`, "i").exec(t)
+  if (rel) {
+    const d = new Date(now)
+    if (/tomorrow/i.test(rel[1]!)) d.setDate(d.getDate() + 1)
+    return `${dayName(d)} ${rel[2]!.toLowerCase().replace(/\s+/g, " ").trim()} list`
+  }
+  return `${dayName(now)} shopping list`
+}
+
+/** "it must have at least modafinil, brow bleach, hair dye" → the three things. */
+function mustHaves(t: string): string[] {
+  const m =
+    /\b(?:must|should|needs?\s+to|has\s+to|have\s+to)\s+(?:have|include|contain|hold)\s+(?:at\s+least\s*)?:?\s*([\s\S]+)$/i.exec(t) ??
+    /\b(?:at\s+least|including|make\s+sure\s+(?:it\s+)?(?:has|includes))\s*:?\s*([\s\S]+)$/i.exec(t)
+  if (!m) return []
+  const raw = m[1]!.replace(/\([^)]*\)/g, " ").split(/\b(?:skip|except|leave\s+out|not\s+from)\b/i)[0]!
+  return [
+    ...new Set(
+      raw
+        .split(/\s*(?:,|;|\n|\+|&|\band\b|\bplus\b)\s*/i)
+        .map((s) => unquote(s).replace(/^(?:some|a|an|the|more|new)\s+/i, "").trim())
+        .filter((s) => s && !/^(?:etc|stuff|things|more)$/i.test(s) && s.length <= 60),
+    ),
+  ]
+}
+
+/**
+ * "Help me find all the things I need to get or want or need to buy (create a consolidated Nov 8th shopping list
+ * so I can place online orders). It must have at least modafinil, brow bleach, hair dye." Null when the line is
+ * not a request for a consolidated list of things to get.
+ */
+function parseShopping(w: World, t: string, now: Date): Intent | null {
+  const listWord = /\b(?:shopping|buy|to-?buy|order|orders|online\s+order|purchase|wish)\s*list\b/i.test(t)
+  const make = /\b(?:make|create|build|consolidat\w*|compile|put\s+together|start|generate|combine)\b/i.test(t)
+  const things = /\b(?:things|stuff|everything|all|what)\b[\s\S]*\b(?:need|want|wanted)\b[\s\S]*\b(?:buy|get|order|purchase)\b/i.test(t) && /\blist\b/i.test(t)
+  if (!((listWord && make) || things)) return null
+  // Lines that already say exactly which items go where belong to "collect items".
+  if (/^(?:please\s+)?(?:add|put|collect|gather|include)\s+(?:all|every|everything|any)\b[\s\S]*\s(?:to|into)\s+(?:an?\s+|the\s+)?(?:new\s+)?list\b/i.test(t)) return null
+
+  const skipIds: string[] = []
+  const skip = /\b(?:skip|except(?:\s+for)?|leave\s+out|not\s+from|but\s+not)\s+(?:the\s+)?(?:lists?\s+)?([\s\S]+?)(?=\s*(?:[.;]|\b(?:it|and\s+it|must|should|make\s+sure)\b|$))/i.exec(t)
+  if (skip) {
+    const quoted = [...skip[1]!.matchAll(/["“]([^"”]+)["”]/g)].map((m) => m[1]!)
+    const parts = quoted.length ? quoted : skip[1]!.split(/\s*(?:,|\band\b|&)\s*/i).map(unquote).filter(Boolean)
+    for (const p of parts) {
+      const r = resolveList(w, p.replace(/\s+lists?$/i, ""))
+      if (!r.ok) return failed(t, p, r)
+      skipIds.push(r.id)
+    }
+  }
+  const call: ToolCall = { tool: "shopping-list", name: shoppingName(t, now), mustHave: mustHaves(t) }
+  if (skipIds.length) call.skipListIds = [...new Set(skipIds)]
   return { kind: "tool", call }
 }

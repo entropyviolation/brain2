@@ -599,3 +599,64 @@ describe("find items that lack an attribute", () => {
     expect(text(make().say("how many Book items lack a flavour?"))).toContain("attribute called")
   })
 })
+
+describe("shopping-list", () => {
+  const rows = () => [
+    task("s1", "jolene brow bleach", { lists: ["needed"] }),
+    task("s2", "omnichord cord", { lists: ["shop", "amazon"] }),
+    task("s3", "Omnichord cord", { lists: ["temu"] }),
+    task("s4", "paint brush cleaner", { lists: ["temu"] }),
+    task("s5", "Silver polish", { lists: ["shop", "bought"] }),
+    task("s6", "Old thing", { lists: ["shop"], completed: true }),
+    task("s7", "Ruggles", { lists: ["texts"] }),
+    task("s8", "bleach eyebrows", { type: "task", lists: ["inbox"] }),
+  ]
+  const lists = () => [
+    list("needed", "needed"),
+    list("shop", "shopping list"),
+    list("amazon", "Amazon"),
+    list("temu", "misc"),
+    list("bought", "purchased"),
+    list("texts", "texts I need to send"),
+    list("inbox", "Inbox"),
+  ]
+  const folders = (): Folder[] => [{ id: "f1", name: "online shopping", createdAt: new Date(), listIds: ["temu"] }]
+  const LINE = "Help me find all the things that I need to get or that i want or that i need to buy (create a consolidated nov 8th shopping list so i can place online orders). it must have at least modafinil, brow bleach, hair dye "
+
+  it("reads the free-form request: name from the date, three must-haves", () => {
+    const h = harness(rows(), lists(), folders())
+    const all = h.sayAll(LINE)
+    expect(JSON.stringify(all.find((r) => r.kind === "trace"))).toMatch(/shopping-list/)
+    const plan = (all.find((r) => r.kind === "plan") as { plan: import("./types").Plan }).plan
+    expect(plan.tool).toBe("shopping-list")
+    expect(plan.setup?.list?.name).toBe("Nov 8 shopping list")
+    // s3 folds into s2 (same name), s5 is bought, s6 done, s7 not a buy list, s8 not on one.
+    expect(plan.changes.map((c) => c.id).sort()).toEqual(["s1", "s2", "s4"])
+    expect((plan.creates ?? []).map((t) => t.title)).toEqual(["modafinil", "hair dye"])
+    expect(plan.warnings.join(" ")).toMatch(/brow bleach → "jolene brow bleach"/)
+  })
+
+  it("writes on yes, then undo takes the list and the made items away", () => {
+    const h = harness(rows(), lists(), folders())
+    h.say(LINE)
+    h.say("yes")
+    const made = h.state.lists.find((l) => l.name === "Nov 8 shopping list")!
+    expect(made).toBeTruthy()
+    const on = h.state.tasks.filter((t) => t.lists?.includes(made.id)).map((t) => t.title).sort()
+    expect(on).toEqual(["hair dye", "jolene brow bleach", "modafinil", "omnichord cord", "paint brush cleaner"])
+    h.say("undo")
+    expect(h.state.lists.some((l) => l.name === "Nov 8 shopping list")).toBe(false)
+    expect(h.state.tasks.some((t) => t.title === "modafinil")).toBe(false)
+    expect(h.state.tasks.find((t) => t.id === "s1")!.lists).toEqual(["needed"])
+  })
+
+  it("skips a named list, and asking again adds only what is new", () => {
+    const h = harness(rows(), lists(), folders())
+    const r = h.say('create a shopping list called "Orders" skip "misc"')
+    const plan = (r[0] as { plan: import("./types").Plan }).plan
+    expect(plan.changes.map((c) => c.id).sort()).toEqual(["s1", "s2"])
+    h.say("yes")
+    const again = h.say('create a shopping list called "Orders" skip "misc". it must have at least brow bleach')
+    expect(JSON.stringify(again)).toMatch(/Nothing to add/)
+  })
+})

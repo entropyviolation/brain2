@@ -30,6 +30,7 @@ export type ToolName =
   | "collect-items"
   | "merge-lists"
   | "lookup-id"
+  | "shopping-list"
 
 /** One call to one tool, with every name already resolved to an id. */
 export type ToolCall =
@@ -42,6 +43,15 @@ export type ToolCall =
   | { tool: "add-items"; listId: string; titles: string[]; attributes: Record<string, string> }
   | { tool: "collect-items"; filter: CollectFilter; dest: CollectDest }
   | { tool: "merge-lists"; listIds: string[]; /** The list that stays. Defaults to the one holding the most items. */ keepId?: string; /** An existing item type every merged item becomes. */ typeId?: string; /** Make this item type first, and use it (then `typeId` is ignored). */ newTypeName?: string }
+  | {
+      tool: "shopping-list"
+      /** The list to fill: made new, or added to when one by that name exists. */
+      name: string
+      /** Things the list must hold: matched to an item found, or made new on the list. */
+      mustHave: string[]
+      /** Buy lists the person said to leave out. */
+      skipListIds?: string[]
+    }
   | { tool: "lookup-id"; what: LookupKind; words: string; /** Narrow lists to those in this folder. */ folderId?: string; /** Narrow items to this primary type. */ typeId?: string }
 
 export type LookupKind = "list" | "item" | "folder" | "type"

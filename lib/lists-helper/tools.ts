@@ -23,6 +23,7 @@ import type { AttributeDefinition, AttributeValue, Folder, ItemTypeDefinition, L
 import { dayKey, prettyDay } from "./dates"
 import { findDuplicateGroups, normalizeTitle } from "./duplicates"
 import { closest, titleOf } from "./resolve"
+import { shoppingList } from "./shopping"
 import { CONFIRM_COUNT_ABOVE, type Candidate, type ItemChange, type Plan, type ToolCall, type ToolName, type ToolResult, type World } from "./types"
 
 export interface ToolSpec {
@@ -46,6 +47,7 @@ export const TOOLS: ToolSpec[] = [
   { name: "add-items", label: "Add items", does: "Adds items to a list with attribute values, skipping names already there.", writes: true, params: ["list", "titles", "attributes"] },
   { name: "merge-lists", label: "Merge lists", does: "Folds several lists into one: every item is kept and moves to the list that stays, the others are taken away, and the items can all be given one item type.", writes: true, params: ["lists", "list to keep", "item type"] },
   { name: "lookup-id", label: "Look up an id", does: "Finds the id of a list (optionally in a folder), item, folder or item type, and offers clickable candidates when more than one fits.", writes: false, params: ["kind", "name", "folder", "type"] },
+  { name: "shopping-list", label: "Shopping list", does: "Finds every list of things to get (shopping, wanted, to order, a store, a shopping folder), folds same-name items, leaves out what is bought, and puts them on one list with your must-haves.", writes: true, params: ["list name", "must-haves", "skip lists"] },
   { name: "collect-items", label: "Collect items", does: "Puts items that match (a type, a list, not on another list, due between two days) on a list, or on a new list with its own folder and item type.", writes: true, params: ["type", "in list", "not in list", "due", "to list or new list", "folder", "item type"] },
 ]
 
@@ -782,6 +784,8 @@ export function runTool(w: World, call: ToolCall, opts: { now?: Date; isDismisse
       return mergeLists(w, call)
     case "lookup-id":
       return lookupId(w, call)
+    case "shopping-list":
+      return shoppingList(w, call, now)
   }
 }
 

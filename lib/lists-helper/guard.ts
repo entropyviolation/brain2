@@ -22,6 +22,7 @@ export const WRITABLE: Record<ToolName, readonly string[]> = {
   "retype-items": ["type"],
   "add-items": [],
   "collect-items": ["lists", "listMembershipExclusions"],
+  "shopping-list": ["lists", "listMembershipExclusions"],
   "merge-lists": ["lists", "listMembershipExclusions", "type"],
 }
 
@@ -44,9 +45,10 @@ export function refusal(plan: Plan): string | null {
   if (plan.merge && plan.tool !== "merge-items") return "Only a merge may remove items."
   if (plan.dropLists?.length && plan.tool !== "merge-lists") return "Only merging lists may take a list away."
   if (plan.dropLists && plan.dropLists.length > LIMITS.lists) return `That merge would remove ${plan.dropLists.length} lists. I stop at ${LIMITS.lists}.`
-  if (plan.setup && plan.tool !== "collect-items" && !((plan.tool === "retype-items" || plan.tool === "merge-lists") && !plan.setup.list && !plan.setup.folder)) return "Only collecting items may make a list or folder, and only collecting or changing a type may make an item type."
+  if (plan.setup && plan.tool === "shopping-list" && (plan.setup.folder || plan.setup.type)) return "A shopping list may make its list, never a folder or an item type."
+  if (plan.setup && plan.tool !== "collect-items" && plan.tool !== "shopping-list" && !((plan.tool === "retype-items" || plan.tool === "merge-lists") && !plan.setup.list && !plan.setup.folder)) return "Only collecting items may make a list or folder, and only collecting or changing a type may make an item type."
   for (const c of plan.changes) {
-    if (plan.tool === "collect-items") {
+    if (plan.tool === "collect-items" || plan.tool === "shopping-list") {
       const was = (c.before.lists as string[] | undefined) ?? []
       const now = (c.patch.lists as string[] | undefined) ?? []
       if (!was.every((id) => now.includes(id))) return `This plan would take "${c.title}" off a list. Collecting only adds. I wrote nothing.`
