@@ -369,6 +369,8 @@ export function MobileKeyboard() {
     const write = (words: string) => {
       const target = fieldRef.current
       if (!target || target !== el) return
+      // An empty report must not erase words already written (stop can send one).
+      if (!words && written > 0) return
       const text = words ? lead + words : ""
       spliceText(target, start, written, text)
       written = text.length

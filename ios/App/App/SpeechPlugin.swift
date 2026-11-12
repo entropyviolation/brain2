@@ -10,6 +10,8 @@
 //  After a pause iOS starts a fresh transcript, and `formattedString` holds
 //  only the new words. The words before the pause are kept in `committed`, so
 //  "hello", a pause, then "world" reads "hello world", not "world".
+//  A late callback from an ended task is ignored, and an empty last result
+//  never wipes the words heard.
 //  Once both permissions are granted, start skips asking and begins at once,
 //  and the audio session is set up only the first time.
 //
@@ -41,7 +43,8 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
     /// The transcript iOS is still revising.
     private var segment = ""
     private var lastPartial = Date.distantPast
-    private var sessionReady = false
+    /// Bumps on every start, so a late callback from an older task is ignored.
+    private var generation = 0
     private var stopping: CAPPluginCall?
 
     @objc func start(_ call: CAPPluginCall) {
@@ -124,11 +127,10 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
               recognizer.isAvailable else {
             throw NSError(domain: "BrainSpeech", code: 1, userInfo: [NSLocalizedDescriptionKey: "Dictation is not available right now."])
         }
+        // Set every time: other audio in the app may have changed the category,
+        // and a mic with no valid input format crashes installTap.
         let session = AVAudioSession.sharedInstance()
-        if !sessionReady {
-            try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker, .allowBluetooth])
-            sessionReady = true
-        }
+        try session.setCategory(.playAndRecord, mode: .measurement, options: [.mixWithOthers, .defaultToSpeaker, .allowBluetooth])
         try session.setActive(true)
 
         let request = SFSpeechAudioBufferRecognitionRequest()
@@ -142,6 +144,10 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            self.request = nil
+            throw NSError(domain: "BrainSpeech", code: 2, userInfo: [NSLocalizedDescriptionKey: "The microphone is busy. Try again in a moment."])
+        }
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak request] buffer, _ in
             request?.append(buffer)
@@ -149,11 +155,19 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
         engine.prepare()
         try engine.start()
 
+        generation += 1
+        let mine = generation
         task = recognizer.recognitionTask(with: request) { [weak self] result, error in
             DispatchQueue.main.async {
-                guard let self else { return }
+                guard let self, self.generation == mine else { return }
                 if let result {
                     let next = result.bestTranscription.formattedString
+                    // After stop the recognizer can report an empty last result.
+                    // Never let it wipe words already heard.
+                    if next.isEmpty && !self.heard.isEmpty {
+                        if error != nil || result.isFinal { self.finish() }
+                        return
+                    }
                     let now = Date()
                     if self.startsNewTranscript(next, gap: now.timeIntervalSince(self.lastPartial)) {
                         self.committed = self.joined(self.committed, self.segment)
@@ -170,6 +184,7 @@ public class SpeechPlugin: CAPPlugin, CAPBridgedPlugin {
 
     /// Ends listening and settles a pending stop with the words heard.
     private func finish() {
+        generation += 1
         if engine.isRunning { engine.stop() }
         engine.inputNode.removeTap(onBus: 0)
         request?.endAudio()
