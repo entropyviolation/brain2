@@ -24,7 +24,7 @@ import {
   postHubReply,
   type IncomingTelegramPayload,
 } from "@/lib/ingest/telegram-bridge"
-import { fetchPhoneHubStatus, normalizeHubUrl, pushVaultToHub } from "@/lib/ingest/vault-push"
+import { fetchPhoneHubStatus, normalizeHubUrl, pushVaultToHubIfChanged } from "@/lib/ingest/vault-push"
 import { flushScheduledPersist } from "@/lib/persist-storage"
 
 export const HUB_POLL_FAST_MS = 1000
@@ -61,7 +61,7 @@ export function useMessageIngest() {
       // blobs and stale Inbox rows.
       const remote = await fetchPhoneHubStatus(hubOrigin)
       if (!remote.ok || !remote.polling) return
-      await pushVaultToHub(hubOrigin, phoneHubToken)
+      await pushVaultToHubIfChanged(hubOrigin, phoneHubToken)
     }
 
     const tickHubOwnership = async () => {

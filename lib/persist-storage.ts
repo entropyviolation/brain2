@@ -393,6 +393,9 @@ export async function mergeHubIntoStores(hub: HubSnapshot, names?: string[]): Pr
     const hubValue = hubItem(hub, name)
     if (typeof hubValue !== "string") continue
     const local = readLocalItem(name)
+    // Same bytes on both sides: nothing to merge. The full pick re-parses a 7 MB task vault several
+    // times, and this runs on every window focus.
+    if (hubValue === local) continue
     const chosen = choosePersistSnapshot(name, local, hubValue)
     if (typeof chosen !== "string" || chosen === local) continue
     writeChosenLocal(name, local, chosen)

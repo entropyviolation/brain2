@@ -49,24 +49,29 @@ export function useBimChat() {
     return () => window.removeEventListener(BIM_CHAT_ADD_EVENT, onAdd)
   }, [])
 
-  // BIM speaks only after you do. Check-ins come from the ask me key, not on open.
+  // Follow the newest line only while you are at the bottom. Scrolled up to read (or to work a card
+  // while a save runs), a reply or a card repaint no longer yanks you down. Your own send always does.
+  const pinned = useRef(true)
+  const lastWho = lines[lines.length - 1]?.who
   useEffect(() => {
     const log = logRef.current
-    if (log) log.scrollTop = log.scrollHeight
-  }, [lines.length, busy])
+    if (!log) return
+    if (lastWho === "you") pinned.current = true
+    if (pinned.current) log.scrollTop = log.scrollHeight
+  }, [lines.length, busy, lastWho])
 
   // When the glass shrinks (the keyboard opens), keep the newest line in view if it was in view.
   useEffect(() => {
     const log = logRef.current
-    if (!log || typeof ResizeObserver === "undefined") return
-    let pinned = true
+    if (!log) return
     const onScroll = () => {
-      pinned = log.scrollHeight - log.scrollTop - log.clientHeight < 32
+      pinned.current = log.scrollHeight - log.scrollTop - log.clientHeight < 32
     }
-    const watch = new ResizeObserver(() => {
-      if (pinned) log.scrollTop = log.scrollHeight
-    })
     log.addEventListener("scroll", onScroll, { passive: true })
+    if (typeof ResizeObserver === "undefined") return () => log.removeEventListener("scroll", onScroll)
+    const watch = new ResizeObserver(() => {
+      if (pinned.current) log.scrollTop = log.scrollHeight
+    })
     watch.observe(log)
     return () => {
       log.removeEventListener("scroll", onScroll)

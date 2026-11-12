@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { formatAppendLog } from "./append-log"
-import { applyAppearancePins, applyVaultPatch, pickPersistItem, mergePersistSnapshots, shouldRejectVaultShrink, vaultRecordCount, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, stampAppearancePins, shouldSkipHubAppearanceCopy, shouldRejectHubLogShrink, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, overlayHabitCompletions, overlayHabitCompletionsParsed, overlayIngestAllowlist, overlayIngestAllowlistParsed, stampAppearancePinsParsed } from "./vault-guard.js"
+import { foldInstagramAccountCopies, instagramCopyCountRoot, applyAppearancePins, applyVaultPatch, pickPersistItem, mergePersistSnapshots, shouldRejectVaultShrink, vaultRecordCount, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, stampAppearancePins, shouldSkipHubAppearanceCopy, shouldRejectHubLogShrink, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, overlayHabitCompletions, overlayHabitCompletionsParsed, overlayIngestAllowlist, overlayIngestAllowlistParsed, stampAppearancePinsParsed } from "./vault-guard.js"
 
 function tasks(n: number) {
   return JSON.stringify({
@@ -85,6 +85,19 @@ describe("vault-guard", () => {
     expect(picked.state?.dayNotes?.["2026-09-21"]).toBe(
       "river otter pup notes 2026-09-21 — stayed after refresh",
     )
+    localStorage.removeItem("cogs-tracking-day-notes")
+  })
+
+  it("does not put dedicated day notes into a timegrid blob saved without them", () => {
+    // The store saves the time grid without `dayNotes`. Filling them back in made every later save
+    // differ from the stored copy, so each one ran the full guard and a 6 MB hub POST.
+    localStorage.setItem("cogs-tracking-day-notes", JSON.stringify({ "2026-09-21": "zoo 4-5" }))
+    const local = JSON.stringify({ state: { entries: Array.from({ length: 8 }, (_, i) => ({ id: `e${i}` })) }, version: 15 })
+    const hub = JSON.stringify({ state: { entries: Array.from({ length: 9 }, (_, i) => ({ id: `e${i}` })) }, version: 15 })
+    const picked = JSON.parse(pickPersistItem(local, hub, "cogs-timegrid-store") ?? "{}") as { state?: Record<string, unknown> }
+    expect(picked.state && "dayNotes" in picked.state).toBe(false)
+    const merged = JSON.parse(mergePersistSnapshots(hub, local, "cogs-timegrid-store") ?? "{}") as { state?: Record<string, unknown> }
+    expect(merged.state && "dayNotes" in merged.state).toBe(false)
     localStorage.removeItem("cogs-tracking-day-notes")
   })
 
@@ -1509,5 +1522,56 @@ describe("habits replayed wipe", () => {
     expect(shouldRejectContentDowngrade("cogs-habits-store", full, wiped)).toBe(false)
     const fewer = JSON.stringify({ state: { tasks: habits.slice(0, 38), categories: [], contentRev: 200 }, version: 26 })
     expect(shouldRejectContentDowngrade("cogs-habits-store", full, fewer)).toBe(true)
+  })
+})
+
+describe("Instagram account copies", () => {
+  const igList = { id: "people-i-follow-on-instagram", instagramFollowingList: true }
+  const fans = { id: "instagram-fans", instagramAnalysisList: "fans" }
+  const acct = (id: string, createdAt: string, lists: string[], attrs: Record<string, unknown> = {}) => ({
+    id,
+    createdAt,
+    type: "item",
+    title: "bob",
+    lists,
+    attributes: { "ig-username": "Bob", ...attrs },
+  })
+  const vault = (rows: object[]) =>
+    JSON.stringify({ state: { tasks: rows, lists: [igList, fans], removedTaskIds: [] }, version: 12 })
+
+  it("folds same-username copies into the oldest, typed as an account", () => {
+    const rows = [
+      acct("b", "2026-11-02T00:00:00Z", ["instagram-fans"], { "ig-follower-count": 9 }),
+      acct("a", "2026-11-01T00:00:00Z", ["people-i-follow-on-instagram"]),
+      { id: "note", createdAt: "2026-11-01", title: "keep me", links: [{ targetId: "b" }] },
+      { id: "other", createdAt: "2026-11-01", attributes: { "ig-username": "bob" } },
+    ]
+    const out = foldInstagramAccountCopies(rows, [igList, fans])
+    expect(out.folded).toBe(1)
+    const a = out.tasks.find((t: { id: string }) => t.id === "a")
+    expect(a.lists).toEqual(["people-i-follow-on-instagram", "instagram-fans"])
+    expect(a.attributes["ig-follower-count"]).toBe(9)
+    expect(a.type).toBe("instagram-account")
+    expect(out.tasks.find((t: { id: string }) => t.id === "note").links[0].targetId).toBe("a")
+    // Not on an Instagram list, not typed, no ig- id: left alone.
+    expect(out.tasks.some((t: { id: string }) => t.id === "other")).toBe(true)
+  })
+
+  it("a write that only folded copies is not a shrink, and a stale copy cannot bring them back", () => {
+    const copies = Array.from({ length: 40 }, (_, i) => acct(`c${i}`, `2026-11-01T00:00:${String(i).padStart(2, "0")}Z`, ["instagram-fans"]))
+    const keep = Array.from({ length: 30 }, (_, i) => ({ id: `t${i}`, createdAt: "2026-10-01" }))
+    const stale = vault([...keep, ...copies])
+    expect(instagramCopyCountRoot(JSON.parse(stale))).toBe(39)
+    const clean = vault([...keep, copies[0]])
+    expect(shouldRejectVaultShrink("cogs-task-storage", clean, stale)).toBe(false)
+    const merged = JSON.parse(unionPersistSnapshots(stale, clean, "cogs-task-storage") ?? stale)
+    expect(merged.state.tasks).toHaveLength(31)
+    expect(instagramCopyCountRoot(merged)).toBe(0)
+  })
+
+  it("still refuses a real wipe next to copies", () => {
+    const copies = Array.from({ length: 40 }, (_, i) => acct(`c${i}`, "2026-11-01", ["instagram-fans"]))
+    const keep = Array.from({ length: 30 }, (_, i) => ({ id: `t${i}`, createdAt: "2026-10-01" }))
+    expect(shouldRejectVaultShrink("cogs-task-storage", vault([copies[0], keep[0]]), vault([...keep, ...copies]))).toBe(true)
   })
 })

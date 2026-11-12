@@ -7,7 +7,7 @@
  * Demo profile keys stay off this map so Live hub
  * files cannot pick up stock fiction, and Demo cannot upload Live PII.
  */
-import { persistKeyAliases, persistKeyBelongsToActiveProfile, DATA_PROFILE_KEY, DEMO_VAULT_READY_KEY } from "@/lib/storage-keys"
+import { persistKey, persistKeyAliases, persistKeyBelongsToActiveProfile, readAliasedLocal, DATA_PROFILE_KEY, DEMO_VAULT_READY_KEY } from "@/lib/storage-keys"
 
 const SKIP = /^(?:cogs|brain2)-telegram|friend-pic:/
 
@@ -32,6 +32,40 @@ export function collectVaultItems(): Record<string, string> {
 
 export function normalizeHubUrl(url: string): string {
   return url.trim().replace(/\/+$/, "")
+}
+
+/**
+ * What the vault looks like for "did anything change?": the last good save's stamp
+ * (`persist-storage.ts` writes it on every real write) and the key count. Cheap: no value is read.
+ */
+export function vaultPushStamp(): string {
+  if (typeof localStorage === "undefined") return ""
+  try {
+    return `${readAliasedLocal(persistKey("last-persist-ok")) ?? ""}|${localStorage.length}`
+  } catch {
+    return ""
+  }
+}
+
+const pushedStamp = new Map<string, string>()
+
+/** Tests start from a clean slate. */
+export function resetVaultPushStamps(): void {
+  pushedStamp.clear()
+}
+
+/**
+ * The timed dump. The full map is about 16 MB, and serializing and sending it froze the page for
+ * about 200 ms every minute even when nothing had changed. Now it is sent only when a save landed
+ * since the last push to that hub.
+ */
+export async function pushVaultToHubIfChanged(baseUrl: string, token = ""): Promise<{ ok: boolean; skipped?: boolean; error?: string; keyCount?: number }> {
+  const origin = normalizeHubUrl(baseUrl)
+  const stamp = vaultPushStamp()
+  if (stamp && pushedStamp.get(origin) === stamp) return { ok: true, skipped: true }
+  const done = await pushVaultToHub(origin, token)
+  if (done.ok && stamp) pushedStamp.set(origin, stamp)
+  return done
 }
 
 export async function pushVaultToHub(baseUrl: string, token = ""): Promise<{ ok: boolean; error?: string; keyCount?: number }> {
