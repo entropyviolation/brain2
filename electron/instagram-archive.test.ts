@@ -12,7 +12,7 @@ type Archive = {
   archiveAll: (root: string) => Promise<{ name: string }[]>
   removedMessages: (root: string) => { exports: number; rows: Row[] }
   archiveStatus: (root: string) => { count: number }
-  loadIndex: (root: string) => { exports: Record<string, { date: string }> }
+  loadIndex: (root: string) => { exports: Record<string, { date: string; partial?: boolean }> }
   blobPath: (root: string, sha: string) => string
   fixText: (s: string) => string
 }
@@ -115,6 +115,16 @@ describe("instagram archive", () => {
     await ar.archiveExport(root, { exportDir: "2026-10-22-aaa", exportRoot: a, date: "2026-10-22" })
     await expect(ar.archiveExport(root, { exportDir: "2026-10-23-bbb", exportRoot: empty, date: "2026-10-23" })).rejects.toThrow(/no files/)
     await ar.archiveExport(root, { exportDir: "2026-10-24-ccc", exportRoot: noDms, date: "2026-10-24" })
+    expect(ar.removedMessages(root).rows).toEqual([])
+  })
+
+  it("a partial export (empty folders, Drive still syncing) marks nothing removed", async () => {
+    const a = makeExport("2026-10-22-aaa", { sam_1: [hi, secret], mo_2: [reply] })
+    const b = makeExport("2026-10-23-bbb", { sam_1: [hi] })
+    fs.mkdirSync(path.join(b, "your_instagram_activity", "messages", "inbox", "mo_2"))
+    await ar.archiveExport(root, { exportDir: "2026-10-22-aaa", exportRoot: a, date: "2026-10-22" })
+    await ar.archiveExport(root, { exportDir: "2026-10-23-bbb", exportRoot: b, date: "2026-10-23" })
+    expect(ar.loadIndex(root).exports["2026-10-23-bbb"].partial).toBe(true)
     expect(ar.removedMessages(root).rows).toEqual([])
   })
 

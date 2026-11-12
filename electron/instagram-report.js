@@ -278,7 +278,7 @@ function exportAccount(exportRoot, { fs = nodeFs } = {}) {
 
 /** File count, total size and newest mtime under `dir`, stopping after `limit` entries. */
 function treeStats(dir, { fs = nodeFs, limit = 50_000 } = {}) {
-  const out = { count: 0, size: 0, mtimeMs: 0 }
+  const out = { count: 0, size: 0, mtimeMs: 0, emptyDirs: 0 }
   const stack = [dir]
   while (stack.length && out.count < limit) {
     const d = stack.pop()
@@ -288,6 +288,7 @@ function treeStats(dir, { fs = nodeFs, limit = 50_000 } = {}) {
     } catch {
       continue
     }
+    if (!entries.length && d !== dir) out.emptyDirs++
     for (const e of entries) {
       const p = path.join(d, e.name)
       if (e.isDirectory()) stack.push(p)
@@ -329,7 +330,7 @@ function scanMetaFolder(folder, meta, { fs = nodeFs } = {}) {
     const t = treeStats(c.paths[0], { fs })
     if (!t.count) return null
     const s = st(c.paths[0])
-    return { ...c, size: t.size, treeCount: t.count, mtimeMs: Math.max(t.mtimeMs, s ? s.mtimeMs : 0) }
+    return { ...c, size: t.size, treeCount: t.count, emptyDirs: t.emptyDirs, mtimeMs: Math.max(t.mtimeMs, s ? s.mtimeMs : 0) }
   }
   if (findExportRoot(folder, { fs, depth: 0 })) {
     const c = withTree({ ...base, kind: "dir", paths: [folder] })
@@ -586,14 +587,47 @@ function failureStep(seen, state, key) {
   return ""
 }
 
+/** `analyze.py` or `build_report.py` was saved after `at` (an ISO time). */
+function scriptsChangedSince(config, at) {
+  const t = Date.parse(at || "")
+  if (!Number.isFinite(t) || !config || !config.scriptsDir) return false
+  for (const name of ["analyze.py", "build_report.py"]) {
+    try {
+      if (nodeFs.statSync(path.join(config.scriptsDir, name)).mtimeMs > t) return true
+    } catch {
+      /* missing script: the deps check reports it */
+    }
+  }
+  return false
+}
+
+/**
+ * Meta never ships an empty folder. A Drive export with empty folders is
+ * still syncing (or Meta's upload stopped): its files are not there yet.
+ * Seen 2026-11-11: the Oct 22 Drive export had 500 empty folders, with no
+ * followers, likes, saved or comments, and replaced the full device export.
+ */
+function isIncomplete(c) {
+  return !!(c && c.emptyDirs > 0)
+}
+
+/** Empty folders under an unzipped export root. */
+function countEmptyDirs(dir, { fs = nodeFs } = {}) {
+  return treeStats(dir, { fs }).emptyDirs
+}
+
 function pickExportToImport(candidates, state, config, now = Date.now()) {
   const fresh = candidates.filter((c) => {
     if (!c.accountUnknown && !accountMatches(c.account, config.handle)) return false
+    if (isIncomplete(c)) return false
     const seen = state.imported && state.imported[c.key]
     if (seen && seen.fingerprint === exportFingerprint(c)) {
       const step = failureStep(seen, state, c.key)
-      const retryable = seen.ok === false && (step === "copy" || step === "unzip")
-      if (!retryable || copyRetryPending({ ...seen, step }, now)) return false
+      const copyStep = step === "copy" || step === "unzip"
+      // An analyze or build failure is the script's, not the export's: try again once the script changed.
+      const scriptStep = (step === "analyze" || step === "build") && scriptsChangedSince(config, seen.at)
+      const retryable = seen.ok === false && (copyStep || scriptStep)
+      if (!retryable || (copyStep && copyRetryPending({ ...seen, step }, now))) return false
     }
     if (state.current && state.current.exportDate && c.date < state.current.exportDate) return false
     return true
@@ -862,6 +896,11 @@ async function ingestExport(candidate, { root, config, fs = nodeFs, run = defaul
   }
   const exportRoot = findExportRoot(exportDir, { fs })
   if (!exportRoot) return fail("unzip", "The export has no your_instagram_activity folder. Was it requested as JSON?", "")
+  const empty = countEmptyDirs(exportRoot, { fs })
+  if (empty > 0) {
+    if (!reusingCurrent) fs.rmSync(exportDir, { recursive: true, force: true })
+    return fail("incomplete", `This export has ${empty} empty folders, so its files have not all arrived. The current report stays.`, "")
+  }
   if (candidate.accountUnknown) {
     const account = exportAccount(exportRoot, { fs })
     if (account && !accountMatches(account, config.handle)) {
@@ -1033,7 +1072,7 @@ function mimeFor(p) {
 }
 
 /** What the view shows. Paths stay in main; the view gets names and dates. */
-function publicStatus(root, { fs = nodeFs, running = false, deps = null, config } = {}) {
+function publicStatus(root, { fs = nodeFs, running = false, deps = null, config, syncing = null } = {}) {
   const state = loadState(root, { fs })
   const cfg = config || loadConfig(root, { fs })
   return {
@@ -1049,6 +1088,7 @@ function publicStatus(root, { fs = nodeFs, running = false, deps = null, config 
         }
       : null,
     lastError: state.lastError,
+    syncing,
     running,
     deps,
     watching: [cfg.downloadsDir, cfg.extraDir].filter(Boolean),
@@ -1072,7 +1112,8 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
   let debounce = null
   let stopped = false
 
-  const status = () => publicStatus(root, { fs, running, deps })
+  let syncing = null
+  const status = () => publicStatus(root, { fs, running, deps, syncing })
 
   async function refreshDeps() {
     deps = await checkDependencies(loadConfig(root, { fs }), { fs, run, env })
@@ -1116,6 +1157,8 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
       }
     }
     const pick = pickExportToImport(candidates, state, config, now())
+    const waitingOn = candidates.filter(isIncomplete).pop()
+    syncing = waitingOn ? { exportName: waitingOn.key, exportDate: waitingOn.date, emptyDirs: waitingOn.emptyDirs } : null
     // Exports the report skips (older than the one on screen, or passed over
     // while Brain2 was closed) still go into the archive.
     const backlog = candidates.filter((c) => {
@@ -1125,6 +1168,7 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
       const due = force || !tried || tried.fp !== exportFingerprint(c) || now() - tried.at >= ARCHIVE_RETRY_MS
       return (
         c !== pick &&
+        !isIncomplete(c) &&
         due &&
         (c.accountUnknown || accountMatches(c.account, config.handle)) &&
         !archive.isArchived(root, `${c.date}-${c.id}`, { fs })
@@ -1238,6 +1282,8 @@ module.exports = {
   parseExportName,
   parseMetaFolderName,
   pickExportToImport,
+  isIncomplete,
+  countEmptyDirs,
   publicStatus,
   resolveReportPath,
   saveConfigPatch,

@@ -87,6 +87,7 @@ function makeExportFolder(dir: string, name: string) {
   fs.mkdirSync(path.join(d, "your_instagram_activity"), { recursive: true })
   fs.mkdirSync(path.join(d, "media", "posts"), { recursive: true })
   fs.writeFileSync(path.join(d, "media", "posts", "a.jpg"), "photo")
+  fs.writeFileSync(path.join(d, "your_instagram_activity", "liked_posts.json"), "[]")
   return d
 }
 
@@ -137,6 +138,26 @@ describe("scan and pick", () => {
     ])
     const pick = ig.pickExportToImport(c, ig.loadState(root), config)
     expect(pick?.key).toBe("instagram-_entropyviolation_-2026-10-22-vn7ORB66")
+  })
+
+  it("tries a failed analyze again once analyze.py changed", () => {
+    makeExportFolder(downloads, "instagram-_entropyviolation_-2026-10-23-gUaaX5zH")
+    const c = ig.scanForExports([downloads])
+    const failedAt = new Date(Date.now() - 60_000).toISOString()
+    const scriptsDir = path.join(tmp, "scripts")
+    fs.mkdirSync(scriptsDir, { recursive: true })
+    const script = path.join(scriptsDir, "analyze.py")
+    fs.writeFileSync(script, "x")
+    const old = new Date(Date.now() - 120_000)
+    fs.utimesSync(script, old, old)
+    const state = {
+      current: null,
+      imported: { [c[0].key]: { fingerprint: ig.exportFingerprint(c[0]), at: failedAt, ok: false, step: "analyze" } },
+    }
+    const cfg = { ...config, scriptsDir }
+    expect(ig.pickExportToImport(c, state, cfg)).toBeNull()
+    fs.utimesSync(script, new Date(), new Date())
+    expect(ig.pickExportToImport(c, state, cfg)?.key).toBe(c[0].key)
   })
 
   it("waits until a zip holds still", () => {
@@ -232,7 +253,9 @@ describe("ingest", () => {
     }
     expect(ig.pickExportToImport([c], legacy, config, t0 + ig.COPY_RETRY_MS)?.key).toBe(c.key)
     state.imported[c.key].step = "analyze"
-    expect(ig.pickExportToImport([c], state, config, t0 + ig.COPY_RETRY_MS * 2)).toBeNull()
+    // Scripts unchanged since the failure (none on disk here): wait for a new export.
+    const unchanged = { ...config, scriptsDir: path.join(tmp, "no-scripts") }
+    expect(ig.pickExportToImport([c], state, unchanged, t0 + ig.COPY_RETRY_MS * 2)).toBeNull()
   })
 
   it("reports missing Python packages without touching the report", async () => {
@@ -275,11 +298,13 @@ type IgDrive = {
   parseMetaFolderName: (n: string) => { key: string; date: string; id: string } | null
   googleDriveDirs: (home: string) => string[]
   watchedDirs: (config: Record<string, unknown>, o?: { home?: string }) => string[]
-  scanForExports: (dirs: string[]) => Array<{ key: string; date: string; kind: string; accountUnknown?: boolean; paths: string[] }>
+  scanForExports: (dirs: string[]) => Array<{ key: string; date: string; kind: string; accountUnknown?: boolean; paths: string[]; emptyDirs?: number }>
+  isIncomplete: (c: unknown) => boolean
   pickExportToImport: (c: unknown[], state: Record<string, unknown>, config: Record<string, unknown>) => { key: string } | null
   createInstagramWatcher: (o: { root: string; run: Run; now?: () => number; intervalMs?: number; home?: string }) => {
     scan: () => Promise<{ ok: boolean; imported?: boolean }>
     stop: () => void
+    status: () => { syncing: Record<string, unknown> | null }
   }
   saveConfigPatch: (root: string, patch: Record<string, unknown>) => unknown
   exportAccount: (exportRoot: string) => string
@@ -344,6 +369,34 @@ describe("Google Drive scheduled export", () => {
       ["instagram-_entropyviolation_-2026-10-22-20PSWrsW", "2026-10-22"],
       ["instagram-_entropyviolation_-2026-10-23-gUaaX5zH", "2026-10-23"],
     ])
+  })
+
+  it("passes over a Drive export with empty folders and keeps the full report", async () => {
+    const drive = myDrive()
+    const meta = path.join(drive, "meta-2026-Oct-22-20-23-37")
+    const part = makeExportFolder(meta, "instagram-_entropyviolation_-2026-10-23-gUaaX5zH")
+    // Seen 2026-11-11: folders made, files never synced.
+    fs.mkdirSync(path.join(part, "your_instagram_activity", "saved"))
+    const c = igd.scanForExports([drive])
+    expect(c[0].emptyDirs).toBe(1)
+    expect(igd.isIncomplete(c[0])).toBe(true)
+    expect(igd.pickExportToImport(c, { imported: {} }, config)).toBe(null)
+    igd.saveConfigPatch(root, { ...config, downloadsDir: downloads })
+    const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home })
+    const r = await w.scan()
+    w.stop()
+    expect(r.imported).toBe(false)
+    expect(w.status().syncing).toMatchObject({ exportDate: "2026-10-23", emptyDirs: 1 })
+    expect(archive.isArchived(root, "2026-10-23-gUaaX5zH")).toBe(false)
+  })
+
+  it("refuses to build from an export with empty folders", async () => {
+    const d = makeExportFolder(downloads, "instagram-_entropyviolation_-2026-10-24-holey")
+    fs.mkdirSync(path.join(d, "connections", "followers_and_following"), { recursive: true })
+    const [c] = ig.scanForExports([downloads])
+    const r = await ig.ingestExport(c, { root, config: ig.loadConfig(root), run: fakeRun([]) })
+    expect(r).toMatchObject({ ok: false, step: "incomplete" })
+    expect(fs.existsSync(path.join(root, "exports", "2026-10-24-holey"))).toBe(false)
   })
 
   it("builds the newest export and still archives the ones it skipped", async () => {

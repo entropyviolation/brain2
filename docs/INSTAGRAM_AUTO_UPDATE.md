@@ -127,6 +127,45 @@ day's JSON still imports. A JSON file that will not download fails the copy,
 and that failure is tried again after 10 min even when the folder has not
 changed. A leftover `exports/*.partial` folder is removed on the next scan.
 
+## Stalled from 2026-10-25 to 2026-11-11
+
+_Last mapped: 2026-11-11_
+
+- `analyze.py` crashed on the 2026-10-22 Drive export: it had no story views,
+  so `min()` had nothing to read. The report stayed on the Oct 22 device
+  export, and the watcher never retried an analyze failure. Fixed:
+  `analyze.py` falls back to posts or videos viewed, then to the last action
+  (backup `analyze.py.bak-2026-11-11`), and the watcher retries once a script
+  is newer than the failure.
+- Meta's daily schedule only delivered Oct 22 and Oct 23 into
+  `meta-2026-Oct-22-20-23-37`. Nothing has arrived since. Check the schedule
+  in Accounts Center and the free space in Drive (each export is about
+  1.2 GB on a 15 GB plan).
+- The lists can only be as fresh as the newest export. A day-by-day list
+  needs a daily export that arrives.
+
+## Half-synced Drive export zeroed the report (2026-11-11)
+
+_Last mapped: 2026-11-11_
+
+- After the `analyze.py` fix, the watcher rebuilt from the Oct 22 Drive
+  export. That folder is only part there: 500 empty folders, 1,329 of its
+  JSON files. Followers, likes, saved posts, comments and your posts were all
+  missing, so the report showed 0 for them. It replaced the full Oct 22
+  device export.
+- Meta never ships an empty folder. An export with any empty folder is now
+  treated as still syncing. `scanMetaFolder` counts them (`emptyDirs`),
+  `pickExportToImport` and the archive backlog skip such an export, and
+  `ingestExport` refuses one with step `incomplete`. The status carries
+  `syncing` while one waits.
+- The archive marks such an export `partial`, and `removedMessages` ignores
+  it, so a missing DM there is not called removed. The two Drive copies
+  already archived were marked by hand (backup
+  `archive/index.json.bak-2026-11-11`).
+- The report was rebuilt from the device export
+  (`2026-11-12T06-23-26-788Z`). The Drive folder still needs its files.
+  Open it in Google Drive on the web to see if Meta's upload is complete.
+
 ## TO DO LATER: when the first Google Drive export lands
 
 _Written: 2026-10-23. Status: waiting on Meta. Athena scheduled a daily

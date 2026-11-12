@@ -75,6 +75,24 @@ function sha256File(fs, p) {
   })
 }
 
+/** Empty folders under `dir`. Meta never ships one; Drive leaves them while syncing. */
+function emptyDirCount(fs, dir) {
+  let n = 0
+  const stack = [dir]
+  while (stack.length) {
+    const d = stack.pop()
+    let entries = []
+    try {
+      entries = fs.readdirSync(d, { withFileTypes: true })
+    } catch {
+      continue
+    }
+    if (!entries.length && d !== dir) n++
+    for (const e of entries) if (e.isDirectory()) stack.push(path.join(d, e.name))
+  }
+  return n
+}
+
 function walkFiles(fs, dir, rel = "") {
   const out = []
   let entries = []
@@ -189,11 +207,12 @@ function orderedExports(index) {
 }
 
 /**
- * Exports that held DMs, in order. One with no DM threads (cut short, or
- * still syncing when read) says nothing about what was removed.
+ * Exports that held DMs, in order. One with no DM threads, or one marked
+ * `partial` (empty folders: cut short, or still syncing when read), says
+ * nothing about what was removed.
  */
 function messageExports(index) {
-  return orderedExports(index).filter((e) => e.threads !== 0)
+  return orderedExports(index).filter((e) => e.threads !== 0 && !e.partial)
 }
 
 function rank(index) {
@@ -252,7 +271,7 @@ async function archiveExport(root, { exportDir, exportRoot, date }, { fs = nodeF
 
   const threads = readExportThreads(fs, exportRoot)
   const count = Object.values(threads).reduce((n, t) => n + t.messages.length, 0)
-  index.exports[exportDir] = { date, archivedAt: new Date(now()).toISOString(), files: Object.keys(manifest).length, threads: Object.keys(threads).length, messages: count }
+  index.exports[exportDir] = { date, archivedAt: new Date(now()).toISOString(), files: Object.keys(manifest).length, threads: Object.keys(threads).length, messages: count, ...(emptyDirCount(fs, exportRoot) ? { partial: true } : {}) }
 
   const merged = loadMessages(root, { fs })
   if (Object.keys(threads).length) mergeThreads(merged, threads, exportDir, rank(index))
@@ -281,7 +300,8 @@ function removedMessages(root, { fs = nodeFs } = {}) {
       if (m.lastSeen === t.lastSeen) latestByTsSender.set(`${m.ts}|${m.sender}`, m)
     }
     for (const m of Object.values(t.messages)) {
-      if (pos(m.lastSeen) >= order.length - 1) continue
+      // Last seen only in a partial export: nothing says it went away.
+      if (pos(m.lastSeen) < 0 || pos(m.lastSeen) >= order.length - 1) continue
       const goneIn = order[pos(m.lastSeen) + 1]
       const now = latestByTsSender.get(`${m.ts}|${m.sender}`)
       rows.push({
