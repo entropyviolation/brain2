@@ -60,6 +60,8 @@ minutes and a `span`. On Accept, `applyProposals` writes the cell and paints the
 pen (stamp `kw:helper:…`, so the keyword sync does not recount it), marked estimated for a guess. No cue, or no log:
 the old goal default. Logs come from `bimchat-transcript` and the ingest log, read only.
 
+**A list in one message, and words from BIM chat.** _Last mapped: 2026-11-09_ "i did skincare, stretched, drank water, unfollowed 1 person" is four clauses and four proposals. Three things keep a part from being lost. A word written closed or open meets the other spelling (`lexicon.ts`: "skincare" hits "Skin care", "skin care" hits "Skincare"). A clause the model left out, whose words name a habit, gets the rules' item (`fillFromRules` in `match.ts`). A part that named no habit is said in the reply ("No daily habit matched “…”"), when the rest matched. BIM chat hands a message over with "tell habits bimby …" (`lib/ingest/bimby-handoff.ts`): `send(text, { fromBim: true })` runs it as a message of its own, never as the answer to an open why-question or span question, and marks the line `fromBim`. `awaitingFromBim` counts what still waits; the Inbox shows it (`components/inbox/helper-waiting.tsx`) and `open.ts` (`openHabitsBimby`) opens the chat from there.
+
 Outside the message flow, all code (`history.ts`): `whyQueue` (a cell marked missed with no reason, then a
 habit missed `threshold` of the last `window` days; one per habit; `maxQuestions` a day), `nudges` (one line
 per open habit: usual time, amount so far, streak, rate, last done; most specific first), `reasonsOf`
@@ -72,8 +74,8 @@ per open habit: usual time, amount so far, streak, rate, last done; most specifi
 | `types.ts` | `Tag`, `Clause`, `HabitBrief`, `MatchItem`/`Matching` (the model's shape), `Proposal`, `Ask`, `TraceStage` |
 | `words.ts` | Stems (with an irregular-past table), stop words, units, `displayName` (contract rule) |
 | `tags.ts` | `tagText`: clauses, tags, marked text |
-| `lexicon.ts` | `scoreClause`, `tiedAtTop` |
-| `match.ts` | `matchSchema`, `systemText`, `habitLines`, `match` (ladder via `escalate`), `matchByRules`, `headOf` |
+| `lexicon.ts` | `scoreClause` (closed and open spellings meet), `tiedAtTop` |
+| `match.ts` | `matchSchema`, `systemText`, `habitLines`, `match` (ladder via `escalate`), `matchByRules`, `fillFromRules`, `headOf` |
 | `compute.ts` | `computeAll`, `computeItem`, `convert`, `editProposal`, `reviseProposal`, `trustWords` (private) |
 | `evidence.ts` | `findEvidence`, `readSpanAnswer`, `spanQuestion`, `PendingSpan` |
 | `logs.ts` | `bimLogs`: the person's BIM lines with times |
@@ -84,7 +86,8 @@ per open habit: usual time, amount so far, streak, rate, last done; most specifi
 | `flow.ts` | `HabitsBimbyFlow`, `starterFlow`, `loadFlow`/`saveFlow` (`habithelper-flow-v1`), `HABITS_BIMBY_REV` |
 | `run.ts` | `runHabitsBimby`, `routeOf`, `looksLikeLog` |
 | `accept.ts` | `briefOf`, `buildContext` (daily habits, 60 days, Tracking tag names), `applyProposals` (the only writer) |
-| `store.ts` | `useHabitsBimby`: chat lines, proposals, decisions, asks, the open why-question (`habithelper-chat-v1`) |
+| `store.ts` | `useHabitsBimby`: chat lines, proposals, decisions, asks, the open why-question (`habithelper-chat-v1`); `awaitingFromBim` |
+| `open.ts` | `openHabitsBimby`, `useHabitsBimbyOpenRequest`: go to Home → Habits and open the chat |
 | `tests.ts` | `FIXTURE` habits, `SHIPPED_TESTS`, `replay`, `byRules`; user cases in `habithelper-tests-v1` |
 | `rule.ts` | `looksLikeWordRule`, `parseWordRule`, `pickHabitForRule`, `ruleText`: the words-in-a-document rule |
 | `habit-helper.test.ts` | Every shipped case by replay and by rules, plus tags, compute, routes, history, shorthand |
@@ -96,6 +99,8 @@ _Last mapped: 2026-11-07_
 "Make it so that for every 300 words writing in the document called "pages writing" that are added in a day, it counts for 1 page written for that daily habit (write 3 pages)" is read in code (`rule.ts`: `looksLikeWordRule`, `parseWordRule`, `pickHabitForRule`; no model). The habit comes from the parenthesis, scored like a log line; a tie is asked, never guessed. The proposal is kind `rule`. On Accept, `applyProposals` saves `WeeklyTask.wordFeeds` (`lib/habit-word-feed.ts`) and seeds the document's word count, so what is already written does not count.
 
 From then on every Docs save (`setDocumentBody` in `components/Docs/doc-actions.ts`) calls `noteDocWords` (`lib/habit-word-feed-apply.ts`). A small ledger (`brain2-doc-word-ledger`, localStorage) sums the words **added** today; deleting never takes credit back. Whole blocks earn the amount (650 words = 2 pages), and only the newly earned units are added to the day's cell, so Speed Read or a typed number in the same cell stay. A new day starts at zero.
+
+Each credit goes through `applyModuleOutput` as module `doc-words` with `origin: "doc"`, verb "wrote", and the words behind it, so it is a logged action ("wrote pages writing") on the day, with a session and a clock time. On Accept the habit also gets a `doc-words` feed row and a double-click view: `sources`, `breakdown`, and an `entry` form (`attach: true`) for pages written by hand, which can carry scans or photos. Two habits fed by one document share that day's row total; **Planned:** split it per habit.
 
 **Planned:** an editor for `wordFeeds` in the Add / Edit Habit window; word rules for weekly habits (they sum the daily one); a ledger that follows a renamed document by id; other measures (minutes typing).
 
@@ -116,7 +121,7 @@ with an older saved copy gets the new one; its own is kept under `habithelper-fl
 
 - **Planned:** ask which log line when several fit; read a clock typed in the question itself.
 - **Planned:** ask which log line when several fit.
-- **Planned:** BIM hands a habit message to the BIMBY.
+- **Planned:** BIM hands a habit message to the BIMBY without being told to (today it needs "tell habits bimby …").
 - **Planned:** push or notification reminders for open habits.
 - **Planned:** weekly, monthly and season habits; exemptions read when counting misses.
 - **Planned:** swap `pausedOn` for session A's `isPausedOn`.

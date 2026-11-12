@@ -92,7 +92,20 @@ export async function match(call: ModelCall | null, ladder: string[], flow: Habi
   const matching = cleanMatching(out)
   if (out === null) return { matching: rules, hops, prompt, fallback: "every model failed" }
   if (!matching.items.length && rules.items.length) return { matching: rules, hops, prompt, fallback: "the model matched nothing the words name" }
-  return { matching, model: hops[hops.length - 1]?.model, hops, prompt }
+  return { matching: fillFromRules(matching, rules, t), model: hops[hops.length - 1]?.model, hops, prompt }
+}
+
+/**
+ * A long list ("did skincare, stretched, drank water, unfollowed 1 person") must not lose a part because the
+ * model answered for three of four. A clause the model left out, whose words name a habit, gets the rules' item.
+ * Each row is still a proposal the person approves.
+ */
+export function fillFromRules(model: Matching, rules: Matching, t: Tagged): Matching {
+  const has = new Set(model.items.map((x) => x.clause))
+  const added = rules.items.filter((x) => !has.has(x.clause))
+  if (!added.length) return model
+  const order = new Map(t.clauses.map((c, i) => [c.id, i]))
+  return { items: [...model.items, ...added].sort((a, b) => (order.get(a.clause) ?? 0) - (order.get(b.clause) ?? 0)) }
 }
 
 /** The clause's words before any "because": what the person did or did not do. */

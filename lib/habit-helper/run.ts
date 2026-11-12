@@ -19,7 +19,7 @@ import { suggestShorthands } from "./shorthand"
 import { parseWordRule, pickHabitForRule, ruleText, looksLikeWordRule } from "./rule"
 import { tagText } from "./tags"
 import type { Ask, HabitRoute, BimbyContext, Proposal, Tag, TraceStage } from "./types"
-import { displayName } from "./words"
+import { contentStems, displayName } from "./words"
 
 export interface PendingWhy {
   habitId: string
@@ -236,6 +236,11 @@ export async function runHabitsBimby(input: RunInput): Promise<HabitsBimbyRun> {
       break
     }
   }
+
+  // A part of a list that named no habit is said, not dropped in silence.
+  const placed = new Set(m.matching.items.map((x) => x.clause))
+  const unplaced = out.proposals.length || out.asks.length ? tagged.clauses.filter((c) => !placed.has(c.id) && contentStems(headOf(c, tagged.tags)).length) : []
+  if (unplaced.length) out.notes.push(`No daily habit matched ${unplaced.map((c) => `“${c.text}”`).join(", ")}. Say it with the habit's name, or add it in the Habits chat.`)
 
   const reply = [
     spanReply,

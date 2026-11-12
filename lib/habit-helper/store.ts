@@ -45,6 +45,8 @@ export interface BimbyLine {
   why?: PendingWhy
   /** Open the Reasons view on this habit. */
   reasonsFor?: string
+  /** The words came from BIM chat ("tell habits bimby …"). */
+  fromBim?: boolean
   model?: string
   ms?: number
   trace?: TraceStage[]
@@ -61,7 +63,7 @@ interface BimbyState {
   /** The day the opening nudges were last shown. */
   greetedOn: string | null
   open: () => void
-  send: (text: string) => Promise<void>
+  send: (text: string, opts?: { fromBim?: boolean }) => Promise<void>
   edit: (lineId: string, proposalId: string, raw: string) => void
   /** Change any part of a row (habit, day, state, amount, text, reason, times) before Accept. */
   revise: (lineId: string, proposalId: string, patch: ProposalPatch) => void
@@ -117,7 +119,7 @@ export const useHabitsBimby = create<BimbyState>()(
         set((s) => ({ greetedOn: today, lines: [...s.lines, greet, ...(why ? [why.line] : [])].slice(-MAX_LINES), ...(why ? { pending: why.pending, asked: why.asked } : {}) }))
       },
 
-      send: async (raw) => {
+      send: async (raw, opts) => {
         const text = raw.trim()
         if (!text || get().busy) return
         set((s) => ({ busy: true, lines: [...s.lines, { id: newId(), who: "you" as const, text, at: nowIso() }].slice(-MAX_LINES) }))
@@ -132,7 +134,9 @@ export const useHabitsBimby = create<BimbyState>()(
           const crew = await chatCrew().catch(() => null)
           const ladder = flow.match.ladder.length ? flow.match.ladder : crew?.extract ?? []
           const ctx = buildContext()
-          const run = await runHabitsBimby({ text, flow, ctx, call: crew ? ollamaCall(crew.main) : null, ladder, pending: get().pending, pendingSpan: get().pendingSpan, logs: bimLogs() })
+          // Words handed over from BIM chat are a message of their own, never the answer to a question open here.
+          const fromBim = !!opts?.fromBim
+          const run = await runHabitsBimby({ text, flow, ctx, call: crew ? ollamaCall(crew.main) : null, ladder, pending: fromBim ? null : get().pending, pendingSpan: fromBim ? null : get().pendingSpan, logs: bimLogs() })
           const line: BimbyLine = {
             id: newId(),
             who: "bimby",
@@ -145,6 +149,7 @@ export const useHabitsBimby = create<BimbyState>()(
             chosen: {},
             ...(run.asks.length ? { tagged: { tags: run.tags, clauses: (run.trace.find((t) => t.stage === "tag")?.output as Tagged | undefined)?.clauses ?? [] } } : {}),
             ...(run.reasonsFor ? { reasonsFor: run.reasonsFor } : {}),
+            ...(fromBim ? { fromBim: true } : {}),
             model: run.model,
             ms: Date.now() - t0,
             trace: run.trace,
@@ -154,7 +159,7 @@ export const useHabitsBimby = create<BimbyState>()(
           const why = answered ? nextWhy(after) : null
           set((s) => ({
             busy: false,
-            pendingSpan: run.pendingSpan ?? null,
+            pendingSpan: run.pendingSpan ?? (fromBim ? s.pendingSpan : null),
             lines: [...s.lines, line, ...(why ? [why.line] : [])].slice(-MAX_LINES),
             ...(answered ? { pending: why?.pending ?? null } : {}),
             ...(why ? { asked: why.asked } : {}),
@@ -206,3 +211,8 @@ export const useHabitsBimby = create<BimbyState>()(
     },
   ),
 )
+
+/** Changes and asks sent from BIM chat that still wait for Accept, a pick, or dismiss. */
+export function awaitingFromBim(lines: BimbyLine[]): number {
+  return lines.reduce((n, l) => (l.fromBim ? n + openProposals(l).length + openAsks(l).length : n), 0)
+}

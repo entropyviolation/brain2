@@ -40,7 +40,7 @@ _Last mapped: 2026-10-27_
 | `trigger.tsx` | Header key when the pin bar does not own `open` |
 | `chrome.tsx` | Mast, partition keycaps, chord legend. Links sits between the keycaps and the legend |
 | `undo-banner.tsx` | Undo sentences |
-| `helper-waiting.tsx` | _2026-11-07._ Strip above the rows: "Proposed timeblock awaiting approval" while blocks sent from BIM chat to the Tracking BIMBY wait for Add. Click closes the Inbox and opens the Tracking chat. Hidden when none are open |
+| `helper-waiting.tsx` | _2026-11-07._ Strip above the rows: "Proposed timeblock awaiting approval" while blocks sent from BIM chat to the Tracking BIMBY wait for Add. Click closes the Inbox and opens the Tracking chat. Hidden when none are open. _2026-11-09:_ a second strip, "Proposed habit change awaiting approval", for cells the Habits BIMBY proposed from BIM chat; click opens the Habits chat |
 | `rows.tsx` | Search, scroller, day plates, rows. The well stays mounted on Links (`hidden`) |
 | `foot.tsx` | Sitting line and foot keys |
 | `dialogs/apply-list-dialog.tsx` | Apply list |

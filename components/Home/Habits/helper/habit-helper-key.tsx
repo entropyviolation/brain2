@@ -6,6 +6,7 @@
 "use client"
 
 import { useEffect, useState, type ComponentType } from "react"
+import { useHabitsBimbyOpenRequest } from "@/lib/habit-helper/open"
 import "./habit-helper.css"
 
 type DialogProps = { open: boolean; onOpenChange: (open: boolean) => void }
@@ -13,6 +14,13 @@ type DialogProps = { open: boolean; onOpenChange: (open: boolean) => void }
 export function HabitsBimbyKey() {
   const [open, setOpen] = useState(false)
   const [Dialog, setDialog] = useState<ComponentType<DialogProps> | null>(null)
+
+  const requested = useHabitsBimbyOpenRequest((s) => s.wanted)
+  useEffect(() => {
+    if (!requested) return
+    useHabitsBimbyOpenRequest.getState().set(false)
+    setOpen(true)
+  }, [requested])
 
   useEffect(() => {
     if (!open || Dialog) return

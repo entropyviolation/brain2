@@ -5,6 +5,8 @@
  * fill it (`HabitBrief.words`). A clause scores 1 per distinct name, keyword or tag stem it shares with a
  * habit, 2 for the shorthand, and 0.5 for a shared unit word ("pages"). The rules reader uses the top score;
  * the model's pick is checked against it, so a clause two habits score the same on is asked, never guessed.
+ * A word written closed or open meets the other spelling: "skincare" hits a habit named "Skin care", and
+ * "skin care" hits "Skincare".
  */
 
 import type { HabitBrief } from "./types"
@@ -26,6 +28,19 @@ function termsOf(h: HabitBrief): Map<string, number> {
   return terms
 }
 
+/** Each neighbouring pair of content words closed into one stem: "skin care" → `skincar`. */
+function joinedPairs(text: string): string[] {
+  const words = contentWords(text)
+  return words.slice(1).map((w, i) => stem(words[i]! + w))
+}
+
+function pairsOf(h: HabitBrief): { joined: string; parts: string[] }[] {
+  return [h.name, ...h.words, h.shorthand ?? ""].flatMap((phrase) => {
+    const words = contentWords(phrase)
+    return words.slice(1).map((w, i) => ({ joined: stem(words[i]! + w), parts: [stem(words[i]!), stem(w)] }))
+  })
+}
+
 /** Every habit with a score above zero for these words, best first. */
 export function scoreClause(text: string, habits: HabitBrief[]): Scored[] {
   const stems = new Set(contentStems(text))
@@ -34,12 +49,16 @@ export function scoreClause(text: string, habits: HabitBrief[]): Scored[] {
     const u = unitOf(w)
     if (u) stems.add(stem(w))
   }
+  // "skin care" said, "Skincare" named: the two words closed up are also a word of the clause.
+  for (const joined of joinedPairs(text)) stems.add(joined)
   const out: Scored[] = []
   for (const h of habits) {
     let score = 0
     const hits: string[] = []
+    // "skincare" said, "Skin care" named: the closed word stands for both of the habit's words.
+    const closed = new Set(pairsOf(h).filter((p) => stems.has(p.joined)).flatMap((p) => p.parts))
     for (const [term, w] of termsOf(h)) {
-      if (stems.has(term)) {
+      if (stems.has(term) || closed.has(term)) {
         score += w
         hits.push(term)
       }

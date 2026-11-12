@@ -3,7 +3,8 @@ import { computeAll, editProposal, reviseProposal } from "./compute"
 import { findEvidence, readSpanAnswer } from "./evidence"
 import { starterFlow } from "./flow"
 import { missDays, nudges, reasonsOf, whyQueue } from "./history"
-import { cleanMatching, matchSchema } from "./match"
+import { scoreClause } from "./lexicon"
+import { cleanMatching, fillFromRules, matchByRules, matchSchema } from "./match"
 import { routeOf, runHabitsBimby } from "./run"
 import { candidates, suggestShorthands } from "./shorthand"
 import { tagText } from "./tags"
@@ -214,5 +215,35 @@ describe("trusting the words, and editing a row", () => {
     const typed = reviseProposal(goal, { value: 45, day: "2026-11-05" }, ctx)
     expect(typed).toMatchObject({ day: "2026-11-05", to: "45 min", needs: undefined })
     expect(reviseProposal(p, { done: false }, ctx).to).toBe("undone")
+  })
+})
+
+describe("a list handed over in one message", () => {
+  const hb = (o: Partial<HabitBrief> & Pick<HabitBrief, "id" | "name">): HabitBrief => ({ kind: "yesno", words: [], days: {}, ...o })
+  const SAID = "i did skincare, stretched, drank water, unfollowed 1 person"
+  const run = (habits: HabitBrief[], text = SAID) => runHabitsBimby({ text, flow: starterFlow(), ctx: fixtureCtx(TEST_NOW, habits), call: null, ladder: [] })
+
+  it("proposes every habit named", async () => {
+    const r = await run([...FIXTURE, hb({ id: "skin", name: "Skincare" }), hb({ id: "unf", name: "Unfollow 5 people", kind: "goal", goal: 5 })])
+    expect(r.proposals.map((p) => `${p.habitId}:${p.to}`)).toEqual(["skin:done", "stretch:done", "water:done", "unf:1"])
+  })
+  it("reads skincare as a habit named Skin care, and the other way round", async () => {
+    expect(scoreClause("i did skincare", [hb({ id: "skin", name: "Skin care" })])[0]?.id).toBe("skin")
+    expect(scoreClause("did my skin care", [hb({ id: "skin", name: "Skincare" })])[0]?.id).toBe("skin")
+    const r = await run([...FIXTURE, hb({ id: "am", name: "Skin care (AM)" }), hb({ id: "pm", name: "Skin care (PM)" })], "i did skincare, stretched")
+    expect(r.asks[0]?.options.map((o) => o.id).sort()).toEqual(["am", "pm"])
+    expect(r.proposals.map((p) => p.habitId)).toEqual(["stretch"])
+  })
+  it("says which part named no habit", async () => {
+    const r = await run(FIXTURE)
+    expect(r.proposals.map((p) => p.habitId)).toEqual(["stretch", "water"])
+    expect(r.reply).toMatch(/No daily habit matched “i did skincare”, “unfollowed 1 person”/)
+  })
+  it("fills a clause the model left out from the words", () => {
+    const habits = [...FIXTURE, hb({ id: "skin", name: "Skincare" })]
+    const t = tagText(SAID, new Date(TEST_NOW))
+    const rules = matchByRules(t, fixtureCtx(TEST_NOW, habits))
+    const model = { items: rules.items.filter((x) => x.clause !== "C2") }
+    expect(fillFromRules(model, rules, t).items.map((x) => x.clause)).toEqual(["C1", "C2", "C3"])
   })
 })
