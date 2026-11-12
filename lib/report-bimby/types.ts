@@ -8,9 +8,25 @@
  * person accepts an effect, and an accept reads the fields as they are then.
  */
 
+import type { AcceptGrade } from "@/lib/accept-grade"
+
 /** `line`: one command the executor already runs (Stream BIMBY). Accept sends the field to the executor. */
 /** `verdict` and `feeling`: a plan-to-outcome link and a feeling on its scales (`lib/follow-through/`). Accept confirms the record. */
-export type EffectKind = "inventory" | "cycle" | "intake" | "timeblock" | "sleep" | "line" | "verdict" | "feeling"
+/** `person`, `person-note`, `birthday`, `reminder`, `plan-entry`: the Social BIMBY (`lib/social-bimby/`). */
+export type EffectKind =
+  | "inventory"
+  | "cycle"
+  | "intake"
+  | "timeblock"
+  | "sleep"
+  | "line"
+  | "verdict"
+  | "feeling"
+  | "person"
+  | "person-note"
+  | "birthday"
+  | "reminder"
+  | "plan-entry"
 
 export type EffectStatus = "pending" | "working" | "applied" | "rejected" | "failed"
 
@@ -38,6 +54,8 @@ export interface Effect {
   ref?: string
   /** What happened on accept: the writer's reply, or why it failed. */
   result?: string
+  /** `ok`: accepted with the Neutral key (`lib/accept-grade.ts`). Applied the same, never a good example. */
+  grade?: AcceptGrade
 }
 
 export interface ReportPlan {

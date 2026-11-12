@@ -25,6 +25,7 @@ import { acceptSuggestion } from "@/lib/bim-flow/accept"
 import type { Suggestion } from "@/lib/bim-flow/suggestions"
 import { applyStreamLine } from "@/lib/stream-bimby/apply"
 import { applyFollowEffect } from "@/lib/follow-through/run"
+import { applySocialEffect } from "@/lib/social-bimby/apply"
 import { fmtClock, parseDateTime } from "./time"
 import { fieldValue, type Effect } from "./types"
 
@@ -187,6 +188,12 @@ export function applyEffect(effect: Effect, now = new Date()): Applied {
       case "verdict":
       case "feeling":
         return applyFollowEffect(effect)
+      case "person":
+      case "person-note":
+      case "birthday":
+      case "reminder":
+      case "plan-entry":
+        return applySocialEffect(effect, now)
     }
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error))
