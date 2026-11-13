@@ -7,13 +7,14 @@
  */
 import type { SessionTier } from "@/lib/session-plan"
 
-export type ParkingLotMode = "classic" | "rack" | "well" | "garage"
+export type ParkingLotMode = "classic" | "rack" | "well" | "garage" | "night"
 
 export const PARKING_LOT_MODES: { id: ParkingLotMode; label: string }[] = [
   { id: "classic", label: "Classic" },
   { id: "rack", label: "Cartridge rack" },
   { id: "well", label: "Scrying well" },
-  { id: "garage", label: "Night garage" },
+  { id: "garage", label: "Garage" },
+  { id: "night", label: "Night garage" },
 ]
 
 /** One parked session as a scene sees it. */
