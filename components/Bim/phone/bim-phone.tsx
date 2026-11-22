@@ -8,20 +8,58 @@
  */
 "use client"
 
-import { Fragment, useRef } from "react"
+import { Fragment, memo, useRef, useState } from "react"
 import { BIM_FULL, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
+import type { BimLine } from "@/lib/ingest/bim-chat"
 import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
 import { HabitCard } from "@/components/Bim/habit-card"
+import { ConvoKeys, ConvoList } from "@/components/Bim/convo-list"
 import "@/components/Bim/bim-ink.css"
 import "./bim-phone.css"
 
+/** The transcript. Memoized: a keystroke in the compose box does not repaint every line and card. */
+const PhoneLog = memo(function PhoneLog({ lines }: { lines: BimLine[] }) {
+  return (
+    <>
+      {lines.length === 0 ? (
+        <p className="bim-phone-line is-bim">
+          <b>BIM</b> Listening. Type anything you would text me — info, groc, gm, log: …
+        </p>
+      ) : (
+        lines.map((line) => (
+          <Fragment key={line.id}>
+            <p className={`bim-phone-line is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
+              <b>{line.who === "you" ? "YOU" : "BIM"}</b> {line.waiting ? (line.text === "…" ? "▮▮▮" : `▮▮▮ ${line.text}`) : line.text}
+            </p>
+            {line.aboutCard ? <span className="bim-about">↳ re: {line.aboutCard}</span> : null}
+            {line.readAs ? <span className="bim-phone-route">read as: {line.readAs}</span> : null}
+            {line.route ? <span className="bim-phone-route">{line.route}</span> : null}
+            {line.general ? <span className="bim-phone-route">general, not from your data</span> : null}
+            {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
+            {line.wireId ? <WireCard wireId={line.wireId} /> : null}
+            {line.dayId ? <DayCard dayId={line.dayId} lineId={line.id} /> : null}
+            {line.habitLineId ? <HabitCard lineId={line.habitLineId} /> : null}
+            {line.evidence?.length ? (
+              <details className="bim-phone-ev">
+                <summary>evidence ({line.evidence.length})</summary>
+                {line.evidence.map((row, i) => <p key={i}>{row}</p>)}
+              </details>
+            ) : null}
+          </Fragment>
+        ))
+      )}
+    </>
+  )
+})
+
 export function BimPhoneScreen() {
-  const { lines, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
+  const { lines, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget } = useBimChat()
   const fileInput = useRef<HTMLInputElement>(null)
   const choices = openChoices(lines)
+  const [showPast, setShowPast] = useState(false)
 
   return (
     <section className="bim-phone bim-ink" aria-label="BIM Chat" data-ui-name="BIM Chat">
@@ -40,35 +78,11 @@ export function BimPhoneScreen() {
         <button type="button" className="m-keycap bim-phone-clear" onClick={clear} disabled={!lines.length}>
           Clear
         </button>
+        <ConvoKeys showing={showPast} setShowing={setShowPast} keyClass="m-keycap" />
       </header>
 
       <div className="bim-phone-screen" ref={logRef} role="log" aria-live="polite">
-        {lines.length === 0 ? (
-          <p className="bim-phone-line is-bim">
-            <b>BIM</b> Listening. Type anything you would text me — info, groc, gm, log: …
-          </p>
-        ) : (
-          lines.map((line) => (
-            <Fragment key={line.id}>
-              <p className={`bim-phone-line is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
-                <b>{line.who === "you" ? "YOU" : "BIM"}</b> {line.waiting ? (line.text === "…" ? "▮▮▮" : `▮▮▮ ${line.text}`) : line.text}
-              </p>
-              {line.readAs ? <span className="bim-phone-route">read as: {line.readAs}</span> : null}
-              {line.route ? <span className="bim-phone-route">{line.route}</span> : null}
-              {line.general ? <span className="bim-phone-route">general, not from your data</span> : null}
-              {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
-              {line.wireId ? <WireCard wireId={line.wireId} /> : null}
-              {line.dayId ? <DayCard dayId={line.dayId} lineId={line.id} /> : null}
-            {line.habitLineId ? <HabitCard lineId={line.habitLineId} /> : null}
-              {line.evidence?.length ? (
-                <details className="bim-phone-ev">
-                  <summary>evidence ({line.evidence.length})</summary>
-                  {line.evidence.map((row, i) => <p key={i}>{row}</p>)}
-                </details>
-              ) : null}
-            </Fragment>
-          ))
-        )}
+        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <PhoneLog lines={lines} />}
         <span className="bim-phone-cursor" aria-hidden="true" />
       </div>
 
@@ -103,6 +117,12 @@ export function BimPhoneScreen() {
           </div>
         ) : null}
         {photoError ? <p className="bim-phone-photo-error">{photoError}</p> : null}
+        {replyTarget ? (
+          <p className="bim-replying">
+            ↳ replying to <b>{replyTarget.label}</b>
+            <button type="button" aria-label="Stop replying to the card" onClick={clearReplyTarget}>✕</button>
+          </p>
+        ) : null}
         <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />
         <button type="button" className="m-keycap bim-phone-attach" aria-label="Attach photo" onClick={() => fileInput.current?.click()}>
           📷

@@ -9,6 +9,7 @@
  * A line about wanting to do things with a few people later ("hang out with Masha … trip with Shelby; note texts
  * and dms from each") is read first by `future.ts`, and opens a follow-up session (`session.ts`): the asks for a
  * missing number or handle, then going over each person's texts and DMs. `liveSessionDeps` are its loaders.
+ * Before that card is built, anyone with no number is looked up in your Mac Contacts (`/api/phone-contacts`).
  */
 "use client"
 
@@ -24,7 +25,7 @@ import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
 import { loadTexts } from "@/lib/bim-flow/texts-client"
 import { TEXTS_ASK_DAYS } from "@/lib/ingest/bim-texts"
 import { isPhoneWebStorage } from "@/lib/phone-device"
-import { buildFuturePlan, readFuture, type ContactInfo } from "./future"
+import { buildFuturePlan, readFuture, type ContactCard, type ContactInfo } from "./future"
 import { buildGroupPlan, readGroup } from "./group"
 import { mutualsFrom } from "./mutuals"
 import { startSocialSession, type SessionDeps } from "./session"
@@ -107,12 +108,35 @@ export function liveSessionDeps(): SessionDeps {
   }
 }
 
+/** Mac Contacts cards for each name, from the hub. Empty when the hub can't be reached. */
+export async function contactCardsFor(names: readonly string[]): Promise<Map<string, ContactCard[]>> {
+  const out = new Map<string, ContactCard[]>()
+  if (!names.length) return out
+  const base = await hubBase().catch(() => "")
+  if (base === "") return out
+  await Promise.all(
+    names.map(async (name) => {
+      try {
+        const res = await fetch(`${base ?? ""}/api/phone-contacts?${new URLSearchParams({ name })}`)
+        if (!res.ok) return
+        const body = (await res.json()) as { cards?: ContactCard[] }
+        out.set(name, (body.cards ?? []).filter((c) => c && typeof c.name === "string" && Array.isArray(c.phones)))
+      } catch {
+        // No hub: ask as before.
+      }
+    }),
+  )
+  return out
+}
+
 /** A line about wanting to do things with a few people later: the card, then the asks and the texts review. */
-function tryFuture(text: string, now: Date, people: KnownPerson[], started: number): SocialReply | null {
+async function tryFuture(text: string, now: Date, people: KnownPerson[], started: number): Promise<SocialReply | null> {
   const read = readFuture(text, people)
   if (!read) return null
   const { tasks } = useTaskStore.getState()
-  const { plan, asks, review } = buildFuturePlan(read, text, now, { mutuals: mutualsFrom(tasks), contactOf })
+  const noNumber = read.people.filter((p) => !p.known || !contactOf(p.known.id).phones.length).map((p) => p.name)
+  const cards = await contactCardsFor(noNumber)
+  const { plan, asks, review } = buildFuturePlan(read, text, now, { mutuals: mutualsFrom(tasks), contactOf, contactCards: (name) => cards.get(name) ?? [] })
   if (!plan.effects.length) return null
   useReportStore.getState().put(plan)
   const names = read.people.map((p) => p.name)
@@ -125,10 +149,10 @@ function tryFuture(text: string, now: Date, people: KnownPerson[], started: numb
   }
 }
 
-export function trySocial(text: string, now = new Date(), opts: { forced?: boolean } = {}): SocialReply | null {
+export async function trySocial(text: string, now = new Date(), opts: { forced?: boolean } = {}): Promise<SocialReply | null> {
   const started = Date.now()
   const people = knownPeople()
-  const future = tryFuture(text, now, people, started)
+  const future = await tryFuture(text, now, people, started)
   if (future) return future
   // Three people or more in one line: a change per person, the birthday, the hang-out, and questions back.
   const group = readGroup(text, people)

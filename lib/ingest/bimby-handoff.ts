@@ -64,7 +64,7 @@ const TARGETS: Target[] = [
     label: "Social BIMBY",
     names: ["social", "friends", "friend", "people", "friendship"],
     run: async (payload) => {
-      const plan = trySocial(payload, new Date(), { forced: true })
+      const plan = await trySocial(payload, new Date(), { forced: true })
       return plan ? { text: plan.text, reportId: plan.reportId } : { text: "The Social BIMBY found no person to file this under. Name them, e.g. “new friend Masha (@handle) …”." }
     },
   },

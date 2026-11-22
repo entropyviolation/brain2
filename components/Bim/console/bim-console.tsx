@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { KeycapClose } from "@/components/keycap-close"
 import { BIM_FULL, BIM_HANDLE, BIM_INTRO, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_CHAT_ID, useBimChatStore, type BimLine } from "@/lib/ingest/bim-chat"
+import { ConvoKeys, ConvoList } from "../convo-list"
 import { ALL_COMMANDS } from "@/lib/ingest/command-glossary"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
@@ -90,6 +91,7 @@ const ChatLog = memo(function ChatLog({ lines, onTry }: { lines: BimLine[]; onTr
             ) : (
               <p className="bim-msg-text">{line.text}</p>
             )}
+            {line.aboutCard ? <span className="bim-about">↳ re: {line.aboutCard}</span> : null}
             {line.readAs ? <span className="bim-msg-route">read as: {line.readAs}</span> : null}
             {line.route ? <span className="bim-msg-route">{line.route}</span> : null}
             {line.general ? <span className="bim-msg-route">general, not from your data</span> : null}
@@ -111,7 +113,7 @@ const ChatLog = memo(function ChatLog({ lines, onTry }: { lines: BimLine[]; onTr
 })
 
 function ChatPane() {
-  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
+  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget } = useBimChat()
   const choices = openChoices(lines)
   const box = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -129,8 +131,10 @@ function ChatPane() {
     onKeyDown(event)
   }
 
+  const [showPast, setShowPast] = useState(false)
   const startWith = useCallback(
     (text: string) => {
+      setShowPast(false)
       setDraft(text)
       box.current?.focus()
     },
@@ -139,9 +143,12 @@ function ChatPane() {
 
   return (
     <div className="bim-crt-pane">
-      <ModeSwitch llm={llm} setLlm={setLlm} />
+      <div className="bim-chat-top">
+        <ModeSwitch llm={llm} setLlm={setLlm} />
+        <ConvoKeys showing={showPast} setShowing={setShowPast} />
+      </div>
       <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
-        <ChatLog lines={lines} onTry={startWith} />
+        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} />}
       </div>
       <div className="bim-compose">
         <div className="bim-glass bim-well">
@@ -169,11 +176,17 @@ function ChatPane() {
             </div>
           ) : null}
           {photoError ? <p className="bim-photo-error">{photoError}</p> : null}
+          {replyTarget ? (
+            <p className="bim-replying">
+              ↳ replying to <b>{replyTarget.label}</b>
+              <button data-no95 type="button" aria-label="Stop replying to the card" onClick={clearReplyTarget}>✕</button>
+            </p>
+          ) : null}
           <textarea
             ref={box}
             aria-label="Message BIM"
             value={draft}
-            placeholder={photos.length ? "Caption (or leave blank and I will ask)…" : choices.length ? "Type an answer, or press a number…" : "Message BIM…"}
+            placeholder={photos.length ? "Caption (or leave blank and I will ask)…" : replyTarget ? "Say what's wrong or what you know…" : choices.length ? "Type an answer, or press a number…" : "Message BIM…"}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onKey}
             autoFocus={!touchFirst()}

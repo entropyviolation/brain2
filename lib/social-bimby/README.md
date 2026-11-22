@@ -17,7 +17,7 @@ A birthday ("Jo's birthday is March 3") adds a `birthday` effect. An invite you 
 
 ## Future lines: a few people, what you want to do with each
 
-_Last mapped: 2026-11-21_
+_Last mapped: 2026-11-21_ (asks and Contacts revised the same night)
 
 "in terms of the future I am excited to hang out with Masha and I want to go on a trip with shelby; note texts and dms from each" used to fall through to the follow-through question ("how much do you want to?") and be logged. `future.ts` now reads it first. It takes a line with two people or more, a trip, or a request to go over texts. One person with only a hang-out still goes to `parse.ts`.
 
@@ -31,10 +31,13 @@ Per person, the card holds:
 | `plan-entry` | PLAN | A hang-out goes to the Week Plan for the week starting next Monday. A trip goes to the Season Plan (`quarterPlan-YYYY-Qn`). "This year" or "someday" goes to the Year Plan |
 | `plan-entry` | PLAN | A trip also offers "Maybe: go on a trip with shelby" on the Year Plan (`yearPlan-YYYY`). Reject it if the season is enough |
 
-After the card, BIM follows up one line at a time (`session.ts`, lane `social-follow`):
+After the card, BIM follows up (`session.ts`, lane `social-follow`):
 
-1. **Asks.** A person with no number, no Instagram, and no single matching mutual gets "What's Shelby's number or @handle? (or skip)". Several matching mutuals get a numbered list. The answer (a number, a pick, an `@handle`, "ig is …", or a bare handle) becomes a one-change PERSON card with `phone` / `instagram`.
-2. **Texts and DMs.** "go" shows the last four conversations with each person, oldest first. Texts come from the hub (`/api/phone-texts`, one-to-one only) and DMs from the Instagram archive (`/api/instagram/dms`, `electron/instagram-archive.js` `dmsWith`). A conversation ends after an hour of quiet. Each one ends with a question ("What do you want to remember about Masha from this?"). What you type is kept. "next" shows the next conversation, "skip" moves to the next person, and "done" stops. Your notes come back as a NOTE card when that person is finished.
+1. **Contacts first.** _2026-11-21:_ before the card is built, anyone with no number is looked up in your Mac Contacts (`/api/phone-contacts`, `cardsNamed` in `lib/phone-sync/contact-names.mjs`). "Shelby" finds a card saved as "Shelby" or "Shelby Seal", and the other way round. Cards with the same name are one person, every number kept. One match is assumed: its numbers go in the PERSON change's Phone field, and a longer card name goes in Full name. Several matches become lettered choices.
+2. **Asks, all at once.** _2026-11-21:_ every open question is listed together, numbered ("1. masha's number or @handle? 2. Which is Shelby? a. … b. …"). Before, BIM asked one at a time and repeated the question at any line it could not read. Answer any of them in any order: "1 951 201 5076 @loureedstrash 2 a and b", "shelby: @one @two", or one per line. Each answer can hold several numbers, several handles ("igs are x and y"), picks, and "last name Seal". Each answered person becomes a one-change PERSON card. "skip" drops them all, "2 skip" one, and "go" leaves them for the texts review. A line that answers nothing goes to the other lanes and the asks stay open.
+3. **Texts and DMs.** "go" shows the last four conversations with each person, oldest first. Texts come from the hub (`/api/phone-texts`, one-to-one only) and DMs from the Instagram archive (`/api/instagram/dms`, `electron/instagram-archive.js` `dmsWith`). A conversation ends after an hour of quiet. Each one ends with a question ("What do you want to remember about Masha from this?"). What you type about that person is kept: a line that names them, says she / he / her / him, or says we / they and is not a to-do. _2026-11-21:_ any other line goes on to the other lanes and the review stays open. Before, every line was kept as a note, so "need to clean house before elijah gets back … order brow bleach" became a note for Shelby (`isNote` in `session.ts`). "next" shows the next conversation, "skip" moves to the next person, and "done" stops. Your notes come back as a NOTE card when that person is finished.
+
+The PERSON change's Phone and Instagram fields may hold several, split by commas. Every number is added to `personProfile.phones`, and to the Phone Number attribute when that is set, so it shows on the page. The first handle is the main `instagram` when they have none. The rest go to `personProfile.otherInstagrams` (`addInstagramToPerson` in `lib/instagram-person-links.ts`), shown under Instagram on the person page. Full name goes to `personProfile.fullName`; the item keeps its name.
 
 A command (`log: …`) or a long line that answers nothing passes to the other lanes. A session left idle for 30 minutes is dropped. Lines the Social BIMBY answers never get the follow-through question.
 
@@ -44,7 +47,7 @@ A command (`log: …`) or a long line that answers nothing passes to the other l
 - **Hand-off.** "send this to social bimby: …" (`lib/ingest/bimby-handoff.ts`) runs it `forced`: a name is enough, no social cue needed.
 - **Info.** "social bimby info" answers from the Blueprint (`lib/agents/adapters/social-bimby.ts`).
 - The plan is kept in `useReportStore` and drawn by `components/Bim/report-card.tsx`, the same card, store and accept queue as the Report and Stream BIMBIES. `lib/report-bimby/apply.ts` sends the six kinds here (`intention` added 2026-11-21).
-- **Follow-up lane.** `social-follow` sits after `commands` and before `web-home` / `ask-back`. While a session is open, "go", "skip" and a note are its.
+- **Follow-up lane.** `social-follow` sits after `commands` and before `web-home` / `ask-back`. While a session is open, "go", "skip" and a note about the person are its; anything else falls through.
 
 ## Files
 
@@ -55,16 +58,18 @@ A command (`log: …`) or a long line that answers nothing passes to the other l
 | `apply.ts` | One writer per kind, one undo step each. A found person keeps every field; relation and birthday fill only a blank (a different birthday is refused, not overwritten). The Instagram handle moves off anyone else, as `linkInstagramToPerson` always does, and the card says so first. A note, birthday or reminder finds the person by name, or makes them |
 | `future.ts` | Pure. `readFuture` (clauses, then every "hang out with X" / "trip with X" in each, with the horizon read from that hit's own words) and `buildFuturePlan` (the card, plus the asks and the people to review) |
 | `mutuals.ts` | `mutualsFrom` (the Instagram mutuals list, or someone you follow who follows back) and `mutualCandidates` (every word of the name in the display name, else the first name in the handle) |
-| `session.ts` | The follow-up after a future card: contact asks, then the texts and DMs review. In memory. Loaders are passed in |
+| `birthday-reply.ts` | Pure. A reply to a BIRTHDAY card (`lib/report-bimby/card-reply.ts`): `readBirthdayReply` (the year said or counted back from "22 years ago" / "turned 22", a day said outright, or the event it fell on and when: "last weekend", "yesterday", "in october" → `windowOf`), `datesIn` (dates written on a page), `pickEventDate` (the day the pages put next to the event's words, inside the window first) |
+| `session.ts` | The follow-up after a future card: numbered contact asks (`splitAnswers`, `readContactAnswer`), then the texts and DMs review. In memory. Loaders are passed in |
 | `apply.ts` | Also writes `intention`, a `phone` on `person`, and `plan-entry` for `quarter` (Season Plan) and `year` (Year Plan) |
-| `run.ts` | `trySocial` (future, then group, then single), `knownPeople`, `storeSocialDeps` (flights, airport cities, handle owner), `liveSessionDeps` (hub texts, archive DMs, the card store) |
+| `run.ts` | `trySocial` (async: future, then group, then single), `contactCardsFor` (Mac Contacts by name, from the hub), `knownPeople`, `storeSocialDeps` (flights, airport cities, handle owner), `liveSessionDeps` (hub texts, archive DMs, the card store) |
 | `social-bimby.test.ts` | The Masha line end to end, the flight-home date, reuse of a known person, the lane order, the hand-off, the Blueprint. The end-to-end tests pin the clock to 2026-11-11 (before that, the reminder fell in the past after 2026-11-18 and Accept refused it) |
-| `future.test.ts` | The exact 2026-11-21 line: reading, the card, mutual matching, the asks, the review session, Accept writing week, season and year, and a run through `sendToBim` |
+| `future.test.ts` | The exact 2026-11-21 line and its follow-up answers (numbered, by name, several handles and numbers, lines that answer nothing, a Contacts match): reading, the card, mutual matching, the asks, the review session, Accept writing week, season and year, and a run through `sendToBim` |
 
 ## Planned
 
 - **Planned:** birthday nudges (a reminder a few days before each birthday), "friends you haven't seen" from Company time, social events as calendar events, a model read for phrasing the rules miss.
 - **Planned:** with LLM on, a model question per conversation in the review instead of the four fixed ones, and a one-line summary of what each conversation was about.
+- **Planned:** make People I Know items for saved Contacts you have texted both ways lately, as one Accept card.
 - **Planned:** show `personProfile.intentions` on the person page and mark one done when a Company block with them lands.
 
 Test: `npx vitest run --exclude '.claude/**' lib/social-bimby`

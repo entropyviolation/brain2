@@ -241,6 +241,27 @@ export function releaseDuplicateLegacyTwins(minChars = 0): number {
   return n
 }
 
+const quotaReliefs: Array<() => void> = []
+
+/**
+ * Register a shrinker that `writeAliasedLocal` runs when the origin is full,
+ * before its one retry. For stores that can lose old rows (history ledgers),
+ * so one oversized key cannot block every other save.
+ */
+export function registerQuotaRelief(relieve: () => void): void {
+  if (!quotaReliefs.includes(relieve)) quotaReliefs.push(relieve)
+}
+
+function runQuotaReliefs(): void {
+  for (const relieve of quotaReliefs) {
+    try {
+      relieve()
+    } catch {
+      /* a relief that fails frees nothing; the retry decides */
+    }
+  }
+}
+
 /**
  * The first alias is what `readAliasedLocal` hands back, so it is written
  * first and alone decides success. Writing a twin after the primary failed
@@ -257,6 +278,7 @@ export function writeAliasedLocal(name: string, value: string): void {
     if (!isQuotaExceededError(error)) throw error
     releaseDuplicateLegacyTwins()
     releaseCopiedUnprefixedKeys()
+    runQuotaReliefs()
     localStorage.setItem(primary, value)
   }
   for (const key of keys.slice(1)) {

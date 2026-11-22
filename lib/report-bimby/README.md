@@ -23,6 +23,8 @@ _2026-11-11:_ `acceptEffect(planId, id, "ok")` and `acceptAll(planId, "ok")` are
 | `apply.ts` | One writer per effect kind, one undo step each (`runAsAction`) |
 | `decide.ts` | Accept, reject, reconsider, accept all, reject all. Accept is async: the effect shows `working` (a saving bar on the card), the browser paints, then one queued write runs at a time with a paint between writes. A night of sleep saves in three paced pieces (bedtime, wake, paint) with a repaint between, under one undo step. The queue is module-level, so leaving the screen never cancels a save, and closing the tab mid-save asks first. A save over 1 s says how long it took and logs a console warning. A `working` effect saved by a reload comes back as `pending` |
 | `store.ts` | Plans per device in `localStorage` `bimchat-reports`, last 40 |
+| `reply-target.ts` | The card change the next chat line answers (`useReplyTarget`). Set by tapping a change's header or its Reply key; in memory; a send clears it |
+| `card-reply.ts` (+ `.test.ts`) | The Card Reply BIMBY, `replyToCard`. A line sent while a change is marked is read against that change and answered with a new card; the old change is set to rejected ("Replaced by the card in BIM's reply below"), and Reconsider brings it back. Only `birthday` has a reader so far (`lib/social-bimby/birthday-reply.ts`); any other kind returns null and the line goes through the chat as usual |
 | `run.ts` | `tryReport`, `gatherEvidence` (stores, hub texts and file changes with a 6 s limit each, kept Chrome visits), and `storeDeps`. The wide search runs only when the message places something in time (a wake, a bedtime, an activity) |
 
 ## Effects
@@ -54,6 +56,14 @@ Chrome visits come from `loadKeptVisits` (IndexedDB `brain2-browser-history`, th
 ## Stream cards
 
 _2026-11-09:_ the same card also draws a Stream BIMBY plan (`lib/stream-bimby/`): a day of timed lines read into `line` effects. The store, the accept queue, and the card are shared; the rules are not.
+
+## Replying to a change on a card
+
+_Last mapped: 2026-11-22_ Tap a change's header (or its **Reply** key) on any Report, Stream or Social card. The change is outlined, the well shows "↳ replying to BIRTHDAY · Nico's birthday", and the cursor goes there. The next typed line carries that change (`sendToBim({ about })`) and your sent line shows "↳ re: …". A tapped answer key does not carry it. `sendToBim` tries `replyToCard` before any lane; null falls through to the normal route.
+
+Example: on Nico's failed BIRTHDAY card, "the birthday was the same day as the foxtide show at brooklyn steel last weekend. and 22 years ago so 2004" searches the web for "foxtide show brooklyn steel November 2026", finds the show on Sat Nov 14, 2026, and answers with a new BIRTHDAY card set to 2004-11-14. Its why says where the date came from and that 22 years back agrees; its evidence holds the quoted snippet and the sources. Chip: `REPLY · birthday · WEB · code · 1.2s`. Checked on the real DuckDuckGo results (fetched outside the hub) and in the running app with a seeded card. The hub's own search was blocked by DuckDuckGo's bot check that night (see `lib/bim-flow/web-search.mjs`), so the app said it could not search.
+
+**Planned:** readers for the other kinds (a REMIND or PLAN day, a PERSON's handle, an ACTIVITY's times); with LLM on, a model pick when the pages give several days for the event; looking in your own data (Day Plan, events, Company) for the event before the web.
 
 ## Not built yet
 

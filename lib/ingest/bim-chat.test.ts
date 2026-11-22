@@ -129,6 +129,51 @@ describe("BIM Chat", () => {
   })
 })
 
+describe("BIM Chat: several conversations", () => {
+  beforeEach(() => {
+    resetAllStores()
+    useBimChatStore.setState({ lines: [], past: [], openStartedAt: "", busy: false, queued: 0 })
+  })
+
+  it("＋ new keeps the open conversation under past, titled by its first line, and opens an empty one", async () => {
+    await useBimChatStore.getState().send("ping")
+    const firstId = useBimChatStore.getState().openId
+    useBimChatStore.getState().newConvo()
+    const s = useBimChatStore.getState()
+    expect(s.lines).toEqual([])
+    expect(s.openId).not.toBe(firstId)
+    expect(s.past.map((c) => [c.id, c.title, c.lines.length])).toEqual([[firstId, "ping", 2]])
+    // An empty conversation is not kept.
+    useBimChatStore.getState().newConvo()
+    expect(useBimChatStore.getState().past).toHaveLength(1)
+  })
+
+  it("opening a past one swaps it in and keeps the open one", async () => {
+    await useBimChatStore.getState().send("ping")
+    const firstId = useBimChatStore.getState().openId
+    useBimChatStore.getState().newConvo()
+    await useBimChatStore.getState().send("info")
+    useBimChatStore.getState().openConvo(firstId)
+    const s = useBimChatStore.getState()
+    expect(s.openId).toBe(firstId)
+    expect(s.lines[0]!.text).toBe("ping")
+    expect(s.past.map((c) => c.title)).toEqual(["info"])
+  })
+
+  it("a reply that lands after you switched goes to the conversation it was sent from", async () => {
+    const sent = useBimChatStore.getState().send("ping")
+    useBimChatStore.getState().newConvo()
+    await sent
+    const s = useBimChatStore.getState()
+    expect(s.lines).toEqual([])
+    expect(s.past[0]!.lines.map((l) => [l.who, !!l.waiting])).toEqual([
+      ["you", false],
+      ["bim", false],
+    ])
+    expect(s.past[0]!.lines[1]!.text).toBe(BIM_PING)
+  })
+})
+
 describe("day-stream grammar lane", () => {
   beforeEach(() => {
     resetAllStores()

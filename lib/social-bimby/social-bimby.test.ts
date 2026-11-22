@@ -100,7 +100,7 @@ describe("Social BIMBY end to end", () => {
     } as unknown as Task
     useTaskStore.getState().addTask(returnLeg)
 
-    const reply = trySocial(MASHA, NOW)!
+    const reply = (await trySocial(MASHA, NOW))!
     expect(reply.route).toMatch(/^SOCIAL/)
     expect(personNamed("Masha")).toBeUndefined()
 
@@ -126,8 +126,8 @@ describe("Social BIMBY end to end", () => {
   })
 
   it("a second message about Masha reuses her", async () => {
-    await acceptAll(trySocial(MASHA, NOW)!.reportId)
-    const again = trySocial("Masha's birthday is April 9", NOW)!
+    await acceptAll((await trySocial(MASHA, NOW))!.reportId)
+    const again = (await trySocial("Masha's birthday is April 9", NOW))!
     await acceptAll(again.reportId)
     const people = useTaskStore.getState().tasks.filter((t) => t.type === "person" && /masha/i.test(t.description ?? ""))
     expect(people).toHaveLength(1)

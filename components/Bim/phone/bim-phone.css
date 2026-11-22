@@ -46,6 +46,15 @@
   box-shadow: inset 0 0 0 1px var(--bim-line), inset 0 0 24px rgba(0, 0, 0, 0.7);
 }
 
+/* Lag fix (2026-11-21): off-screen text lines skip style and paint, so the 2 s ink drift and the glow
+   do not repaint the whole transcript. Cards and folds stay whole (containment would clip them). */
+.bim-phone-screen > .bim-phone-line,
+.bim-phone-screen > .bim-phone-route {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1.5em;
+  overflow-clip-margin: 8px;
+}
+
 .bim-phone-line {
   margin: 0 0 10px;
   white-space: pre-wrap;
@@ -216,4 +225,10 @@
 .bim-phone-attach {
   flex: 0 0 auto;
   min-width: 44px;
+}
+
+/* Conversations: ＋ new and chats in the header; the past list draws in the screen (list rules in `bim-ink.css`). */
+.bim-phone-head .bim-convo-keys {
+  display: inline-flex;
+  gap: 6px;
 }

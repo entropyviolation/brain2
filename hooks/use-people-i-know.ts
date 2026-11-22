@@ -15,6 +15,7 @@ import { ensureSelfPerson } from "@/lib/people-self"
 import { useTaskStore } from "@/lib/task-store"
 import { afterPersistHydrated } from "@/lib/use-persist-hydrated"
 import { startPeopleSync } from "@/lib/people-sync-runner"
+import { startTextPeopleBimby } from "@/lib/texts-people-bimby"
 
 export function usePeopleIKnowList(): void {
   useEffect(() => {
@@ -24,9 +25,12 @@ export function usePeopleIKnowList(): void {
     })
     // Who-with details, Company pens, and People I Know items stay matched.
     const stopSync = startPeopleSync()
+    // Texts People BIMBY: people you text back and forth with get a Person item.
+    const stopTexts = startTextPeopleBimby()
     return () => {
       stopList()
       stopSync()
+      stopTexts()
     }
   }, [])
 }

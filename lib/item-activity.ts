@@ -6,7 +6,10 @@
  * at the item, and the History tab on item detail. Entries are never rewritten.
  *
  * Storage: localStorage `brain2-item-activity`. A full Settings backup carries
- * this key in `extras` and writes it back on restore. There is no persist
+ * this key in `extras` and writes it back on restore. Each item keeps its last
+ * 200 lines and the whole ledger stays under `MAX_ACTIVITY_LEDGER_CHARS`,
+ * oldest lines dropped first. A full origin never throws out of a write, and
+ * other keys' quota retries shrink the ledger (`registerQuotaRelief`). There is no persist
  * version: `source`, `order`, and `dedupeKey` are optional, and lines written
  * before them still load.
  *
@@ -29,7 +32,7 @@ import {
   type ItemWriteAttribution,
 } from "@/lib/item-write-source"
 import { serializeSnapshot } from "@/lib/unsaved-changes"
-import { persistKey, readAliasedLocal, removeAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
+import { persistKey, readAliasedLocal, registerQuotaRelief, removeAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import type { ItemLink, ItemNoteEntry, ItemResource, List, Subtask, Task, TimeLogEntry, TodoPeriodMark } from "@/lib/types"
 
 export const ITEM_ACTIVITY_STORAGE_KEY = persistKey("item-activity")
@@ -185,9 +188,77 @@ function readAll(): Record<string, ItemActivityEntry[]> {
   }
 }
 
+/**
+ * Whole-ledger budget in JSON characters. WebKit stores two bytes per
+ * character and gives the origin about 5 MB, so 1M chars leaves room for
+ * every other key. Past this, the oldest lines across all items go first.
+ */
+export const MAX_ACTIVITY_LEDGER_CHARS = 1_000_000
+
+/** Drop the oldest lines (any item) until the JSON fits `budget`. Mutates and returns `all`. */
+export function trimActivityLedger(
+  all: Record<string, ItemActivityEntry[]>,
+  budget = MAX_ACTIVITY_LEDGER_CHARS,
+): Record<string, ItemActivityEntry[]> {
+  let size = JSON.stringify(all).length
+  if (size <= budget) return all
+  const rows: { itemId: string; entry: ItemActivityEntry; at: number }[] = []
+  for (const [itemId, list] of Object.entries(all)) {
+    if (!Array.isArray(list)) continue
+    for (const entry of list) rows.push({ itemId, entry, at: Date.parse(entry?.at ?? "") || 0 })
+  }
+  rows.sort((a, b) => a.at - b.at)
+  const drop = new Set<ItemActivityEntry>()
+  for (const row of rows) {
+    if (size <= budget) break
+    drop.add(row.entry)
+    size -= JSON.stringify(row.entry).length + 1
+  }
+  for (const [itemId, list] of Object.entries(all)) {
+    if (!Array.isArray(list)) continue
+    const kept = list.filter((entry) => !drop.has(entry))
+    if (kept.length > 0) all[itemId] = kept
+    else delete all[itemId]
+  }
+  return all
+}
+
+/**
+ * Quota relief for every other key: halve the ledger in place. Writes the raw
+ * key directly, never through `writeAliasedLocal` (which is mid-retry).
+ */
+function relieveLedger(): void {
+  const raw = localStorage.getItem(ITEM_ACTIVITY_STORAGE_KEY)
+  if (!raw || raw.length <= MAX_ACTIVITY_LEDGER_CHARS / 4) return
+  const trimmed = JSON.stringify(trimActivityLedger(readAll(), MAX_ACTIVITY_LEDGER_CHARS / 2))
+  try {
+    localStorage.setItem(ITEM_ACTIVITY_STORAGE_KEY, trimmed)
+  } catch {
+    localStorage.removeItem(ITEM_ACTIVITY_STORAGE_KEY)
+    localStorage.setItem(ITEM_ACTIVITY_STORAGE_KEY, trimmed)
+  }
+}
+registerQuotaRelief(relieveLedger)
+
+/**
+ * The ledger is history, not a source of truth. A full origin must never throw
+ * out of a task save: that took the iPhone app down at launch when this key
+ * reached 5 MB. On a quota error, halve the budget once and retry, then give up.
+ */
 function writeAll(all: Record<string, ItemActivityEntry[]>): void {
   if (typeof localStorage === "undefined") return
-  writeAliasedLocal(ITEM_ACTIVITY_STORAGE_KEY, JSON.stringify(all))
+  trimActivityLedger(all)
+  try {
+    writeAliasedLocal(ITEM_ACTIVITY_STORAGE_KEY, JSON.stringify(all))
+    return
+  } catch {
+    /* fall through: retry smaller */
+  }
+  try {
+    writeAliasedLocal(ITEM_ACTIVITY_STORAGE_KEY, JSON.stringify(trimActivityLedger(all, MAX_ACTIVITY_LEDGER_CHARS / 2)))
+  } catch (error) {
+    console.warn("[item-activity] ledger not saved; storage is full", error)
+  }
 }
 
 function humanize(field: string): string {

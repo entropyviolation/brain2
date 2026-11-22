@@ -1148,6 +1148,59 @@ async function handlePhoneTexts(req, res) {
 }
 
 /**
+ * People you text back and forth with, read only: `?days=183` →
+ * `{ rows: [{ handle, inbound, outbound, last }], names: { handle: "Contacts name" } }`.
+ * One-to-one chats with at least one text each way in the window. Counts only, no bodies.
+ * The Texts People BIMBY (`lib/texts-people-bimby.ts`) makes People I Know items from it.
+ */
+const TEXT_PEOPLE_MAX_DAYS = 400
+async function handlePhoneTextPeople(req, res) {
+  if (req.method !== "GET") {
+    sendJson(res, 405, { ok: false, error: "Method not allowed" })
+    return true
+  }
+  const days = Math.min(TEXT_PEOPLE_MAX_DAYS, Math.max(1, Number(persistQuery(req).get("days")) || 183))
+  const since = Date.now() - days * 86400000
+  const records = []
+  if (fs.existsSync(TEXTS_FILE)) {
+    const rl = (await import("node:readline")).createInterface({ input: fs.createReadStream(TEXTS_FILE), crlfDelay: Infinity })
+    for await (const line of rl) {
+      if (!line.includes('"type":"message"')) continue
+      try {
+        const r = JSON.parse(line)
+        if (typeof r.at === "number" && r.at >= since) records.push({ type: r.type, at: r.at, direction: r.direction, party: r.party, members: r.members })
+      } catch {}
+    }
+  }
+  const { tallyTextPeople } = await import("../lib/phone-sync/text-people.mjs")
+  const rows = tallyTextPeople(records, since)
+  const { namesFor } = await import("../lib/phone-sync/contact-names.mjs")
+  const names = await namesFor(rows.map((r) => r.handle)).catch(() => ({}))
+  sendJson(res, 200, { ok: true, days, rows, names })
+  return true
+}
+
+/**
+ * Mac Contacts cards for a name, read only: `?name=Shelby` → `{ cards: [{ name, first, last, phones, emails }] }`.
+ * The Social BIMBY looks here before it asks you for someone's number (`lib/social-bimby/run.ts`).
+ */
+async function handlePhoneContacts(req, res) {
+  if (req.method !== "GET") {
+    sendJson(res, 405, { ok: false, error: "Method not allowed" })
+    return true
+  }
+  const name = (persistQuery(req).get("name") ?? "").trim().slice(0, 80)
+  if (!name) {
+    sendJson(res, 400, { ok: false, error: "name is required" })
+    return true
+  }
+  const { cardsNamed, contactCards } = await import("../lib/phone-sync/contact-names.mjs")
+  const cards = cardsNamed(name, await contactCards().catch(() => [])).slice(0, 8)
+  sendJson(res, 200, { ok: true, cards })
+  return true
+}
+
+/**
  * File activity for the BIM flow lab, read only. Walks the home folder for files
  * created or modified in a recent window and returns `{ at, k: "new" | "mod", p }`
  * (`p` is relative to home). Bursts of 100+ files in one minute and one top
@@ -1291,6 +1344,14 @@ export async function handlePersistApi(req, res, pathname) {
   if (pathname === "/api/phone-texts") {
     if (!guardBrowserOrigin(req, res)) return true
     return handlePhoneTexts(req, res)
+  }
+  if (pathname === "/api/phone-text-people") {
+    if (!guardBrowserOrigin(req, res)) return true
+    return handlePhoneTextPeople(req, res)
+  }
+  if (pathname === "/api/phone-contacts") {
+    if (!guardBrowserOrigin(req, res)) return true
+    return handlePhoneContacts(req, res)
   }
   if (pathname === "/api/file-activity") {
     if (!guardBrowserOrigin(req, res)) return true

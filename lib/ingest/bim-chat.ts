@@ -72,6 +72,9 @@ import { tryStream } from "@/lib/stream-bimby/run"
 import { tryWire } from "@/lib/wire-bimby/run"
 import { tryDay } from "@/lib/plan-bimby/day/run"
 import { answerWeb, looksLikeWebQuestion, takeHome, type WebAnswer } from "@/lib/bim-flow/web-ask"
+import type { WebSearch } from "@/lib/bim-flow/web-lane"
+import { replyToCard } from "@/lib/report-bimby/card-reply"
+import type { CardRef } from "@/lib/report-bimby/reply-target"
 import { splitAside } from "@/lib/bim-flow/web-lane"
 import { answerSelf } from "./bim-self"
 import { nextQuestion } from "@/lib/follow-through/ask"
@@ -89,6 +92,8 @@ const bimTurns = createChatQueue()
 export const BIM_CHAT_SOURCE: IngestSource = { channel: "simulate", chatId: BIM_CHAT_ID }
 const TRANSCRIPT_KEY = "bimchat-transcript"
 const TRANSCRIPT_CAP = 400
+/** Past conversations kept on the device, newest first. The open one is not counted. */
+const CONVO_CAP = 30
 
 /** Clarify kinds that are the ladder failing to read a line, not a name to pick or a ritual in progress. */
 const RESCUABLE = new Set<string>(["start", "mood", "location"])
@@ -128,6 +133,8 @@ export type BimLine = {
   waiting?: boolean
   /** On a reply: the id of the line of yours it answers. */
   replyTo?: string
+  /** On a line of yours: the card change it replies to ("BIRTHDAY · Nico's birthday", `lib/report-bimby/reply-target.ts`). */
+  aboutCard?: string
 }
 
 type InlineButton = { text: string; callback_data: string }
@@ -489,7 +496,7 @@ function chatLine(board: SwitchboardResult, said: string): BimLine {
 /** The turns before this line, oldest first, for the chat lane. The line being sent is already last in the transcript. */
 function earlierTurns(text: string): { who: "you" | "bim"; text: string }[] {
   // Up to this line's own turn: lines sent after it (queued) and reply slots still waiting are not context.
-  const all = useBimChatStore.getState().lines
+  const all = convoLinesWhere((ls) => ls.some((l, i) => l.who === "you" && l.text === text && ls[i + 1]?.waiting))
   const mine = all.findIndex((l, i) => l.who === "you" && l.text === text && all[i + 1]?.waiting)
   const before = (mine >= 0 ? all.slice(0, mine) : all.filter((l, i) => !(i === all.length - 1 && l.who === "you" && l.text === text))).filter((l) => !l.waiting)
   return before.slice(-8).map((l) => ({ who: l.who, text: l.text }))
@@ -531,7 +538,7 @@ function followUp(text: string, now: Date) {
 export async function sendToBim(
   text: string,
   now = new Date(),
-  opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; origin?: TraceOrigin } = {},
+  opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; origin?: TraceOrigin; about?: CardRef; search?: WebSearch } = {},
 ): Promise<BimLine> {
   // One Trace for the whole turn, the follow-through read and the cues included. Every model call made while the
   // turn runs is an event of its own, named by the stage that asked (`turn.stage`), so `cost.calls` is the real count.
@@ -548,6 +555,15 @@ export async function sendToBim(
     return { ...line, traceId: rec.id }
   }
   try {
+    // A line sent as a reply to one change on a card goes to the Card Reply BIMBY first (`lib/report-bimby/card-reply.ts`).
+    if (opts.about) {
+      turn.stage = "card-reply"
+      const t0 = rec.clock()
+      const replied = await replyToCard(text, opts.about, now, { search: opts.search }).catch(() => null)
+      rec.add({ kind: "tool-call", actor: "card-reply", status: replied ? "ok" : "pass", t0 })
+      if (replied) return close(bimLine(replied.text, { route: replied.route, ...(replied.reportId ? { reportId: replied.reportId } : {}), ...(replied.evidence?.length ? { evidence: replied.evidence } : {}) }))
+      turn.stage = "correct"
+    }
     const routed = await routeToBim(text, now, { ...opts, rec, turn }, newestBefore)
     turn.stage = "follow-through"
     let t0 = rec.clock()
@@ -618,7 +634,7 @@ async function followed(line: BimLine, text: string, now: Date, opts: { photos?:
 
 /** What the app already holds that the follow-through ledger can be read from. */
 function mineSources(): MineSources {
-  const said = useBimChatStore.getState().lines.filter((l) => l.who === "you").map((l) => ({ text: l.text, at: l.at }))
+  const said = allBimLines().filter((l) => l.who === "you").map((l) => ({ text: l.text, at: l.at }))
   const plans = Object.values(useReportStore.getState().plans).map((p) => ({ text: p.text, at: p.at }))
   return { texts: [...plans, ...said], overcome: useOvercomeStore.getState().log }
 }
@@ -775,15 +791,17 @@ async function followWithWeb(question: string, now: Date, llm: boolean, afterDay
     line = bimLine(`The web search failed: ${error instanceof Error ? error.message : String(error)}`, { status: "error" })
   }
   // `send` adds the line that asked only once `sendToBim` returns; wait for it (up to 10 s) so this one lands under it.
-  if (afterDayId && !useBimChatStore.getState().lines.some((l) => l.dayId === afterDayId)) {
+  const hasDay = (st: BimChatState) => [st.lines, ...st.past.map((c) => c.lines)].some((ls) => ls.some((l) => l.dayId === afterDayId))
+  if (afterDayId && !hasDay(useBimChatStore.getState())) {
     await new Promise<void>((done) => {
       const timer = setTimeout(() => (stop(), done()), 10_000)
       const stop = useBimChatStore.subscribe((st) => {
-        if (st.lines.some((l) => l.dayId === afterDayId)) (clearTimeout(timer), stop(), done())
+        if (hasDay(st)) (clearTimeout(timer), stop(), done())
       })
     })
   }
-  useBimChatStore.setState((s) => ({ lines: [...s.lines, line].slice(-TRANSCRIPT_CAP) }))
+  // Into the conversation the day line is in, even if another one is open now.
+  useBimChatStore.setState((s) => inConvo(s, (ls) => !!afterDayId && ls.some((l) => l.dayId === afterDayId), (ls) => [...ls, line].slice(-TRANSCRIPT_CAP)))
 }
 
 /** What each lane guard (`bim-lanes.ts`) means right now. Read when the lane comes up: `tell` closes the tell question as it runs. */
@@ -1052,8 +1070,8 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     const stream = await tryStream(text, now, { llm: !!opts.llm })
     return stream ? bimLine(stream.text, { route: stream.route, reportId: stream.reportId, ...(stream.choices?.length ? { choices: stream.choices } : {}) }) : null
   },
-  social: ({ text, now }) => {
-    const social = trySocial(text, now)
+  social: async ({ text, now }) => {
+    const social = await trySocial(text, now)
     return social ? bimLine(social.text, { route: social.route, reportId: social.reportId }) : null
   },
   texts: ({ text, now, opts }) => tryTexts(text, now, !!opts.llm),
@@ -1169,8 +1187,66 @@ async function sendLine(text: string, now = new Date(), opts: SendOpts = {}): Pr
   }
 }
 
+/** One BIM chat conversation. The open one's lines are `BimChatState.lines`; the rest wait in `past`. */
+export type BimConvo = { id: string; title: string; startedAt: string; lines: BimLine[] }
+
+function convoId(): string {
+  return `convo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+}
+
+/** A conversation's title: its first line of yours, cut short. */
+export function convoTitle(lines: BimLine[]): string {
+  const first = lines.find((l) => l.who === "you")?.text.replace(/\s+/g, " ").trim()
+  if (!first) return "New chat"
+  return first.length > 48 ? `${first.slice(0, 47)}…` : first
+}
+
+/**
+ * Change the lines of the conversation that `has` matches: the open one first, then the past ones.
+ * When none matches, the open one is changed.
+ */
+function inConvo(s: BimChatState, has: (lines: BimLine[]) => boolean, change: (lines: BimLine[]) => BimLine[]): Partial<BimChatState> {
+  if (has(s.lines)) return { lines: change(s.lines) }
+  const at = s.past.findIndex((c) => has(c.lines))
+  if (at < 0) return { lines: change(s.lines) }
+  return { past: s.past.map((c, i) => (i === at ? { ...c, lines: change(c.lines) } : c)) }
+}
+
+/** The lines of the conversation `has` matches, else the open one's. */
+function convoLinesWhere(has: (lines: BimLine[]) => boolean): BimLine[] {
+  const s = useBimChatStore.getState()
+  if (has(s.lines)) return s.lines
+  return s.past.find((c) => has(c.lines))?.lines ?? s.lines
+}
+
+/** Every line of every kept conversation, oldest conversation first. For readers that mine what you said. */
+export function allBimLines(): BimLine[] {
+  const s = useBimChatStore.getState()
+  return [...[...s.past].reverse().flatMap((c) => c.lines), ...s.lines]
+}
+
+/** What BIM holds between messages: the open question, the to-do aside, the last write for `undo`, the thread. */
+function forgetBetweenTurns(): void {
+  pendingAsk = null
+  asideTodo = null
+  lastTurn = null
+  useBimThread.getState().setFocus(null)
+}
+
+/** The open conversation, as a past entry. Empty ones are not kept. */
+function shelve(s: BimChatState): BimConvo[] {
+  if (!s.lines.length) return s.past
+  const open: BimConvo = { id: s.openId, title: convoTitle(s.lines), startedAt: s.openStartedAt || s.lines[0]!.at, lines: s.lines }
+  return [open, ...s.past.filter((c) => c.id !== s.openId)].slice(0, CONVO_CAP)
+}
+
 type BimChatState = {
+  /** The open conversation's lines. */
   lines: BimLine[]
+  openId: string
+  openStartedAt: string
+  /** Other conversations, newest first. A reply that lands after you switched goes to its own one here. */
+  past: BimConvo[]
   /** A turn is running. The input never waits on it: lines sent meanwhile queue. */
   busy: boolean
   /** Lines sent and not yet answered, the running one included. */
@@ -1179,46 +1255,65 @@ type BimChatState = {
    * Send a line. Never blocks: the line and its reply slot show at once, and the turn runs after the ones sent
    * before it. Resolves when this line's reply is in.
    */
-  send: (text: string, photos?: IncomingAttachment[]) => Promise<void>
+  send: (text: string, photos?: IncomingAttachment[], about?: CardRef) => Promise<void>
   /** BIM asks you something (a check-in). Without `kind` it alternates doing and mood. */
   checkIn: (kind?: "doing" | "mood") => void
   clear: () => void
+  /** Start a new conversation. The open one is kept in `past`; what BIM held between messages is dropped. */
+  newConvo: () => void
+  /** Open a past conversation. The open one is kept in `past`; what BIM held between messages is dropped. */
+  openConvo: (id: string) => void
+  /** Delete a past conversation. */
+  dropConvo: (id: string) => void
 }
+
+const unwaited = (lines: BimLine[]): BimLine[] =>
+  lines.map((l) => (l.waiting ? { ...l, waiting: undefined, status: "error" as const, text: "Not answered: BIM was closed before this line's turn ran. Send it again." } : l))
 
 export const useBimChatStore = create<BimChatState>()(
   persist(
     (set, get) => ({
       lines: [],
+      openId: convoId(),
+      openStartedAt: "",
+      past: [],
       busy: false,
       queued: 0,
-      send: async (raw, photos = []) => {
+      send: async (raw, photos = [], about) => {
         const text = raw.trim()
         if (!text && !photos.length) return
         const tag = photos.length ? `📷 ${photos.length === 1 ? "photo" : `${photos.length} photos`}` : ""
         const sentAt = new Date()
-        const mine: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "you", text: [tag, text].filter(Boolean).join(" · ") }
+        const mine: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "you", text: [tag, text].filter(Boolean).join(" · "), ...(about ? { aboutCard: about.label } : {}) }
         const ahead = get().queued
         const slot: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "bim", text: ahead ? `queued · ${ahead} ahead` : "…", waiting: true, replyTo: mine.id }
-        set((s) => ({ queued: s.queued + 1, lines: [...s.lines, mine, slot].slice(-TRANSCRIPT_CAP) }))
+        set((s) => ({ queued: s.queued + 1, lines: [...s.lines, mine, slot].slice(-TRANSCRIPT_CAP), openStartedAt: s.openStartedAt || sentAt.toISOString() }))
+        // The slot may be in a past conversation by the time it runs or is answered; find it by its id.
+        const hasSlot = (ls: BimLine[]) => ls.some((l) => l.id === slot.id)
         // One turn at a time, in the order sent (`chat-queue.ts`): a turn reads what the one before it wrote (the
         // open question, the thread, the last write for "undo"), and one model call at a time keeps the 3B and 14B
         // loaded together. Nothing is dropped, deduped or merged: every line gets its own turn, Trace and reply.
         await bimTurns(BIM_CHAT_ID, async () => {
           set({ busy: true })
-          set((s) => ({ lines: s.lines.map((l) => (l.id === slot.id ? { ...l, text: "…" } : l)) }))
+          set((s) => inConvo(s, hasSlot, (ls) => ls.map((l) => (l.id === slot.id ? { ...l, text: "…" } : l))))
           let reply: BimLine
           try {
             // BIM's last reply before this line, finished ones only: what this line answers.
-            const at = get().lines.findIndex((l) => l.id === slot.id)
-            const lastBim = get().lines.slice(0, at < 0 ? undefined : at).reverse().find((l) => l.who === "bim" && !l.waiting)?.text
-            reply = await sendToBim(text, sentAt, { llm: useBimLlmMode.getState().on, lastBim, photos })
+            const own = convoLinesWhere(hasSlot)
+            const at = own.findIndex((l) => l.id === slot.id)
+            const lastBim = own.slice(0, at < 0 ? undefined : at).reverse().find((l) => l.who === "bim" && !l.waiting)?.text
+            reply = await sendToBim(text, sentAt, { llm: useBimLlmMode.getState().on, lastBim, photos, ...(about ? { about } : {}) })
           } catch (error) {
             reply = bimLine(`Error: ${error instanceof Error ? error.message : String(error)}`, { status: "error" })
           }
           // A failed turn marks only this line, and offers to send it again.
           if (reply.status === "error" && text && !photos.length) reply = { ...reply, choices: [...(reply.choices ?? []), { label: "try again", text }] }
           const done: BimLine = { ...reply, id: slot.id, replyTo: mine.id }
-          set((s) => ({ busy: false, queued: Math.max(0, s.queued - 1), lines: s.lines.some((l) => l.id === slot.id) ? s.lines.map((l) => (l.id === slot.id ? done : l)) : [...s.lines, done].slice(-TRANSCRIPT_CAP) }))
+          set((s) => ({
+            busy: false,
+            queued: Math.max(0, s.queued - 1),
+            ...inConvo(s, hasSlot, (ls) => (hasSlot(ls) ? ls.map((l) => (l.id === slot.id ? done : l)) : [...ls, done].slice(-TRANSCRIPT_CAP))),
+          }))
         })
       },
       checkIn: (kind) => {
@@ -1227,18 +1322,28 @@ export const useBimChatStore = create<BimChatState>()(
         set((s) => ({ lines: [...s.lines, line].slice(-TRANSCRIPT_CAP) }))
       },
       clear: () => {
-        pendingAsk = null
-        asideTodo = null
-        lastTurn = null
-        useBimThread.getState().setFocus(null)
-        set({ lines: [] })
+        forgetBetweenTurns()
+        set({ lines: [], openStartedAt: "" })
       },
+      newConvo: () => {
+        forgetBetweenTurns()
+        if (!get().lines.length) return
+        set((s) => ({ past: shelve(s), lines: [], openId: convoId(), openStartedAt: "" }))
+      },
+      openConvo: (id) => {
+        const target = get().past.find((c) => c.id === id)
+        if (!target || id === get().openId) return
+        forgetBetweenTurns()
+        set((s) => ({ past: shelve(s).filter((c) => c.id !== id), lines: target.lines, openId: target.id, openStartedAt: target.startedAt }))
+      },
+      dropConvo: (id) => set((s) => ({ past: s.past.filter((c) => c.id !== id) })),
     }),
     {
       name: TRANSCRIPT_KEY,
       storage: createJSONStorage(() => localStorage),
       // A reply slot still waiting when the app closed never finishes: it is kept as a line that says so.
-      partialize: (s) => ({ lines: s.lines.map((l) => (l.waiting ? { ...l, waiting: undefined, status: "error" as const, text: "Not answered: BIM was closed before this line's turn ran. Send it again." } : l)) }),
+      // A saved transcript from before conversations has `lines` alone: it becomes the open conversation.
+      partialize: (s) => ({ lines: unwaited(s.lines), openId: s.openId, openStartedAt: s.openStartedAt, past: s.past.map((c) => ({ ...c, lines: unwaited(c.lines) })) }),
     },
   ),
 )

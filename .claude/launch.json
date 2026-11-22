@@ -33,6 +33,15 @@
       ],
       "port": 8790,
       "autoPort": true
+    },
+    {
+      "name": "dev-3010",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "PORT=3010 BRAIN2_ALLOW_SECOND_SERVER=1 exec npm run dev"
+      ],
+      "port": 3010
     }
   ]
 }

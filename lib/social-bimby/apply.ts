@@ -3,7 +3,10 @@
  *
  * Each effect reads its fields as they are at accept time and is one undo step. Never destroys: a person
  * found by name keeps every field they had, and only blanks are filled. The one move is an Instagram handle,
- * which belongs to one person (`linkInstagramToPerson`), and the card says so before Accept.
+ * which belongs to one person (`addInstagramToPerson`), and the card says so before Accept. The Phone and
+ * Instagram fields may hold several, split by commas: every number is added, the first handle is the main one
+ * when they have none and the rest are second accounts. Full name ("Shelby Seal") goes on the profile and the
+ * item keeps its name.
  * A note, birthday or reminder finds the person by name (or makes them, so a lone Accept still works).
  */
 "use client"
@@ -12,7 +15,7 @@ import { runAsAction } from "@/lib/action-history"
 import { withItemWriteSource } from "@/lib/item-write-source"
 import { getWeekString } from "@/lib/date-utils"
 import { quarterKey, quarterLabel } from "@/lib/seasons"
-import { linkInstagramToPerson, personForInstagram } from "@/lib/instagram-person-links"
+import { addInstagramToPerson, personForInstagram } from "@/lib/instagram-person-links"
 import { createPerson, ensurePeopleIKnowList, personNamed, personRecords } from "@/lib/people-i-know"
 import { normalizeInstagram, presentPersonProfile } from "@/lib/person-profile"
 import { PERSON_ATTR } from "@/lib/person-types"
@@ -52,15 +55,24 @@ function findOrMake(name: string, handle?: string): { person: Task; made: boolea
   return { person, made: true }
 }
 
+/** "951 201 5076, 909 555 1234" or "a and b": the values in one field. */
+export function splitField(value: string): string[] {
+  return value
+    .split(/\s*(?:[,;\n]|\band\b|&|\s\/\s)\s*/i)
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
+
 function applyPerson(effect: Effect): SocialApplied {
   const name = fieldValue(effect, "name").trim()
-  const handle = normalizeInstagram(fieldValue(effect, "instagram"))
+  const handles = splitField(fieldValue(effect, "instagram")).flatMap((h) => h.split(/\s+/)).map(normalizeInstagram).filter(Boolean)
   const relation = fieldValue(effect, "relation").trim()
-  const phone = fieldValue(effect, "phone").trim()
+  const phonesIn = splitField(fieldValue(effect, "phone"))
+  const fullName = fieldValue(effect, "fullName").replace(/\s+/g, " ").trim()
   if (!name) return fail("Name is empty.")
   return runAsAction(`Social: ${name}`, () =>
     withItemWriteSource(SOURCE, () => {
-      const { person, made } = findOrMake(name, handle || undefined)
+      const { person, made } = findOrMake(name, handles[0])
       const said: string[] = [made ? `Made ${name} in People I Know.` : `${name} was already in People I Know.`]
       const kept = person.personProfile?.relation?.trim()
       if (relation && !kept) {
@@ -70,18 +82,33 @@ function applyPerson(effect: Effect): SocialApplied {
       } else if (relation && kept && kept.toLowerCase() !== relation.toLowerCase()) {
         said.push(`Kept their relation "${kept}".`)
       }
-      if (phone) {
+      if (fullName && fullName.toLowerCase() !== name.toLowerCase()) {
         const live = current(person.id)!
-        const phones = live.personProfile?.phones ?? []
-        const digits = (s: string) => s.replace(/\D/g, "").slice(-10)
-        if (!phones.some((p) => digits(p) === digits(phone))) {
-          useTaskStore.getState().updateTask({ ...live, personProfile: presentPersonProfile({ ...(live.personProfile ?? {}), phones: [...phones, phone] }) })
-          said.push(`Phone ${phone} saved.`)
+        const had = live.personProfile?.fullName?.trim()
+        if (had?.toLowerCase() !== fullName.toLowerCase()) {
+          useTaskStore.getState().updateTask({ ...live, personProfile: presentPersonProfile({ ...(live.personProfile ?? {}), fullName }) })
+          said.push(had ? `Full name ${fullName} (was ${had}).` : `Full name ${fullName}.`)
         }
       }
-      if (handle) {
-        linkInstagramToPerson(person.id, handle)
-        said.push(`Instagram @${handle} attached.`)
+      const digits = (s: string) => s.replace(/\D/g, "").slice(-10)
+      const added: string[] = []
+      for (const phone of phonesIn) {
+        if (digits(phone).length < 7) continue
+        const live = current(person.id)!
+        const phones = live.personProfile?.phones ?? []
+        if (phones.some((p) => digits(p) === digits(phone))) continue
+        // The person page shows the Phone Number attribute when it is set; add there too so the number shows.
+        const attr = live.attributes?.[PERSON_ATTR.phone]
+        const shown = Array.isArray(attr) ? attr.filter((v): v is string => typeof v === "string") : typeof attr === "string" && attr.trim() ? [attr.trim()] : null
+        const attributes = shown && !shown.some((p) => digits(p) === digits(phone)) ? { ...(live.attributes ?? {}), [PERSON_ATTR.phone]: [...shown, phone] } : live.attributes
+        useTaskStore.getState().updateTask({ ...live, ...(attributes ? { attributes } : {}), personProfile: presentPersonProfile({ ...(live.personProfile ?? {}), phones: [...phones, phone] }) })
+        added.push(phone)
+      }
+      if (added.length) said.push(`${added.length > 1 ? "Phones" : "Phone"} ${added.join(", ")} saved.`)
+      for (const handle of handles) {
+        const how = addInstagramToPerson(person.id, handle)
+        if (how === "main") said.push(`Instagram @${handle} attached.`)
+        else if (how === "other") said.push(`Instagram @${handle} added as another account.`)
       }
       return { ok: true, message: said.join(" ") }
     }),

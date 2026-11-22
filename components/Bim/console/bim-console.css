@@ -524,6 +524,16 @@
   margin: 0 0 12px;
 }
 
+/* Lag fix (2026-11-21): every line glows, and the ink drift restyles the screen every 2 s. With a long
+   transcript that repainted every line, scrolled away or not, and typing and scrolling stuttered.
+   Off-screen text lines now skip style and paint. Lines with a card or evidence fold are left whole,
+   since paint containment would clip their menus. The clip margin keeps the glow uncut. */
+.bim-msg:not(:has(> :not(.bim-msg-who, .bim-msg-text, .bim-msg-route))) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 44px;
+  overflow-clip-margin: 8px;
+}
+
 .bim-msg-text {
   margin: 0;
   white-space: pre-wrap;
@@ -1277,4 +1287,61 @@
   display: none;
   width: 20px;
   height: 20px;
+}
+
+/* ---- Conversations: ＋ new and chats, right of MODE; the past list draws in the chat glass ---- */
+
+.bim-chat-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bim-chat-top .bim-mode {
+  flex: 1 1 auto;
+}
+
+.bim-convo-keys {
+  flex: none;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.bim-convo-keys button {
+  padding: 3px 9px 6px;
+  font-family: var(--w95-font, ui-monospace);
+  font-size: 12px;
+}
+
+/* List rows are text in the glass, not keycaps: outrank the keycap skin above. */
+.ui-dialog-content.bim-crt .bim-convo-list button,
+.ui-dialog-content.bim-crt .bim-convo-list button:hover:not(:disabled),
+.ui-dialog-content.bim-crt .bim-convo-list button:active:not(:disabled) {
+  min-height: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  transform: none;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  font: 12px/1.35 var(--bim-mono) !important;
+  color: var(--bim-ink);
+}
+
+.ui-dialog-content.bim-crt .bim-convo-list button.bim-convo-open {
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 6px 8px;
+}
+
+.ui-dialog-content.bim-crt .bim-convo-list button.bim-convo-open:hover {
+  background: rgba(143, 211, 255, 0.08);
+}
+
+.ui-dialog-content.bim-crt .bim-convo-list button.bim-convo-drop {
+  padding: 2px 7px;
+  color: var(--bim-legend, #7f9aa6);
 }

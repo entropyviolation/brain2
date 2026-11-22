@@ -1,15 +1,20 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { commitItemEdit } from "@/lib/commit-item-edit"
 import {
   appendItemActivity,
   diffItemActivity,
   formatHistoryLine,
+  ITEM_ACTIVITY_STORAGE_KEY,
   listItemActivity,
+  MAX_ACTIVITY_LEDGER_CHARS,
   MAX_ACTIVITY_PER_ITEM,
   recordItemWrite,
   resetItemActivity,
+  trimActivityLedger,
+  type ItemActivityEntry,
 } from "@/lib/item-activity"
+import { readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { setItemWriteClientForTests } from "@/lib/item-write-source"
 import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
@@ -385,5 +390,53 @@ describe("item write source", () => {
     expect(formatHistoryLine(base)).toContain("source recorded before sources")
     expect(formatHistoryLine({ ...base, source: "item-detail" })).toContain("item-detail")
     expect(formatHistoryLine({ ...base, source: "item-detail" })).not.toContain("recorded before sources")
+  })
+})
+
+describe("item-activity ledger size", () => {
+  const row = (itemId: string, day: number): ItemActivityEntry => ({
+    id: `${itemId}-${day}`,
+    itemId,
+    at: new Date(Date.UTC(2026, 0, day)).toISOString(),
+    summary: "x".repeat(200),
+    changes: [],
+  })
+
+  beforeEach(() => resetItemActivity())
+  afterEach(() => vi.restoreAllMocks())
+
+  it("drops the oldest lines across items until the ledger fits", () => {
+    const all = { a: [row("a", 1), row("a", 5)], b: [row("b", 2), row("b", 6)] }
+    const one = JSON.stringify(row("a", 1)).length
+    trimActivityLedger(all, one * 2 + 40)
+    expect(all).toEqual({ a: [row("a", 5)], b: [row("b", 6)] })
+  })
+
+  it("a full origin does not throw out of an append", () => {
+    vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+    })
+    vi.spyOn(console, "warn").mockImplementation(() => {})
+    expect(() => appendItemActivity({ itemId: "a", at: new Date().toISOString(), summary: "s", changes: [] })).not.toThrow()
+  })
+
+  it("another key's quota retry shrinks an oversized ledger", () => {
+    const rows = Array.from({ length: 4000 }, (_, i) => row(`i${i % 50}`, (i % 300) + 1))
+    const big: Record<string, ItemActivityEntry[]> = {}
+    for (const r of rows) (big[r.itemId] ??= []).push(r)
+    localStorage.setItem(ITEM_ACTIVITY_STORAGE_KEY, JSON.stringify(big))
+    const real = localStorage.setItem.bind(localStorage)
+    let fail = true
+    vi.spyOn(localStorage, "setItem").mockImplementation((k: string, v: string) => {
+      if (k !== ITEM_ACTIVITY_STORAGE_KEY && fail) {
+        fail = false
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+      }
+      return real(k, v)
+    })
+    writeAliasedLocal("brain2-other", "v")
+    expect(fail).toBe(false)
+    expect(readAliasedLocal("brain2-other")).toBe("v")
+    expect(localStorage.getItem(ITEM_ACTIVITY_STORAGE_KEY)!.length).toBeLessThanOrEqual(MAX_ACTIVITY_LEDGER_CHARS / 2)
   })
 })

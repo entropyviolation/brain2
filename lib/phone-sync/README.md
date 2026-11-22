@@ -26,6 +26,7 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `ids.ts` | Entry id from the source id, and the stamp `generatedBy: { kind: "phone-sync", id: "<source>:<sourceId>" }`. |
 | `to-entries.ts` | Texts → instants on iPhone Texts. Calls → intervals on iPhone Calls, sliced at midnight; missed calls are instants. Exact clocks. `mergePhoneEntries` skips ids already there or deleted. |
 | `person-links.ts` | Phone number ↔ Person. Pure. `relinkPhonePens` names each iPhone Texts / Calls pen after the person whose saved number it is, and stamps `personId` + `handle` on it. App side: `lib/phone-person-links.ts`. Built 2026-10-23. |
+| `text-people.mjs` | _Last mapped: 2026-11-22._ `tallyTextPeople`: per one-to-one handle, texts in and out since a floor and the last one. Two-way handles only; groups are left out. Counts only, no bodies. Served by `/api/phone-text-people?days=183` (with Contacts names) for `lib/texts-people-bimby.ts`. |
 | `write.ts` | `applyPhoneRecords`: the one door into the tracking store. Pen ids match the BIM `text:` / `call:` verbs (`iphone-text-<slug>`), so both share a person's pen. |
 | `archive.ts` | Node only. `data/phone-sync/messages.jsonl` (full bodies, append-only, deduped), `cursors.json`, `runs.json` (last 200), `enabled.json` (a missing key stays on). |
 | `runner.ts` | Reader registry and `runPhoneSync`. A reader error is logged and the cursor stays put. `enabled` returning false skips that reader and writes no run. |

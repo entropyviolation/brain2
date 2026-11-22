@@ -7,11 +7,12 @@
  */
 "use client"
 
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
 import { BIM_CHAT_DRAFT_KEY, readDraft, writeTextDraft } from "@/lib/draft-store"
 import { BIM_CHAT_ADD_EVENT } from "@/lib/doc-selection/doc-selection-bus"
 import { useBimChatStore } from "@/lib/ingest/bim-chat"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
+import { useReplyTarget } from "@/lib/report-bimby/reply-target"
 import { chatPhotoFromFile } from "@/lib/ingest/chat-photo"
 import type { IncomingAttachment } from "@/lib/ingest/types"
 
@@ -27,13 +28,16 @@ export function useBimChat() {
   const [photos, setPhotos] = useState<IncomingAttachment[]>([])
   const [photoError, setPhotoError] = useState("")
   const logRef = useRef<HTMLDivElement>(null)
+  // The card change the next line answers (tap a change on a card). Only your typed line carries it, not a tapped answer.
+  const replyTarget = useReplyTarget((s) => s.target)
+  const setReplyTarget = useReplyTarget((s) => s.set)
 
   // The unsent line is kept on every keystroke and comes back after a closed
-  // screen or a reload. Only a send clears it.
-  const setDraft = (text: string) => {
+  // screen or a reload. Only a send clears it. Stable, so the memoized log does not repaint per keystroke.
+  const setDraft = useCallback((text: string) => {
     setDraftState(text)
     writeTextDraft(BIM_CHAT_DRAFT_KEY, text)
-  }
+  }, [])
   useEffect(() => {
     const saved = readDraft<{ text?: string }>(BIM_CHAT_DRAFT_KEY)?.text
     if (saved) setDraftState((now) => now || saved)
@@ -57,7 +61,13 @@ export function useBimChat() {
     const log = logRef.current
     if (!log) return
     if (lastWho === "you") pinned.current = true
-    if (pinned.current) log.scrollTop = log.scrollHeight
+    if (!pinned.current) return
+    log.scrollTop = log.scrollHeight
+    // Off-screen lines are laid out at an estimated height until seen; pin again once real heights are in.
+    const frame = requestAnimationFrame(() => {
+      log.scrollTop = log.scrollHeight
+    })
+    return () => cancelAnimationFrame(frame)
   }, [lines.length, busy, lastWho])
 
   // When the glass shrinks (the keyboard opens), keep the newest line in view if it was in view.
@@ -100,10 +110,11 @@ export function useBimChat() {
     const attached = own ? photos : []
     // Never waits on a running turn: the line queues and gets its own reply slot (`useBimChatStore.send`).
     if (!text.trim() && !attached.length) return
-    void send(text, attached)
+    void send(text, attached, own && replyTarget ? replyTarget : undefined)
     if (own) {
       setDraft("")
       setPhotos([])
+      if (replyTarget) setReplyTarget(null)
     }
   }
 
@@ -115,7 +126,7 @@ export function useBimChat() {
     }
   }
 
-  return { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError }
+  return { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget: () => setReplyTarget(null) }
 }
 
 /** Last BIM line, when it still carries tap answers. */

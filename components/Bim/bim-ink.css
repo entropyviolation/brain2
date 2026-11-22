@@ -82,3 +82,72 @@
     0 0 0 3px #3b4044,
     0 -1px 0 3px #6b7175;
 }
+
+/* BIM chat conversations list (`convo-list.tsx`), shared by console and phone. */
+.bim-convo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bim-convo-list li {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  border-bottom: 1px solid var(--bim-line, rgba(143, 211, 255, 0.18));
+  padding-bottom: 4px;
+}
+
+.bim-convo-list .bim-convo-open {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: var(--bim-ink);
+  text-align: left;
+  cursor: pointer;
+  font: 12px/1.35 var(--bim-mono, ui-monospace);
+}
+
+.bim-convo-list .bim-convo-open:hover,
+.bim-convo-list .bim-convo-open:focus-visible {
+  background: rgba(143, 211, 255, 0.08);
+}
+
+.bim-convo-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bim-convo-meta {
+  font-size: 10px;
+  color: var(--bim-legend, #7f9aa6);
+}
+
+.bim-convo-list .bim-convo-drop {
+  flex: none;
+  align-self: center;
+  padding: 2px 7px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: var(--bim-legend, #7f9aa6);
+  cursor: pointer;
+}
+
+.bim-convo-empty {
+  margin: 0;
+  color: var(--bim-legend, #7f9aa6);
+  font: 12px/1.45 var(--bim-mono, ui-monospace);
+}

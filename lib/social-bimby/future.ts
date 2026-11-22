@@ -10,7 +10,8 @@
  * for a trip). A trip also offers a maybe-line on the Year Plan. Nothing is saved until Accept.
  *
  * One person with only a hang-out stays with `parse.ts` (the older, richer reading): this reader takes a line
- * with two people or more, a trip, or a texts review. Pure: people, mutuals and contacts are passed in.
+ * with two people or more, a trip, or a texts review. Pure: people, mutuals and contacts are passed in. A person
+ * with no number is looked up in your Mac Contacts first: one card of that name is assumed to be them.
  */
 import { quarterKey, quarterLabel } from "@/lib/seasons"
 import { fmtDateTime } from "@/lib/report-bimby/time"
@@ -157,20 +158,35 @@ export interface ContactInfo {
   instagram?: string
 }
 
+/** A card in your Mac Contacts (`/api/phone-contacts`). */
+export interface ContactCard {
+  name: string
+  phones: string[]
+}
+
 export interface FutureDeps {
   /** Your Instagram mutuals (`mutuals.ts`). */
   mutuals: readonly Mutual[]
   /** What a known person already has for reaching them. */
   contactOf: (personId: string) => ContactInfo
+  /** Contacts cards that could be this person (looked up before the card is built). None: Contacts not read. */
+  contactCards?: (name: string) => readonly ContactCard[]
 }
 
-/** A question back, asked one at a time after the card (`session.ts`). */
+/**
+ * A question back. All of them are listed together, numbered, after the card (`session.ts`); choices inside
+ * one are lettered: the mutuals first, then the Contacts cards.
+ */
 export interface ContactAsk {
   person: string
   /** Mutuals that could be them, when more than one. */
   candidates: Mutual[]
+  /** Contacts cards that could be them, when more than one. */
+  cards?: ContactCard[]
   question: string
 }
+
+export const LETTERS = "abcdefghij"
 
 export interface FuturePlan {
   plan: ReportPlan
@@ -231,6 +247,21 @@ export function buildFuturePlan(read: FutureRead, message: string, now: Date, de
     const why: string[] = []
     const evidence: string[] = []
     let handle = ""
+    let phones: string[] = []
+    let fullName = ""
+    let cardChoices: ContactCard[] = []
+    // No number on file: look in your Contacts. One card with their name (often saved as just "Shelby") is them.
+    if (!contact.phones.length) {
+      const cards = (deps.contactCards?.(p.name) ?? []).filter((c) => c.phones.length)
+      if (cards.length === 1) {
+        const card = cards[0]!
+        phones = card.phones
+        why.push(`${first} has no number in People I Know. Your Contacts has one card for ${first}, "${card.name}", so ${phones.length > 1 ? "its numbers are" : "its number is"} filled in. Clear it if it is someone else.`)
+        evidence.push(`Contacts: ${card.name} · ${phones.join(", ")}`)
+        if (card.name.split(/\s+/).length > p.name.split(/\s+/).length && low(card.name).startsWith(low(first))) fullName = card.name
+      } else if (cards.length > 1) cardChoices = cards.slice(0, 5)
+    }
+    let mutualChoices: Mutual[] = []
     if (!instagram) {
       const found = mutualCandidates(p.name, deps.mutuals)
       if (found.length === 1) {
@@ -238,23 +269,34 @@ export function buildFuturePlan(read: FutureRead, message: string, now: Date, de
         why.push(`${first} has no Instagram on file. One of your mutuals is ${found[0]!.name} (@${handle}), so that is filled in. Clear it if it is someone else.`)
         evidence.push(`Instagram mutual: ${found[0]!.name} @${handle}`)
       } else if (found.length > 1) {
-        asks.push({
-          person: p.name,
-          candidates: found.slice(0, 5),
-          question: `Which one is ${first}? ${found.slice(0, 5).map((m, i) => `${i + 1}. ${m.name} @${m.username}`).join("  ")} (a number, a handle, or skip)`,
-        })
+        mutualChoices = found.slice(0, 5)
         why.push(`${found.length} of your mutuals could be ${first}; I'll ask which.`)
-      } else if (!contact.phones.length) {
-        asks.push({ person: p.name, candidates: [], question: `I can't find a number or an Instagram for ${first}, and none of your mutuals matches. What's ${first}'s number or @handle? (or skip)` })
-        why.push(`${first} has no number or Instagram, and no mutual matches; I'll ask.`)
       }
     }
-    if (!p.known || handle) {
+    if (cardChoices.length) why.push(`${cardChoices.length} cards in your Contacts could be ${first}; I'll ask which.`)
+    const reachable = contact.phones.length > 0 || phones.length > 0 || !!instagram || !!handle
+    if (mutualChoices.length || cardChoices.length || !reachable) {
+      const choices = [
+        ...mutualChoices.map((m) => `${m.name} @${m.username}`),
+        ...cardChoices.map((c) => `${c.name} (Contacts) ${c.phones.join(", ")}`),
+      ]
+      asks.push({
+        person: p.name,
+        candidates: mutualChoices,
+        ...(cardChoices.length ? { cards: cardChoices } : {}),
+        question: choices.length
+          ? `Which is ${first}? ${choices.map((c, i) => `${LETTERS[i]}. ${c}`).join("  ")} (letters, or their number or @handle)`
+          : `${first}'s number or @handle? Nothing in People I Know, your Contacts or your mutuals.`,
+      })
+      if (!choices.length) why.push(`${first} has no number or Instagram, and nothing in Contacts or your mutuals matches; I'll ask.`)
+    }
+    if (!p.known || handle || phones.length) {
       effects.push(
         effect("person", p.known ? `Update ${p.name}` : `New person: ${p.name}`, [p.known ? `${p.name} is in People I Know.` : `${p.name} is not in People I Know yet: make them.`, ...why], evidence, [
           field("name", "Name", p.name),
+          field("fullName", "Full name", fullName),
           field("instagram", "Instagram", handle),
-          field("phone", "Phone", ""),
+          field("phone", "Phone", phones.join(", ")),
           field("relation", "Relation", ""),
         ]),
       )

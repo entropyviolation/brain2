@@ -615,6 +615,28 @@
   padding-left: 22px;
 }
 
+/* Second Instagram accounts under the main one (Social BIMBY can add them). */
+.person-other-instagrams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-variant: normal;
+  letter-spacing: normal;
+  font-size: 12px;
+}
+
+.person-other-instagram a {
+  color: inherit;
+}
+
+.person-other-instagram-x {
+  border: none;
+  background: none;
+  padding: 0 2px;
+  color: inherit;
+  cursor: pointer;
+}
+
 .person-adorn-link {
   flex: none;
   color: var(--id-nameplate, #2a2c2e);

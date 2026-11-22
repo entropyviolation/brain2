@@ -6,11 +6,11 @@
  */
 "use client"
 
-import { useCallback, useEffect, useState, type ComponentType } from "react"
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react"
 import { SquareTerminal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { backfillFlightsFromChat, confirmFlightsLanded, FLIGHT_BACKFILL_KEY, whenFlightStoresReady } from "@/lib/flight-bimby/backfill"
-import { useBimChatStore } from "@/lib/ingest/bim-chat"
+import { allBimLines, useBimChatStore } from "@/lib/ingest/bim-chat"
 import { BIM_CHAT_ADD_EVENT } from "@/lib/doc-selection/doc-selection-bus"
 
 /** Phone bar only: "1" while BIM Chat is open, so a relaunch of the app comes back to it. */
@@ -66,7 +66,7 @@ export function BimKey({ word, phoneBar }: { word?: string; phoneBar?: string } 
     void (async () => {
       await whenFlightStoresReady()
       if (!live) return
-      const filed = await backfillFlightsFromChat(useBimChatStore.getState().lines)
+      const filed = await backfillFlightsFromChat(allBimLines())
       const landed = await confirmFlightsLanded(filed)
       if (!landed) return
       try {
@@ -95,6 +95,22 @@ export function BimKey({ word, phoneBar }: { word?: string; phoneBar?: string } 
     return () => window.removeEventListener(BIM_CHAT_ADD_EVENT, onAdd)
   }, [phoneBar, setOpen])
 
+  // Cmd/Ctrl-J opens BIM Chat from anywhere, and closes it again. Cmd-K is search; Shift and Alt chords stay free.
+  const openRef = useRef(open)
+  openRef.current = open
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || e.shiftKey || e.altKey || !(e.metaKey || e.ctrlKey)) return
+      if (e.key !== "j" && e.key !== "J") return
+      const narrow = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 767px)").matches
+      if (narrow !== (phoneBar !== undefined)) return
+      e.preventDefault()
+      setOpen(!openRef.current)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [phoneBar, setOpen])
+
   useEffect(() => {
     if (!open || Console) return
     let live = true
@@ -117,7 +133,7 @@ export function BimKey({ word, phoneBar }: { word?: string; phoneBar?: string } 
         variant="outline"
         size="sm"
         className={word ? undefined : "b2-shell-icon"}
-        title="BIM Chat"
+        title="BIM Chat (⌘J)"
         aria-label="BIM Chat"
         data-ui-name="BIM Chat"
         onClick={() => setOpen(true)}

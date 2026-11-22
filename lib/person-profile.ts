@@ -117,6 +117,8 @@ export interface PersonProfile {
   dateMet?: string
   dateMetEstimated?: boolean
   instagram?: string
+  /** More Instagram accounts of theirs (a second or private one). `instagram` stays the main one. */
+  otherInstagrams?: string[]
   /** Optional outside identifiers. Identity match reads the canonical form; nothing here merges two people. */
   wikidata?: string
   orcid?: string
@@ -466,6 +468,11 @@ function assembleProfile(
     : []
   const dateMet = cleanDate(raw.dateMet)
   const instagram = instagramOf(raw.instagram)
+  const otherInstagrams = Array.isArray(raw.otherInstagrams)
+    ? raw.otherInstagrams
+        .map((h) => instagramOf(h))
+        .filter((h, i, all): h is string => !!h && h.toLowerCase() !== instagram?.toLowerCase() && all.findIndex((o) => o?.toLowerCase() === h.toLowerCase()) === i)
+    : []
   const wikidata = text(raw.wikidata)
   const orcid = text(raw.orcid)
   const isbn = text(raw.isbn)
@@ -489,6 +496,7 @@ function assembleProfile(
     if (raw.dateMetEstimated) next.dateMetEstimated = true
   }
   if (instagram) next.instagram = instagram
+  if (otherInstagrams.length > 0) next.otherInstagrams = otherInstagrams
   if (wikidata) next.wikidata = wikidata
   if (orcid) next.orcid = orcid
   if (isbn) next.isbn = isbn

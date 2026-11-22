@@ -6,7 +6,7 @@
  */
 "use client"
 
-import { useBimChatStore } from "@/lib/ingest/bim-chat"
+import { allBimLines } from "@/lib/ingest/bim-chat"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import type { BimLog } from "./evidence"
 
@@ -22,7 +22,7 @@ export function bimLogs(): BimLog[] {
     seen.add(key)
     out.push({ text: t, at: new Date(ms).toISOString() })
   }
-  for (const l of useBimChatStore.getState().lines) if (l.who === "you") add(l.text, l.at)
+  for (const l of allBimLines()) if (l.who === "you") add(l.text, l.at)
   for (const e of useIngestStore.getState().events) if (!e.status || e.status === "applied") add(e.raw, e.at)
   return out
 }

@@ -10,7 +10,7 @@
  * 2. Biography grid: Full name, Nicknames (chips, `person-nicknames.tsx`),
  *    Phone numbers (the Phone Number attribute, every number they have had),
  *    Emails,
- *    Relation, Date met + Est., Instagram, Wikidata, ORCID, ISBN, URL, Address.
+ *    Relation, Date met + Est., Instagram (and any second accounts), Wikidata, ORCID, ISBN, URL, Address.
  * 3. Time together. 4. The host's `pipelines` slot (Company pens).
  * 5. Interactions (`person-log.tsx`; feeds Last seen).
  * 6. The Gift ideas key → a small popup with the list and quick notes
@@ -437,6 +437,26 @@ export function PersonDetail({
               </a>
             ) : null}
           </span>
+          {profile?.otherInstagrams?.length ? (
+            <span className="person-other-instagrams" data-testid="person-other-instagrams">
+              also{" "}
+              {profile.otherInstagrams.map((h) => (
+                <span key={h} className="person-other-instagram">
+                  <a href={`https://instagram.com/${encodeURIComponent(h)}`} target="_blank" rel="noreferrer" title="Open profile">
+                    @{h} ↗
+                  </a>
+                  <button
+                    type="button"
+                    className="person-other-instagram-x"
+                    aria-label={`Remove @${h}`}
+                    onClick={() => writeProfile({ ...current(), otherInstagrams: (current()?.otherInstagrams ?? []).filter((x) => x !== h) })}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </span>
+          ) : null}
         </label>
         {(["wikidata", "orcid", "isbn", "url"] as const).map((key) => (
           <IdentifierField

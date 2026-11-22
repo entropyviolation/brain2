@@ -89,8 +89,20 @@
   color: var(--bim-legend, #9aa);
 }
 
+.rc-field.is-prose {
+  flex: 1 1 100%;
+}
+
+.rc-field textarea {
+  resize: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
 .rc-field input,
-.rc-field select {
+.rc-field select,
+.rc-field textarea {
   min-height: 32px;
   padding: 2px 6px;
   font: 12px var(--bim-mono, ui-monospace, monospace);
@@ -101,7 +113,8 @@
 }
 
 .rc-field input:disabled,
-.rc-field select:disabled {
+.rc-field select:disabled,
+.rc-field textarea:disabled {
   opacity: 0.6;
 }
 
@@ -169,6 +182,7 @@
 .rc-field > span { color: #9fb6bb; }
 .rc-field input,
 .rc-field select,
+.rc-field textarea,
 .rc-tweak textarea { background: #0e1b1a; color: #e8fbff; border: 1px solid #2c5650; }
 .rc-tweak textarea { opacity: 1; }
 .rc-rev { opacity: 1; color: #9fb6bb; }
@@ -202,3 +216,55 @@
 @media (prefers-reduced-motion: reduce) {
   .rc-bar i { animation: none; width: 100%; opacity: 0.5; }
 }
+
+/* Instagram typeahead on a person card: known handles under the box. */
+.rc-combo { position: relative; display: grid; }
+.rc-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 20;
+  min-width: 100%;
+  max-width: 320px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 3px;
+  list-style: none;
+  background: #0e1b1a;
+  border: 1px solid #2c5650;
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 45%);
+}
+.rc .rc-menu li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 0;
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #e8fbff;
+}
+.rc-menu li > b { font-weight: 500; }
+.rc-menu li > span { overflow: hidden; text-overflow: ellipsis; color: #9fb6bb; }
+.rc-menu li[data-active] { background: color-mix(in srgb, var(--bim-ink, #5cf2d6) 22%, transparent); }
+.rc .rc-menu li.rc-menu-new { cursor: default; color: #9fb6bb; font-style: italic; }
+
+/* Reply to a change: tap its header (or Reply). The change is outlined while the next chat line will answer it. */
+.rc-effect > header.rc-head { cursor: pointer; }
+.rc-effect > header.rc-head:focus-visible { outline: 1px dashed var(--bim-ink, #5cf2d6); outline-offset: 2px; }
+.rc-effect.is-reply { border-color: var(--bim-ink, #5cf2d6); box-shadow: 0 0 0 1px var(--bim-ink, #5cf2d6); }
+.rc-effect.is-rejected.is-reply { opacity: 1; }
+.rc-actions .rc-reply { margin-left: auto; }
+.rc-actions .rc-reply[aria-pressed="true"] { border-color: var(--bim-ink, #5cf2d6); color: var(--bim-ink, #5cf2d6); }
+
+/* The well's "replying to" strip and the tag on your sent line (console and phone). */
+.bim-replying { display: flex; align-items: center; gap: 8px; font: 11px var(--bim-mono, ui-monospace, monospace); color: #9fb6bb; }
+.bim-replying b { color: var(--bim-ink, #5cf2d6); font-weight: 500; overflow-wrap: anywhere; }
+.bim-replying button { margin-left: auto; padding: 0 6px; background: transparent; border: 0; color: inherit; cursor: pointer; }
+.bim-about { display: block; font: 10px var(--bim-mono, ui-monospace, monospace); color: #9fb6bb; }
+.bim-phone-compose .bim-replying { flex: 1 0 100%; margin: 0; }

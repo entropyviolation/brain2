@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Smartphone } from "lucide-react"
 import { PHONE_SYNC_ROWS, latestRun, type PhoneSyncRow } from "@/lib/phone-sync/status"
 import type { PhoneSyncRun, PhoneSyncSource } from "@/lib/phone-sync/types"
+import { runTextPeopleBimby, setTextPeopleAuto, textPeopleAutoOn } from "@/lib/texts-people-bimby"
 
 type StatusPayload = {
   ok?: boolean
@@ -34,6 +35,17 @@ export function PhoneSyncPanel() {
   const [note, setNote] = useState<string | null>(null)
   const [reachable, setReachable] = useState(false)
   const [busy, setBusy] = useState<PhoneSyncSource | null>(null)
+  const [peopleOn, setPeopleOn] = useState(true)
+  const [peopleNote, setPeopleNote] = useState<string | null>(null)
+  useEffect(() => setPeopleOn(textPeopleAutoOn()), [])
+  const togglePeople = async () => {
+    const on = !peopleOn
+    setTextPeopleAuto(on)
+    setPeopleOn(on)
+    if (!on) return setPeopleNote(null)
+    const done = await runTextPeopleBimby()
+    setPeopleNote(done ? `Added ${done.created} ${done.created === 1 ? "person" : "people"}, linked ${done.linked}.` : "The hub did not answer.")
+  }
 
   const load = useCallback(async () => {
     try {
@@ -122,6 +134,20 @@ export function PhoneSyncPanel() {
             </li>
           )
         })}
+        <li className="space-y-1 border-t border-dashed pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <strong className="text-sm">Add people I text</strong>
+            <button type="button" className="min-h-8 border px-2 text-xs" aria-pressed={peopleOn} onClick={() => void togglePeople()}>
+              {peopleOn ? "On" : "Off"}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Texts People BIMBY. Anyone you texted back and forth with in the last six months, with a name in Contacts,
+            gets a Person on People I Know with their number saved. Checks every six hours. A person you delete stays
+            deleted.
+          </p>
+          {peopleNote ? <p className="text-xs">{peopleNote}</p> : null}
+        </li>
       </ul>
     </div>
   )
