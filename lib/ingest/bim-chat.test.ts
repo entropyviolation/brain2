@@ -8,6 +8,9 @@ import type { ApplyResult } from "./types"
 import { useEventStore } from "@/lib/event-store"
 import { PASTED } from "@/lib/flight-bimby/fixture"
 import { useTaskStore } from "@/lib/task-store"
+import { useHabitsStore } from "@/lib/habits-store"
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { TaskType } from "@/lib/types"
 
 describe("BIM Chat: a to-do said beside a web question", () => {
   const SAID = "also i prob will have to do my laundry can you find out what time the laundromats by my house close? "
@@ -151,6 +154,19 @@ describe("day-stream grammar lane", () => {
     expect(stop.text).toContain("Stopped: dishes")
     const nothing = await sendToBim("home from walk", new Date(), { llm: false })
     expect(nothing.route).toBe("GRAMMAR · log · code")
+  })
+  it("“doing a facemask rn so counts as skincare” checks Skincare for today, the rest as the cell's note", async () => {
+    useHabitsStore.setState({
+      tasks: [{ id: "skin", name: "Skincare", type: TaskType.BOOLEAN, rewardValue: 1, frequency: "daily" }],
+      weeklyData: {},
+    })
+    const now = new Date()
+    const line = await sendToBim("doing a facemask rn so counts as skincare", now, { llm: false })
+    expect(line.route).toMatch(/^GRAMMAR · habit/)
+    expect(line.text).toContain("Skincare: done for today")
+    const cell = useHabitsStore.getState().weeklyData[formatLocalDateKey(now)]?.skin
+    expect(cell?.completed).toBe(true)
+    expect(cell?.changes?.at(-1)?.note).toBe("doing a facemask")
   })
 })
 

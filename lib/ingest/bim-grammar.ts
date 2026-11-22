@@ -10,6 +10,7 @@
  *   intake   "took / taking / sip / hitting / Nth / another" + a known pill or drink → `intake drug|drink: X`
  *   start    "starting X / X-ing rn / X-ing since 4:46"      → `currently X` (at 4:46 for "since")
  *   stop     "done with X / finished X / home from X"        → `stopped X`
+ *   habit    "doing a facemask so counts as skincare"        → `did: skincare -- doing a facemask` (done today, the rest is the cell's note)
  *
  * A line is split on commas, "also", "then" and a mid-line "now"; a part that reads as none of these is kept as
  * a log line, so nothing said is lost. A question, a command, a line over 200 characters and a line with no part
@@ -24,6 +25,7 @@ export type GrammarPiece =
   | { kind: "intake"; what: string; cls: IntakeClass }
   | { kind: "start"; what: string; since?: { h: number; m: number; pm?: boolean } }
   | { kind: "stop"; what: string }
+  | { kind: "habit"; what: string; note: string }
   | { kind: "rest"; what: string }
 
 /** Pills and smokes the person names, then drinks. A word here is what makes "took X" an intake and not "took a nap". */
@@ -75,6 +77,18 @@ export function activityName(phrase: string): string {
     .replace(/^(?:a|an|the|my)\s+/i, "")
     .replace(/\s+/g, " ")
     .trim()
+}
+
+/** "X so (that|it) counts as Y", "X, counts for my Y habit", "counts as Y: X": Y is a habit done, X is why. */
+const COUNTS_AS = /^(.*?)[\s,;.-]*\b(?:(?:so|which|that|this|and)\s+)*(?:(?:it|that|this)(?:'s|\s+is)?\s+)?counts?\s+(?:as|for|toward(?:s)?)\s+(?:my\s+|the\s+|a\s+)?(.+?)(?:\s+habit)?(?:\s+(?:today|for today|tho|lol|i think))?[\s!.]*$/i
+
+export function readCountsAs(line: string): GrammarPiece | null {
+  const m = COUNTS_AS.exec(line.trim())
+  if (!m) return null
+  const what = clean(m[2]!)
+  if (!what || what.split(" ").length > 4) return null
+  const note = clean(m[1]!.replace(TAIL, "")).replace(/\s+(?:rn|right now|now)$/i, "").trim()
+  return { kind: "habit", what, note }
 }
 
 /** One part of a line, read. Null when it reads as none of the shapes. */
@@ -138,6 +152,9 @@ export function readDayStream(raw: string): GrammarPiece[] | null {
   // A list header ("Intention: …", "Plan: …") is the executor's: it files the line on that list.
   const header = /^([\p{L}\d][\p{L}\d '/-]{0,30}\p{L})\s*:\s*\S/u.exec(text)
   if (header && !/^(?:to[\s-]?do|todo|iso|wants?)$/i.test(header[1]!.trim())) return null
+  // "…so counts as skincare": the whole line is one habit done, with what came before as its note.
+  const counts = readCountsAs(text)
+  if (counts) return [counts]
   // The whole line first: "need to get dressed, shower and eat" is one To Do with its commas.
   const whole = readPart(text)
   if (whole && whole.kind === "todo" && !/\b(?:als+o+|then)\b/i.test(text)) return [whole]

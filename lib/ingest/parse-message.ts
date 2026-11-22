@@ -332,6 +332,9 @@ const COLON_ONLY = new Set([
  */
 const BARE_OR_COLON = new Set(["grocery", "groceries", "shop", "shopping"])
 
+/** Bare words that are also how a sentence starts; followed by an article they are prose. A colon is still the command. */
+const PROSE_AFTER = new Set(["doing", "tracking"])
+
 function matchAlias(line: string, alias: string): { rest: string } | null {
   const lower = line.toLowerCase()
   if (!lower.startsWith(alias)) return null
@@ -348,6 +351,8 @@ function matchAlias(line: string, alias: string): { rest: string } | null {
     if (!colon) return null
     return { rest: after.replace(/^[:：]\s*/, "").trim() }
   }
+  // "doing a facemask rn…" is a sentence, not `doing <pen>`: an article after the bare word leaves it prose.
+  if (!colon && PROSE_AFTER.has(alias) && /^\s+(?:a|an|the|my|some|this|that)\b/i.test(after)) return null
   if (colon || /\s/.test(ch!)) {
     return { rest: after.replace(/^[:：]\s*/, "").trim() }
   }

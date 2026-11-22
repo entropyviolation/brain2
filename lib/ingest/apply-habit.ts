@@ -15,8 +15,15 @@ function habitDate(payload: string, now: Date): { date: Date; rest: string } {
   return { date, rest }
 }
 
-export function applyHabit(payload: string, now = new Date()): ApplyResult {
+/** `did: skincare -- doing a facemask`: the words after " -- " are the cell's note, not part of the habit or its amount. */
+export function splitHabitNote(payload: string): { payload: string; note?: string } {
+  const m = /^([\s\S]*?)\s+--\s+([\s\S]+)$/.exec(payload)
+  return m ? { payload: m[1]!.trim(), note: m[2]!.trim() } : { payload }
+}
+
+export function applyHabit(raw: string, now = new Date()): ApplyResult {
   const habits = useHabitsStore.getState().tasks.filter((t) => !t.frequency || t.frequency === "daily")
+  const { payload, note } = splitHabitNote(raw)
   const { date, rest } = habitDate(payload, now)
   if (!rest) {
     return { status: "error", kind: "habit", reply: "Which habit? Example: habit: exercise 30" }
@@ -33,7 +40,7 @@ export function applyHabit(payload: string, now = new Date()): ApplyResult {
         kind: "habit",
         query,
         candidates: [],
-        remainder,
+        remainder: note ? `${remainder} -- ${note}`.trim() : remainder,
         createdAt: now.toISOString(),
       },
     }
@@ -48,7 +55,7 @@ export function applyHabit(payload: string, now = new Date()): ApplyResult {
         kind: "habit",
         query,
         candidates: resolved.candidates,
-        remainder,
+        remainder: note ? `${remainder} -- ${note}`.trim() : remainder,
         createdAt: now.toISOString(),
       },
     }
@@ -58,28 +65,31 @@ export function applyHabit(payload: string, now = new Date()): ApplyResult {
   if (!habit) {
     return { status: "error", kind: "habit", reply: "Habit disappeared. Try again." }
   }
-  return writeHabit(habit, remainder, date)
+  return writeHabit(habit, remainder, date, note)
 }
 
-export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): ApplyResult {
-  const payload = remainder.trim()
+export function writeHabit(habit: WeeklyTask, raw: string, date: Date, givenNote?: string): ApplyResult {
+  const split = splitHabitNote(raw.trim())
+  const payload = split.payload
+  const note = givenNote ?? split.note
+  const noted = note ? ` (note: ${note})` : ""
   const lower = payload.toLowerCase()
   const store = useHabitsStore.getState()
 
   if (habit.type === TaskType.BOOLEAN) {
     const off = lower === "no" || lower === "undo" || lower === "off"
-    store.updateCompletion(habit.id, date, { completed: !off }, "auto-link")
+    store.updateCompletion(habit.id, date, { completed: !off }, "auto-link", note)
     return {
       status: "ok",
       kind: "habit",
-      reply: off ? `${habit.name}: not done` : `${habit.name}: done`,
+      reply: (off ? `${habit.name}: not done` : `${habit.name}: done for today`) + noted,
       summary: `${habit.name} ${off ? "unchecked" : "checked"}`,
     }
   }
 
   if (habit.type === TaskType.TEXT) {
     const text = payload || "logged"
-    store.updateCompletion(habit.id, date, { text, completed: true }, "auto-link")
+    store.updateCompletion(habit.id, date, { text, completed: true }, "auto-link", note)
     return {
       status: "ok",
       kind: "habit",
@@ -91,7 +101,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
   const numeric = payload.match(/(-?\d+(?:\.\d+)?)/)
   if (habit.type === TaskType.INCREMENTAL) {
     if (numeric) {
-      store.updateCompletion(habit.id, date, { value: Number(numeric[1]) }, "auto-link")
+      store.updateCompletion(habit.id, date, { value: Number(numeric[1]) }, "auto-link", note)
       return {
         status: "ok",
         kind: "habit",
@@ -112,7 +122,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
   const goal = habit.goal ?? 0
   if (numeric) {
     const value = Number(numeric[1])
-    store.updateCompletion(habit.id, date, { value, goal }, "auto-link")
+    store.updateCompletion(habit.id, date, { value, goal }, "auto-link", note)
     return {
       status: "ok",
       kind: "habit",
@@ -122,7 +132,7 @@ export function writeHabit(habit: WeeklyTask, remainder: string, date: Date): Ap
   }
 
   const value = goal || 1
-  store.updateCompletion(habit.id, date, { value, goal, completed: true }, "auto-link")
+  store.updateCompletion(habit.id, date, { value, goal, completed: true }, "auto-link", note)
   return {
     status: "ok",
     kind: "habit",
