@@ -9,6 +9,7 @@ _Last mapped: 2026-10-22_
 _Last mapped: 2026-10-22_
 
 **Built and on the phone, not yet switched on.** _Last mapped: 2026-10-22._ Recording is on by default once allowed, relay or not (`keepOn()` in `LocationPlugin.swift`, called when the app comes to the front). The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, then the **Location** card on the phone's Home (`components/Mobile/location/MobileLocationCard.tsx`) takes the upload URL, upload token and capture public key, asks for Always, and starts recording.
+**Built and on the phone, not yet switched on.** The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, and the app needs `configure` (upload URL, upload token, capture public key) and the Always permission. No screen calls the bridge yet.
 
 | Piece | File | State |
 | --- | --- | --- |
