@@ -47,6 +47,77 @@ export function parseKeepTodo(raw: string): KeepTodo | null {
   return { what, dayOffset: tomorrow ? 1 : 0 }
 }
 
+/** "to do later", "todo tomorrow:", "to-do -": the marker one To Do starts with. */
+const TODO_MARK = /(?:^|[\s,;.]+)(?:(?:and|also|then)\s+)?(?:to[\s-]?do|todo)(?:\s+(later(?:\s+today)?|today|tonight|tomorrow|soon))?\s*[:\-–—,]?\s+/gi
+const TODO_LEAD = /^(?:(?:add|put)\s+(?:to|on)\s+(?:my\s+)?(?:to[\s-]?do|todo)(?:\s+list)?\s*:?\s+)/i
+
+/**
+ * "to do later do agent hacking course to do later apply to mr beast to do later figure out student loans" → three
+ * To Dos. Also "add to my to do: a, b". The line must start with the marker. Null when it does not, or nothing is left.
+ */
+export function parseKeepTodos(raw: string): KeepTodo[] | null {
+  const text = raw.replace(/\s+/g, " ").trim()
+  if (/\n/.test(raw.trim()) || /\?\s*$/.test(text)) return null
+  const lead = TODO_LEAD.exec(text)
+  let parts: { what: string; when?: string }[]
+  if (lead) {
+    parts = text.slice(lead[0].length).split(/\s*[;,]\s*|\s+and then\s+/).map((what) => ({ what }))
+  } else {
+    TODO_MARK.lastIndex = 0
+    // A later marker needs a day word, a colon or a comma before it: "learn how to do taxes" is one To Do, not two.
+    const marks = [...text.matchAll(TODO_MARK)].filter((m, i) => i === 0 || !!m[1] || /[:\-–—]\s*$/.test(m[0]) || /^\s*[,;.]/.test(m[0]))
+    if (!marks.length || marks[0]!.index !== 0) return null
+    parts = marks.map((m, i) => ({ what: text.slice(m.index! + m[0].length, marks[i + 1]?.index ?? text.length), ...(m[1] ? { when: m[1] } : {}) }))
+  }
+  const out: KeepTodo[] = []
+  for (const p of parts) {
+    let what = p.what.replace(/[.!,;]+$/g, "").trim()
+    if (TIMED.test(what)) return null
+    const tomorrow = /\btomorrow\b/i.test(p.when ?? "") || /\btomorrow(?:\s+(?:morning|afternoon|evening|night))?\b/i.test(what)
+    what = what.replace(/\btomorrow(?:\s+(?:morning|afternoon|evening|night))?\b/gi, " ").replace(/\b(?:today|tonight|later(?:\s+today)?|soon|asap)\b/gi, " ").replace(/\s+/g, " ").replace(/^[\s,]+|[\s,]+$/g, "")
+    if (what.length >= 2) out.push({ what, dayOffset: tomorrow ? 1 : 0 })
+  }
+  return out.length ? out : null
+}
+
+/** Edit distance, for checking a model's spelling fix stayed the same words. */
+function distance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]!
+    row[0] = i
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j]!
+      row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1))
+      prev = tmp
+    }
+  }
+  return row[b.length]!
+}
+
+/** True when `fixed` is the same To Do with its spelling mended: close letter for letter, spaces and case aside. */
+export function sameTodo(said: string, fixed: string): boolean {
+  const a = said.toLowerCase().replace(/[^a-z0-9]/g, "")
+  const b = fixed.toLowerCase().replace(/[^a-z0-9]/g, "")
+  if (!a || !b) return false
+  return distance(a, b) <= Math.max(2, Math.round(a.length * 0.25))
+}
+
+export const TODO_TIDY_SYSTEM =
+  "You fix the spelling of a person's To Do items, typed fast on a phone. For each item fix typos, split or joined words, and capitalization, " +
+  "and spell proper names (people, companies, creators, courses) the usual way. Start each with a capital letter. " +
+  "Do not add, drop, reword or merge items, and do not add detail. Same count, same order. JSON only."
+export const TODO_TIDY_SCHEMA = { type: "object", properties: { items: { type: "array", items: { type: "string", maxLength: 200 } } }, required: ["items"] }
+
+/** The model's fixes, each kept only when it is the same To Do (`sameTodo`); otherwise your words stand. */
+export function takeTidy(said: string[], fixed: unknown): string[] {
+  const list = Array.isArray((fixed as { items?: unknown })?.items) ? ((fixed as { items: unknown[] }).items) : []
+  return said.map((s, i) => {
+    const f = typeof list[i] === "string" ? (list[i] as string).trim().replace(/[.]+$/, "") : ""
+    return f && list.length === said.length && sameTodo(s, f) ? f : s[0]!.toUpperCase() + s.slice(1)
+  })
+}
+
 // ---------------------------------------------------------------- cues
 
 let lastMade: { cueId: string; perkId?: string; at: number } | null = null

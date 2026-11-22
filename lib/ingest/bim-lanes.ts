@@ -38,6 +38,8 @@ const PLAIN = ["tell-open", "question-open", "verb"] as const
 /** The lanes, in the order a line meets them. The reason for each place is beside it. */
 export const CHAT_LANES = [
   { id: "handoff", cost: "code", does: "“Send this to tracking bimby: …” hands the words, unread, to that BIMBY's own chat." },
+  // Second: the line under "Paste the command" is kept word for word, so no lane may read it as a log line or a question.
+  { id: "commands", agent: "commands-bimby", cost: "code", does: "“Remember this command to …” keeps a shell command (pasted with it, or as the next line); “what's the command to …?” says it back." },
   // Before ask-back and the day plan's answers: the line under "Where do you live?" is home, not an answer to them.
   { id: "web-home", cost: "code", does: "The line under BIM's “where do you live?”, or “I live in …”, is kept as home, and the held web question is run." },
   { id: "ask-back", cost: "code", does: "The line answers a question BIM asked (a check-in, or a fact it could not find) and is filed as that." },
@@ -46,7 +48,9 @@ export const CHAT_LANES = [
   { id: "flight-file", cost: "code", skipWhen: OPEN, does: "A pasted booking confirmation becomes Flight items and calendar events." },
   { id: "flight-ask", cost: "code", skipWhen: ["tell-open"], does: "“When am I flying to New York?” is answered from the Flight items." },
   // Before every lane that would read the same words as a plan, a fact or a log line: these two take only their own exact shapes.
-  { id: "keep", cost: "code", skipWhen: OPEN, does: "“Don't forget to cancel Instacart” becomes a To Do; “<fact>, remind me if <situation>” is kept and said back only in that situation." },
+  { id: "keep", cost: "local-model", skipWhen: OPEN, does: "“Don't forget to cancel Instacart” becomes a To Do, and “to do later X to do later Y” one To Do each (spelling mended by a model when LLM is on); “<fact>, remind me if <situation>” is kept and said back only in that situation." },
+  // Before money and the router: "mark that I regretted …" is a log line, not a regret over a purchase or a correction.
+  { id: "mark", cost: "code", skipWhen: PLAIN, does: "“Mark that …” / “note that …” logs what follows, without the laugh or the lead, and “that text” names whose text it was." },
   { id: "money", agent: "finance-bimby", cost: "local-model", skipWhen: PLAIN, does: "A line about money (spent, owes, paid back, a discount, regret over a purchase, who owes me) goes to the Financial BIMBY, which files it and says what your history shows." },
   { id: "day", agent: "plan-bimby", cost: "local-model", skipWhen: OPEN, does: "A list of the rest of the day becomes an editable plan card; while it is live, a line that changes it is taken here." },
   // After the flight lanes, so a pasted booking is still filed as a flight.

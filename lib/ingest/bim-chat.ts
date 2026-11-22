@@ -42,7 +42,7 @@ import { CORRECT_TTL_MS, parseCorrection, whenLabel, type Correction } from "./b
 import { parseTell } from "./bim-tell"
 import { liveFocus, resolveFollowUp, useBimThread } from "./bim-thread"
 import { tryHabitAuto, tryHandoff } from "./bimby-handoff"
-import { fireCues, parseKeepTodo, tryCueCommand, tryKeepCue, undoLastCue } from "./bim-keep"
+import { fireCues, parseKeepTodo, parseKeepTodos, takeTidy, TODO_TIDY_SCHEMA, TODO_TIDY_SYSTEM, tryCueCommand, tryKeepCue, undoLastCue, type KeepTodo } from "./bim-keep"
 import { undoLastMoney } from "@/lib/finance-bimby/apply"
 import { openMoneyQuestion, tryMoney, tryMoneyPhoto } from "@/lib/finance-bimby/run"
 import { escalate } from "@/lib/bim-flow/crew"
@@ -50,7 +50,8 @@ import { CHAT_LANES, runLanes, type ChatLaneId, type LaneBody, type LaneGuard } 
 import { BIM_CHAT_AGENT_ID, BIM_CHAT_REV } from "@/lib/agents/adapters/bim-chat"
 import { recorder, type StopReason, type TraceRecorder } from "@/lib/agents/trace"
 import { saveTrace } from "@/lib/agents/trace-store"
-import { answerTextQuestion, mentionsTexts, TEXTS_ASK_DAYS } from "./bim-texts"
+import { answerTextQuestion, mentionsTexts, namedPeople, TEXTS_ASK_DAYS } from "./bim-texts"
+import { readMark } from "./bim-mark"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
 import { loadTexts } from "@/lib/bim-flow/texts-client"
@@ -60,6 +61,7 @@ import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { looksLikeVerb } from "./parse-message"
 import { isWriteKind } from "./phone-undo"
 import { tryReport } from "@/lib/report-bimby/run"
+import { tryCommands } from "@/lib/commands-bimby/run"
 import { trySocial } from "@/lib/social-bimby/run"
 import { tryStream } from "@/lib/stream-bimby/run"
 import { tryWire } from "@/lib/wire-bimby/run"
@@ -756,6 +758,51 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
   })
 }
 
+/** Your To Do words with the spelling mended by the main model, each fix checked (`takeTidy`). No model: your words. */
+async function tidyTodos(said: string[], llm: boolean): Promise<string[]> {
+  const plain = takeTidy(said, null)
+  if (!llm) return plain
+  try {
+    const crew = await chatCrew()
+    if (!crew) return plain
+    const out = await ollamaCall(crew.main, AbortSignal.timeout(25_000))({
+      model: crew.main,
+      system: TODO_TIDY_SYSTEM,
+      user: said.map((s, i) => `${i + 1}. ${s}`).join("\n"),
+      schema: TODO_TIDY_SCHEMA,
+      maxTokens: 60 + said.length * 40,
+      temperature: 0,
+    })
+    return takeTidy(said, out)
+  } catch {
+    return plain
+  }
+}
+
+/**
+ * "to do later X to do later Y" (`parseKeepTodos`): each To Do through the executor's own `todo today`, sent as if on
+ * its day, so the To Do pin works as for a typed command. `undo` takes back the last one.
+ */
+async function keepTodos(todos: KeepTodo[], now: Date, llm: boolean): Promise<BimLine> {
+  const names = await tidyTodos(todos.map((t) => t.what), llm)
+  const done: string[] = []
+  const failed: string[] = []
+  let kind: BimLine["kind"]
+  for (const [i, t] of todos.entries()) {
+    const day = new Date(now)
+    day.setDate(day.getDate() + t.dayOffset)
+    const result = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: `todo today: ${names[i]}`, receivedAt: day.toISOString() }, day)
+    kind = result.kind
+    ;(result.status === "ok" ? done : failed).push(`${names[i]}${t.dayOffset ? " (tomorrow)" : ""}`)
+  }
+  const where = todos.every((t) => t.dayOffset) ? "tomorrow's To Do" : "your To Do"
+  const lines = [`Added ${done.length} to ${where}:`, ...done.map((d) => `• ${d}`)]
+  if (failed.length) lines.push("", `Could not add: ${failed.join("; ")}`)
+  const fixed = names.some((n, i) => n.toLowerCase() !== todos[i]!.what.toLowerCase())
+  if (fixed) lines.push("", "Spelling fixed from what you typed.")
+  return bimLine(lines.join("\n"), { status: failed.length && !done.length ? "error" : "ok", kind, route: `KEEP · to do ×${todos.length} · code${fixed ? " · spelling" : ""}` })
+}
+
 /**
  * A body for every lane in `CHAT_LANES`. The order, the guards and what each lane is for live in that table;
  * this is only what each one runs. A body returns null to leave the line for the next lane.
@@ -764,6 +811,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
   handoff: async ({ text }) => {
     const handed = await tryHandoff(text)
     return handed ? bimLine(handed.text, { route: handed.route, ...(handed.habitLineId ? { habitLineId: handed.habitLineId } : {}), ...(handed.reportId ? { reportId: handed.reportId } : {}) }) : null
+  },
+  commands: ({ text, now }) => {
+    const said = tryCommands(text, now)
+    return said ? bimLine(said.text, { route: said.route, kind: "tell" }) : null
   },
   "web-home": async ({ text, now, opts }) => {
     const took = await takeHome(text, now, { llm: !!opts.llm, lastBim: opts.lastBim })
@@ -778,11 +829,13 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     return followed ? bimLine(followed.text, { route: followed.route, ...(followed.choices.length ? { choices: followed.choices } : {}) }) : null
   },
   "flight-file": ({ text, now }) => tryFlights(text, now),
-  keep: async ({ text, now }) => {
+  keep: async ({ text, now, opts }) => {
     // "stop reminding me about …" starts with one of the executor's words, so the cue commands are read before the verb check.
     const said = tryCueCommand(text, now) ?? (looksLikeVerb(text, now) ? null : tryKeepCue(text, now))
     if (said) return bimLine(said.text, { route: said.route, kind: "tell" })
     if (looksLikeVerb(text, now)) return null
+    const todos = parseKeepTodos(text)
+    if (todos) return keepTodos(todos, now, !!opts.llm)
     const todo = parseKeepTodo(text)
     if (!todo) return null
     // Through the executor's own `todo today`, sent as if on that day, so `undo` and the To Do pin work as for a typed command.
@@ -792,6 +845,21 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     const where = todo.dayOffset ? "tomorrow's To Do" : "today's To Do"
     const reply = result.status === "ok" ? `On ${where}: ${todo.what}.` : bimReplyText(result)
     return bimLine(reply, { status: result.status, kind: result.kind, route: "KEEP · to do · code" })
+  },
+  mark: async ({ text, now }) => {
+    // The person a recent texts question named, newest first: "that text" in the line is theirs.
+    const recent = useBimChatStore.getState().lines.filter((l) => l.who === "you" && l.text !== text).slice(-12).reverse().map((l) => l.text)
+    let people: ReturnType<typeof snapshotFromStores>["people"] | null = null
+    const named = (line: string) => {
+      if (!mentionsTexts(line)) return null
+      const hit = namedPeople((people ??= snapshotFromStores().people ?? []), line)
+      return hit.length === 1 ? (hit[0]!.names[0] ?? hit[0]!.title) : null
+    }
+    const mark = readMark(text, recent, named)
+    if (!mark) return null
+    const result = await executorSend(`log: ${mark.body}`, now)
+    const choices = bimChoices(result)
+    return bimLine(bimReplyText(result), { status: result.status, kind: result.kind, route: `MARK · log · code${mark.person ? ` · ${mark.person}` : ""}`, ...(choices.length ? { choices } : {}) })
   },
   money: async ({ text, now, opts }) => {
     // An open question of the BIMBY's is only answered by the very next line, the one under the question.

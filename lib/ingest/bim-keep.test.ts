@@ -8,7 +8,7 @@ import { useFinanceBimby } from "@/lib/finance-bimby/store"
 import { isSpendEntry } from "@/lib/spend"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { parseKeepTodo, resetKeepForTests } from "./bim-keep"
+import { parseKeepTodo, parseKeepTodos, resetKeepForTests, sameTodo, takeTidy } from "./bim-keep"
 import { sendToBim, useBimChatStore } from "./bim-chat"
 
 const CUE = "got 15$ off restaurant food on instacart remind me if im thinking about ordering food or if i need to order food"
@@ -25,6 +25,27 @@ describe("parseKeepTodo", () => {
     expect(parseKeepTodo("remind me to stretch if i sit too long")).toBeNull()
     expect(parseKeepTodo("don't forget that the gate code is 4412")).toBeNull()
     expect(parseKeepTodo("i forgot to eat")).toBeNull()
+  })
+})
+
+describe("parseKeepTodos", () => {
+  const LINE = "to do later do agent ha king course to do later apply to mr breast to do later figure out student loadns"
+  it("cuts a line of “to do later” markers into one To Do each", () => {
+    expect(parseKeepTodos(LINE)?.map((t) => t.what)).toEqual(["do agent ha king course", "apply to mr breast", "figure out student loadns"])
+    expect(parseKeepTodos("todo tomorrow: call the bank")).toEqual([{ what: "call the bank", dayOffset: 1 }])
+    expect(parseKeepTodos("add to my to do list: buy stamps, mail the form")?.map((t) => t.what)).toEqual(["buy stamps", "mail the form"])
+  })
+  it("keeps “how to do” inside one To Do, and leaves lines that do not start with the marker", () => {
+    expect(parseKeepTodos("to do later learn how to do taxes")?.map((t) => t.what)).toEqual(["learn how to do taxes"])
+    expect(parseKeepTodos("i have a lot to do later")).toBeNull()
+    expect(parseKeepTodos("what do i have to do later?")).toBeNull()
+  })
+  it("takes a model's spelling fix only when it is the same To Do", () => {
+    expect(sameTodo("do agent ha king course", "Do agent hacking course")).toBe(true)
+    expect(sameTodo("figure out student loadns", "Figure out student loans")).toBe(true)
+    expect(sameTodo("apply to mr breast", "Book a dentist appointment")).toBe(false)
+    expect(takeTidy(["apply to mr breast", "x y"], { items: ["Apply to MrBeast", "Something else entirely"] })).toEqual(["Apply to MrBeast", "X y"])
+    expect(takeTidy(["buy milk"], { items: [] })).toEqual(["Buy milk"])
   })
 })
 
@@ -47,6 +68,21 @@ describe("BIM chat: keep and money lanes", () => {
     expect(line.route).toBe("KEEP · to do · code")
     expect(line.text).toBe("On today's To Do: cancel instacart.")
     expect(titles().some((t) => /cancel instacart/i.test(t))).toBe(true)
+  })
+
+  it("puts each “to do later …” on the To Do list, LLM off", async () => {
+    const line = await sendToBim("to do later do agent ha king course to do later apply to mr breast to do later figure out student loadns")
+    expect(line.route).toBe("KEEP · to do ×3 · code")
+    expect(line.text).toContain("Added 3 to your To Do")
+    for (const w of ["agent ha king course", "apply to mr breast", "student loadns"]) expect(titles().some((t) => t.toLowerCase().includes(w))).toBe(true)
+  })
+
+  it("logs “mark that …” without the laugh, and names whose text it was", async () => {
+    useBimChatStore.setState({ lines: [{ id: "y1", at: new Date().toISOString(), who: "you", text: "what was shelby talking about in her last text to me?" }] })
+    const line = await sendToBim("lolll mark that i heavily regretted not reading that text")
+    expect(line.route).toMatch(/^MARK · log · code/)
+    expect(line.text).not.toMatch(/lolll|mark that/i)
+    expect(line.text).toMatch(/Heavily regretted not reading/)
   })
 
   it("takes the To Do back on “undo that”", async () => {

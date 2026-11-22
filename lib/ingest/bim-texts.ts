@@ -38,8 +38,11 @@ const QUESTION_LEAD =
 
 const words = (s: string) => s.toLowerCase().replace(/[’']/g, "'").split(/[^\p{L}\p{N}']+/u).filter(Boolean)
 
-/** Cheap first look, before any snapshot is built: the line says text or message. */
-export const mentionsTexts = (text: string): boolean => TEXT_WORD.test(text)
+/** "What did Shelby last say to me?", "what was the last thing Jo told me?": a texts question with no word for texts. */
+const SAID_LAST = /\b(?:last\s+(?:say|said|tell|told|write|wrote|send|sent|ask|asked)|(?:say|said|tell|told|wrote|sent|asked)\s+(?:to\s+)?me\s+last|last\s+thing\s+.{1,30}\s+(?:said|told|wrote|sent|asked))\b/i
+
+/** Cheap first look, before any snapshot is built: the line says text or message, or asks what someone last said. */
+export const mentionsTexts = (text: string): boolean => TEXT_WORD.test(text) || SAID_LAST.test(text)
 
 /** Names that are the person themself or a pronoun, never someone they text ("self", "me"). */
 const NOT_A_NAME = new Set(["self", "me", "myself", "i", "you", "her", "him", "she", "he", "they", "them", "us", "we", "my", "mine"])
@@ -79,7 +82,7 @@ export function namedPeople(people: Person[], text: string): Person[] {
 /** A question about texts that names someone. Null for anything else, including commands ("text Shelby back"). */
 export function parseTextQuestion(text: string, people: Person[]): TextQuestion | null {
   const t = text.trim()
-  if (!t || t.includes("\n") || !TEXT_WORD.test(t)) return null
+  if (!t || t.includes("\n") || !mentionsTexts(t)) return null
   if (!/\?\s*$/.test(t) && !QUESTION_LEAD.test(t)) return null
   const named = namedPeople(people, t)
   if (!named.length) return null

@@ -22,6 +22,14 @@ const rows: TextRow[] = [
   row("Elijah", "in", at(11, 8), "tour bus leaves at 6"),
 ]
 
+describe("a texts question with no word for texts", () => {
+  it("reads “what did Shelby last say to me?” as Shelby's last text", () => {
+    expect(parseTextQuestion("what did shelby last say to me?", people)).toMatchObject({ dir: "in", people: [{ id: "p1" }] })
+    expect(parseTextQuestion("what did I last say to Elijah?", people)).toMatchObject({ dir: "out", people: [{ id: "p2" }] })
+    expect(parseTextQuestion("what did shelby say about the show at dinner", people)).toBeNull()
+  })
+})
+
 const deps = (extra: Partial<Parameters<typeof answerTextQuestion>[2]> = {}) => ({
   snap: { people, secretHandles: [] },
   load: async () => rows,
