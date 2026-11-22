@@ -28,6 +28,7 @@ import type { TraceRecorder } from "@/lib/agents/trace"
 import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
 import type { Answer, Flow } from "@/lib/bim-flow/types"
 import { useIngestStore } from "./ingest-store"
+import { parseLinkMessage } from "@/lib/saved-links"
 import { looksLikeVerb, parseMessage } from "./parse-message"
 import type { IngestSource } from "./types"
 
@@ -51,6 +52,9 @@ export function routable(text: string, chatPending: boolean, now = new Date()): 
   const t = text.trim()
   if (!t || t.length > 400 || t.includes("\n") || chatPending) return false
   if (looksLikeVerb(t, now)) return false
+  // A line that starts with a link is a saved link (`apply-link.ts`). The router once sent 42 of 72 bare reels to
+  // the chat lane, which replied and saved nothing (`docs/BIM_CHAT_USAGE.md` §9).
+  if (parseLinkMessage(t)) return false
   return parseMessage(t, now).kind === "capture"
 }
 

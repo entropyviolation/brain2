@@ -105,6 +105,9 @@ describe("BIM chat LLM mode", () => {
     expect(routable("groc", false)).toBe(false)
     expect(routable("two\nlines", false)).toBe(false)
     expect(routable("when did I last shower?", true)).toBe(false)
+    // A link is saved by the executor, never sent to the router (the chat lane once replied and saved nothing).
+    expect(routable("https://www.instagram.com/reel/AbC123/", false)).toBe(false)
+    expect(routable("https://example.com/a lamp made of dials", false)).toBe(false)
   })
 
   it("off: a question is captured, exactly as before", async () => {

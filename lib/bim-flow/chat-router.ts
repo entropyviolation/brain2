@@ -25,6 +25,14 @@ export interface ChatRoute {
 
 const WH = /^(when|what|how|who|where|which|why|did|do|does|have|has|was|were|is|am|are|can|could|should)\b/i
 
+/** True when the words can be a question: a question mark, or a question opener ("when…", "how many…", "tell me…"). */
+export function looksLikeQuestion(text: string): boolean {
+  const t = text.trim()
+  if (/\?/.test(t) || WH.test(t) || /^(tell me|show me|remind me (when|what|how)|i wonder|wondering)\b/i.test(t)) return true
+  // A question after a comma or "and/but/also": "back from Sam's, did I take my meds".
+  return /(,|;|\band\b|\bbut\b|\balso\b)\s*(when|what|how|who|where|which|did i|do i|have i|was i|is it|can you|could you)\b/i.test(t)
+}
+
 /** A sure label from the words alone, or a hint the model must agree with, or nothing. */
 export function routeByCode(text: string): { intent: ChatIntent; sure: boolean; why: string } | null {
   const t = text.trim()
@@ -85,9 +93,13 @@ export async function routeChat(text: string, call: ModelCall | null, ladder: st
   if (!out || !isIntent(out.intent)) {
     return hint ? { ...hint, answeredBy: "code", hops } : { intent: "log", sure: false, answeredBy: "code", why: "model gave no label", hops }
   }
-  const second = isIntent(out.second) && out.second !== out.intent ? out.second : undefined
+  // A statement is not a question, whatever the model says: "spent $80 on …" went to Ask (5 calls, 45 s, "I don't
+  // know"; `docs/BIM_CHAT_USAGE.md` §9). Ask needs a question mark or a question opener.
+  const asks = looksLikeQuestion(text)
+  const intent: ChatIntent = out.intent === "ask" && !asks ? "log" : out.intent
+  const second = isIntent(out.second) && out.second !== intent && !(out.second === "ask" && !asks) ? out.second : undefined
   return {
-    intent: out.intent,
+    intent,
     ...(second ? { second } : {}),
     sure: out.sure === "high",
     answeredBy: "model",

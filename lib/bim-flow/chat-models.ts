@@ -24,6 +24,25 @@ function savedMainModel(): string | undefined {
   }
 }
 
+/**
+ * Models too big to sit beside the 3B and the 14B on a 32 GB Mac. A call to one pushes the others out, and the
+ * next chat turn pays a reload (a router call took the whole 45 s timeout after one: `docs/BIM_CHAT_USAGE.md` §9).
+ * Chat and its BIMBIES leave them out of every ladder, unless one is the only model or the chosen main model.
+ * A lab that wants one names it on the node or the run.
+ */
+export const NOT_RESIDENT = ["qwen3:30b-a3b"]
+
+export function residentCrew(crew: Crew | null): Crew | null {
+  if (!crew) return null
+  const keep = (ladder: string[]) => {
+    const cut = ladder.filter((m) => !NOT_RESIDENT.includes(m) || m === crew.main)
+    return cut.length ? cut : ladder
+  }
+  const out = { ...crew }
+  for (const role of Object.keys(crew) as (keyof Crew)[]) if (role !== "main") (out as Record<string, unknown>)[role] = keep(crew[role] as string[])
+  return out
+}
+
 /** The crew for this device, checked at most once a minute. */
 export async function chatCrew(): Promise<Crew | null> {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.crew
@@ -37,7 +56,7 @@ export async function chatCrew(): Promise<Crew | null> {
     setModelEndpoint({ base: `${hub.url}/api/ollama`, headers: hub.headers })
   }
   const installed = await listOllamaModels()
-  const crew = installed ? crewFor(installed, savedMainModel()) : null
+  const crew = installed ? residentCrew(crewFor(installed, savedMainModel())) : null
   cached = { at: Date.now(), crew }
   return crew
 }

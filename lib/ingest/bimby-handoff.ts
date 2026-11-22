@@ -23,7 +23,7 @@ type Target = {
   /** Names the person may say, lowercase, without "bimby" or "helper". */
   names: string[]
   /** Runs the payload in that BIMBY's chat and returns what it answered with. `habitLineId` is the Habits BIMBY line BIM chat draws as a card; `reportId` is a plan the Report card draws. */
-  run: (payload: string) => Promise<{ text: string; habitLineId?: string; reportId?: string }>
+  run: (payload: string, opts: { llm: boolean }) => Promise<{ text: string; habitLineId?: string; reportId?: string }>
 }
 
 const TARGETS: Target[] = [
@@ -31,11 +31,11 @@ const TARGETS: Target[] = [
     id: "tracking",
     label: "Tracking BIMBY",
     names: ["tracking", "track", "time tracking", "timeblock", "time block"],
-    run: async (payload) => {
+    run: async (payload, { llm }) => {
       const store = useTrackingHelper
       if (store.getState().busy) return { text: "The Tracking BIMBY is still working on something. Send it again in a moment." }
       const before = store.getState().lines.length
-      await store.getState().send(payload, { fromBim: true })
+      await store.getState().send(payload, { fromBim: true, llm })
       const reply = store.getState().lines.slice(before).reverse().find((l) => l.who === "helper")
       const open = reply?.blocks?.length ?? 0
       const tail = open ? " It waits for your Add; the Inbox shows a notice you can click." : ""
@@ -46,11 +46,11 @@ const TARGETS: Target[] = [
     id: "habits",
     label: "Habits BIMBY",
     names: ["habits", "habit", "daily habits", "daily habit"],
-    run: async (payload) => {
+    run: async (payload, { llm }) => {
       const store = useHabitsBimby
       if (store.getState().busy) return { text: "The Habits BIMBY is still working on something. Send it again in a moment." }
       const before = store.getState().lines.length
-      await store.getState().send(payload, { fromBim: true })
+      await store.getState().send(payload, { fromBim: true, llm })
       const reply = store.getState().lines.slice(before).reverse().find((l) => l.who === "bimby")
       if (!reply) return { text: "No answer came back." }
       // The rows are drawn under BIM's reply as the BIMBY's own table (`components/Bim/habit-card.tsx`), so they are not repeated as text.
@@ -129,13 +129,13 @@ export async function parseInfoAsk(text: string): Promise<string | null> {
 }
 
 /** Hands the payload to its BIMBY. Returns BIM's reply text, or null when the line is not a handoff. */
-export async function tryHandoff(text: string): Promise<{ text: string; route: string; habitLineId?: string; reportId?: string } | null> {
+export async function tryHandoff(text: string, opts: { llm?: boolean } = {}): Promise<{ text: string; route: string; habitLineId?: string; reportId?: string } | null> {
   const info = await parseInfoAsk(text)
   if (info) return { text: info, route: "INFO · BIMBY" }
   const hand = parseHandoff(text)
   if (!hand || !hand.payload) return null
   const target = TARGETS.find((t) => t.id === hand.target)!
-  const answer = await target.run(hand.payload)
+  const answer = await target.run(hand.payload, { llm: opts.llm !== false })
   return { text: `Sent to the ${target.label}, as written.\n\n${answer.text}`, route: `HANDOFF · ${target.label}`, ...(answer.habitLineId ? { habitLineId: answer.habitLineId } : {}), ...(answer.reportId ? { reportId: answer.reportId } : {}) }
 }
 
@@ -145,13 +145,13 @@ export async function tryHandoff(text: string): Promise<{ text: string; route: s
  * starts with one of BIM's commands: only `did …` with two or more habits is taken then, so `did skincare`
  * and every other command stay with the executor. A busy BIMBY takes nothing; the line is filed as before.
  */
-export async function tryHabitAuto(text: string, now: Date, verb = false): Promise<{ text: string; route: string; habitLineId?: string } | null> {
+export async function tryHabitAuto(text: string, now: Date, verb = false, opts: { llm?: boolean } = {}): Promise<{ text: string; route: string; habitLineId?: string } | null> {
   if (verb && !/^\s*did\b/i.test(text)) return null
   if (useHabitsBimby.getState().busy) return null
   const read = readHabitLog(text, buildContext(now), { multiOnly: verb })
   if (!read) return null
   const target = TARGETS.find((t) => t.id === "habits")!
-  const answer = await target.run(text)
+  const answer = await target.run(text, { llm: opts.llm !== false })
   return {
     text: `That reads as daily habits, so I sent it to the ${target.label}, as written.\n\n${answer.text}`,
     route: `HANDOFF · ${target.label} · auto`,

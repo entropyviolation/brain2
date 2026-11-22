@@ -70,7 +70,8 @@ interface HelperState {
   adding: Record<string, true>
   /** The last Add message per block (shown on its card, kept if the person navigates away and back). Not persisted. */
   msgs: Record<string, string>
-  send: (text: string, opts?: { fromBim?: boolean }) => Promise<void>
+  /** `llm: false` (BIM chat with LLM off) runs the rules alone: no model is asked. */
+  send: (text: string, opts?: { fromBim?: boolean; llm?: boolean }) => Promise<void>
   edit: (lineId: string, blockId: string, patch: Partial<ProposedBlock>) => void
   /** Starts the write and returns at once; the write runs after the next paint, in the store, so leaving the screen does not stop it. Resolves with the message. */
   add: (lineId: string, blockIds?: string[], force?: boolean, grade?: AcceptGrade) => Promise<string>
@@ -112,7 +113,7 @@ export const useTrackingHelper = create<HelperState>()(
         try {
           const pendingLine = [...get().lines].reverse().find((l) => l.who === "helper" && openBlocks(l).length && l.account)
           const flow = loadFlow()
-          const crew = await chatCrew().catch(() => null)
+          const crew = opts?.llm === false ? null : await chatCrew().catch(() => null)
           const ladder = flow.wire.ladder.length ? flow.wire.ladder : crew?.extract ?? []
           // The shipped seeds restate WIRE_SYSTEM, so only skills learned on this device ride in the prompt.
           const bank = loadBank(HELPER_AGENT_ID, TRACKING_HELPER_SKILLS)

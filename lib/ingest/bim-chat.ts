@@ -877,8 +877,9 @@ async function keepTodos(todos: KeepTodo[], now: Date, llm: boolean): Promise<Bi
  * this is only what each one runs. A body returns null to leave the line for the next lane.
  */
 const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
-  handoff: async ({ text }) => {
-    const handed = await tryHandoff(text)
+  handoff: async ({ text, opts }) => {
+    // LLM off means no model anywhere in the turn, the BIMBY handed to included: it runs its rules alone.
+    const handed = await tryHandoff(text, { llm: !!opts.llm })
     return handed ? bimLine(handed.text, { route: handed.route, ...(handed.habitLineId ? { habitLineId: handed.habitLineId } : {}), ...(handed.reportId ? { reportId: handed.reportId } : {}) }) : null
   },
   commands: ({ text, now }) => {
@@ -971,8 +972,8 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     const wired = tryWire(text, now)
     return wired ? bimLine(wired.text, { route: wired.route, wireId: wired.wireId }) : null
   },
-  "habit-auto": async ({ text, now }) => {
-    const handed = await tryHabitAuto(text, now, looksLikeVerb(text, now))
+  "habit-auto": async ({ text, now, opts }) => {
+    const handed = await tryHabitAuto(text, now, looksLikeVerb(text, now), { llm: !!opts.llm })
     return handed ? bimLine(handed.text, { route: handed.route, ...(handed.habitLineId ? { habitLineId: handed.habitLineId } : {}) }) : null
   },
   report: async ({ text, now }) => {

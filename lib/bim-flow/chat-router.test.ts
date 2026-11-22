@@ -31,6 +31,16 @@ describe("routeByCode", () => {
 })
 
 describe("routeChat", () => {
+  it("never sends a statement to Ask, whatever the model says", async () => {
+    const m = models({ small: { intent: "ask", second: "none", sure: "high", why: "money" } })
+    const r = await routeChat("thus spent 80$ on snacks", m.call, LADDER)
+    expect(r).toMatchObject({ intent: "log", answeredBy: "model" })
+    const q = await routeChat("spent how much on snacks this week", m.call, LADDER)
+    expect(q.intent).toBe("log")
+    const real = await routeChat("back from the store, did I take my meds", models({ small: { intent: "ask", second: "none", sure: "high", why: "" } }).call, LADDER)
+    expect(real.intent).toBe("ask")
+  })
+
   it("never asks a model when code is sure", async () => {
     const m = models({})
     const r = await routeChat("when did I last shower?", m.call, LADDER)

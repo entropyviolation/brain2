@@ -66,7 +66,8 @@ interface BimbyState {
   /** The day the opening nudges were last shown. */
   greetedOn: string | null
   open: () => void
-  send: (text: string, opts?: { fromBim?: boolean }) => Promise<void>
+  /** `llm: false` (BIM chat with LLM off) runs the rules alone: no model is asked. */
+  send: (text: string, opts?: { fromBim?: boolean; llm?: boolean }) => Promise<void>
   edit: (lineId: string, proposalId: string, raw: string) => void
   /** Change any part of a row (habit, day, state, amount, text, reason, times) before Accept. */
   revise: (lineId: string, proposalId: string, patch: ProposalPatch) => void
@@ -135,7 +136,7 @@ export const useHabitsBimby = create<BimbyState>()(
         }
         try {
           const flow = loadFlow()
-          const crew = await chatCrew().catch(() => null)
+          const crew = opts?.llm === false ? null : await chatCrew().catch(() => null)
           const ladder = flow.match.ladder.length ? flow.match.ladder : crew?.extract ?? []
           const ctx = buildContext()
           // Words handed over from BIM chat are a message of their own, never the answer to a question open here.

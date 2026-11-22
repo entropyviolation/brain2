@@ -199,6 +199,14 @@ function tell(call: ModelCallSeen): void {
     } catch {}
 }
 
+/**
+ * How long Ollama keeps a model loaded after a call. The 3B router stays for good (-1): it is 2 GB and every chat
+ * turn asks it first, so a reload there is pure wait. Everything else stays 15 minutes.
+ */
+export function keepAliveFor(model: string): string | number {
+  return /:3b\b|3b-instruct/.test(model) ? -1 : "15m"
+}
+
 const nsToMs = (ns: unknown) => (typeof ns === "number" && ns > 0 ? Math.round(ns / 1e6) : undefined)
 const taskOf = (system: string) => system.replace(/\s+/g, " ").trim().slice(0, 60)
 
@@ -245,7 +253,7 @@ async function askOllama(
       format: schema,
       // qwen3 thinks by default and spends `num_predict` on it, leaving `content` empty. Others ignore the flag.
       think: false,
-      keep_alive: "15m",
+      keep_alive: keepAliveFor(model),
       options: { temperature, num_ctx: NUM_CTX, num_predict: maxTokens },
       messages: [
         { role: "system", content: system },
