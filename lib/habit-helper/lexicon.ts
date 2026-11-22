@@ -19,12 +19,28 @@ export interface Scored {
   hits: string[]
 }
 
+/**
+ * Kinds of a general word in a habit's name: "Practice an instrument" is met by "played guitar", "Exercise" by
+ * "went to the gym". Only for words in the name, keywords or shorthand; a kind word scores 1, like a keyword.
+ */
+const KINDS: Record<string, string[]> = {
+  instrument: ["guitar", "piano", "keyboard", "bass", "drums", "drum", "ukulele", "uke", "violin", "cello", "viola", "flute", "sax", "saxophone", "trumpet", "clarinet", "harp", "banjo", "mandolin", "synth", "harmonica"],
+  music: ["guitar", "piano", "keyboard", "bass", "drums", "ukulele", "violin", "cello", "sing", "singing", "sang", "song", "songs", "ableton", "synth", "beat", "beats"],
+  // Not "run", "lift" or "worked out": "ran errands", "lifted the box" and "work" are not exercise.
+  exercise: ["workout", "gym", "jog", "jogged", "weights", "swim", "swam", "hike", "hiked", "yoga", "pilates", "cardio", "bike", "biked", "cycling", "spin", "climb", "climbed", "bouldering"],
+  language: ["spanish", "french", "german", "italian", "japanese", "chinese", "mandarin", "korean", "portuguese", "duolingo"],
+}
+
 function termsOf(h: HabitBrief): Map<string, number> {
   const terms = new Map<string, number>()
   const put = (s: string, w: number) => terms.set(s, Math.max(terms.get(s) ?? 0, w))
   for (const w of contentWords(h.name)) put(stem(w), unitOf(w) ? 0.5 : 1)
   for (const phrase of h.words) for (const s of contentStems(phrase)) put(s, 1)
   if (h.shorthand?.trim()) for (const s of contentStems(h.shorthand)) put(s, 2)
+  for (const kind of Object.keys(KINDS)) {
+    if (!terms.has(stem(kind))) continue
+    for (const k of KINDS[kind]!) for (const s of contentStems(k)) put(s, 1)
+  }
   return terms
 }
 

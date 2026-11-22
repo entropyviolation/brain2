@@ -41,14 +41,18 @@ export function computeAll(m: Matching, t: Tagged, ctx: BimbyContext): Computed 
       out.asks.push({ id: `a-${c.id}`, words: c.text, options: options.map((id) => ({ id, name: displayName(ctx.habits.find((h) => h.id === id)!) })), item: { ...item, habit: "", maybe: "" } })
       continue
     }
-    const r = computeItem(item, t, ctx)
-    if (typeof r === "string") {
-      out.notes.push(r)
-      continue
+    // "… today and yesterday": one proposal per day in the list, each as if the clause named that day alone.
+    const days = c.days && c.days.length > 1 ? c.days : [undefined]
+    for (const d of days) {
+      const r = d ? computeItem({ ...item, day: "" }, { ...t, clauses: t.clauses.map((x) => (x.id === c.id ? { ...x, day: d } : x)) }, ctx) : computeItem(item, t, ctx)
+      if (typeof r === "string") {
+        out.notes.push(r)
+        continue
+      }
+      // Two clauses on one habit and day: the later one wins.
+      out.proposals = out.proposals.filter((p) => !(p.habitId === r.habitId && p.day === r.day))
+      out.proposals.push(r)
     }
-    // Two clauses on one habit and day: the later one wins.
-    out.proposals = out.proposals.filter((p) => !(p.habitId === r.habitId && p.day === r.day))
-    out.proposals.push(r)
   }
   return out
 }

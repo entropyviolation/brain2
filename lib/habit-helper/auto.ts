@@ -8,7 +8,8 @@
  * A clause **names** a habit when the habit's words cover at least half of the clause's content words
  * ("drank water" names Drink water; "bought water at the store" does not). The line is a habit log when
  * two or more clauses name habits and they are at least half of the clauses, or when its one clause names
- * a habit, covers every content word, carries an amount and is not negated ("read 10 pages").
+ * a habit, covers every content word, carries an amount and is not negated ("read 10 pages"). A yes/no habit
+ * needs no amount when the line says it was just done ("also just stretched"); a bare "stretched" is still left.
  */
 
 import { scoreClause } from "./lexicon"
@@ -17,6 +18,8 @@ import { tagText } from "./tags"
 import type { BimbyContext } from "./types"
 import { contentStems } from "./words"
 
+/** "just stretched", "also brushed teeth", "and i just meditated": a one-habit line that says it is done now. */
+const JUST_DID = /^(?:(?:also|and|plus|oh|ok(?:ay)?)[,\s]+)*(?:i\s+)?(?:also\s+)?just\b|^(?:also|and\s+also|plus)\b/i
 const CLOCK = /\b\d{1,2}:\d{2}\b|\b\d{1,2}\s*(am|pm)\b/i
 
 export interface HabitLogRead {
@@ -49,7 +52,9 @@ export function readHabitLog(text: string, ctx: BimbyContext, opts: { multiOnly?
     const best = scoreClause(head, ctx.habits)[0]
     if (!best || best.score < 1 || best.hits.length * 2 < stems.size) continue
     habits.push(best.id)
-    soloOk = !c.negated && best.hits.length >= stems.size && c.tags.some((id) => kindOf.get(id) === "amount")
+    // An amount says it was done ("read 10 pages"); so does "just" or "also" before a yes/no habit ("also just stretched").
+    const said = c.tags.some((id) => kindOf.get(id) === "amount") || (JUST_DID.test(t) && ctx.habits.find((h) => h.id === best.id)?.kind === "yesno")
+    soloOk = !c.negated && best.hits.length >= stems.size && said
   }
   const named = habits.length
   const many = named >= 2 && named * 2 >= clauses

@@ -48,6 +48,21 @@ describe("tagText", () => {
   })
 })
 
+describe("a list of days and kinds of a habit's words", () => {
+  const habits = [...FIXTURE, { id: "music", name: "Practice an instrument/music", kind: "yesno" as const, words: [], days: {} }]
+  it("puts both habits on both days for “… today and yesterday”, and reads guitar as an instrument", () => {
+    const ctx = fixtureCtx(TEST_NOW, habits)
+    const t = tagText("played guitar and exercised today and yesterday", ctx.now)
+    const got = computeAll(matchByRules(t, ctx), t, ctx).proposals.map((p) => `${p.habitId} ${p.day}`)
+    expect(got).toEqual(["music 2026-11-01", "music 2026-10-31", "exercise 2026-11-01", "exercise 2026-10-31"])
+  })
+  it("keeps separate days apart when each clause names its own", () => {
+    const ctx = fixtureCtx(TEST_NOW, habits)
+    const t = tagText("stretched yesterday and drank water today", ctx.now)
+    expect(computeAll(matchByRules(t, ctx), t, ctx).proposals.map((p) => `${p.habitId} ${p.day}`)).toEqual(["stretch 2026-10-31", "water 2026-11-01"])
+  })
+})
+
 describe("compute", () => {
   it("adds with 'another', converts hours, and sets the goal when no amount is said", async () => {
     const habits = FIXTURE.map((x) => (x.id === "read" ? { ...x, days: { "2026-11-01": { met: true, value: 5 } } } : x))

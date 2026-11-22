@@ -40,6 +40,8 @@ export interface Clause {
   negated: boolean
   /** The day in force here: this clause's own day word, else the last one before it. */
   day?: string
+  /** Set when the sentence ends in a list of days ("… today and yesterday"): every day the clause is about, `day` first. */
+  days?: string[]
   /** The whole sentence it came from, for a reason with no "because". */
   sentence: string
 }

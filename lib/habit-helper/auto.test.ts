@@ -15,6 +15,10 @@ describe("readsAsHabitLog", () => {
     expect(yes("read 10 pages")).toBe(true)
     expect(yes("walked 30 minutes")).toBe(true)
     expect(yes("stretched")).toBe(false)
+    // "just" or "also" says it was done now: enough for a yes/no habit, not for one with a goal.
+    expect(yes("also just stretched.")).toBe(true)
+    expect(yes("just went outside")).toBe(true)
+    expect(yes("also just cleaned")).toBe(false)
     expect(yes("didn't read 10 pages")).toBe(false)
     expect(yes("read 10 pages of the report for work")).toBe(false)
   })

@@ -129,8 +129,37 @@ function cut(text: string, tags: Tag[]): Clause[] {
       const negated = inside.some((t) => t.kind === "neg" && (!reason || t.at < reason.at))
       out.push({ id: `C${out.length + 1}`, text: body, at, tags: inside.map((t) => t.id), negated, day, sentence })
     })
+    spreadDayList(out.slice(out.length - kept.length), tags)
   }
   return out
+}
+
+/** A clause that is only day words ("yesterday", "and yesterday"). */
+const onlyDays = (c: Clause, tags: Tag[]) => {
+  let rest = c.text.toLowerCase()
+  for (const t of tags) if (t.kind === "day" && c.tags.includes(t.id)) rest = rest.replace(t.raw.toLowerCase(), " ")
+  return c.tags.some((id) => tags.find((t) => t.id === id)?.kind === "day") && rest.split(/[^a-z']+/).every((w) => !w || STOP.has(w) || w === "and" || w === "both")
+}
+
+/**
+ * "played guitar and exercised today and yesterday": the sentence ends in day words split off as clauses of their
+ * own. Every day in that list holds for the clause the list starts on and every clause before it with no day word
+ * of its own. A day-only clause is not a habit, so it keeps its days but names nothing.
+ */
+function spreadDayList(clauses: Clause[], tags: Tag[]): void {
+  let end = clauses.length
+  while (end > 0 && onlyDays(clauses[end - 1]!, tags)) end--
+  if (end === clauses.length || end === 0) return
+  const dayOf = (c: Clause) => tags.filter((t) => t.kind === "day" && c.tags.includes(t.id)).map((t) => t.day!)
+  const head = clauses[end - 1]!
+  const days = [...new Set([...dayOf(head), ...clauses.slice(end).flatMap(dayOf)])]
+  if (days.length < 2) return
+  for (let i = end - 1; i >= 0; i--) {
+    const c = clauses[i]!
+    if (i < end - 1 && dayOf(c).length) break
+    c.day = days[0]
+    c.days = days
+  }
 }
 
 function markRange(text: string, from: number, to: number, tags: Tag[]): string {
