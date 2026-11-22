@@ -92,7 +92,7 @@ export async function runLanes<Id extends string, Ctx, Line>(
   lanes: readonly LaneDef<Id>[],
   bodies: Record<Id, LaneBody<Ctx, Line>>,
   ctx: Ctx,
-  opts: { is: (guard: LaneGuard) => boolean; rec?: TraceRecorder; note?: (line: Line) => string | undefined },
+  opts: { is: (guard: LaneGuard) => boolean; rec?: TraceRecorder; note?: (line: Line) => string | undefined; onLane?: (lane: Id) => void },
 ): Promise<LaneHit<Id, Line> | null> {
   const { rec } = opts
   for (const lane of lanes) {
@@ -103,6 +103,7 @@ export async function runLanes<Id extends string, Ctx, Line>(
       continue
     }
     const t0 = rec?.clock()
+    opts.onLane?.(lane.id)
     let line: Line | null
     try {
       line = await bodies[lane.id](ctx)

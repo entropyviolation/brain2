@@ -228,50 +228,60 @@ chip hops, the traces and the model-call archive for the same days.
 - **Bench and game calls.** Most model calls on Nov 3 and Nov 7 were reading
   lenses and the baby animal characters, on the same 14B chat uses.
 
-## 5. Top 15 failures
+## 5. Top 16 failures
 
 Ranked by how often times how much it hurt (slow, wrong write, or the person
 had to redo it).
 
-1. **Lanes after the router do nothing, slowly.** LOG, CORRECT, BUILD, TELL end
+1. **Multi-person social lines collapse to one note.** The person flagged this one
+   themselves (rejected in BIM chat, 2026-11-21, after the export). A long line about
+   a trip named 17 people, two of them new (one whose birthday was the night of a
+   show, one they stayed with and had mixed feelings about), the show, and where they
+   stayed. The Social BIMBY made **one** "Note on <one friend>" with mood "nice".
+   Wanted: every person found or proposed, new people with how and when met and how
+   it felt, the birthday, a hang-out event with its place, the trip dates from the
+   flights, and questions back (which show, who was there when, what you did). The
+   scorecard's paraphrased copy scores 0 of 6 social checks, 1 of 10 people
+   (`lib/bim-scorecard/`).
+2. **Lanes after the router do nothing, slowly.** LOG, CORRECT, BUILD, TELL end
    as a plain log after 38–64 s. 13 of 31 LLM turns. _"Played guitar and
    exercised today and yesterday" → logged after 42 s._ _Three "to do later" items in
    one line → BUILD, logged after 50 s._
-2. **Activity lines are not blocks.** 45 of 64. _"Starting to clean house rn"
+3. **Activity lines are not blocks.** 45 of 64. _"Starting to clean house rn"
    → logged._ _"Walking since 4:46" → Inbox._
-3. **To-dos are not on To Do.** 29 of 32. _"Also really need to book the trip"
+4. **To-dos are not on To Do.** 29 of 32. _"Also really need to book the trip"
    → logged._ _"Take out trash" → logged._
-4. **Intake is not intake.** 22 of 29, counts lost. _"Taking another pill, N
+5. **Intake is not intake.** 22 of 29, counts lost. _"Taking another pill, N
    left now" → logged._ _"Took the pill btw (2)" → a pen event, no dose._
-5. **Habits said in words are not marked** outside the named hand-off. 9 of 12.
+6. **Habits said in words are not marked** outside the named hand-off. 9 of 12.
    _"Both today and yesterday I played guitar (counts for the habit)" → logged
    after 90 s._
-6. **Feelings and talk get nothing back.** 40 of 44 logged or misfiled, no
+7. **Feelings and talk get nothing back.** 40 of 44 logged or misfiled, no
    reply. _A long line about feeling sad → logged._ _"oh what's up"
    → logged after 25.7 s._
-7. **Ask is slow and fails.** p50 47 s, max 126 s, 3 of 6 failed, and "I don't
+8. **Ask is slow and fails.** p50 47 s, max 126 s, 3 of 6 failed, and "I don't
    know" when the answer was filed. _"When am I flying?" → "I don't know."_
-8. **Grammar prefix collisions.** About 12 lines. _"grocery list: maple syrup"
+9. **Grammar prefix collisions.** About 12 lines. _"grocery list: maple syrup"
    → asked which mood._ _"Today I really need to…" → Today snapshot._ _"Stop
    feeling sorry for yourself" → stop command._ _"hi" → habits list._
-9. **Pastes explode into list items.** 4 lines, heavy cleanup. _A recipe → 114
+10. **Pastes explode into list items.** 4 lines, heavy cleanup. _A recipe → 114
    General items._ _A flight confirmation → a General list._
-10. **Texts lane finds the wrong person** or is not reached. 7 lines, 1 right.
+11. **Texts lane finds the wrong person** or is not reached. 7 lines, 1 right.
     _"What did my friend last say to me over text?" → "self has no phone
     number…"_ (twice).
-11. **Shopping and wants are logged.** 21 of 24 not on a list. _"Need more
+12. **Shopping and wants are logged.** 21 of 24 not on a list. _"Need more
     of a clothing item" → logged._ _"Want to find a new rug" → logged._
-12. **Brain2 ideas without the prefix are lost in the log.** 22. _"Be able to say
+13. **Brain2 ideas without the prefix are lost in the log.** 22. _"Be able to say
     to BIM 'I want to scroll less'" → logged._ _"Brain2 idea – it should link the
     IG list" → logged._
-13. **Save errors.** 11. _"Could not save that thought process"_ (3), _"Could
+14. **Save errors.** 11. _"Could not save that thought process"_ (3), _"Could
     not save that log note"_ for `log: o` (2), NFC tag not set up (2), model
     fetch failed (1), a stream update with no reply (1), two Ask failures (abort,
     empty JSON).
-14. **BIMBIES misread the thread.** 8. _Habits: "I did drink water yesterday"
+15. **BIMBIES misread the thread.** 8. _Habits: "I did drink water yesterday"
     saved as why it was missed._ _Lists: a count answered from the list still in
     focus._
-15. **Asking too much, or the wrong question.** 9. _"Starting dishes" → "needs
+16. **Asking too much, or the wrong question.** 9. _"Starting dishes" → "needs
     clarification"._ _A stream update → 10 things to confirm → "skip all"._ _"At
     the show, hungry" → which location?_
 
@@ -340,31 +350,32 @@ BIMBIES. "Matches" names the plan item it is.
 
 | # | Fix | Step | Fixes failures | Matches |
 |---|---|---|---|---|
-| 1 | Time every step of a turn and put the total on the chip; find the 35–45 s gap; keep the 3B and 14B warm (`keep_alive`), one big model at a time | 3 | 1, 7 | Switchboard §4 "Keeping models warm"; BIM_CHAT_PLAN "Latency per layer" |
-| 2 | A code **day-stream grammar** before the router: `-ing` + now / started / done / since / home from → Activity block; "took / taking / Nth" + a known pill or drink → intake with count; "need to / have to / to do later / gotta" → To Do; "need more / want / iso / order" → wants list. Split "also" and "," into parts | 3 | 2, 3, 4, 11 | BIM_CHAT_PLAN L0 "new grammar from the person's own habits"; real-feed `family` misses |
-| 3 | Habit words in plain BIM chat go to the Habits BIMBY automatically (`habit-auto` exists but passed on every line) | 3 | 5 | `lib/habit-helper/README.md` automatic hand-off |
-| 4 | Make LOG, BUILD, TELL lanes do something or say nothing fast: LOG shows the `log-routed` cards; BUILD → to-do or list cards; a wrong label falls to step 2's grammar, not a log | 3 | 1, 3 | Switchboard phases 5 and 6 |
-| 5 | A resend is a verdict: the same or near-same line within 30 min marks the first reply wrong and keeps both as a route example | 3 | learning loop | Switchboard §7 "Route verdicts"; BIMBY_IDEAS 8.1 |
-| 6 | Run `real-lines.labelled.jsonl` as the routing eval (code rules, 3B, 14B), per lane; block a merge that drops a lane, as the "no invented block" drop should have been | 3 | all | Switchboard phase 0; BIMBY_IDEAS 8.2, 8.6 |
-| 7 | Ask: answer from filed flights, plan events and facts first in code; one retry on empty JSON; 30 s budget, then say what was found | 3 | 7 | BIMBY_IDEAS 7.1, 10.1; Switchboard §7 budgets |
-| 8 | Fix the grammar collisions: "grocery list:" before mood; "today" + a verb is not the snapshot; "Stop" only alone or with an open thing; "hi" greets; "skip" with nothing open is a no-op | 3 | 8 | `lib/ingest/README.md` "Ladder guards" |
-| 9 | Paste guard: over ~400 chars or many lines with no list path → one doc or note, with a "split into items?" key; flight and receipt shapes go to their BIMBY first | 3 | 9 | Flight BIMBY backfill; Stream BIMBY |
-| 10 | Texts: "what did X say / last say" routes to texts without the word "text"; never match "me" to the self item | 3 | 10 | Components/Bim "Texts", **Planned** follow-ups |
-| 11 | BIMBY thread guards: an answer that says "I did" is a done, not a reason; a Lists count clears the old focus; dedupe a rule that already exists | 3 | 14 | Habits / Lists BIMBY READMEs |
-| 12 | Save errors: find why thought-process and `log: o` saves fail; offer NFC tag setup from the error | 3 | 13 | — |
-| 13 | **Talk BIMBY reply** for feelings and venting: one or two warm lines, never filed unless "log it", offers the mood row | 4 | 6 | Switchboard §5 chat lane; BIM_CHAT_PLAN talk lane |
-| 14 | **Brain2 Ideas BIMBY**: lines about BIM / Brain2 / "be able to" / "idea –" go to the Brain2 list, deduped against open ideas, linked to this doc's asks list | 4 | 12 | BIM_CHAT_PLAN "do" lane |
-| 15 | **Media and wants BIMBY**: a bare title or "want X" picks a list (Reading, Watch, Crafts, Wants, Goodwill) from closed ids, as a card | 4 | 11, list kind | BIMBY_IDEAS 7.4 "the model proposes, code places" |
-| 16 | **Intake BIMBY**: dose, count left, refill reminder when low ("N left") | 4 | 4 | KG plan intake room |
-| 17 | **Goal BIMBY**: "I want to scroll less" → a goal wired to Screen Time | 4 | asks | BIM_CHAT_PLAN phase 5 "I want to …" |
-| 18 | **Texts-to-send**: "text X back", "call X", "respond to X" → the correspondence list | 4 | asks | BIM_CHAT_PLAN L0 |
-| 19 | **Regret and satisfaction marks** on a past event, by words | 4 | asks | Follow-through FEEL blocks |
-| 20 | **Self-knowledge tool** for Ask: BIM reads its own docs and commands (`docs/BIM_COMMANDS.md`, READMEs) for "how do I…" questions | 4 | 7 | — |
-| 21 | Fewer questions: a stream card asks at most 3 things; no clarify on a line step 2 can file | 3 | 15 | BIM_CHAT_PLAN "Quiet by default" |
+| 1 | **Social BIMBY, many people in one line**: find every name (known or new) and propose a change per person; new people with how and when met and how it felt; a birthday said in passing; one hang-out or trip event with its place and the dates from the flights or the graph; feelings per person; then questions back (which show, look it up; who was there when; what you did) | 3 | 1 | `lib/social-bimby/README.md`; BIMBY_IDEAS 7.4 "the model proposes, code places" |
+| 2 | Time every step of a turn and put the total on the chip; find the 35–45 s gap; keep the 3B and 14B warm (`keep_alive`), one big model at a time | 3 | 2, 8 | Switchboard §4 "Keeping models warm"; BIM_CHAT_PLAN "Latency per layer" |
+| 3 | A code **day-stream grammar** before the router: `-ing` + now / started / done / since / home from → Activity block; "took / taking / Nth" + a known pill or drink → intake with count; "need to / have to / to do later / gotta" → To Do; "need more / want / iso / order" → wants list. Split "also" and "," into parts | 3 | 3, 4, 5, 12 | BIM_CHAT_PLAN L0 "new grammar from the person's own habits"; real-feed `family` misses |
+| 4 | Habit words in plain BIM chat go to the Habits BIMBY automatically (`habit-auto` exists but passed on every line) | 3 | 6 | `lib/habit-helper/README.md` automatic hand-off |
+| 5 | Make LOG, BUILD, TELL lanes do something or say nothing fast: LOG shows the `log-routed` cards; BUILD → to-do or list cards; a wrong label falls to fix 3's grammar, not a log | 3 | 2, 4 | Switchboard phases 5 and 6 |
+| 6 | A resend is a verdict: the same or near-same line within 30 min marks the first reply wrong and keeps both as a route example | 3 | learning loop | Switchboard §7 "Route verdicts"; BIMBY_IDEAS 8.1 |
+| 7 | Run `real-lines.labelled.jsonl` as the routing eval (code rules, 3B, 14B), per lane; block a merge that drops a lane, as the "no invented block" drop should have been | 3 | all | Switchboard phase 0; BIMBY_IDEAS 8.2, 8.6 |
+| 8 | Ask: answer from filed flights, plan events and facts first in code; one retry on empty JSON; 30 s budget, then say what was found | 3 | 8 | BIMBY_IDEAS 7.1, 10.1; Switchboard §7 budgets |
+| 9 | Fix the grammar collisions: "grocery list:" before mood; "today" + a verb is not the snapshot; "Stop" only alone or with an open thing; "hi" greets; "skip" with nothing open is a no-op | 3 | 9 | `lib/ingest/README.md` "Ladder guards" |
+| 10 | Paste guard: over ~400 chars or many lines with no list path → one doc or note, with a "split into items?" key; flight and receipt shapes go to their BIMBY first | 3 | 10 | Flight BIMBY backfill; Stream BIMBY |
+| 11 | Texts: "what did X say / last say" routes to texts without the word "text"; never match "me" to the self item | 3 | 11 | Components/Bim "Texts", **Planned** follow-ups |
+| 12 | BIMBY thread guards: an answer that says "I did" is a done, not a reason; a Lists count clears the old focus; dedupe a rule that already exists | 3 | 15 | Habits / Lists BIMBY READMEs |
+| 13 | Save errors: find why thought-process and `log: o` saves fail; offer NFC tag setup from the error | 3 | 14 | — |
+| 14 | **Talk BIMBY reply** for feelings and venting: one or two warm lines, never filed unless "log it", offers the mood row | 4 | 7 | Switchboard §5 chat lane; BIM_CHAT_PLAN talk lane |
+| 15 | **Brain2 Ideas BIMBY**: lines about BIM / Brain2 / "be able to" / "idea –" go to the Brain2 list, deduped against open ideas, linked to this doc's asks list | 4 | 13 | BIM_CHAT_PLAN "do" lane |
+| 16 | **Media and wants BIMBY**: a bare title or "want X" picks a list (Reading, Watch, Crafts, Wants, Goodwill) from closed ids, as a card | 4 | 12, list kind | BIMBY_IDEAS 7.4 "the model proposes, code places" |
+| 17 | **Intake BIMBY**: dose, count left, refill reminder when low ("N left") | 4 | 5 | KG plan intake room |
+| 18 | **Goal BIMBY**: "I want to scroll less" → a goal wired to Screen Time | 4 | asks | BIM_CHAT_PLAN phase 5 "I want to …" |
+| 19 | **Texts-to-send**: "text X back", "call X", "respond to X" → the correspondence list | 4 | asks | BIM_CHAT_PLAN L0 |
+| 20 | **Regret and satisfaction marks** on a past event, by words | 4 | asks | Follow-through FEEL blocks |
+| 21 | **Self-knowledge tool** for Ask: BIM reads its own docs and commands (`docs/BIM_COMMANDS.md`, READMEs) for "how do I…" questions | 4 | 8 | — |
+| 22 | Fewer questions: a stream card asks at most 3 things; no clarify on a line fix 3 can file | 3 | 16 | BIM_CHAT_PLAN "Quiet by default" |
 
-**Do first:** 1, 2 and 5. Step 2 alone would have filed about 110 of the 201
-plain logs with no model, at grammar speed. Step 1 turns 45 s turns into a few
-seconds or shows where the time goes. Step 5 is the learning signal the person
+**Do first:** 1 (the person flagged it), then 2, 3 and 6. Fix 3 alone would have filed about 110 of the 201
+plain logs with no model, at grammar speed. Fix 2 turns 45 s turns into a few
+seconds or shows where the time goes. Fix 6 is the learning signal the person
 already gives: they resend instead of correcting.
 
 ## 8. The labelled real-line test set
@@ -398,6 +409,71 @@ no context have low confidence (0.3–0.5). Lanes in the set:
 
 **Planned:** load it in `lib/bim-flow/real-feed.ts` beside the 108 hand lines,
 score code-only, 3B and 14B per lane, and show it in the Tests sheet.
+
+## 9. Baseline scorecard
+
+_Last mapped: 2026-11-21_ The labelled lines replayed through the real BIM chat turn (`npm run bim:scorecard`,
+`lib/bim-scorecard/`), one line at a time, each from the same copy of the person's vault. Photo lines are
+left out (6). The CI copy is a 41-line paraphrased fixture with a floor (`real-lines.test.ts`).
+
+**Code only (LLM off), 509 lines:** lane right 226 (44%), action right 226 (44%), no invented write 505 (99%).
+
+| Lane | n | Lane right | Misses went to |
+|---|---|---|---|
+| link | 72 | 67 | log 5 |
+| meta | 58 | 28 | log 25, track 4 |
+| track | 57 | 8 | log 44, asked 2 |
+| log | 43 | 41 | — |
+| list | 33 | 13 | log 15, track 3 |
+| todo | 32 | 3 | log 28 |
+| intake | 29 | 6 | log 20 |
+| mood | 26 | 0 | log 23, asked 2 |
+| shopping | 24 | 3 | log 21 |
+| plan-day | 22 | 9 | log 12 |
+| command | 21 | 12 | log 6, asked 2 |
+| chat | 15 | 1 | log 12 |
+| thought | 15 | 12 | log 2 |
+| habit | 12 | 3 | log 8 |
+| ask | 11 | 3 | declined 5, log 3 |
+| build | 10 | 3 | log 4, command 2 |
+| texts | 7 | 3 | log 3 |
+| other (dream, money, paste, tell, handoff, web, correct, social) | 22 | 11 | — |
+
+- **The flagged social line** (failure 1) scores 0 of 6 social checks: 1 of 17 people, 0 of 2 new people,
+  no birthday, no event, no place, no question back. The fixture copy scores the same.
+- **Four invented writes:** self-talk starting "Stop…" stopped a pen; two lines with "now" in them became a
+  Now capture (a mood, a flight paste); a "Further:" line went to a list called Further.
+- **Stages, code only:** turn p50 0.3 s, p95 0.7 s. The executor's write is 0.3 s p50 and 4.9 s max with the
+  35 MB vault. The slowest turns (up to 33 s) are the Habits BIMBY's model call: `habit-auto` and the habits
+  hand-off ask the local model **even with LLM off** (5 calls, one with a 16.5 s cold load).
+- **Where the 35–45 s went:** not reproduced. Replayed with LLM on, a warm turn is about 2–4 s (router 0.7 s
+  p50) and a cold 14B load adds about 10 s (3B: about 2 s). The new stage events (`components/Bim/README.md`,
+  Turn timing) will show the split on the next slow turn in the app. Two leads: the Habits BIMBY model call
+  above, and the app's vault save around the executor's write.
+
+**LLM on (chat crew: 3B router, 14B main), 508 lines, run 70 min:** lane right 165 (32%), action right 165
+(32%), no invented write 496 (98%). **Worse than code only** (217 of the same 508, 43%). Where it lost:
+
+- **Bare links are not saved.** 42 of 72 reels went to the chat lane, which replied ("looks like you shared a
+  reel…") and filed nothing. Code only saves them. This loses data and is the first thing to fix with LLM on.
+- **Notes, moods and dreams get a reply instead of a filing:** log 15, mood 17, dream 2 went to chat.
+- **Statements read as questions.** "spent $80 on…", "2nd energy drink" went to Ask: 5 model calls, about 45 s,
+  then "I don't know".
+- Gains: chat 1 → 11 of 15, ask 3 → 5 of 11.
+
+Stages with LLM on: turn p50 3.8 s, p95 27 s, max 174 s; 21 turns over 30 s. Router p50 2.8 s, p95 5.1 s. Model
+calls 1023, about 2 a turn (router 670, chat 230, Ask 78, Stream 24).
+
+**Where the 35–45 s goes:** model swaps. The slow turns are:
+
+- **Stream BIMBY** on long lines: 50–174 s, 2–3 calls, sometimes on `qwen3:30b-a3b`, with 11–14 s of load.
+- **Ask on a statement:** about 45 s for 5 calls.
+- **A router call after a swap:** after a 30B call, the next 3B/14B call reloads. One router took 45.0 s, the
+  full `ROUTE_TIMEOUT_MS`, on a one-word line. A chat turn spent 24 s of its 43.6 s on load alone.
+
+On a 32 GB Mac the 30B pushes the 14B and the 3B out. Every lane that may pick the 30B (Stream, Ask prose)
+makes the next turns pay a reload. Fix: keep chat-path lanes off the 30B (the switchboard already does this
+for Ask), and keep the 3B loaded with `keep_alive: -1`. This is fix 2.
 
 ## Limits
 
