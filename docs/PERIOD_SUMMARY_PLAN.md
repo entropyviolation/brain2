@@ -34,6 +34,7 @@ You **view** it in Data. You **add and edit** it in Rituals.
 | Spotify listening history | [`SPOTIFY_LISTENING.md`](SPOTIFY_LISTENING.md) | **Planned** — nothing reads plays yet |
 | Outfit history | `components/Inventory/README.md` | **Planned** |
 | Period record: pasted playlist and songs with notes, palette, symbols, cover | `lib/period-summary.ts`, `lib/period-summary-store.ts` (`brain2-period-summaries`) | Built (2026-11-02) |
+| One song from BIM: a Spotify link, then "favorite of the week" / "a lot this month" | `lib/period-songs.ts`, `lib/ingest/apply-period-song.ts` | Built (2026-11-22) |
 | Plates and fields | `components/PeriodSummary/` | Built (2026-11-02) |
 | Data → Meta → Summary, with Past summaries | `components/Analytics/meta/PeriodSummaryView.tsx` | Built (2026-11-02) |
 

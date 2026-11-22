@@ -192,6 +192,7 @@ async function loadStores() {
   const events = await import("../lib/event-store")
   const work = await import("../lib/work-session-store")
   const penNow = await import("../lib/pen-color-session-store")
+  const periodSummaries = await import("../lib/period-summary-store")
   const exec = await import("../lib/ingest/executor")
   const deliver = await import("../lib/ingest/deliver-reply")
   const bridge = await import("../lib/ingest/telegram-bridge")
@@ -204,6 +205,8 @@ async function loadStores() {
     events.useEventStore,
     work.useWorkSessionStore,
     penNow.usePenColorSessionStore,
+    // Songs filed on a week or month from Telegram ("favorite of the week").
+    periodSummaries.usePeriodSummaryStore,
   ]
   await Promise.all(stores.map(waitHydrated))
   trackingKey = tracking.useTimeTrackingStore.persist.getOptions().name ?? ""

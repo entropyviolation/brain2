@@ -4,7 +4,9 @@
  * The summary of a week, month, season, or year is read on Data → Summary and
  * edited in the ritual summary step (`docs/PERIOD_SUMMARY_PLAN.md`). Keys are
  * the same keys the written summaries use (`lib/tracking-summaries.ts`). Songs
- * come from a pasted playlist until Spotify listening history is read.
+ * come from a pasted playlist, or one at a time from BIM (a Spotify link, then
+ * "favorite of the week": `lib/period-songs.ts`), until Spotify listening
+ * history is read.
  */
 import { format } from "date-fns"
 import { formatLocalDateKey, parseLocalDate, parseWeekString } from "@/lib/date-utils"
@@ -17,6 +19,9 @@ import {
   type SummaryPeriod,
 } from "@/lib/tracking-summaries"
 
+/** Why a song sits on the period: the favorite, or the one on repeat. */
+export type PeriodSongTag = "favorite" | "on-repeat"
+
 export type PeriodSong = {
   title: string
   artist?: string
@@ -24,6 +29,10 @@ export type PeriodSong = {
   url?: string
   /** What you like about it and how it makes you feel, this period. */
   note?: string
+  /** Set when the song came from a BIM line ("favorite of the week"). */
+  tag?: PeriodSongTag
+  /** ISO time the song was filed from BIM. Pasted songs have none. */
+  addedAt?: string
 }
 
 export type PeriodSummaryRecord = {

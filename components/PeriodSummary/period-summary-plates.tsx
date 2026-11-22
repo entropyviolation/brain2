@@ -16,6 +16,7 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { useEventStore } from "@/lib/event-store"
 import { itemTitle } from "@/lib/item-utils"
 import { defaultPlaylistName, spotifyEmbedUrl, type PeriodSummaryRecord, type SummaryPeriodWindow } from "@/lib/period-summary"
+import { SONG_TAG_LABELS } from "@/lib/period-songs"
 import { PHOTO_ATTR, PHOTO_TYPE_ID, photoDayKey } from "@/lib/photo-types"
 import { useTaskStore } from "@/lib/task-store"
 import { formatDuration } from "@/lib/time-entries"
@@ -106,6 +107,7 @@ export function PlaylistPlate({ record, window }: { record: PeriodSummaryRecord;
                 )}
               </span>
               {song.artist ? <span className="ps-song-artist"> · {song.artist}</span> : null}
+              {song.tag ? <span className={`ps-song-tag ps-song-tag--${song.tag}`}>{SONG_TAG_LABELS[song.tag]}</span> : null}
               {song.note?.trim() ? <p className="ps-song-note">{song.note}</p> : null}
             </li>
           ))}

@@ -40,6 +40,7 @@ import {
 } from "./phone-undo"
 import { applyCapture } from "./apply-capture"
 import { applyLink } from "./apply-link"
+import { noteSpotifyLink, prefetchSpotifyTitle, tryLinkWithPeriod, tryPeriodSongFollowUp } from "./apply-period-song"
 import { feedRowFromIncoming } from "./telegram-feed"
 import { useTelegramFeedStore } from "./telegram-feed-store"
 import { telegramCaptureOrigin } from "@/lib/capture-origin"
@@ -241,6 +242,8 @@ async function untilSettled(): Promise<void> {
 
 async function ingestIncomingAsyncBody(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
   await untilSettled()
+  // A Spotify link's title, so a song filed on a week or month is named.
+  if (!message.attachments?.length) await prefetchSpotifyTitle(String(message.text ?? ""))
   recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
@@ -477,8 +480,14 @@ function applyNamedText(message: IncomingMessage, now: Date, text: string): Appl
   const pending = store.getPending(source.channel, source.chatId)
   // A message that starts with a link is a saved link, ahead of clarify answers and pin replies.
   if (!message.attachments?.length) {
+    // A Spotify song for a week or a month: in the link's note, or the line after a bare link.
+    const song = tryLinkWithPeriod(text, now) ?? tryPeriodSongFollowUp(message, text, now)
+    if (song) return song
     const link = applyLink(text, { now, origin: telegramCaptureOrigin(message, text) })
-    if (link) return link
+    if (link) {
+      noteSpotifyLink(message, link, text, now)
+      return link
+    }
   }
   if (pending && pending.kind !== "media" && !message.attachments?.length) {
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {

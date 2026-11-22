@@ -60,6 +60,7 @@ import { ollamaCall, watchModelCalls, type ModelCallSeen } from "@/lib/bim-flow/
 import { loadTexts } from "@/lib/bim-flow/texts-client"
 import { isPhoneWebStorage } from "@/lib/phone-device"
 import { ingestIncomingAsync } from "./executor"
+import { claimsPeriodSongFollowUp } from "./apply-period-song"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { looksLikeVerb } from "./parse-message"
 import { isWriteKind } from "./phone-undo"
@@ -995,6 +996,11 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
   commands: ({ text, now }) => {
     const said = tryCommands(text, now)
     return said ? bimLine(said.text, { route: said.route, kind: "tell" }) : null
+  },
+  song: async ({ text, now }) => {
+    if (!claimsPeriodSongFollowUp({ source: BIM_CHAT_SOURCE }, text, now)) return null
+    const result = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text, receivedAt: now.toISOString() }, now)
+    return bimLine(bimReplyText(result), { status: result.status, kind: result.kind, route: "SONG · period · code" })
   },
   "web-home": async ({ text, now, opts }) => {
     const took = await takeHome(text, now, { llm: !!opts.llm, lastBim: opts.lastBim })

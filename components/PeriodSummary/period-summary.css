@@ -83,6 +83,23 @@
   font-weight: 600;
 }
 
+/* "favorite" / "on repeat", set from a BIM line. A quiet ruled label, not a badge. */
+.ps-song-tag {
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  vertical-align: 1px;
+}
+
+.ps-song-tag--favorite {
+  opacity: 0.85;
+}
+
 .ps-song-note {
   margin: 2px 0 6px;
   font-size: 0.86rem;

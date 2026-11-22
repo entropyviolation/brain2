@@ -40,6 +40,8 @@ export const CHAT_LANES = [
   { id: "handoff", cost: "code", does: "“Send this to tracking bimby: …” hands the words, unread, to that BIMBY's own chat." },
   // Second: the line under "Paste the command" is kept word for word, so no lane may read it as a log line or a question.
   { id: "commands", agent: "commands-bimby", cost: "code", does: "“Remember this command to …” keeps a shell command (pasted with it, or as the next line); “what's the command to …?” says it back." },
+  // Right after: only the line after a bare Spotify link ("favorite of the week"), which every later lane would read as a log line or a question.
+  { id: "song", cost: "code", does: "The line after a Spotify link (“been listening to this a lot this week”, “favorite of the month”) puts that song on the week's or month's Songs." },
   // Before ask-back and every shape lane: while the Social BIMBY asks for a number or goes over texts with you, "go", "skip" and a note are its.
   { id: "social-follow", agent: "social-bimby", cost: "code", does: "After a Social card: answers to the numbered asks (“1 951… @handle 2 a and b”), then going over each person's texts and DMs with you, your notes kept on a card." },
   // Before ask-back and the day plan's answers: the line under "Where do you live?" is home, not an answer to them.

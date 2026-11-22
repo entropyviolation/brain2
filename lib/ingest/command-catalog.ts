@@ -967,6 +967,17 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     status: "active",
     note: "Checked before clarify answers and pin replies. `-i` at the end also files it in Inbox. `read inbox` lists Links last.",
   },
+  {
+    id: "period-song",
+    category: "links",
+    primary: "<spotify link> favorite of the week",
+    forms: ["… this week", "… this month", "favorite of the week", "favorite of the month", "a lot this week", "attached to the month"],
+    format: "`https://open.spotify.com/track/… favorite of the month` · a Spotify link, then `I've been listening to this a lot this week`",
+    explanation:
+      "A Spotify song on that week's or month's Songs (the period summary on Data → Summary and in the week / month ritual). The line is the song's note; \"favorite\" or \"a lot\" tags it. A bare link waits 30 minutes for the line, or answer it with a Telegram reply. \"last week\" / \"last month\" go back one. A playlist link becomes the period's playlist.",
+    status: "active",
+    note: "Runs ahead of Links. The bare link's Links row is taken off once it is filed. `undo` takes it back.",
+  },
 
   // ── Inventory / receipt / journal / pdf ─────────────────────────
   {

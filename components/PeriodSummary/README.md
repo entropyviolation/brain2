@@ -9,7 +9,7 @@ Two doors read the same record (`lib/period-summary-store.ts`, keyed like the wr
 - **Data → Meta → Summary** (`components/Analytics/meta/PeriodSummaryView.tsx`) views it, and lists past summaries.
 - **The end ritual's Summary step** (`components/Reviews/end/RitualSummaryStep.tsx`) shows the plates and edits the fields, for week and longer.
 
-Songs come from a pasted playlist for now: a link (Spotify links embed a player) and songs pasted one per line, each with a note. The name defaults to "October Songs", "Week of Oct 26 Songs" and so on. **Planned:** songs from Spotify listening history ([`docs/SPOTIFY_LISTENING.md`](../../docs/SPOTIFY_LISTENING.md)), a palette suggested from photos, and an outfits plate.
+Songs come from a pasted playlist: a link (Spotify links embed a player) and songs pasted one per line, each with a note. _Last mapped: 2026-11-22._ A song can also come from BIM one at a time: a Spotify link with "favorite of the week", or a bare link and then "been listening to this a lot this month" (`lib/ingest/apply-period-song.ts`). That song carries a tag, **favorite** or **on repeat**, shown as a small ruled label after the title, and the line as its note. The name defaults to "October Songs", "Week of Oct 26 Songs" and so on. **Planned:** songs from Spotify listening history ([`docs/SPOTIFY_LISTENING.md`](../../docs/SPOTIFY_LISTENING.md)), a palette suggested from photos, and an outfits plate.
 
 | File | Purpose |
 |------|---------|
