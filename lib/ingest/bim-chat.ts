@@ -65,7 +65,8 @@ import { isWriteKind } from "./phone-undo"
 import { createChatQueue } from "./chat-queue"
 import { tryReport } from "@/lib/report-bimby/run"
 import { tryCommands } from "@/lib/commands-bimby/run"
-import { trySocial } from "@/lib/social-bimby/run"
+import { liveSessionDeps, trySocial } from "@/lib/social-bimby/run"
+import { trySocialFollow } from "@/lib/social-bimby/session"
 import { tryStream } from "@/lib/stream-bimby/run"
 import { tryWire } from "@/lib/wire-bimby/run"
 import { tryDay } from "@/lib/plan-bimby/day/run"
@@ -584,7 +585,7 @@ async function cueGate(prompt: { system: string; user: string; schema: Record<st
 
 /** The follow-through ledger's read of a plain line, and its one-tap question. */
 async function followed(line: BimLine, text: string, now: Date, opts: { photos?: IncomingAttachment[] }): Promise<BimLine> {
-  if (opts.photos?.length || line.wireId || line.dayId || line.choices?.length || line.status === "needs_clarify" || line.status === "error" || /^(STREAM|FOLLOW|DAY)/.test(line.route ?? "")) return line
+  if (opts.photos?.length || line.wireId || line.dayId || line.choices?.length || line.status === "needs_clarify" || line.status === "error" || /^(STREAM|FOLLOW|DAY|SOCIAL)/.test(line.route ?? "")) return line
   // A plain line of the stream (and a status report) is still read into the follow-through ledger, by rules, and its gap asked in one tap.
   try {
     if (!observeLine(text, now)) return line
@@ -963,6 +964,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     const todo = took.askedHome ? null : asideTodo
     if (!took.askedHome) asideTodo = null
     return withTodo(webLine(took), todo)
+  },
+  "social-follow": async ({ text, now }) => {
+    const follow = await trySocialFollow(text, now, liveSessionDeps())
+    return follow ? bimLine(follow.text, { route: follow.route, ...(follow.reportId ? { reportId: follow.reportId } : {}) }) : null
   },
   "ask-back": ({ text, now }) => answerAskBack(text, now),
   "follow-through": ({ text, now }) => {

@@ -39,7 +39,7 @@ import {
   subscribeAppendLog,
 } from "@/lib/append-log"
 
-export type PlanTextPeriod = Extract<ReviewPeriod, "day" | "week" | "month" | "quarter">
+export type PlanTextPeriod = Extract<ReviewPeriod, "day" | "week" | "month" | "quarter" | "year">
 export type PlanTextViewMode = AppendLogViewMode
 export type PlanEntry = AppendLogEntry
 
@@ -74,6 +74,11 @@ export function monthPlanKey(monthKey: string): string {
 
 export function quarterPlanKey(periodKey: string): string {
   return `quarterPlan-${periodKey}`
+}
+
+/** The Year Plan log (`yearPlan-2026`), shown under the Season Plan. */
+export function yearPlanKey(year: string): string {
+  return `yearPlan-${year}`
 }
 
 export function canonicalMonthPeriodKey(periodKey: string): string {
@@ -130,6 +135,7 @@ export function planPeriodKeyAliases(period: PlanTextPeriod, periodKey: string):
     case "week":
       return weekPeriodKeyAliases(periodKey)
     case "quarter":
+    case "year":
       return [...new Set([periodKey])]
     case "day":
       return [...new Set([periodKey])]
@@ -146,6 +152,8 @@ export function planStorageKey(period: PlanTextPeriod, periodKey: string): strin
       return monthPlanKey(canonicalMonthPeriodKey(periodKey))
     case "quarter":
       return quarterPlanKey(periodKey)
+    case "year":
+      return yearPlanKey(periodKey)
   }
 }
 
@@ -176,7 +184,7 @@ function candidateStorageKeys(period: PlanTextPeriod, periodKey: string): string
     return keys
   }
   for (const alias of planPeriodKeyAliases(period, periodKey)) {
-    push(period === "week" ? weekPlanKey(alias) : period === "quarter" ? quarterPlanKey(alias) : dayPlanKey(alias))
+    push(planStorageKey(period, alias))
   }
   return keys
 }
@@ -240,7 +248,7 @@ function rawForPeriod(period: PlanTextPeriod, periodKey: string): { storageKey: 
 }
 
 export function getPlanEntries(period: ReviewPeriod, periodKey: string): PlanEntry[] {
-  if (period !== "day" && period !== "week" && period !== "month" && period !== "quarter") return []
+  if (period !== "day" && period !== "week" && period !== "month" && period !== "quarter" && period !== "year") return []
   if (typeof window === "undefined") return []
   return parseAppendLog(rawForPeriod(period, periodKey).raw)
 }
@@ -263,7 +271,7 @@ export function planDraftIfUnsubmitted(draft: string, entries: PlanEntry[], now 
 }
 
 export function getPlanDraft(period: ReviewPeriod, periodKey: string): string {
-  if (period !== "day" && period !== "week" && period !== "month" && period !== "quarter") return ""
+  if (period !== "day" && period !== "week" && period !== "month" && period !== "quarter" && period !== "year") return ""
   if (typeof window === "undefined") return ""
   const raw = rawForPeriod(period, periodKey).raw
   return planDraftIfUnsubmitted(parseAppendLogDraft(raw), parseAppendLog(raw))

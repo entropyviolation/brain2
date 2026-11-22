@@ -167,6 +167,11 @@ export function SeasonView({
           placeholder="Write this season's plan — what the quarter is for..."
         />
       </fieldset>
+
+      <fieldset className="plan-group" {...planPeriodStampProps("year")}>
+        <legend>Year plan — {anchor.getFullYear()}</legend>
+        <PlanTextLog period="year" periodKey={String(anchor.getFullYear())} placeholder="Write this year's plan — the big things, and the maybes..." />
+      </fieldset>
     </div>
   )
 }

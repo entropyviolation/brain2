@@ -6,6 +6,7 @@
  *
  *   GET  /api/instagram/status
  *   GET  /api/instagram/removed      unsent or deleted DMs from the archive
+ *   GET  /api/instagram/dms?name=    the DMs with one person, from the archive
  *   GET  /api/instagram/summary      {buildId, text} of summary.json, or null
  *   POST /api/instagram/ui-state     {key, value}
  *   GET  /api/instagram/report/<path>  report.html, thumbs/, media/
@@ -96,6 +97,11 @@ export async function handleInstagramApi(req, res, pathname, deps = {}) {
 
   if (p.replace(/\/$/, "") === "/api/instagram/removed" && req.method === "GET") {
     sendJson(res, 200, archive.removedMessages(root))
+    return true
+  }
+  if (p.replace(/\/$/, "") === "/api/instagram/dms" && req.method === "GET") {
+    const q = new URL(req.url || "", "http://localhost").searchParams
+    sendJson(res, 200, archive.dmsWith(root, q.get("name") || "", { limit: Math.min(Number(q.get("limit")) || 200, 1000) }))
     return true
   }
   if (p.replace(/\/$/, "") === "/api/instagram/summary" && req.method === "GET") {

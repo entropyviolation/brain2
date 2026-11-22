@@ -40,6 +40,8 @@ export const CHAT_LANES = [
   { id: "handoff", cost: "code", does: "“Send this to tracking bimby: …” hands the words, unread, to that BIMBY's own chat." },
   // Second: the line under "Paste the command" is kept word for word, so no lane may read it as a log line or a question.
   { id: "commands", agent: "commands-bimby", cost: "code", does: "“Remember this command to …” keeps a shell command (pasted with it, or as the next line); “what's the command to …?” says it back." },
+  // Before ask-back and every shape lane: while the Social BIMBY asks for a number or goes over texts with you, "go", "skip" and a note are its.
+  { id: "social-follow", agent: "social-bimby", cost: "code", does: "After a Social card: the answer to “what's Shelby's number or @handle?”, then going over each person's texts and DMs with you, your notes kept on a card." },
   // Before ask-back and the day plan's answers: the line under "Where do you live?" is home, not an answer to them.
   { id: "web-home", cost: "code", does: "The line under BIM's “where do you live?”, or “I live in …”, is kept as home, and the held web question is run." },
   { id: "ask-back", cost: "code", does: "The line answers a question BIM asked (a check-in, or a fact it could not find) and is filed as that." },

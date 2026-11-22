@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { FLIGHT_ATTR, FLIGHT_TYPE_ID } from "@/lib/flight-types"
 import { getWeekString } from "@/lib/date-utils"
 import { getPlanEntries } from "@/lib/plan-text"
@@ -78,9 +78,13 @@ describe("buildSocialPlan", () => {
 
 describe("Social BIMBY end to end", () => {
   beforeEach(() => {
+    // Accept compares a reminder with the real clock; pin it to the test's day, so the reminder is still ahead.
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(NOW)
     useReportStore.setState({ plans: {}, order: [] })
     useTaskStore.setState({ tasks: [] })
   })
+  afterEach(() => vi.useRealTimers())
 
   it("writes nothing until Accept, then makes the person, Instagram, note, reminder and plan entry", async () => {
     const returnLeg: Task = {

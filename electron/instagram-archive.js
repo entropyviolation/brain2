@@ -354,12 +354,50 @@ function archiveStatus(root, { fs = nodeFs } = {}) {
   return { exports: order.map((e) => ({ dir: e.dir, date: e.date, messages: e.messages })), count: order.length }
 }
 
+const normName = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+
+/**
+ * The DMs with one person, oldest first: one-to-one threads whose title or
+ * other participant holds every word of `name` ("Masha" matches "Masha
+ * Ivanova"). `dir` is `in` for their messages, `out` for yours. Text only;
+ * a photo or a share with no words is left out. The Social BIMBY reads these
+ * with you (`lib/social-bimby/session.ts`).
+ */
+function dmsWith(root, name, { fs = nodeFs, limit = 200 } = {}) {
+  const want = normName(name).split(" ").filter(Boolean)
+  if (!want.length) return { rows: [] }
+  const merged = loadMessages(root, { fs })
+  const rows = []
+  for (const [folder, t] of Object.entries(merged.threads)) {
+    const parts = Array.isArray(t.participants) ? t.participants : []
+    if (parts.length > 2) continue
+    const them = [t.title, ...parts].find((n) => {
+      const words = normName(n).split(" ")
+      return want.every((w) => words.includes(w))
+    })
+    if (!them) continue
+    for (const m of Object.values(t.messages)) {
+      if (typeof m.content !== "string" || !m.content.trim()) continue
+      rows.push({ ts: m.ts, dir: normName(m.sender) === normName(them) ? "in" : "out", text: m.content, thread: folder })
+    }
+  }
+  rows.sort((a, b) => a.ts - b.ts)
+  return { rows: rows.slice(-limit) }
+}
+
 module.exports = {
   ARCHIVE_VERSION,
   archiveAll,
   archiveExport,
   archiveStatus,
   blobPath,
+  dmsWith,
   fixText,
   isArchived,
   loadIndex,

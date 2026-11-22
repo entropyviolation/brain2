@@ -89,6 +89,7 @@ describe("CHAT_LANES", () => {
     expect(CHAT_LANES.map((l) => l.id)).toEqual([
       "handoff",
       "commands",
+      "social-follow",
       "web-home",
       "ask-back",
       "follow-through",

@@ -32,6 +32,12 @@ export const PLAN_PERIOD_STAMPS: Record<PlanTextPeriod, UiNameStamp> = {
     docs: PLAN_DOCS,
     docsAnchor: "season",
   },
+  year: {
+    name: "Year plan",
+    help: "Yearly written plan log, shown under the Season plan. Submit stamps an entry.",
+    docs: PLAN_DOCS,
+    docsAnchor: "season",
+  },
   month: {
     name: "Month Plan",
     help: "Monthly written plan log. Submit stamps an entry — not the calendar and not the event chips.",

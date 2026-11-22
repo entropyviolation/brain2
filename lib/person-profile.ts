@@ -87,6 +87,18 @@ export interface PersonInteraction {
   saw?: boolean
 }
 
+/** Something you want to do with them ("hang out", "go on a trip"), kept until it happens. */
+export interface PersonIntention {
+  id: string
+  /** Local day it was said, YYYY-MM-DD. */
+  date: string
+  text: string
+  kind: "hang" | "trip"
+  /** By when: the week, the season or the year it was said in. */
+  horizon: "week" | "season" | "year"
+  done?: boolean
+}
+
 export interface PersonGiftIdea {
   id: string
   text: string
@@ -117,6 +129,8 @@ export interface PersonProfile {
   address?: PersonAddress
   noteLog?: PersonDatedNote[]
   interactions?: PersonInteraction[]
+  /** What you want to do with them (Social BIMBY). */
+  intentions?: PersonIntention[]
   /**
    * Quick notes on the person. The Gift ideas folder lists are separate.
    * Turning Close on does not clear these.
@@ -397,6 +411,23 @@ function cleanInteractions(rows: unknown): PersonInteraction[] | undefined {
   return out.length > 0 ? out : undefined
 }
 
+function cleanIntentions(rows: unknown): PersonIntention[] | undefined {
+  if (!Array.isArray(rows)) return undefined
+  const out: PersonIntention[] = []
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue
+    const rec = row as Partial<Record<keyof PersonIntention, unknown>>
+    const id = cleanText(rec.id)
+    const date = cleanDate(rec.date)
+    const text = cleanText(rec.text)
+    const kind = rec.kind === "trip" ? "trip" : rec.kind === "hang" ? "hang" : undefined
+    const horizon = rec.horizon === "week" || rec.horizon === "season" || rec.horizon === "year" ? rec.horizon : undefined
+    if (!id || !date || !text || !kind || !horizon) continue
+    out.push({ id, date, text, kind, horizon, ...(rec.done === true ? { done: true } : {}) })
+  }
+  return out.length > 0 ? out : undefined
+}
+
 function cleanGifts(rows: unknown): PersonGiftIdea[] | undefined {
   if (!Array.isArray(rows)) return undefined
   const out: PersonGiftIdea[] = []
@@ -446,6 +477,7 @@ function assembleProfile(
   const noteLog = cleanNotes(raw.noteLog)
   const interactions = cleanInteractions(raw.interactions)
   const giftIdeas = cleanGifts(raw.giftIdeas)
+  const intentions = cleanIntentions(raw.intentions)
   const next: PersonProfile = {}
   if (fullName) next.fullName = fullName
   if (nicknames.length > 0) next.nicknames = nicknames
@@ -467,6 +499,7 @@ function assembleProfile(
   if (noteLog) next.noteLog = noteLog
   if (interactions) next.interactions = interactions
   if (giftIdeas) next.giftIdeas = giftIdeas
+  if (intentions) next.intentions = intentions
   return Object.keys(next).length > 0 ? next : undefined
 }
 

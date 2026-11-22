@@ -36,7 +36,7 @@ export function socialBimbyBlueprint(): Blueprint {
     skills: [],
     models: { ladders: {}, pinned: {}, localOnly: true },
     limits: {},
-    door: { proposes: ["person", "person-note", "birthday", "reminder", "plan-entry"], surface: "bim-chat" },
+    door: { proposes: ["person", "person-note", "birthday", "reminder", "plan-entry", "intention"], surface: "bim-chat" },
     checks: [],
     mind: { kind: "pipeline", stages: SOCIAL_BIMBY_STAGES, pipelines: SOCIAL_BIMBY_PIPELINES },
   }

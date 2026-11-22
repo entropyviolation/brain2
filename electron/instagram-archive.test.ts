@@ -15,6 +15,7 @@ type Archive = {
   loadIndex: (root: string) => { exports: Record<string, { date: string; partial?: boolean }> }
   blobPath: (root: string, sha: string) => string
   fixText: (s: string) => string
+  dmsWith: (root: string, name: string) => { rows: { ts: number; dir: "in" | "out"; text: string; thread: string }[] }
 }
 const ar = nodeRequire("./instagram-archive.js") as Archive
 
@@ -137,5 +138,20 @@ describe("instagram archive", () => {
     expect(ar.fixText("cafÃ©")).toBe("café")
     expect(ar.fixText("café ☕")).toBe("café ☕")
     expect(ar.fixText("plain")).toBe("plain")
+  })
+
+  it("dmsWith: one person's DMs across exports, oldest first, theirs in and mine out", async () => {
+    const a = makeExport("2026-10-22-aaa", { sam_1: [hi, reply], jo_2: [{ sender_name: "jo", timestamp_ms: 1500, content: "not sam" }] })
+    const b = makeExport("2026-10-29-bbb", { sam_1: [hi, reply, { sender_name: "sam", timestamp_ms: 4000, content: "see you friday" }, { sender_name: "sam", timestamp_ms: 5000, photos: [{ uri: "p.jpg" }] }] })
+    await ar.archiveExport(root, { exportDir: "2026-10-22-aaa", exportRoot: a, date: "2026-10-22" })
+    await ar.archiveExport(root, { exportDir: "2026-10-29-bbb", exportRoot: b, date: "2026-10-29" })
+    const { rows } = ar.dmsWith(root, "Sam")
+    expect(rows.map((r) => [r.ts, r.dir, r.text])).toEqual([
+      [1000, "in", "hi"],
+      [3000, "out", "ok"],
+      [4000, "in", "see you friday"],
+    ])
+    expect(ar.dmsWith(root, "Sam Park").rows).toEqual([])
+    expect(ar.dmsWith(root, "").rows).toEqual([])
   })
 })

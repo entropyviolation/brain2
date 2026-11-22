@@ -194,6 +194,7 @@ export function applyEffect(effect: Effect, now = new Date()): Applied {
       case "birthday":
       case "reminder":
       case "plan-entry":
+      case "intention":
         return applySocialEffect(effect, now)
       case "day":
         return applyDayEffect(effect, now)
