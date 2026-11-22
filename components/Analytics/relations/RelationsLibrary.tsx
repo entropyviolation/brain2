@@ -22,8 +22,8 @@ import { GraphInbox } from "./GraphInbox"
 import { RelationSchematic } from "./RelationSchematic"
 import { RelationSheet } from "./RelationSheet"
 import { RuleEditor } from "./RuleEditor"
-import { LibSearch } from "../library-kit"
-import { StudioCheck } from "../studio-kit"
+import { LibSearch } from "../library/library-kit"
+import { StudioCheck } from "../studio/studio-kit"
 import "./relations-library.css"
 
 const VIEW_LABEL = { list: "By family", tree: "Tree", schematic: "Schematic", rules: "Rules", inbox: "Inbox" } as const

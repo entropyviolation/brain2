@@ -18,7 +18,7 @@ import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
 import { openItemsInLists } from "../studio/open-in-lists"
 import { RelationsLibrary } from "../relations/RelationsLibrary"
 import { NativeSelect } from "@/components/ui/native-select"
-import { StudioBars, StudioReadout, inkOnFill } from "./studio-kit"
+import { StudioBars, StudioReadout, inkOnFill } from "../studio/studio-kit"
 import { LibPlate, LibSearch, fmt } from "./library-kit"
 import { shannon } from "./library-stats"
 

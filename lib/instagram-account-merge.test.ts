@@ -42,7 +42,7 @@ describe("mergeDuplicateInstagramAccounts", () => {
       account("ig-a", "_.alyssav._", "2026-10-23T00:00:00Z", { tags: ["a"] }),
       account("ig-c", "_.alyssav._", "2026-11-01T00:00:00Z"),
       account("ig-other", "someone", "2026-10-23T00:00:00Z"),
-      { id: "note", title: "note", completed: false, createdAt: "2026-10-01T00:00:00Z", links: [{ targetId: "ig-c" }] } as Task,
+      { id: "note", title: "note", completed: false, createdAt: "2026-10-01T00:00:00Z", links: [{ targetId: "ig-c" }] } as unknown as Task,
     ])
 
     expect(mergeDuplicateInstagramAccounts()).toEqual({ merged: 2, typed: 2 })
@@ -62,7 +62,7 @@ describe("mergeDuplicateInstagramAccounts", () => {
     useTaskStore.getState().setTasks([
       account("ig-a", "x", "2026-10-23T00:00:00Z"),
       account("ig-b", "x", "2026-10-24T00:00:00Z"),
-      { id: "p", title: "Plain", completed: false, createdAt: "2026-10-01T00:00:00Z", attributes: { [IG_USERNAME]: "x" } } as Task,
+      { id: "p", title: "Plain", completed: false, createdAt: "2026-10-01T00:00:00Z", attributes: { [IG_USERNAME]: "x" } } as unknown as Task,
     ])
     mergeDuplicateInstagramAccounts()
     expect(mergeDuplicateInstagramAccounts()).toEqual({ merged: 0, typed: 0 })

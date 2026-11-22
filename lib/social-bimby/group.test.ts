@@ -10,8 +10,8 @@ const PEOPLE = [
   { id: "p3", name: "Sam Ortiz" },
 ]
 const FLIGHTS = [
-  { from: "SAN", to: "JFK", departDate: "2026-11-12", arriveDate: "2026-11-12", airline: "JetBlue" },
-  { from: "JFK", to: "SAN", departDate: "2026-11-18", flightNumber: "AS25", airline: "Alaska Airlines" },
+  { from: "SAN", to: "JFK", departDate: "2026-11-12", arriveDate: "2026-11-12", airline: "JetBlue", notes: [], missing: [] },
+  { from: "JFK", to: "SAN", departDate: "2026-11-18", flightNumber: "AS25", airline: "Alaska Airlines", notes: [], missing: [] },
 ]
 const NOW = new Date(2026, 10, 21, 19, 13)
 
