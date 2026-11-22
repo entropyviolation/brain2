@@ -29,8 +29,9 @@ The web build has no bridge. The view says the report only opens in the desktop 
 `serve.py --home <home> --port <port>` binds 127.0.0.1 only.
 
 - `GET /` serves `out/report.html` and its files.
-- `GET /api/status` returns `{ lastRun, running, messages, range: { from, to }, error }`. `lastRun` is the ISO time the last refresh finished.
+- `GET /api/status` returns `{ lastRun, running, messages, range: { from, to }, error }`. `lastRun` is the ISO time the last refresh finished. `messages` includes live texts.
 - `POST /api/refresh` starts the pipeline in the background and returns the status. A second call while one runs does nothing.
+- `GET /api/live` returns the texts counted since the last full run (`live.py`). `/api/status` adds them to `messages` and `range.to`, and reports `live: { messages, updated, error }`.
 - Notes, labels and AI jobs use their own `/api/*` routes inside the report.
 
 The refresh copies a fresh `chat.db`, reruns the analysis, adds the week and month comparisons, and rebuilds the report. It needs Full Disk Access for the process that runs it. When Brain2 starts the server, that is Brain2.
