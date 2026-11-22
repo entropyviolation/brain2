@@ -16,6 +16,7 @@ import { itemTitle } from "@/lib/item-utils"
 import { personRecords } from "@/lib/people-i-know"
 import { useReportStore } from "@/lib/report-bimby/store"
 import { useTaskStore } from "@/lib/task-store"
+import { buildGroupPlan, readGroup } from "./group"
 import { readSocial, type KnownPerson } from "./parse"
 import { buildSocialPlan, type SocialDeps } from "./plan"
 
@@ -42,7 +43,8 @@ export function knownPeople(): KnownPerson[] {
 export function storeSocialDeps(): SocialDeps {
   const { tasks, lists } = useTaskStore.getState()
   return {
-    flights: tasks.filter((t) => t.type === FLIGHT_TYPE_ID && !t.completed).map(draftFromItem),
+    // Past flights too: a trip that is over is dated from the flight in and the flight out.
+    flights: tasks.filter((t) => t.type === FLIGHT_TYPE_ID).map(draftFromItem),
     cityOf: (code) => airportInfo(code)?.city,
     instagramOwner: (handle) => {
       const owner = personForInstagram(personRecords(tasks, lists), handle)
@@ -53,7 +55,21 @@ export function storeSocialDeps(): SocialDeps {
 
 export function trySocial(text: string, now = new Date(), opts: { forced?: boolean } = {}): SocialReply | null {
   const started = Date.now()
-  const read = readSocial(text, knownPeople(), opts)
+  const people = knownPeople()
+  // Three people or more in one line: a change per person, the birthday, the hang-out, and questions back.
+  const group = readGroup(text, people)
+  if (group) {
+    const { plan, questions } = buildGroupPlan(group, text, now, storeSocialDeps())
+    useReportStore.getState().put(plan)
+    const fresh = group.people.filter((p) => !p.known).length
+    const ask = questions.length ? `\n\nA few questions, so I can file the rest:\n${questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}` : ""
+    return {
+      text: `That's ${group.people.length} people${fresh ? `, ${fresh} new to People I Know` : ""}, so the Social BIMBY read it: ${plan.effects.length} changes below, one per person plus the hang-out. Nothing is saved yet: edit what is off, then accept or reject each one.${ask}`,
+      reportId: plan.id,
+      route: `SOCIAL · group · rules · ${((Date.now() - started) / 1000).toFixed(1)}s`,
+    }
+  }
+  const read = readSocial(text, people, opts)
   if (!read) return null
   const plan = buildSocialPlan(read, text, now, storeSocialDeps())
   if (!plan.effects.length) return null
