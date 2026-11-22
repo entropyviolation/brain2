@@ -95,6 +95,7 @@ describe("CHAT_LANES", () => {
       "follow-through",
       "flight-file",
       "flight-ask",
+      "self",
       "keep",
       "mark",
       "money",

@@ -484,11 +484,20 @@ function applyNamedText(message: IncomingMessage, now: Date, text: string): Appl
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {
       return resolveDuplicateClarify(pending, text, now)
     }
+    // "no", "skip", "never mind": the pick question closes and nothing is written.
+    if (PICK_KINDS.has(pending.kind) && isPickEscape(text)) {
+      return { status: "ok", kind: "cancel", reply: "Okay, left it.", summary: "Pick skipped" }
+    }
     const intent = parseMessage(text, now)
     const receiptFollowup =
       pending.kind === "receipt" && intent.kind === "inventory" && !intent.payload.trim()
     if (!looksLikeVerb(text, now) || receiptFollowup) {
-      return resolveClarify(pending, receiptFollowup ? "inv" : text, now)
+      const answered = resolveClarify(pending, receiptFollowup ? "inv" : text, now)
+      // A reply that picks nothing is not a new name to ask about ("Which activity for “no”?" forever).
+      // The question closes and the line runs as an ordinary message.
+      const asksAgain =
+        PICK_KINDS.has(pending.kind) && answered.status === "needs_clarify" && answered.pending.kind === pending.kind
+      if (!asksAgain) return answered
     }
   }
 
@@ -845,6 +854,14 @@ function notePayload(intent: IngestIntent): string {
     return `day: ${intent.payload}`.trim()
   }
   return intent.payload
+}
+
+/** Numbered pick questions: an escape word closes them, and an answer that picks nothing never re-asks. */
+const PICK_KINDS = new Set<PendingClarify["kind"]>(["location", "habit", "track", "start", "mood", "read", "bought"])
+const PICK_ESCAPE = /^(?:no+|nope|nah|skip|cancel|stop|quit|none|neither|never\s*mind|nvm|leave it|forget it|not that|wrong one)(?:[\s,.!]+(?:no+|nope|nah|skip|cancel|stop))*[\s,.!]*$/i
+
+export function isPickEscape(text: string): boolean {
+  return PICK_ESCAPE.test(text.trim())
 }
 
 function pickIndex(text: string, candidates: { id: string }[]) {

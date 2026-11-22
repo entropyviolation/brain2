@@ -1,0 +1,236 @@
+/**
+ * app/chrome-tokens.css — the shared metal, in one place
+ *
+ * Every `:root` token the rooms paint with: the gunmetal family
+ * (`--chrome-*`), corners (`--r-*`), the Win95 bevels (`--w95-*`), the
+ * milled fascia recipes (`--fascia-*`), and the pieces those recipes are
+ * built from (phosphor, scope glass, plate ink, mill hairlines, key gloss,
+ * keycap plastics). Rooms alias these; they do not re-type the literals.
+ *
+ * Imported first from `app/layout.tsx`, before `win95.css` and every room.
+ * `lib/chrome-patina.ts` and `lib/corner-mix.ts` rewrite `--chrome-*` and
+ * `--r-*` on `<html>` at runtime, so recipes defined here follow the dial.
+ *
+ * A token that mixes a `var()` resolves on `:root`. A room that changes
+ * `--chrome-face` on its own box (Dash does) must repaint with its own
+ * literal recipe, not `var(--fascia-mill)`. So does Settings: its warmth and
+ * corner preview writes those tokens inline on the open dialog.
+ *
+ * Primitives that read these: `components/chrome/` (Keycap, Fascia,
+ * CrtWell, Nameplate). docs/DESIGN_STYLE.md#milled-fascia, #keycaps, #phosphor.
+ */
+
+:root {
+  /*
+   * Phosphor and scope glass. One green. `--crt-phosphor-rgb` is for alpha:
+   * `rgba(var(--crt-phosphor-rgb), 0.16)`.
+   */
+  --crt-phosphor: #7dffc4;
+  --crt-phosphor-rgb: 125, 255, 196;
+  --crt-glow: 0 0 3px var(--crt-phosphor);
+  --crt-scope: #070c0a;
+  --crt-bloom: radial-gradient(ellipse at 18% 0%, rgba(var(--crt-phosphor-rgb), 0.16), transparent 48%);
+  /* Engraved nameplate ink, and the light lip under it on a smooth face. */
+  --plate-ink: #2a2c2e;
+  --plate-lip: 0 1px 0 rgba(255, 255, 255, 0.78);
+
+  /* Brushed mill hairlines: 1px light, 1px clear. The number is the light’s alpha. */
+  --mill-lines-16: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px);
+  --mill-lines-18: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px);
+  --mill-lines-20: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px);
+  --mill-lines-28: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px);
+  /* Specular top lip on a raised metal key. */
+  --key-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%);
+
+  /*
+   * Keycap plastics (docs/DESIGN_STYLE.md#keycaps). Pale silver is the face to
+   * reach for. Each plastic is top, top2, skirt, edge, legend.
+   */
+  --keycap-top: #f1f3f5;
+  --keycap-top2: #dfe2e6;
+  --keycap-skirt: #b3b8be;
+  --keycap-edge: #6e7378;
+  --keycap-legend: #1f2226;
+  --keycap-mod-top: #c9ccd0;
+  --keycap-mod-top2: #b9bdc1;
+  --keycap-mod-skirt: #969a9f;
+  --keycap-mod-edge: #55595d;
+  --keycap-mod-legend: #25282b;
+  --keycap-seafoam-top: #c8dcd6;
+  --keycap-seafoam-top2: #b4ccc5;
+  --keycap-seafoam-skirt: #86a99f;
+  --keycap-seafoam-edge: #4a6b62;
+  --keycap-seafoam-legend: #102820;
+  --keycap-cornflower-top: #aebcda;
+  --keycap-cornflower-top2: #9eafd1;
+  --keycap-cornflower-skirt: #7b93c1;
+  --keycap-cornflower-edge: #4a6298;
+  --keycap-cornflower-legend: #17243f;
+  --keycap-navy: #22306c;
+  --keycap-dead-top: #c4c8cc;
+  --keycap-dead-top2: #b9bdc1;
+  --keycap-dead-legend: #7d8185;
+  --keycap-lamp-on: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, var(--crt-phosphor) 42%, #0b4a32 100%);
+  --keycap-lamp-ring: 0 0 0 1px #141816, 0 0 0 2px #9aa09c, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 0 4px var(--crt-phosphor);
+  --keycap-press-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.25);
+  --keycap-cast: 0 1px 0 rgba(0, 0, 0, 0.35);
+
+  /* Period nav (`components/period-nav-chrome.css`). Hosts override. */
+  --period-face: var(--chrome-face);
+  --period-surface: var(--chrome-face);
+  --period-nameplate: var(--plate-ink);
+  --period-nameplate-size: 12px;
+  --period-nameplate-tracking: 0.12em;
+
+  /*
+   * One gunmetal family. `--chrome-face` is the source of truth. These
+   * literals are the stored classic default (warmth 50). `lib/chrome-patina.ts`
+   * walks the design-ref grays and writes each swatch’s own companions
+   * on `:root`. Module skins alias into these.
+   *
+   * Corner tokens are the Bouba/Kiki snapshot (`lib/corner-mix.ts`). Mix 50
+   * is these literals. Circles and pills are not tokens.
+   */
+  /*
+   * DotGothic16, a house face (docs/DESIGN_STYLE.md, "Type faces"). Loaded on
+   * `<html>` by `app/layout.tsx`. Habit names on the phone use it first.
+   */
+  --face-dotgothic: var(--font-dotgothic), "DotGothic16", "w95fa", ui-monospace, monospace;
+  --chrome-set: 50;
+  --chrome-live: 50;
+  --chrome-mix: 0;
+  --chrome-face: #c0c0c0;
+  --chrome-mid: #dfdfdf;
+  --chrome-hi: #ffffff;
+  --chrome-lo: #808080;
+  --chrome-frame: #0a0a0a;
+  --chrome-brush: #acacac;
+  --chrome-sheen: #d4d8dc;
+  --chrome-shade: #969a9e;
+  --chrome-key-sheen: #eceef0;
+  --chrome-key-mid: #d4d6d8;
+  --chrome-key-shade: #9a9ea2;
+  --chrome-inset: #b0b4b8;
+  --chrome-ring: #5c6064;
+  --chrome-ring-deep: #4a4e52;
+  --chrome-lip: #6a6e72;
+  --chrome-pressed: #3a3e42;
+  --chrome-mill-hi: #d8dce0;
+  --chrome-mill-soft: #c0c4c8;
+  --chrome-grade-sheen: #c4c8cc;
+  --chrome-foot: #a4a8ac;
+  --chrome-stone: #a8acb0;
+  --chrome-mist: #eef0f2;
+  --chrome-haze: #d0d4d8;
+  --chrome-paper: #f4f6f8;
+  --chrome-pewter: #c8ccd0;
+  --chrome-ash: #b8bcbf;
+  --chrome-cloud: #f0f2f4;
+  --chrome-pearl: #e4e6e8;
+  --chrome-tin: #c8cacd;
+  --chrome-fog: #f4f5f6;
+  --chrome-slate: #8a8e92;
+  --chrome-slate-dim: #84888c;
+  --chrome-nickel: #b4b8bc;
+  --chrome-mist-2: #e8eaec;
+  --chrome-pearl-2: #e4e7ea;
+  --chrome-ash-2: #b8bcbe;
+  --chrome-ice: #e4eaf2;
+  --chrome-blue-stone: #9aa4b2;
+  --chrome-blue-shade: #8a9099;
+  --chrome-ink-soft: #404040;
+  --chrome-ink-deep: #3a3a3a;
+  --corner-mix: 50;
+  --r-tw: 0.25rem;
+  --r-0: 0px;
+  --r-1: 1px;
+  --r-2: 2px;
+  --r-3: 3px;
+  --r-4: 4px;
+  --r-5: 5px;
+  --r-6: 6px;
+  --r-7: 7px;
+  --r-8: 8px;
+  --r-9: 9px;
+  --r-10: 10px;
+  --r-11: 11px;
+  --r-12: 12px;
+  --r-14: 14px;
+  --r-16: 16px;
+  --r-18: 18px;
+  --r-20px: 20px;
+  --r-375: 0.375rem;
+  --r-half: 0.5rem;
+  --r-30: 0.3rem;
+  --r-20: 0.2rem;
+  --r-35: 0.35rem;
+
+  --w95-surface: var(--chrome-face);
+  --w95-face: var(--chrome-mid);
+  --w95-highlight: var(--chrome-hi);
+  --w95-shadow: var(--chrome-lo);
+  --w95-frame: var(--chrome-frame);
+  --w95-blue: #000080;
+  --w95-blue-light: #1084d0;
+  --w95-desktop: var(--pcb-desk, #008080);
+  --w95-raised: inset -1px -1px var(--w95-frame), inset 1px 1px var(--w95-highlight),
+    inset -2px -2px var(--w95-shadow), inset 2px 2px var(--w95-face);
+  --w95-sunken: inset -1px -1px var(--w95-highlight), inset 1px 1px var(--w95-frame),
+    inset -2px -2px var(--w95-face), inset 2px 2px var(--w95-shadow);
+  --w95-field: inset -1px -1px var(--w95-highlight), inset 1px 1px var(--w95-shadow),
+    inset -2px -2px var(--w95-face), inset 2px 2px var(--w95-frame);
+  --w95-font: "w95fa", Tahoma, "MS Sans Serif", Geneva, Verdana, system-ui, sans-serif;
+
+  /*
+   * House milled fascia (docs/DESIGN_STYLE.md#milled-fascia). Defaults in this
+   * file use these so unskinned dialogs / keys / tab strips pick up the mill.
+   * Module skins (`.set95`, `.inbox-dialog`, `.hpp95`, …) keep private aliases
+   * and win via later import + higher specificity — do not paint LED #7d6bb8 /
+   * grade #508b51 / output #25366a here.
+   */
+  --hab-crt-green: var(--crt-phosphor);
+  --hab-crt-glow: var(--crt-glow);
+  --fascia-nameplate: var(--plate-ink);
+  --fascia-scope: var(--crt-scope);
+  --fascia-mill:
+    var(--mill-lines-18),
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--chrome-face) 48%, var(--chrome-shade) 100%);
+  --fascia-bay:
+    var(--mill-lines-20),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0, transparent 28%, rgba(0, 0, 0, 0.08) 100%),
+    var(--chrome-brush, #acacac);
+  --fascia-bay-ring:
+    0 0 0 1px var(--chrome-ring),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(40, 42, 46, 0.45),
+    inset 0 0 0 2px var(--chrome-inset),
+    inset 0 2px 3px rgba(0, 0, 0, 0.22);
+  --fascia-dialog-face:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0, transparent 22%, transparent 78%, rgba(255, 255, 255, 0.06) 100%),
+    repeating-linear-gradient(90deg, transparent 0 2px, rgba(255, 255, 255, 0.05) 2px 3px),
+    var(--fascia-mill);
+  --fascia-dialog-ring:
+    0 0 0 1px var(--chrome-ring),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 2px 3px rgba(0, 0, 0, 0.12),
+    0 8px 0 rgba(74, 78, 82, 0.55);
+  --fascia-key-face:
+    var(--key-gloss),
+    var(--mill-lines-16),
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--chrome-face) 70%, var(--chrome-key-shade) 100%);
+  --fascia-key-ring:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+    0 0 0 1px var(--chrome-ring-deep),
+    0 1px 0 var(--chrome-lip);
+  --fascia-key-pressed:
+    inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 0 1px var(--chrome-pressed);
+  --fascia-crt-glass:
+    var(--crt-bloom),
+    var(--fascia-scope);
+  --fascia-crt-ring:
+    0 0 0 1px var(--chrome-pressed),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 10px 14px rgba(0, 0, 0, 0.4);
+}

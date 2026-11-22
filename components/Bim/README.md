@@ -91,6 +91,14 @@ Checked on the real 14B against the test vault (2026-11-10): a feeling got a sho
 
 **Why it left the plan:** `docs/BIM_CHAT_SWITCHBOARD_PLAN.md` §5 makes this a bench flow with a new `tool` node and a `converse` answer mode. It is plain code here, so it could ship without changing the flow engine; the steps and the closed tool list are the same. **Planned:** the bench flow, the optional `check` step, offering a fact that bears on a feeling (sleep after "so tired"), chat + log in one line, and Telegram once the hub runs flows.
 
+## Questions about BIM itself (the Self BIMBY)
+
+_Last mapped: 2026-11-21_ "Can you answer random questions that require web search?" is about BIM, not your data. It went to Ask, which searched your logs for those words, timed out at 30s and listed rows about nausea. Now the `self` lane (after `flight-ask`, before `keep`) reads the shape in code: "can you …", "are you able to …", "do you have access to …", "what can you do?". It answers from a fixed sheet of topics in `lib/ingest/bim-self.ts` (web, general questions, texts, To Do, habits, money, day plan, people, flights, commands, logs, your own data), at most two per reply, and says what LLM off changes. "What can you do?" gets a short overview. The fold lists every lane's `does` from `bim-lanes.ts`. Chip: `SELF · web · code`. No model, nothing filed.
+
+A request in the same words is left alone: "can you find out what time …", "can you search the web for laundromats near me", "can you add milk", "can you tell me when …". The rest after "can you" must name a kind of thing ("questions", "things", "access", "ever") or be five words or fewer with a topic and no "for/about/near". Tested in `lib/ingest/bim-self.test.ts`. Not looked at in the running app.
+
+When a lane changes what it can do, change its sentence in `bim-self.ts` too. **Planned:** build the sheet from the lane table so the two cannot drift.
+
 ## Web questions (the Web BIMBY)
 
 _Last mapped: 2026-11-11_ A question about the outside world ("what time do the laundromats by my house close?", "find out …", "is X open now?") is searched on the web and answered in chat (`lib/bim-flow/web-ask.ts`). The `web` lane sits after `texts` and before `fact` (`lib/ingest/bim-lanes.ts`). The search runs on the Mac hub (`/api/web-search` in `scripts/persist-api.mjs`, `lib/bim-flow/web-search.mjs`: one DuckDuckGo search, then the first three pages are read). Only the query leaves the Mac. The iPhone app asks its Mac hub.
@@ -130,6 +138,7 @@ _Last mapped: 2026-11-02_ Items marked Secret never reach the model. `snapshotFr
 _Last mapped: 2026-11-01_ BIM asks as well as answers (`lib/ingest/bim-chat.ts`, `AskBack`). In memory only, like the tell question.
 
 - **Check-ins.** "What are you doing right now?" and "How are you feeling right now?", alternating. BIM asks only on the **ask me** key. _2026-11-01:_ it no longer asks on open; the chat stays quiet until you say something. `checkInDue` is kept for the **Planned** timed check-ins. The answer is filed as `doing:` or `mood:`; mood has tap answers. `skip` drops it.
+- **Don't know → web, then ask.** _Last mapped: 2026-11-21_ "How do I convert Celsius to Fahrenheit?" went to Ask, which said "the notes do not record" it and asked you. Two fixes. A how-to's "I" ("how do I", "how can we") no longer counts as being about you (`HOW_TO` in `groundLine`, `lib/bim-flow/chat-lane.ts`), so the line is a general question for the chat lane. And when Ask is still unsure about a question with no "I/my", no time word and no name the vault knows, `webInstead` in `lib/ingest/bim-chat.ts` runs the Web BIMBY (`answerWeb`) first; its chip ends `notes unsure → WEB · …`. A failed search falls back to the line below. Not checked in the running app.
 - **Don't know → ask.** An Ask answer with confidence none or low starts "I don't know." and asks you for it. Your answer is filed as `log: <answer> (answer to "<question>")`, so the next ask finds it.
 - A new question (ends in `?`) or a real command drops the open question and runs.
 

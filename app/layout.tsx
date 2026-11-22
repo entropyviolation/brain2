@@ -24,6 +24,7 @@ import type { Metadata, Viewport } from "next"
 import { Karla } from "next/font/google"
 import { dotGothicFace } from "@/lib/fonts/dash-segment-faces"
 import "./globals.css"
+import "./chrome-tokens.css"
 import "./win95.css"
 // Module chrome must live on the root layout, not only on lazy tab chunks.
 // Next Fast Refresh (and first paint of a lazy tab) can drop or reorder

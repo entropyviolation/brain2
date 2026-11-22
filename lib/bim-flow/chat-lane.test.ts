@@ -29,6 +29,9 @@ const run = (text: string, m: ReturnType<typeof scripted>, turns?: { who: "you" 
 describe("chat lane grounding", () => {
   it("knows when a line is about nothing in the vault", () => {
     expect(looksGeneral(groundLine(SCENARIO_VAULT, "what is the boiling point of nitrogen?", NOW))).toBe(true)
+    // A how-to's "I" is anyone; "my" still points at the vault.
+    expect(looksGeneral(groundLine(SCENARIO_VAULT, "how do i convert celcius to fahrenheit?", NOW))).toBe(true)
+    expect(groundLine(SCENARIO_VAULT, "how do i get to my dentist?", NOW).self).toBe(true)
     // "I", a time word, a known topic, a known person: each one makes it about the vault.
     expect(looksGeneral(groundLine(SCENARIO_VAULT, "why am I so tired?", NOW))).toBe(false)
     expect(looksGeneral(groundLine(SCENARIO_VAULT, "what happened yesterday?", NOW))).toBe(false)

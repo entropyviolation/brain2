@@ -80,6 +80,7 @@ The global header (all tabs **and** item detail) is a **pinned mill title bar** 
 | `Icons/` | Shared icon system — `Icon` (`orbFor`, `folderFor`), `OrbPicker`, `icon-registry`, barrel `index.ts` |
 | `spreadsheet/` | Reusable Google-Sheets-style editable grid (`SheetGrid` + `AddColumnDialog`) used by Lists + Module spreadsheet views |
 | `ui/` | shadcn/ui primitives used across modules |
+| `chrome/` | _Last mapped: 2026-11-21._ The shared metal as four primitives: `Keycap`, `Fascia`, `CrtWell`, `Nameplate`, painted only from `app/chrome-tokens.css`. One class deep, so a room rule wins. See [`chrome/README.md`](chrome/README.md) |
 
 ## Top-level files
 

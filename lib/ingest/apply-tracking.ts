@@ -57,7 +57,7 @@ function clarifyPen(
     score: 0,
   })).slice(0, 6)
   const list = candidates.map((c, i) => `${i + 1}. ${c.name}`).join("\n")
-  const createHint = query ? `\nOr reply new to create “${query}”.` : ""
+  const createHint = query ? `\nOr reply new to create “${query}”, or skip.` : "\nOr skip."
   const extra = extraLines.length ? `\n${extraLines.join("\n")}` : ""
   return {
     status: "needs_clarify",

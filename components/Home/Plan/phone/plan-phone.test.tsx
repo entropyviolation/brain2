@@ -192,7 +192,7 @@ describe("Plan phone", () => {
     expect(chrome).not.toContain("max-width: 767px")
     expect(chrome).not.toContain(".plan-phone")
     expect(css).toContain("min-height: 44px")
-    expect(css).toContain("linear-gradient(180deg, #f1f3f5, #dfe2e6)")
+    expect(css).toContain("linear-gradient(180deg, var(--keycap-top), var(--keycap-top2))")
     expect(css).not.toContain("#0a84ff")
     expect(css).not.toContain("#64d2ff")
     expect(css).toContain("prefers-reduced-motion: reduce")
