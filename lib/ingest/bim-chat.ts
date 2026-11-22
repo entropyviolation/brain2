@@ -85,6 +85,8 @@ export const BIM_CHAT_ID = "bim-chat"
 
 /** BIM chat's turns, one at a time in send order. */
 const bimTurns = createChatQueue()
+/** The longest one turn may hold the queue: the Ask lane's 120 s cap plus the router and the cues. */
+export const TURN_LIMIT_MS = 180_000
 export const BIM_CHAT_SOURCE: IngestSource = { channel: "simulate", chatId: BIM_CHAT_ID }
 const TRANSCRIPT_KEY = "bimchat-transcript"
 const TRANSCRIPT_CAP = 400
@@ -1206,7 +1208,12 @@ export const useBimChatStore = create<BimChatState>()(
             // BIM's last reply before this line, finished ones only: what this line answers.
             const at = get().lines.findIndex((l) => l.id === slot.id)
             const lastBim = get().lines.slice(0, at < 0 ? undefined : at).reverse().find((l) => l.who === "bim" && !l.waiting)?.text
-            reply = await sendToBim(text, sentAt, { llm: useBimLlmMode.getState().on, lastBim, photos })
+            // A turn that never ends must not hold every line sent after it: past TURN_LIMIT_MS this line is marked
+            // failed (with "try again") and the next one runs.
+            reply = await Promise.race([
+              sendToBim(text, sentAt, { llm: useBimLlmMode.getState().on, lastBim, photos }),
+              new Promise<BimLine>((done) => setTimeout(() => done(bimLine(`No answer after ${TURN_LIMIT_MS / 1000}s, so I moved on to your next line.`, { status: "error" })), TURN_LIMIT_MS)),
+            ])
           } catch (error) {
             reply = bimLine(`Error: ${error instanceof Error ? error.message : String(error)}`, { status: "error" })
           }
