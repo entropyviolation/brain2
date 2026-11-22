@@ -18,9 +18,9 @@ _Last mapped: 2026-11-11_ Slice `PH-2`. One record of a run for every agent: who
 - `trace-store.ts`: `saveTrace`, `loadTraces`, `getTrace`, `tracesOf`. The newest 150 on the device (`agent-traces-v1`, outside the vault), and every one whole on disk through `lib/bim-flow/archive.ts` (kind `trace`).
 - `trace.test.ts`.
 
-Who saves one today: a BIM chat turn (`lib/ingest/bim-chat.ts`, one event per lane tried; the id rides on the reply as `BimLine.traceId`), the chat's Ask flow (`lib/ingest/bim-switchboard.ts`), a flow bench run (`components/Lab/BimFlow/BimFlowLab.tsx`), and a Tracking BIMBY chat run (`lib/tracking-helper/store.ts`).
+Who saves one today: a BIM chat turn (`lib/ingest/bim-chat.ts`, one event per lane tried; the id rides on the reply as `BimLine.traceId`; _2026-11-21:_ also every model call as a `model-reply` event, so `cost.calls` is the real count, and the ladder's stages, see `components/Bim/README.md` "Turn timing"), the chat's Ask flow (`lib/ingest/bim-switchboard.ts`), a flow bench run (`components/Lab/BimFlow/BimFlowLab.tsx`), and a Tracking BIMBY chat run (`lib/tracking-helper/store.ts`).
 
-**Why it left the plan:** the plan keeps Traces in IndexedDB or the vault with a pin. This slice uses `localStorage` plus the disk archive, because the archive already is the long record. **Planned:** IndexedDB and pinning; the Ask flow's Trace nested under the chat turn (`parent`); model calls inside a chat lane as their own events (today a lane is one event and the route chip is its note, so a chat turn's `cost.calls` is 0); memory reads with row ids; tokens; `stall` events; the shared replay component; Traces for the Habits BIMBY and the card BIMBIES; the `test` and `eval` origins set by their runners.
+**Why it left the plan:** the plan keeps Traces in IndexedDB or the vault with a pin. This slice uses `localStorage` plus the disk archive, because the archive already is the long record. **Planned:** IndexedDB and pinning; the Ask flow's Trace nested under the chat turn (`parent`); memory reads with row ids; tokens; `stall` events; the shared replay component; Traces for the Habits BIMBY and the card BIMBIES; the `test` and `eval` origins set by their runners.
 
 ## BIMBIES
 

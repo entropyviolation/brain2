@@ -48,12 +48,12 @@ import { openMoneyQuestion, tryMoney, tryMoneyPhoto } from "@/lib/finance-bimby/
 import { escalate } from "@/lib/bim-flow/crew"
 import { CHAT_LANES, runLanes, type ChatLaneId, type LaneBody, type LaneGuard } from "./bim-lanes"
 import { BIM_CHAT_AGENT_ID, BIM_CHAT_REV } from "@/lib/agents/adapters/bim-chat"
-import { recorder, type StopReason, type TraceRecorder } from "@/lib/agents/trace"
+import { recorder, type EventDraft, type StopReason, type TraceOrigin, type TraceRecorder } from "@/lib/agents/trace"
 import { saveTrace } from "@/lib/agents/trace-store"
 import { answerTextQuestion, mentionsTexts, namedPeople, TEXTS_ASK_DAYS } from "./bim-texts"
 import { readMark } from "./bim-mark"
 import { chatCrew } from "@/lib/bim-flow/chat-models"
-import { ollamaCall } from "@/lib/bim-flow/ollama"
+import { ollamaCall, watchModelCalls, type ModelCallSeen } from "@/lib/bim-flow/ollama"
 import { loadTexts } from "@/lib/bim-flow/texts-client"
 import { isPhoneWebStorage } from "@/lib/phone-device"
 import { ingestIncomingAsync } from "./executor"
@@ -499,16 +499,65 @@ function followUp(text: string, now: Date) {
 export async function sendToBim(
   text: string,
   now = new Date(),
-  opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[] } = {},
+  opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; origin?: TraceOrigin } = {},
 ): Promise<BimLine> {
-  const line = await followed(await routeToBim(text, now, opts), text, now, opts)
-  // A cue (“remind me if I'm thinking about ordering food”) is checked against every line, after BIM has answered it.
-  if (opts.photos?.length || line.status === "error" || /^(KEEP|CORRECT)/.test(line.route ?? "")) return line
+  // One Trace for the whole turn, the follow-through read and the cues included. Every model call made while the
+  // turn runs is an event of its own, named by the stage that asked (`turn.stage`), so `cost.calls` is the real count.
+  const rec = recorder({ blueprint: { id: BIM_CHAT_AGENT_ID, rev: BIM_CHAT_REV }, input: text, origin: opts.origin ?? "app" })
+  const turn: TurnStage = { stage: "correct" }
+  const unwatch = watchModelCalls((call) => rec.add(modelEvent(call, turn.stage, rec.clock())))
+  const newestBefore = useIngestStore.getState().events[0]?.id
+  const close = (line: BimLine): BimLine => {
+    try {
+      const stop: StopReason = line.status === "error" ? "error" : line.status === "needs_clarify" ? "needs-person" : "done"
+      const proposals = line.reportId || line.wireId || line.dayId || line.habitLineId ? 1 : 0
+      saveTrace(rec.finish(stop, { text: line.text, proposals, wrote: writesSince(newestBefore).map((e) => e.kind ?? "write") }))
+    } catch {}
+    return { ...line, traceId: rec.id }
+  }
   try {
-    const cued = await fireCues(text, now, opts.llm ? cueGate : undefined)
-    return cued ? { ...line, text: `${line.text}\n\n${cued.text}`, ...(line.choices?.length ? {} : { choices: cued.choices }) } : line
-  } catch {
-    return line
+    const routed = await routeToBim(text, now, { ...opts, rec, turn }, newestBefore)
+    turn.stage = "follow-through"
+    let t0 = rec.clock()
+    const line = await followed(routed, text, now, opts)
+    rec.add({ kind: "tool-call", actor: "follow-through", status: line === routed ? "pass" : "ok", t0 })
+    // A cue (“remind me if I'm thinking about ordering food”) is checked against every line, after BIM has answered it.
+    if (opts.photos?.length || line.status === "error" || /^(KEEP|CORRECT)/.test(line.route ?? "")) return close(line)
+    turn.stage = "cues"
+    t0 = rec.clock()
+    try {
+      const cued = await fireCues(text, now, opts.llm ? cueGate : undefined)
+      rec.add({ kind: "tool-call", actor: "cues", status: cued ? "ok" : "pass", t0 })
+      return close(cued ? { ...line, text: `${line.text}\n\n${cued.text}`, ...(line.choices?.length ? {} : { choices: cued.choices }) } : line)
+    } catch {
+      rec.add({ kind: "tool-call", actor: "cues", status: "error", t0 })
+      return close(line)
+    }
+  } finally {
+    unwatch()
+  }
+}
+
+/** The stage of a turn that is running now, so a model call can say who asked for it. */
+type TurnStage = { stage: string }
+
+/** A model call as a Trace event: `t0` is when it started, the note says why it took that long (load, prompt, answer). */
+function modelEvent(call: ModelCallSeen, actor: string, at: number): EventDraft {
+  const parts = [call.task]
+  if (call.cached) parts.push("cached")
+  if (call.loadMs) parts.push(`load ${call.loadMs}ms`)
+  if (call.promptMs) parts.push(`prompt ${call.promptMs}ms`)
+  if (call.evalMs) parts.push(`answer ${call.evalMs}ms`)
+  if (call.error) parts.push(call.error)
+  return {
+    kind: "model-reply",
+    actor,
+    model: call.model,
+    status: call.ok ? "ok" : "error",
+    t0: Math.max(0, at - call.ms),
+    t1: at,
+    note: parts.join(" · "),
+    data: { ...(call.loadMs !== undefined ? { loadMs: call.loadMs } : {}), ...(call.promptMs !== undefined ? { promptMs: call.promptMs } : {}), ...(call.evalMs !== undefined ? { evalMs: call.evalMs } : {}), ...(call.cached ? { cached: true } : {}) },
   }
 }
 
@@ -668,7 +717,7 @@ function noteTurn(said: string, now: Date, line: BimLine, newestBefore: string |
 
 // ---------------------------------------------------------------- lanes
 
-type SendOpts = { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; rec?: TraceRecorder }
+type SendOpts = { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; rec?: TraceRecorder; turn?: TurnStage }
 type LaneCtx = { text: string; now: Date; opts: SendOpts }
 
 const bimLine = (text: string, extra: Partial<BimLine> = {}): BimLine => ({ id: lineId(), at: new Date().toISOString(), who: "bim", text, status: "ok", ...extra })
@@ -723,15 +772,35 @@ function guardHolds(guard: LaneGuard, ctx: LaneCtx): boolean {
  */
 async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
   const heldBefore = executorHolds()
-  let board = opts.llm ? await runSwitchboard(text, now, BIM_CHAT_SOURCE, opts.lastBim, { turns: earlierTurns(text) }) : null
+  // The ladder's own stages (the switchboard's crew check, router, Ask or chat lane, then the executor's write) are
+  // events of their own, so a slow turn shows where its time went instead of one long `ladder` step.
+  const stage = (name: string) => {
+    if (opts.turn) opts.turn.stage = `ladder:${name}`
+  }
+  const timed = async <T,>(name: string, run: () => Promise<T>, note?: (out: T) => string | undefined): Promise<T> => {
+    const t0 = opts.rec?.clock()
+    stage(name)
+    const out = await run()
+    const said = note?.(out)
+    opts.rec?.add({ kind: "tool-call", actor: `ladder:${name}`, status: "ok", t0, ...(said ? { note: said } : {}) })
+    return out
+  }
+  const switchboard = (force: boolean) =>
+    timed(
+      "switchboard",
+      () => runSwitchboard(text, now, BIM_CHAT_SOURCE, opts.lastBim, { ...(force ? { force } : {}), turns: earlierTurns(text), stage, rec: opts.rec }),
+      (b) => b?.route ?? "not routed",
+    )
+  const execute = (said: string) => timed("executor", () => ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: said, receivedAt: now.toISOString() }, now), (r) => `${r.status} · ${r.kind}`)
+  let board = opts.llm ? await switchboard(false) : null
   if (board?.chat && !board.passThrough) return chatLine(board, text)
   if (board?.answer && !board.passThrough) return answerLine(board, text)
   if (board?.failed && !board.passThrough) return failedLine(board)
-  let result = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text, receivedAt: now.toISOString() }, now)
+  let result = await execute(text)
   // The ladder gave up on a line (a start, mood, or place it could not finish). With LLM on, the
   // router gets it before it becomes a question for you: a sure ask is answered, a sure log is filed.
   if (opts.llm && !board && !heldBefore && result.status === "needs_clarify" && RESCUABLE.has(result.pending.kind)) {
-    const second = await runSwitchboard(text, now, BIM_CHAT_SOURCE, opts.lastBim, { force: true, turns: earlierTurns(text) })
+    const second = await switchboard(true)
     if (second?.chat && !second.passThrough) {
       useIngestStore.getState().setPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID, null)
       return chatLine(second, text)
@@ -742,7 +811,7 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
     }
     if (second?.sure && second.intent === "log") {
       useIngestStore.getState().setPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID, null)
-      result = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: `log: ${text}`, receivedAt: now.toISOString() }, now)
+      result = await execute(`log: ${text}`)
     }
     board = second
   }
@@ -923,29 +992,21 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
 }
 
 /**
- * One turn, with its Trace (`lib/agents/trace.ts`): the correction read, the thread's reading, every lane
- * tried, what was written and why it stopped. The Trace is kept (`trace-store.ts`) and its id rides on the reply.
+ * One turn's routing, into the Trace `sendToBim` keeps (`lib/agents/trace.ts`): the correction read, the thread's
+ * reading, every lane tried. `sendToBim` adds the follow-through read and the cues, then closes the Trace.
  */
 async function routeToBim(
   text: string,
   now: Date,
-  opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[] },
+  opts: SendOpts & { rec: TraceRecorder; turn: TurnStage },
+  newestBefore: string | undefined,
 ): Promise<BimLine> {
-  const rec = recorder({ blueprint: { id: BIM_CHAT_AGENT_ID, rev: BIM_CHAT_REV }, input: text, origin: "app" })
-  const newestBefore = useIngestStore.getState().events[0]?.id
-  const close = (line: BimLine): BimLine => {
-    try {
-      const stop: StopReason = line.status === "error" ? "error" : line.status === "needs_clarify" ? "needs-person" : "done"
-      const proposals = line.reportId || line.wireId || line.dayId || line.habitLineId ? 1 : 0
-      saveTrace(rec.finish(stop, { text: line.text, proposals, wrote: writesSince(newestBefore).map((e) => e.kind ?? "write") }))
-    } catch {}
-    return { ...line, traceId: rec.id }
-  }
+  const { rec } = opts
   if (!opts.photos?.length) {
     const t0 = rec.clock()
-    const fixed = await tryCorrect(text, now, { ...opts, rec }).catch(() => null)
+    const fixed = await tryCorrect(text, now, opts).catch(() => null)
     rec.add({ kind: "decision", actor: "correct", status: fixed ? "ok" : "pass", t0, ...(fixed?.route ? { note: fixed.route } : {}) })
-    if (fixed) return close(fixed)
+    if (fixed) return fixed
   }
   let read: ReturnType<typeof followUp> = null
   try {
@@ -955,12 +1016,12 @@ async function routeToBim(
   }
   if (read) rec.add({ kind: "decision", actor: "thread", status: "pass", note: `read as: ${read.text}` })
   const asked = read?.text ?? text
-  const line = await sendLine(asked, now, { ...opts, rec })
+  const line = await sendLine(asked, now, opts)
   if (!opts.photos?.length && line.status !== "error" && looksLikeFactQuestion(asked)) {
     useBimThread.getState().setFocus({ question: asked.trim(), at: now.getTime() })
   }
   if (!opts.photos?.length) noteTurn(asked, now, line, newestBefore)
-  return close(read ? { ...line, readAs: read.text } : line)
+  return read ? { ...line, readAs: read.text } : line
 }
 
 /**
@@ -992,6 +1053,9 @@ async function sendLine(text: string, now = new Date(), opts: SendOpts = {}): Pr
       is: (guard) => guardHolds(guard, ctx),
       rec: opts.rec,
       note: (line) => line.route ?? line.kind,
+      onLane: (lane) => {
+        if (opts.turn) opts.turn.stage = lane
+      },
     })
     // The ladder is last and always answers, so this is only reached if the lane list is ever cut short.
     return hit?.line ?? (await LANE_BODIES.ladder(ctx))!

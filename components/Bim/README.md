@@ -151,6 +151,16 @@ _Last mapped: 2026-11-11_ BIM chat froze for 1–2.5 s after a send, after Accep
 
 A send of `status` went from a 1.6 s block to about 70 ms. A focus pull still costs about 2 s while the hub holds an older Tracking copy that differs from this one; it clears on the next Tracking save. The phone hub process (`scripts/phone-hub.mjs`) merges with the new guard only after a restart. **Planned:** run the hub pick off the main thread (a worker) so a real difference cannot freeze the page either.
 
+## Turn timing
+
+_Last mapped: 2026-11-21_ A chat turn's Trace now says where its time went. Before, a slow turn was one long `ladder` step, and its `cost.calls` was 0 even when two models ran (`docs/BIM_CHAT_USAGE.md` §3: a chip read 8.3s on a 44.6s turn).
+
+- **One Trace per turn**, opened in `sendToBim` (`lib/ingest/bim-chat.ts`), so the follow-through read and the cues are inside it (`follow-through`, `cues` events).
+- **Every model call** made during the turn is a `model-reply` event, heard from `ollamaCall` (`watchModelCalls` in `lib/bim-flow/ollama.ts`). Its actor is the stage that asked (`ladder:router`, `ladder:ask`, `cues`, `keep`), and its note has Ollama's own load, prompt and answer times. A large load is a cold or swapped model. The disk archive's `model-call` records carry `ms` and those times too.
+- **The ladder's stages** are events of their own: `ladder:switchboard`, inside it `switchboard:crew`, `switchboard:router`, `switchboard:ask` or `switchboard:chat`, then `ladder:executor` (the write).
+
+The scorecard (`lib/bim-scorecard/README.md`) reads these per line. Replayed headless on 2026-11-21 with the person's vault, no turn came near 45s: warm turns took about 2–4s, a cold 14B load added about 10s. **Planned:** show the stage split in the route chip's Runs sheet; find the app-only gap from the first real slow turn with these events.
+
 ## Wire card
 
 _Last mapped: 2026-11-07_ `wire-card.tsx` draws the Wire BIMBY's plan under a chat line that has `wireId` (console and phone). "Connect the speed reader to my daily reading habit", or "make it so the detail view includes pages read and lets me say which book", becomes steps (connect, breakdown, entry). Each step shows why, editable fields (habit, module, what it counts, what it is about), and its checks against the real habits plus a sample report. Accept stays shut while a check fails. A box under the steps rebuilds the plan from your words (tweak); saved steps stay saved. Logic and limits: `lib/wire-bimby/README.md`.

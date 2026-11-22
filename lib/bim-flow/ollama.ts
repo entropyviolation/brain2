@@ -165,44 +165,106 @@ export type ModelCall = (req: {
 
 const cache = new Map<string, unknown>()
 
+/**
+ * One finished (or failed) model call, as seen by `ollamaCall`. `loadMs`, `promptMs` and `evalMs` are Ollama's own
+ * `load_duration`, `prompt_eval_duration` and `eval_duration`: a large `loadMs` means the model was cold or swapped
+ * in. A cached answer has `cached: true` and no daemon time. Used by the BIM chat Trace and the scorecard.
+ */
+export interface ModelCallSeen {
+  model: string
+  /** The first words of the system prompt: which job asked. */
+  task: string
+  startedAt: number
+  ms: number
+  ok: boolean
+  cached?: boolean
+  error?: string
+  loadMs?: number
+  promptMs?: number
+  evalMs?: number
+}
+
+const watchers = new Set<(call: ModelCallSeen) => void>()
+
+/** Hear every model call made through `ollamaCall`, until the returned function is called. A throwing watcher is ignored. */
+export function watchModelCalls(fn: (call: ModelCallSeen) => void): () => void {
+  watchers.add(fn)
+  return () => void watchers.delete(fn)
+}
+
+function tell(call: ModelCallSeen): void {
+  for (const fn of watchers)
+    try {
+      fn(call)
+    } catch {}
+}
+
+const nsToMs = (ns: unknown) => (typeof ns === "number" && ns > 0 ? Math.round(ns / 1e6) : undefined)
+const taskOf = (system: string) => system.replace(/\s+/g, " ").trim().slice(0, 60)
+
 /** A `ModelCall` bound to one Ollama model. Identical prompts are answered from memory, unless `fresh` (a test run: real timings, every call archived). */
 export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: boolean } = {}): ModelCall {
   return async ({ model: only, system, user, schema, maxTokens = 200, temperature = 0 }) => {
     const model = only || bound
     const key = JSON.stringify([model, system, user, schema, temperature])
-    if (!opts.fresh && cache.has(key)) return cache.get(key)
-    const res = await modelFetch(`${endpoint.base}/api/chat`, {
-      method: "POST",
-      signal,
-      headers: { "Content-Type": "application/json", ...endpoint.headers },
-      body: JSON.stringify({
-        model,
-        stream: false,
-        format: schema,
-        // qwen3 thinks by default and spends `num_predict` on it, leaving `content` empty. Others ignore the flag.
-        think: false,
-        keep_alive: "15m",
-        options: { temperature, num_ctx: NUM_CTX, num_predict: maxTokens },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-    })
-    if (!res.ok) throw new Error(`Ollama ${res.status}`)
-    const body = (await res.json()) as { message?: { content?: string }; done_reason?: string }
-    const content = body.message?.content?.trim() ?? ""
-    if (!content) throw new Error(`${model} gave no JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(content)
-    } catch {
-      throw new Error(`${model} gave cut-off JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
+    const startedAt = Date.now()
+    if (!opts.fresh && cache.has(key)) {
+      tell({ model, task: taskOf(system), startedAt, ms: 0, ok: true, cached: true })
+      return cache.get(key)
     }
-    cache.set(key, parsed)
-    archive("model-call", { model, system, user, schema, maxTokens, output: parsed })
-    return parsed
+    try {
+      const { parsed, times } = await askOllama(model, system, user, schema, maxTokens, temperature, signal)
+      cache.set(key, parsed)
+      const ms = Date.now() - startedAt
+      tell({ model, task: taskOf(system), startedAt, ms, ok: true, ...times })
+      archive("model-call", { model, system, user, schema, maxTokens, output: parsed, ms, ...times })
+      return parsed
+    } catch (error) {
+      tell({ model, task: taskOf(system), startedAt, ms: Date.now() - startedAt, ok: false, error: error instanceof Error ? error.message : String(error) })
+      throw error
+    }
   }
+}
+
+async function askOllama(
+  model: string,
+  system: string,
+  user: string,
+  schema: Record<string, unknown>,
+  maxTokens: number,
+  temperature: number,
+  signal?: AbortSignal,
+): Promise<{ parsed: unknown; times: Pick<ModelCallSeen, "loadMs" | "promptMs" | "evalMs"> }> {
+  const res = await modelFetch(`${endpoint.base}/api/chat`, {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json", ...endpoint.headers },
+    body: JSON.stringify({
+      model,
+      stream: false,
+      format: schema,
+      // qwen3 thinks by default and spends `num_predict` on it, leaving `content` empty. Others ignore the flag.
+      think: false,
+      keep_alive: "15m",
+      options: { temperature, num_ctx: NUM_CTX, num_predict: maxTokens },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
+  })
+  if (!res.ok) throw new Error(`Ollama ${res.status}`)
+  const body = (await res.json()) as { message?: { content?: string }; done_reason?: string; load_duration?: number; prompt_eval_duration?: number; eval_duration?: number }
+  const times = { loadMs: nsToMs(body.load_duration), promptMs: nsToMs(body.prompt_eval_duration), evalMs: nsToMs(body.eval_duration) }
+  const content = body.message?.content?.trim() ?? ""
+  if (!content) throw new Error(`${model} gave no JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(content)
+  } catch {
+    throw new Error(`${model} gave cut-off JSON${body.done_reason === "length" ? " (hit the token cap)" : ""}`)
+  }
+  return { parsed, times }
 }
 
 /** Installed model names, or `null` when the daemon does not answer. */

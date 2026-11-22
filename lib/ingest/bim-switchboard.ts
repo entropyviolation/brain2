@@ -24,6 +24,7 @@ import { phoneSearch, useHomeStore } from "@/lib/bim-flow/web-ask"
 import { runFlow } from "@/lib/bim-flow/run-flow"
 import { traceOfFlowRun } from "@/lib/agents/trace-adapters"
 import { saveTrace } from "@/lib/agents/trace-store"
+import type { TraceRecorder } from "@/lib/agents/trace"
 import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
 import type { Answer, Flow } from "@/lib/bim-flow/types"
 import { useIngestStore } from "./ingest-store"
@@ -170,13 +171,24 @@ export async function runSwitchboard(
   now: Date,
   source: IngestSource,
   lastBim?: string,
-  opts: { force?: boolean; turns?: ChatTurn[] } = {},
+  opts: { force?: boolean; turns?: ChatTurn[]; stage?: (name: string) => void; rec?: TraceRecorder } = {},
 ): Promise<SwitchboardResult | null> {
+  // Each stage is named for the turn's Trace (a model call says which stage asked) and timed as an event of its own.
+  const stage = opts.stage ?? (() => {})
+  const timed = async <T,>(name: string, run: () => Promise<T>): Promise<T> => {
+    const t0 = opts.rec?.clock()
+    stage(name)
+    try {
+      return await run()
+    } finally {
+      opts.rec?.add({ kind: "tool-call", actor: `switchboard:${name}`, status: "ok", t0 })
+    }
+  }
   const pending = !!useIngestStore.getState().getPending(source.channel, source.chatId)
   // `force` is for a line the ladder already gave up on (a clarify it could not finish): skip the capture-only test.
   const ok = opts.force ? !!text.trim() && text.length <= 400 && !text.includes("\n") : routable(text, pending, now)
   if (!ok) return null
-  const crew = await chatCrew()
+  const crew = await timed("crew", () => chatCrew())
   if (!crew) return null
   const t0 = Date.now()
   // A busy daemon must not leave chat waiting: past this, the line goes to the executor as before.
@@ -184,7 +196,7 @@ export async function runSwitchboard(
   const taught = taughtRoute(text)
   const route: ChatRoute = taught
     ? { intent: taught, sure: true, answeredBy: "code", why: "you corrected this line before", hops: [] }
-    : await routeChat(text, ollamaCall(crew.main, AbortSignal.timeout(ROUTE_TIMEOUT_MS)), crew.route, lastBim, taughtExamples())
+    : await timed("router", () => routeChat(text, ollamaCall(crew.main, AbortSignal.timeout(ROUTE_TIMEOUT_MS)), crew.route, lastBim, taughtExamples()))
   // The chat lane: a sure, lone `chat` line, or a question the code rules called `ask` that names nothing in the vault
   // ("what temp for garlic confit?"), which the Ask flow could only answer with "I don't know".
   const loneChat = route.sure && route.intent === "chat" && !route.second
@@ -192,7 +204,7 @@ export async function runSwitchboard(
   const general = !taught && route.sure && route.intent === "ask" && !route.second && looksGeneral(groundLine((snap = snapshotFromStores()), text, now))
   if (loneChat || general) {
     try {
-      const reply = await chatLane(text, crew, now, opts.turns, snap ?? snapshotFromStores())
+      const reply = await timed("chat", () => chatLane(text, crew, now, opts.turns, snap ?? snapshotFromStores()))
       const chat = { text: reply.text, general: reply.general, evidence: reply.evidence, ...(reply.web ? { web: reply.web } : {}) }
       return { route: chatChip(route, Date.now() - t0, reply), chat, passThrough: false, intent: "chat", sure: true }
     } catch {
@@ -204,7 +216,7 @@ export async function runSwitchboard(
   const passThrough = route.intent !== "ask" || !route.sure
   if (!wantsAsk) return { route: routeChip(route, Date.now() - t0), passThrough: true, intent: route.intent, sure: route.sure }
   try {
-    const { answer, models } = await askLane(text, crew, now)
+    const { answer, models } = await timed("ask", () => askLane(text, crew, now))
     return { route: routeChip(route, Date.now() - t0, models), answer, passThrough, intent: route.intent, sure: route.sure }
   } catch (error) {
     const aborted = error instanceof Error && (error.name === "AbortError" || /abort/i.test(error.message))
