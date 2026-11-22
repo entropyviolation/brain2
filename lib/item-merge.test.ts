@@ -214,3 +214,42 @@ describe("retargetTasksForItemMerge", () => {
     expect(next.find((t) => t.id === "c")?.parentTaskId).toBe("a")
   })
 })
+
+describe("merging people", () => {
+  it("keeps every dated note, Company pen and profile value", () => {
+    const items = [
+      task("new", "Dominic Friedly", {
+        type: "person",
+        personProfile: { phones: ["+16195550001"] },
+        attributes: { phone: ["+16195550001"] },
+      }),
+      task("old", "dom", {
+        type: "person",
+        noteLog: [{ id: "n1", date: "2026-11-21", text: "met at the show" }],
+        personPipelines: [{ id: "pp1", kind: "company-pen", penId: "pen-dom" }],
+        personProfile: { nicknames: ["dommy"], phones: ["+16195550002"] },
+      }),
+      task("copy", "dom", {
+        type: "person",
+        personPipelines: [{ id: "pp2", kind: "company-pen", penId: "pen-dom" }],
+      }),
+    ]
+    const plan = { ...defaultItemMergePlan(items, [list("work", "Work")])!, description: "dom" }
+    const merged = buildMergedItem(items, plan)!
+    expect(merged.title).toBe("dom")
+    expect(merged.noteLog?.map((n) => n.id)).toEqual(["n1"])
+    expect(merged.personPipelines).toEqual([{ id: "pp1", kind: "company-pen", penId: "pen-dom" }])
+    expect(merged.personProfile).toEqual({ phones: ["+16195550001", "+16195550002"], nicknames: ["dommy"] })
+  })
+})
+
+describe("merging people, profile only on the discarded item", () => {
+  it("keeps that profile", () => {
+    const items = [
+      task("old", "dom", { type: "person" }),
+      task("new", "Dominic Friedly", { type: "person", personProfile: { phones: ["+16195550001"] } }),
+    ]
+    const merged = buildMergedItem(items, defaultItemMergePlan(items, [list("work", "Work")])!)!
+    expect(merged.personProfile).toEqual({ phones: ["+16195550001"] })
+  })
+})

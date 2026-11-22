@@ -59,8 +59,11 @@ export function syncPeopleNow(): void {
 
       const tasks = useTaskStore.getState()
       const people = personRecords(tasks.tasks, tasks.lists)
-      const items = planPeopleItems(useTimeTrackingStore.getState().scopes, people, (task) =>
-        joinedCompanyPenIds(task.personPipelines as Parameters<typeof joinedCompanyPenIds>[0]),
+      const items = planPeopleItems(
+        useTimeTrackingStore.getState().scopes,
+        people,
+        (task) => joinedCompanyPenIds(task.personPipelines as Parameters<typeof joinedCompanyPenIds>[0]),
+        new Set(tasks.removedTaskIds ?? []),
       )
       if (items.join.length || items.create.length) {
         const listId = ensurePeopleIKnowList()
@@ -69,7 +72,9 @@ export function syncPeopleNow(): void {
           if (task) useTaskStore.getState().updateTask(withCompanyPen(task, row.penId))
         }
         for (const row of items.create) {
-          useTaskStore.getState().addTask(row.penIds.reduce((task, penId) => withCompanyPen(task, penId), createPerson(row.name, listId)))
+          // Stable id (`penPersonId`): a window on an older vault copy writes the same item, not a twin.
+          const person = { ...createPerson(row.name, listId), id: row.id }
+          useTaskStore.getState().addTask(row.penIds.reduce((task, penId) => withCompanyPen(task, penId), person))
         }
       }
       // Phone pens wear the name of the person whose number they are (`lib/phone-sync/person-links.ts`).

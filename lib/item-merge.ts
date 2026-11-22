@@ -335,6 +335,47 @@ export function retargetLinks(
   return out
 }
 
+/** One person from several: every dated note, Company pen and profile value is kept (survivor first). */
+function mergePersonFields(survivor: Task, sources: Task[]): Pick<Task, "noteLog" | "personPipelines" | "personProfile"> {
+  const ordered = [survivor, ...sources.filter((item) => item !== survivor)]
+  const noteLog = unionById(ordered.flatMap((item) => item.noteLog ?? []))
+  const seenPipe = new Set<string>()
+  const personPipelines = ordered
+    .flatMap((item) => item.personPipelines ?? [])
+    .filter((pipe) => {
+      const p = pipe as Record<string, unknown>
+      const key = `${pipe.kind}:${String(p.penId ?? p.entryId ?? pipe.id)}`
+      if (seenPipe.has(key)) return false
+      seenPipe.add(key)
+      return true
+    })
+  const profiles = ordered.map((item) => item.personProfile).filter((p): p is NonNullable<Task["personProfile"]> => !!p)
+  let personProfile: Task["personProfile"] = survivor.personProfile
+  if (profiles.length > 0) {
+    const out: Record<string, unknown> = {}
+    for (const profile of profiles) {
+      for (const [key, value] of Object.entries(profile)) {
+        const held = out[key]
+        if (Array.isArray(value)) {
+          const list = Array.isArray(held) ? [...held] : []
+          for (const v of value) {
+            const id = v && typeof v === "object" && "id" in v ? `id:${String((v as { id: unknown }).id)}` : JSON.stringify(v)
+            const ids = list.map((w) => (w && typeof w === "object" && "id" in w ? `id:${String((w as { id: unknown }).id)}` : JSON.stringify(w)))
+            if (!ids.includes(id)) list.push(v)
+          }
+          out[key] = list
+        } else if (held === undefined || held === "" || held === null) out[key] = value
+      }
+    }
+    personProfile = out as Task["personProfile"]
+  }
+  return {
+    noteLog: noteLog.length ? noteLog : survivor.noteLog,
+    personPipelines: personPipelines.length ? personPipelines : survivor.personPipelines,
+    personProfile,
+  }
+}
+
 export function buildMergedItem(items: Task[], plan: ItemMergePlan): Task | null {
   const sources = items.filter((item) => item.id === plan.survivorId || plan.discardedIds.includes(item.id))
   const survivor = sources.find((item) => item.id === plan.survivorId)
@@ -426,6 +467,8 @@ export function buildMergedItem(items: Task[], plan: ItemMergePlan): Task | null
       ? listMembershipExclusions
       : survivor.listMembershipExclusions,
   }
+
+  if (keep) Object.assign(merged, mergePersonFields(survivor, sources))
 
   if (keep) {
     merged.importance = maxHeld(...sources.map((item) => item.importance)) ?? survivor.importance

@@ -7,12 +7,18 @@ const scopes = (pens: ReturnType<typeof pen>[]) => [{ id: "company", pens }]
 describe("planPeopleItems", () => {
   it("creates one item for two same-named Company pens", () => {
     const plan = planPeopleItems(scopes([pen("a", "dom"), pen("b", "Dom")]), [], () => [])
-    expect(plan.create).toEqual([{ name: "dom", penId: "a", penIds: ["a", "b"] }])
+    expect(plan.create).toEqual([{ id: "person-pen-a", name: "dom", penId: "a", penIds: ["a", "b"] }])
   })
 
   it("joins an existing same-named person instead of creating", () => {
     const plan = planPeopleItems(scopes([pen("a", "dom")]), [{ id: "t1", title: "Dom" }], () => [])
     expect(plan.join).toEqual([{ taskId: "t1", penId: "a" }])
     expect(plan.create).toEqual([])
+  })
+
+  it("does not make a person again when the stable id exists or was deleted", () => {
+    const s = scopes([pen("a", "jillian")])
+    expect(planPeopleItems(s, [{ id: "person-pen-a", title: "Jill R" }], () => []).create).toEqual([])
+    expect(planPeopleItems(s, [], () => [], new Set(["person-pen-a"])).create).toEqual([])
   })
 })

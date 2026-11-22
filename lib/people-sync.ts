@@ -108,14 +108,25 @@ export function planPeopleSync(scopes: SyncScope[]): PeopleSyncPlan {
 
 type PersonTask = { id: string; title?: string; description?: string; personPipelines?: unknown }
 
-/** Which person items to join or create so every Company person pen has one. */
+/**
+ * The id of the person item made for a Company pen. Stable, so two windows that each make it
+ * (one still on an older copy of the vault) write the same item, and the vault union keeps one.
+ * Before 2026-11-22 each run used a fresh id, and a stale window made a second "Elijah" weekly.
+ */
+export const penPersonId = (penId: string) => `person-pen-${penId}`
+
+/**
+ * Which person items to join or create so every Company person pen has one. `removedIds` are
+ * deleted items: a person you deleted is not made again.
+ */
 export function planPeopleItems(
   scopes: SyncScope[],
   people: PersonTask[],
   joinedPenIds: (task: PersonTask) => string[],
-): { join: { taskId: string; penId: string }[]; create: { name: string; penId: string; penIds: string[] }[] } {
+  removedIds: ReadonlySet<string> = new Set(),
+): { join: { taskId: string; penId: string }[]; create: { id: string; name: string; penId: string; penIds: string[] }[] } {
   const company = scopes.find((s) => s.id === COMPANY)
-  const out = { join: [] as { taskId: string; penId: string }[], create: [] as { name: string; penId: string; penIds: string[] }[] }
+  const out = { join: [] as { taskId: string; penId: string }[], create: [] as { id: string; name: string; penId: string; penIds: string[] }[] }
   if (!company) return out
   const joined = new Set(people.flatMap((task) => joinedPenIds(task)))
   for (const pen of company.pens) {
@@ -126,7 +137,8 @@ export function planPeopleItems(
       // Same-named pens share one new item, not one each.
       const made = out.create.find((row) => norm(row.name) === norm(pen.name))
       if (made) made.penIds.push(pen.id)
-      else out.create.push({ name: pen.name, penId: pen.id, penIds: [pen.id] })
+      else if (!removedIds.has(penPersonId(pen.id)) && !people.some((task) => task.id === penPersonId(pen.id)))
+        out.create.push({ id: penPersonId(pen.id), name: pen.name, penId: pen.id, penIds: [pen.id] })
     }
   }
   return out

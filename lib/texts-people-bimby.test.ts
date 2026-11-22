@@ -38,7 +38,7 @@ describe("planTextPeople", () => {
       [{ id: "p1", names: ["Someone"], handles: ["+15551110004"] }],
       new Set(["+15551110005"]),
     )
-    expect(steps).toEqual([{ kind: "create", name: "Ana Ruiz", handles: ["+15551110001", "+15551110002"] }])
+    expect(steps).toEqual([{ kind: "create", id: "person-text-15551110001", name: "Ana Ruiz", handles: ["+15551110001", "+15551110002"] }])
   })
 
   it("links to a person who already has that name or nickname", () => {
@@ -49,5 +49,12 @@ describe("planTextPeople", () => {
       new Set(),
     )
     expect(steps).toEqual([{ kind: "link", personId: "p9", name: "Shelby", handles: ["+15551110001"] }])
+  })
+
+  it("does not make a person whose stable id exists or was deleted", () => {
+    const rows = [row("+15551110001")]
+    const names = { "+15551110001": "Ana" }
+    expect(planTextPeople(rows, names, [{ id: "person-text-15551110001", names: ["Ana R"], handles: [] }], new Set())).toEqual([])
+    expect(planTextPeople(rows, names, [], new Set(), new Set(["person-text-15551110001"]))).toEqual([])
   })
 })
