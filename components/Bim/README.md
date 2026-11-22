@@ -181,6 +181,7 @@ _Last mapped: 2026-11-21_ The input never waits on a running turn. Before, Send,
 - A failed turn marks only its own slot and offers a **try again** key.
 - A slot still waiting when the app closes is saved as an error line ("Not answered… Send it again"), never as a slot that spins forever.
 - `checkIn` stays quiet while anything is queued.
+- A turn holds the queue at most `TURN_LIMIT_MS` (180 s). Past that its slot says it moved on, with **try again**, and the next line runs. Tested: 10 lines sent back to back get 10 replies in order with every write kept (`bim-chat.test.ts`).
 
 ## Wire card
 
