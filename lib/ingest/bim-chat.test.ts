@@ -126,6 +126,34 @@ describe("BIM Chat", () => {
   })
 })
 
+describe("day-stream grammar lane", () => {
+  beforeEach(() => {
+    resetAllStores()
+    useBimChatStore.setState({ lines: [], busy: false, queued: 0 })
+  })
+
+  it("files a to do, an intake and a want in code, through the executor's own commands", async () => {
+    const todo = await sendToBim("need to book the train tickets", new Date(), { llm: false })
+    expect(todo.route).toMatch(/^GRAMMAR · todo/)
+    expect(useTaskStore.getState().tasks.some((t) => t.title === "book the train tickets")).toBe(true)
+    const intake = await sendToBim("took another pill btw", new Date(), { llm: false })
+    expect(intake.route).toMatch(/^GRAMMAR · intake/)
+    expect(useIngestStore.getState().events[0]!.kind).toBe("intake")
+    const want = await sendToBim("iso camera charger", new Date(), { llm: false })
+    expect(want.route).toMatch(/^GRAMMAR · want/)
+    expect(useIngestStore.getState().events[0]!.kind).toBe("needed")
+  })
+
+  it("starts an activity, stops it, and logs a stop with nothing open", async () => {
+    const start = await sendToBim("starting dishes", new Date(), { llm: false })
+    expect(start.text).toContain("Currently: dishes")
+    const stop = await sendToBim("done with dishes", new Date(), { llm: false })
+    expect(stop.text).toContain("Stopped: dishes")
+    const nothing = await sendToBim("home from walk", new Date(), { llm: false })
+    expect(nothing.route).toBe("GRAMMAR · log · code")
+  })
+})
+
 describe("ladder guards", () => {
   beforeEach(() => {
     resetAllStores()

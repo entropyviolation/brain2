@@ -126,7 +126,8 @@ describe("BIM chat LLM mode", () => {
 
   it("on: a log line still goes to the executor, with its route shown", async () => {
     state.route = { intent: "log", sure: true, answeredBy: "model", why: "", hops: [{ model: "small", ms: 5 }] }
-    const line = await sendToBim("making garlic confit now", new Date(), { llm: true })
+    // "making garlic confit now" is an activity start, read by the day-stream grammar before the router.
+    const line = await sendToBim("the garlic confit smells amazing", new Date(), { llm: true })
     expect(line.route).toMatch(/^LOG · small/)
     expect(useIngestStore.getState().events).toHaveLength(1)
   })

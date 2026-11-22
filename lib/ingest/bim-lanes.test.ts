@@ -109,6 +109,7 @@ describe("CHAT_LANES", () => {
       "report",
       "resistance-outcome",
       "resistance",
+      "grammar",
       "ladder",
     ])
   })

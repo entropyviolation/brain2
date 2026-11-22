@@ -42,6 +42,8 @@ import { CORRECT_TTL_MS, parseCorrection, whenLabel, type Correction } from "./b
 import { parseTell } from "./bim-tell"
 import { liveFocus, resolveFollowUp, useBimThread } from "./bim-thread"
 import { tryHabitAuto, tryHandoff } from "./bimby-handoff"
+import { readDayStream, sinceDate, type GrammarPiece } from "./bim-grammar"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { fireCues, parseKeepTodo, parseKeepTodos, takeTidy, TODO_TIDY_SCHEMA, TODO_TIDY_SYSTEM, tryCueCommand, tryKeepCue, undoLastCue, type KeepTodo } from "./bim-keep"
 import { undoLastMoney } from "@/lib/finance-bimby/apply"
 import { openMoneyQuestion, tryMoney, tryMoneyPhoto } from "@/lib/finance-bimby/run"
@@ -881,6 +883,64 @@ async function keepTodos(todos: KeepTodo[], now: Date, llm: boolean): Promise<Bi
   return bimLine(lines.join("\n"), { status: failed.length && !done.length ? "error" : "ok", kind, route: `KEEP · to do ×${todos.length} · code${fixed ? " · spelling" : ""}` })
 }
 
+/** An Activity pen the words name ("clean house" → the pen "Cleaning"), so a new wording does not make a new pen. */
+function activityPenName(what: string): string {
+  const pens = useTimeTrackingStore.getState().scopes.find((s) => s.id === "activity")?.pens ?? []
+  const said = what.toLowerCase()
+  const stem = (w: string) => w.replace(/(?:ing|ed|s)$/, "")
+  const saidStems = said.split(/\s+/).map(stem)
+  const hit =
+    pens.find((p) => p.name.trim().toLowerCase() === said) ??
+    pens.find((p) => {
+      const name = p.name.trim().toLowerCase()
+      return name.length >= 3 && (new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(said) || (!name.includes(" ") && saidStems.includes(stem(name))))
+    })
+  return hit?.name ?? what
+}
+
+/** The executor command for one piece of a day-stream line, and the moment it is sent as. */
+function grammarCommand(piece: GrammarPiece, now: Date): { text: string; at: Date } {
+  switch (piece.kind) {
+    case "todo": {
+      const day = new Date(now)
+      day.setDate(day.getDate() + piece.dayOffset)
+      return { text: `todo today: ${piece.what}`, at: day }
+    }
+    case "want":
+      return { text: `needed: ${piece.what}`, at: now }
+    case "intake":
+      return { text: `intake ${piece.cls}: ${piece.what}`, at: now }
+    case "start":
+      return { text: `currently ${activityPenName(piece.what)}`, at: piece.since ? sinceDate(piece.since, now) : now }
+    case "stop":
+      return { text: `stopped ${activityPenName(piece.what)}`, at: now }
+    case "rest":
+      return { text: `log: ${piece.what}`, at: now }
+  }
+}
+
+/**
+ * The day-stream grammar (`bim-grammar.ts`): each part of the line through the executor as BIM's own command, so
+ * `undo` and the pins work as for a typed one. A stop with nothing open to stop is kept as a log line instead.
+ */
+async function grammarLine(pieces: GrammarPiece[], now: Date): Promise<BimLine> {
+  const said: string[] = []
+  const kinds: string[] = []
+  let status: BimLine["status"] = "ok"
+  let kind: IngestIntentKind | undefined
+  for (const piece of pieces) {
+    const cmd = grammarCommand(piece, now)
+    let result = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: cmd.text, receivedAt: cmd.at.toISOString() }, cmd.at)
+    if (piece.kind === "stop" && result.status !== "ok") result = await executorSend(`log: done with ${piece.what}`, now)
+    if (result.status !== "ok") status = result.status
+    kind ??= result.kind
+    kinds.push(piece.kind === "stop" && result.kind !== "stopped-activity" ? "log" : piece.kind)
+    said.push(bimReplyText(result))
+  }
+  const lanes = [...new Set(kinds)].join(", ")
+  return bimLine(said.join("\n"), { status, ...(kind ? { kind } : {}), route: `GRAMMAR · ${lanes} · code` })
+}
+
 /**
  * A body for every lane in `CHAT_LANES`. The order, the guards and what each lane is for live in that table;
  * this is only what each one runs. A body returns null to leave the line for the next lane.
@@ -992,6 +1052,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
   "resistance-outcome": async ({ text, now, opts }) => {
     const outcome = tryResistanceOutcome(text) ?? (await tryResistanceWhy(text, !!opts.llm, now))
     return outcome ? resistanceLine(outcome) : null
+  },
+  grammar: async ({ text, now }) => {
+    const pieces = readDayStream(text)
+    return pieces ? grammarLine(pieces, now) : null
   },
   resistance: async ({ text, now, opts }) => {
     if (!routable(text, false, now)) return null

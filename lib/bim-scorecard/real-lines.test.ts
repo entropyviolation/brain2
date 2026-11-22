@@ -12,8 +12,8 @@ import { formatCard, summarize } from "./card"
 import { FIXTURE_LINES } from "./fixture"
 import { replayLines } from "./replay"
 
-/** The baseline of 2026-11-21 (code only). Floors, not targets. */
-export const FLOOR = { lane: 19, action: 19, clean: 41 }
+/** Code only. 2026-11-21 baseline 19; 25 with the day-stream grammar (`lib/ingest/bim-grammar.ts`). Floors, not targets. */
+export const FLOOR = { lane: 25, action: 25, clean: 41 }
 /** The flagged social line (many people in one line): checks passed of 6. 0 today; step 3 raises it. */
 export const SOCIAL_FLOOR = 0
 

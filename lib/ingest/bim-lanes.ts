@@ -69,6 +69,8 @@ export const CHAT_LANES = [
   { id: "report", cost: "code", skipWhen: OWNED, does: "A status report becomes a plan card, one block per change." },
   { id: "resistance-outcome", agent: "overcome-bimby", cost: "local-model", does: "The answer to an Overcome push: did it start, and why not." },
   { id: "resistance", agent: "overcome-bimby", cost: "local-model", skipWhen: ["question-open"], does: "“I can't start X” is logged as resistance and gets one push." },
+  // Just before the router, after every lane with a shape of its own: the day-stream shapes are read in code, at no model's cost.
+  { id: "grammar", cost: "code", skipWhen: PLAIN, does: "Day-stream shapes in plain words (“need to …”, “took another addy”, “starting dishes”, “done with shower”, “iso …”) become To Dos, intakes, activity starts and stops, and wants; a part that reads as none is logged." },
   // Last: it always answers. With LLM on the router goes first (ask, chat); everything else is the executor's ladder.
   { id: "ladder", cost: "local-model", does: "The router (LLM on) and then the Telegram bot's executor: commands run, lines are filed." },
 ] as const satisfies readonly LaneDef[]
