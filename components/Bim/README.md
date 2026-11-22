@@ -177,6 +177,8 @@ _Last mapped: 2026-11-11_ BIM chat froze for 1–2.5 s after a send, after Accep
 
 A send of `status` went from a 1.6 s block to about 70 ms. A focus pull still costs about 2 s while the hub holds an older Tracking copy that differs from this one; it clears on the next Tracking save. The phone hub process (`scripts/phone-hub.mjs`) merges with the new guard only after a restart. **Planned:** run the hub pick off the main thread (a worker) so a real difference cannot freeze the page either.
 
+_2026-11-22:_ typing still lagged (median 361 ms a key, one 17 s freeze). The cause was the hub pull on window focus, not the chat. It now waits until 2 s after your last key (`untilInputQuiet`, `lib/README.md` → `persist-storage.ts`). Checked in the running app: no long freeze while typing; the pull's 0.5–1.5 s blocks ran after the pause. With the Mac at load ~350 and four brain2 dev servers running, the page is still slower than it should be.
+
 ## Turn timing
 
 _Last mapped: 2026-11-21_ A chat turn's Trace now says where its time went. Before, a slow turn was one long `ladder` step, and its `cost.calls` was 0 even when two models ran (`docs/BIM_CHAT_USAGE.md` §3: a chip read 8.3s on a 44.6s turn).

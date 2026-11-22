@@ -386,6 +386,7 @@ export default function Home() {
             same container inset as the desk, so the keys stay the width they
             already are. Item detail hides the bay; the header stays. */}
         <div className="b2-app-pin">
+          <div className="b2-app-pin-desk" aria-hidden="true" />
           <AppHeader
             onTaskSelect={handleTaskSelect}
             captureOpen={capture.open}

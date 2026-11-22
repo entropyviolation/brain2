@@ -40,3 +40,33 @@ export function createHubStampWatch(pull: () => boolean, isOwnSource: (source: s
     if (pending && pull()) pending = false
   }
 }
+
+/** A vault pull waits this long after the last key or tap. */
+export const INPUT_QUIET_MS = 2_000
+
+let lastInputAt = -Infinity
+let watchingInput = false
+
+/** Note every key and tap, so a pull can wait for a pause. Idempotent; a no-op off the browser. */
+export function watchInput(): void {
+  if (watchingInput || typeof window === "undefined") return
+  watchingInput = true
+  const mark = () => {
+    lastInputAt = Date.now()
+  }
+  for (const type of ["keydown", "input", "compositionupdate", "pointerdown"]) window.addEventListener(type, mark, { capture: true, passive: true })
+}
+
+/**
+ * Resolves after a macrotask, once no key or tap came for `quietMs`. A pull merges an 18 MB vault on the main
+ * thread (seconds when the task vault differs); started mid-sentence it froze BIM Chat and every text field.
+ */
+export async function untilInputQuiet(quietMs = INPUT_QUIET_MS, now: () => number = Date.now): Promise<void> {
+  watchInput()
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const wait = lastInputAt + quietMs - now()
+    if (wait <= 0) return
+    await new Promise((resolve) => setTimeout(resolve, wait))
+  }
+}

@@ -87,6 +87,16 @@ The dev window in that session was `npm run electron:dev`, compiling on the orde
 
 ---
 
+## Scroll: the fixed desk plate (2026-11-22)
+
+_Last mapped: 2026-11-22_
+
+**Done.** `body`, `main`, and the sticky `.b2-app-pin` each painted the PCB plate with `background-attachment: fixed`. Chromium cannot composite that, so every scroll frame ran on the main thread and repainted the plate. Scrolling then waited on any React or save work. The plate is now one `position: fixed` layer (`body.win95-app::before`, `app/pcb-backdrop.css`). The pin has a clipped copy (`.b2-app-pin-desk` in `app/page.tsx`). Headless Chromium A/B on the static build, 1440×900 @2x: mean frame 12–15 ms → 8.3 ms, p95 18–23 ms → 10 ms, on mint, ceramic, and fr4. Screenshots match.
+
+The same night the machine had a load average near 385, about 0.7 GB free RAM, and five Next dev servers from this repo (ports 3000–3003, 3010). A cold `/` on the Electron dev server took 49 s, and 9.6 s warm. Section 1 still holds: `npm run electron:local` (production) is the large load-time win.
+
+---
+
 ## Plan
 
 _Last mapped: 2026-10-16_

@@ -70,7 +70,7 @@
  * blob; it does not re-apply an old pin onto that blob (that was resetting
  * Percent LED tint to a previous purple on refresh).
  */
-import { createHubFocusPull, createHubStampWatch } from "@/lib/hub-stamp-watch"
+import { createHubFocusPull, createHubStampWatch, untilInputQuiet, watchInput } from "@/lib/hub-stamp-watch"
 import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 import { overlayHabitCompletionsParsed, overlayIngestAllowlistParsed, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, stampAppearancePinsParsed, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, vaultRecordCount, vaultRecordCountRoot } from "@/lib/vault-guard.js"
@@ -379,7 +379,7 @@ function followHubAfterPaint(name: string, local: string | null, painted: string
  * `names` limits it to those keys; otherwise every store with a rehydrator.
  * Returns the keys that changed.
  */
-export async function mergeHubIntoStores(hub: HubSnapshot, names?: string[]): Promise<string[]> {
+export async function mergeHubIntoStores(hub: HubSnapshot, names?: string[], between?: () => Promise<void>): Promise<string[]> {
   if (!hub?.items) return []
   const keys = names ?? [...persistRehydrators.keys(), ...Object.keys(hub.items).filter(isPlanTextStorageKey)]
   const changed: string[] = []
@@ -396,9 +396,13 @@ export async function mergeHubIntoStores(hub: HubSnapshot, names?: string[]): Pr
     // Same bytes on both sides: nothing to merge. The full pick re-parses a 7 MB task vault several
     // times, and this runs on every window focus.
     if (hubValue === local) continue
-    const chosen = choosePersistSnapshot(name, local, hubValue)
-    if (typeof chosen !== "string" || chosen === local) continue
-    writeChosenLocal(name, local, chosen)
+    // Each pick below can hold the page for seconds. Let typed keys paint first, and re-read what they changed.
+    if (between) await between()
+    const now = between ? readLocalItem(name) : local
+    if (hubValue === now) continue
+    const chosen = choosePersistSnapshot(name, now, hubValue)
+    if (typeof chosen !== "string" || chosen === now) continue
+    writeChosenLocal(name, now, chosen)
     changed.push(name)
     if (planText) planTextChanged = true
     if (rehydrate) {
@@ -414,8 +418,11 @@ export async function mergeHubIntoStores(hub: HubSnapshot, names?: string[]): Pr
 /** Re-read the hub (no cache) and merge it into running stores. */
 async function pullHubIntoStores(names?: string[]): Promise<string[]> {
   if (!hubEnabled()) return []
+  // Never mid-sentence: the GET parses 18 MB and the merge re-parses the task vault, all on the main thread.
+  await untilInputQuiet()
   resetPersistHubCache()
-  return mergeHubIntoStores(await loadHub(), names)
+  const hub = await loadHub()
+  return mergeHubIntoStores(hub, names, untilInputQuiet)
 }
 
 export { createHubFocusPull, HUB_FOCUS_PULL_MS } from "@/lib/hub-stamp-watch"
@@ -426,6 +433,7 @@ let hubFollowInstalled = false
 function installHubFollow(): void {
   if (hubFollowInstalled || !hubEnabled() || typeof window === "undefined") return
   hubFollowInstalled = true
+  watchInput()
   const onFocus = createHubFocusPull(() => pullHubIntoStores().catch(() => []))
   window.addEventListener("focus", onFocus)
   document.addEventListener("visibilitychange", () => {

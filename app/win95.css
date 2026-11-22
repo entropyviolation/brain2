@@ -532,22 +532,16 @@ body.win95-app .b2-keycap-tab [role="tab"]:not([data-state="active"]):not([aria-
  * parent and slide over the keys, so the shell stays in flow here and the
  * stack is what freezes. The bay keeps the desk container width — these
  * rules do not touch key flex, min-width, or the bay's width.
- * The fixed desk plate matches `pcb-backdrop.css` so gutters stay the
- * desktop and page content cannot pass between the fascia and the keys.
+ * The desk color is the opaque floor. The plate itself is the clipped fixed
+ * layer `.b2-app-pin-desk` (`pcb-backdrop.css`), so gutters stay the desktop
+ * and page content cannot pass between the fascia and the keys. No
+ * `background-attachment: fixed` here: it forced main-thread scrolling.
  */
 body.win95-app .b2-app-pin {
   position: sticky;
   top: 0;
   z-index: 40;
   background-color: var(--w95-desktop);
-  background-image:
-    var(--pcb-veil),
-    var(--pcb-grain),
-    var(--pcb-plate);
-  background-repeat: no-repeat, repeat, var(--pcb-repeat, no-repeat);
-  background-size: auto, 180px 180px, var(--pcb-size, cover);
-  background-position: center, 0 0, var(--pcb-pos, center);
-  background-attachment: fixed;
 }
 body.win95-app .b2-app-pin > .b2-shell {
   position: relative;
