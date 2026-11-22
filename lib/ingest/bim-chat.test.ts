@@ -271,3 +271,34 @@ describe("told facts", () => {
     expect(line.route).toBeUndefined()
   })
 })
+
+describe("BIM Chat: many lines at once", () => {
+  beforeEach(() => {
+    resetAllStores()
+    useBimChatStore.setState({ lines: [], busy: false, queued: 0 })
+  })
+
+  it("10 lines sent back to back get 10 replies, in order, with no write lost", async () => {
+    const said = Array.from({ length: 10 }, (_, i) => `inbox: burst item ${i + 1}`)
+    // Not awaited one by one: every line is sent before the first reply is in.
+    const sent = said.map((t) => useBimChatStore.getState().send(t))
+    // At once, every line and its reply slot are on screen.
+    const early = useBimChatStore.getState().lines
+    expect(early.filter((l) => l.who === "you")).toHaveLength(10)
+    expect(early.filter((l) => l.waiting)).toHaveLength(10)
+    expect(early.at(-1)!.text).toBe("queued · 9 ahead")
+    await Promise.all(sent)
+    const lines = useBimChatStore.getState().lines
+    expect(lines.filter((l) => l.waiting)).toHaveLength(0)
+    expect(lines.map((l) => l.who)).toEqual(Array.from({ length: 10 }, () => ["you", "bim"]).flat())
+    // Each reply sits under its own line and answers it.
+    for (let i = 0; i < 10; i++) {
+      expect(lines[2 * i]!.text).toBe(said[i])
+      expect(lines[2 * i + 1]!.replyTo).toBe(lines[2 * i]!.id)
+      expect(lines[2 * i + 1]!.text).toContain(`burst item ${i + 1}`)
+    }
+    const filed = useIngestStore.getState().events.filter((e) => e.chatId === BIM_CHAT_ID && e.status === "applied").map((e) => e.raw).reverse()
+    expect(filed).toEqual(said)
+    expect(useBimChatStore.getState()).toMatchObject({ busy: false, queued: 0 })
+  })
+})

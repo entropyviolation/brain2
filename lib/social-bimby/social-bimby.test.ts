@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { FLIGHT_ATTR, FLIGHT_TYPE_ID } from "@/lib/flight-types"
 import { getWeekString } from "@/lib/date-utils"
 import { getPlanEntries } from "@/lib/plan-text"
@@ -96,13 +96,16 @@ describe("Social BIMBY end to end", () => {
     } as unknown as Task
     useTaskStore.getState().addTask(returnLeg)
 
+    // Accept checks a reminder against the clock, so the clock is the message's day (it failed once that day passed).
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(NOW)
     const reply = trySocial(MASHA, NOW)!
     expect(reply.route).toMatch(/^SOCIAL/)
     expect(personNamed("Masha")).toBeUndefined()
 
     await acceptAll(reply.reportId)
     const plan = useReportStore.getState().plans[reply.reportId]!
-    expect(plan.effects.every((e) => e.status === "applied")).toBe(true)
+    expect(plan.effects.filter((e) => e.status !== "applied").map((e) => `${e.kind}: ${e.status} ${JSON.stringify(e.result)}`)).toEqual([])
 
     const masha = personNamed("Masha")!
     expect(masha.lists).toContain(findPeopleIKnowList(useTaskStore.getState().lists)?.id ?? PEOPLE_I_KNOW_LIST_ID)
