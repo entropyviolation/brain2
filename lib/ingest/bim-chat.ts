@@ -60,6 +60,7 @@ import { ingestIncomingAsync } from "./executor"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { looksLikeVerb } from "./parse-message"
 import { isWriteKind } from "./phone-undo"
+import { createChatQueue } from "./chat-queue"
 import { tryReport } from "@/lib/report-bimby/run"
 import { tryCommands } from "@/lib/commands-bimby/run"
 import { trySocial } from "@/lib/social-bimby/run"
@@ -77,6 +78,9 @@ import { choiceTextFromCallback, inlineKeyboardForResult } from "./telegram-ui.m
 import type { ApplyResult, IncomingAttachment, IngestIntentKind, IngestSource } from "./types"
 
 export const BIM_CHAT_ID = "bim-chat"
+
+/** BIM chat's turns, one at a time in send order. */
+const bimTurns = createChatQueue()
 export const BIM_CHAT_SOURCE: IngestSource = { channel: "simulate", chatId: BIM_CHAT_ID }
 const TRANSCRIPT_KEY = "bimchat-transcript"
 const TRANSCRIPT_CAP = 400
@@ -115,6 +119,10 @@ export type BimLine = {
   habitLineId?: string
   /** The turn's Trace (`lib/agents/trace-store.ts`): which lanes were tried, which took it, what it cost. */
   traceId?: string
+  /** A reply slot whose turn has not finished: the line is queued or running. The finished reply takes its place. */
+  waiting?: boolean
+  /** On a reply: the id of the line of yours it answers. */
+  replyTo?: string
 }
 
 type InlineButton = { text: string; callback_data: string }
@@ -457,9 +465,10 @@ function chatLine(board: SwitchboardResult, said: string): BimLine {
 
 /** The turns before this line, oldest first, for the chat lane. The line being sent is already last in the transcript. */
 function earlierTurns(text: string): { who: "you" | "bim"; text: string }[] {
-  const lines = useBimChatStore.getState().lines
-  const last = lines[lines.length - 1]
-  const before = last?.who === "you" && last.text === text ? lines.slice(0, -1) : lines
+  // Up to this line's own turn: lines sent after it (queued) and reply slots still waiting are not context.
+  const all = useBimChatStore.getState().lines
+  const mine = all.findIndex((l, i) => l.who === "you" && l.text === text && all[i + 1]?.waiting)
+  const before = (mine >= 0 ? all.slice(0, mine) : all.filter((l, i) => !(i === all.length - 1 && l.who === "you" && l.text === text))).filter((l) => !l.waiting)
   return before.slice(-8).map((l) => ({ who: l.who, text: l.text }))
 }
 
@@ -1067,7 +1076,14 @@ async function sendLine(text: string, now = new Date(), opts: SendOpts = {}): Pr
 
 type BimChatState = {
   lines: BimLine[]
+  /** A turn is running. The input never waits on it: lines sent meanwhile queue. */
   busy: boolean
+  /** Lines sent and not yet answered, the running one included. */
+  queued: number
+  /**
+   * Send a line. Never blocks: the line and its reply slot show at once, and the turn runs after the ones sent
+   * before it. Resolves when this line's reply is in.
+   */
   send: (text: string, photos?: IncomingAttachment[]) => Promise<void>
   /** BIM asks you something (a check-in). Without `kind` it alternates doing and mood. */
   checkIn: (kind?: "doing" | "mood") => void
@@ -1079,29 +1095,39 @@ export const useBimChatStore = create<BimChatState>()(
     (set, get) => ({
       lines: [],
       busy: false,
+      queued: 0,
       send: async (raw, photos = []) => {
         const text = raw.trim()
-        if ((!text && !photos.length) || get().busy) return
+        if (!text && !photos.length) return
         const tag = photos.length ? `📷 ${photos.length === 1 ? "photo" : `${photos.length} photos`}` : ""
-        const mine: BimLine = { id: lineId(), at: new Date().toISOString(), who: "you", text: [tag, text].filter(Boolean).join(" · ") }
-        set((s) => ({ busy: true, lines: [...s.lines, mine].slice(-TRANSCRIPT_CAP) }))
-        let reply: BimLine
-        try {
-          const lastBim = [...get().lines].reverse().find((l) => l.who === "bim")?.text
-          reply = await sendToBim(text, new Date(), { llm: useBimLlmMode.getState().on, lastBim, photos })
-        } catch (error) {
-          reply = {
-            id: lineId(),
-            at: new Date().toISOString(),
-            who: "bim",
-            text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            status: "error",
+        const sentAt = new Date()
+        const mine: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "you", text: [tag, text].filter(Boolean).join(" · ") }
+        const ahead = get().queued
+        const slot: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "bim", text: ahead ? `queued · ${ahead} ahead` : "…", waiting: true, replyTo: mine.id }
+        set((s) => ({ queued: s.queued + 1, lines: [...s.lines, mine, slot].slice(-TRANSCRIPT_CAP) }))
+        // One turn at a time, in the order sent (`chat-queue.ts`): a turn reads what the one before it wrote (the
+        // open question, the thread, the last write for "undo"), and one model call at a time keeps the 3B and 14B
+        // loaded together. Nothing is dropped, deduped or merged: every line gets its own turn, Trace and reply.
+        await bimTurns(BIM_CHAT_ID, async () => {
+          set({ busy: true })
+          set((s) => ({ lines: s.lines.map((l) => (l.id === slot.id ? { ...l, text: "…" } : l)) }))
+          let reply: BimLine
+          try {
+            // BIM's last reply before this line, finished ones only: what this line answers.
+            const at = get().lines.findIndex((l) => l.id === slot.id)
+            const lastBim = get().lines.slice(0, at < 0 ? undefined : at).reverse().find((l) => l.who === "bim" && !l.waiting)?.text
+            reply = await sendToBim(text, sentAt, { llm: useBimLlmMode.getState().on, lastBim, photos })
+          } catch (error) {
+            reply = bimLine(`Error: ${error instanceof Error ? error.message : String(error)}`, { status: "error" })
           }
-        }
-        set((s) => ({ busy: false, lines: [...s.lines, reply].slice(-TRANSCRIPT_CAP) }))
+          // A failed turn marks only this line, and offers to send it again.
+          if (reply.status === "error" && text && !photos.length) reply = { ...reply, choices: [...(reply.choices ?? []), { label: "try again", text }] }
+          const done: BimLine = { ...reply, id: slot.id, replyTo: mine.id }
+          set((s) => ({ busy: false, queued: Math.max(0, s.queued - 1), lines: s.lines.some((l) => l.id === slot.id) ? s.lines.map((l) => (l.id === slot.id ? done : l)) : [...s.lines, done].slice(-TRANSCRIPT_CAP) }))
+        })
       },
       checkIn: (kind) => {
-        if (get().busy) return
+        if (get().busy || get().queued) return
         const line = checkInLine(kind)
         set((s) => ({ lines: [...s.lines, line].slice(-TRANSCRIPT_CAP) }))
       },
@@ -1116,7 +1142,8 @@ export const useBimChatStore = create<BimChatState>()(
     {
       name: TRANSCRIPT_KEY,
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({ lines: s.lines }),
+      // A reply slot still waiting when the app closed never finishes: it is kept as a line that says so.
+      partialize: (s) => ({ lines: s.lines.map((l) => (l.waiting ? { ...l, waiting: undefined, status: "error" as const, text: "Not answered: BIM was closed before this line's turn ran. Send it again." } : l)) }),
     },
   ),
 )

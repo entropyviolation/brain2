@@ -56,7 +56,7 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `dedupe.ts` | Text is claimed by chat plus `message_id` (an edit does not run again) and by `update_id` for the first delivery. Live Location re-applies per `update_id`. Neither id → the executor logs a null dedupe key and does not apply |
 | `confirm-updates.ts` | Poll offset moves only through update ids whose vault write finished |
 | `deferred-album.ts` | Photo-album updates stay unconfirmed until the merged apply resolves |
-| `chat-queue.ts` | Hub webhook runs one apply at a time per chat |
+| `chat-queue.ts` | One job at a time per chat, in order: the hub webhook's applies, and BIM chat's turns (`bimTurns` in `bim-chat.ts`) |
 | `text-triggers.ts` | Whole-message habit keywords + discrete event patterns (Settings + habit form) |
 | `nfc-tag.ts` | _Last mapped: 2026-10-27_ NFC tag records: slug, instant or door toggle, optional minutes, saved quantity (a line `nfc:id 2` overrides it), optional daily habit (`done` or `add`). A second tap inside 20 seconds is a double-read |
 | `apply-nfc.ts` | _Last mapped: 2026-10-27_ `nfc:{id}` or `nfc:{id} {n}` writes the tracking instant (intake class or a log line; an intake title leads with the count), an optional estimated block ending at the scan, and today’s daily habit when the tag is bound (done, or plus the quantity). Unknown ids and double-reads write nothing. `generatedBy` stays `text`, with id `nfc:{tag}:{iso}`. _Last mapped: 2026-10-30_ A bound count gets one tick per scan: a log line is tallied by `applyDiscreteLog`, so `apply-nfc.ts` tallies only intake lines (it used to tally both, two ticks per shower) |

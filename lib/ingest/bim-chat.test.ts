@@ -100,6 +100,30 @@ describe("BIM Chat", () => {
     expect(lines.map((l) => l.who)).toEqual(["you", "bim"])
     expect(useBimChatStore.getState().busy).toBe(false)
   })
+
+  it("never blocks the input: lines sent during a turn queue, each gets its own reply in send order", async () => {
+    useBimChatStore.setState({ lines: [], busy: false, queued: 0 })
+    const store = useBimChatStore.getState()
+    const first = store.send("ping")
+    const second = store.send("info")
+    // Both lines and both reply slots show at once; the second says it is queued.
+    const shown = useBimChatStore.getState().lines
+    expect(shown.map((l) => [l.who, !!l.waiting])).toEqual([
+      ["you", false],
+      ["bim", true],
+      ["you", false],
+      ["bim", true],
+    ])
+    expect(shown[3]!.text).toBe("queued · 1 ahead")
+    await Promise.all([first, second])
+    const lines = useBimChatStore.getState().lines
+    expect(lines.some((l) => l.waiting)).toBe(false)
+    expect(lines[1]!.text).toBe(BIM_PING)
+    expect(lines[1]!.replyTo).toBe(lines[0]!.id)
+    expect(lines[3]!.text).toContain("just talk")
+    expect(lines[3]!.replyTo).toBe(lines[2]!.id)
+    expect(useBimChatStore.getState()).toMatchObject({ busy: false, queued: 0 })
+  })
 })
 
 describe("ladder guards", () => {

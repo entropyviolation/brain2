@@ -1,9 +1,10 @@
 /**
- * lib/ingest/chat-queue.ts — One apply at a time per Telegram chat
+ * lib/ingest/chat-queue.ts — One job at a time per chat, in order
  *
- * The renderer already chains applies. The hub webhook does not, so two
- * messages for the same chat wait in order. A failure still releases the
- * next message.
+ * The hub webhook uses it so two Telegram messages for the same chat apply in
+ * order. BIM chat uses it so lines sent during a running turn queue instead of
+ * blocking the input (`useBimChatStore.send`). A failure still releases the
+ * next job.
  */
 
 export function createChatQueue() {

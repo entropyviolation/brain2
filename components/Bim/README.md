@@ -161,6 +161,17 @@ _Last mapped: 2026-11-21_ A chat turn's Trace now says where its time went. Befo
 
 The scorecard (`lib/bim-scorecard/README.md`) reads these per line. Replayed on 2026-11-21 with the person's vault: warm turns take about 2–4s and a cold 14B load adds about 10s. The 35–45s turns are model swaps: a Stream BIMBY or Ask call on `qwen3:30b-a3b` pushes the 3B and 14B out, and the next router call reloads them (one hit the 45s route timeout). Numbers: `docs/BIM_CHAT_USAGE.md` §9. **Planned:** show the stage split in the route chip's Runs sheet.
 
+## Sending while BIM works
+
+_Last mapped: 2026-11-21_ The input never waits on a running turn. Before, Send, the photo key and the quick keys were disabled while `busy`, so a slow model turn (§ Turn timing) locked the chat for up to 45 s.
+
+- `useBimChatStore.send` (`lib/ingest/bim-chat.ts`) shows your line and a **reply slot** (`waiting: true`, `replyTo` = your line's id) at once. A slot behind another turn reads `queued · N ahead`; the running one shows the working dots. The finished reply takes the slot's place, so every reply sits under the line it answers.
+- Turns run **one at a time in send order** (`createChatQueue`, `lib/ingest/chat-queue.ts`). A turn reads what the one before it wrote: the open question, the thread, the last write for "undo". One model call at a time also keeps the 3B and 14B loaded together. Nothing is dropped, merged or deduped; each line gets its own Trace.
+- A turn's context (`earlierTurns`, `lastBim`) is only what came before its own line. Queued lines and waiting slots are left out.
+- A failed turn marks only its own slot and offers a **try again** key.
+- A slot still waiting when the app closes is saved as an error line ("Not answered… Send it again"), never as a slot that spins forever.
+- `checkIn` stays quiet while anything is queued.
+
 ## Wire card
 
 _Last mapped: 2026-11-07_ `wire-card.tsx` draws the Wire BIMBY's plan under a chat line that has `wireId` (console and phone). "Connect the speed reader to my daily reading habit", or "make it so the detail view includes pages read and lets me say which book", becomes steps (connect, breakdown, entry). Each step shows why, editable fields (habit, module, what it counts, what it is about), and its checks against the real habits plus a sample report. Accept stays shut while a check fails. A box under the steps rebuilds the plan from your words (tweak); saved steps stay saved. Logic and limits: `lib/wire-bimby/README.md`.

@@ -59,7 +59,7 @@ export function clock(iso: string, now = new Date()): string {
 }
 
 /** The chat history. Memoized: a keystroke in the well does not repaint every line under the glass. */
-const ChatLog = memo(function ChatLog({ lines, busy, onTry }: { lines: BimLine[]; busy: boolean; onTry: (text: string) => void }) {
+const ChatLog = memo(function ChatLog({ lines, onTry }: { lines: BimLine[]; onTry: (text: string) => void }) {
   return (
     <>
       {lines.length === 0 ? (
@@ -80,7 +80,16 @@ const ChatLog = memo(function ChatLog({ lines, busy, onTry }: { lines: BimLine[]
             <span className="bim-msg-who">
               {line.who === "you" ? "YOU" : "BIM"} {clock(line.at)}
             </span>
-            <p className="bim-msg-text">{line.text}</p>
+            {line.waiting ? (
+              <span className="bim-wait" role="status" aria-label={line.text === "…" ? "BIM is working" : `BIM: ${line.text}`}>
+                <i />
+                <i />
+                <i />
+                {line.text !== "…" ? <em className="bim-msg-route"> {line.text}</em> : null}
+              </span>
+            ) : (
+              <p className="bim-msg-text">{line.text}</p>
+            )}
             {line.readAs ? <span className="bim-msg-route">read as: {line.readAs}</span> : null}
             {line.route ? <span className="bim-msg-route">{line.route}</span> : null}
             {line.general ? <span className="bim-msg-route">general, not from your data</span> : null}
@@ -97,16 +106,6 @@ const ChatLog = memo(function ChatLog({ lines, busy, onTry }: { lines: BimLine[]
           </div>
         ))
       )}
-      {busy ? (
-        <div className="bim-msg is-bim">
-          <span className="bim-msg-who">BIM</span>
-          <span className="bim-wait" role="status" aria-label="BIM is working">
-            <i />
-            <i />
-            <i />
-          </span>
-        </div>
-      ) : null}
     </>
   )
 })
@@ -142,7 +141,7 @@ function ChatPane() {
     <div className="bim-crt-pane">
       <ModeSwitch llm={llm} setLlm={setLlm} />
       <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
-        <ChatLog lines={lines} busy={busy} onTry={startWith} />
+        <ChatLog lines={lines} onTry={startWith} />
       </div>
       <div className="bim-compose">
         <div className="bim-glass bim-well">
@@ -182,11 +181,11 @@ function ChatPane() {
         </div>
         <div className="bim-send">
           <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />
-          <button data-no95 type="button" className="is-mod" aria-label="Attach photo" disabled={busy} onClick={() => fileInput.current?.click()}>
+          <button data-no95 type="button" className="is-mod" aria-label="Attach photo" onClick={() => fileInput.current?.click()}>
             <span className="bim-key-word">📷</span>
             <Paperclip className="bim-key-icon" aria-hidden="true" />
           </button>
-          <button data-no95 type="button" className="is-primary" aria-label="Send" disabled={busy || (!draft.trim() && !photos.length)} onClick={() => submit()}>
+          <button data-no95 type="button" className="is-primary" aria-label="Send" disabled={!draft.trim() && !photos.length} onClick={() => submit()}>
             <span className="bim-key-word">SEND ↵</span>
             <ArrowUp className="bim-key-icon" aria-hidden="true" />
           </button>
@@ -194,7 +193,7 @@ function ChatPane() {
       </div>
       <div className="bim-quick" aria-label="Quick commands">
         {BIM_QUICK.map((word) => (
-          <button data-no95 key={word} type="button" disabled={busy} onClick={() => submit(word)}>
+          <button data-no95 key={word} type="button" onClick={() => submit(word)}>
             {word}
           </button>
         ))}

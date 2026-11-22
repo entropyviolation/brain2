@@ -19,7 +19,7 @@ import "@/components/Bim/bim-ink.css"
 import "./bim-phone.css"
 
 export function BimPhoneScreen() {
-  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
+  const { lines, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError } = useBimChat()
   const fileInput = useRef<HTMLInputElement>(null)
   const choices = openChoices(lines)
 
@@ -51,7 +51,7 @@ export function BimPhoneScreen() {
           lines.map((line) => (
             <Fragment key={line.id}>
               <p className={`bim-phone-line is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
-                <b>{line.who === "you" ? "YOU" : "BIM"}</b> {line.text}
+                <b>{line.who === "you" ? "YOU" : "BIM"}</b> {line.waiting ? (line.text === "…" ? "▮▮▮" : `▮▮▮ ${line.text}`) : line.text}
               </p>
               {line.readAs ? <span className="bim-phone-route">read as: {line.readAs}</span> : null}
               {line.route ? <span className="bim-phone-route">{line.route}</span> : null}
@@ -69,7 +69,6 @@ export function BimPhoneScreen() {
             </Fragment>
           ))
         )}
-        {busy ? <p className="bim-phone-line is-bim is-wait"><b>BIM</b> ▮▮▮</p> : null}
         <span className="bim-phone-cursor" aria-hidden="true" />
       </div>
 
@@ -105,7 +104,7 @@ export function BimPhoneScreen() {
         ) : null}
         {photoError ? <p className="bim-phone-photo-error">{photoError}</p> : null}
         <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />
-        <button type="button" className="m-keycap bim-phone-attach" aria-label="Attach photo" disabled={busy} onClick={() => fileInput.current?.click()}>
+        <button type="button" className="m-keycap bim-phone-attach" aria-label="Attach photo" onClick={() => fileInput.current?.click()}>
           📷
         </button>
         <textarea
@@ -116,14 +115,14 @@ export function BimPhoneScreen() {
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="submit" className="m-keycap bim-phone-send" disabled={busy || (!draft.trim() && !photos.length)}>
+        <button type="submit" className="m-keycap bim-phone-send" disabled={!draft.trim() && !photos.length}>
           Send
         </button>
       </form>
 
       <div className="bim-phone-keys bim-phone-quick" aria-label="Quick commands">
         {BIM_QUICK.map((word) => (
-          <button key={word} type="button" className="m-keycap" disabled={busy} onClick={() => submit(word)}>
+          <button key={word} type="button" className="m-keycap" onClick={() => submit(word)}>
             {word}
           </button>
         ))}

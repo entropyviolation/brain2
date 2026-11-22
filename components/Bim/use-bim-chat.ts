@@ -98,7 +98,8 @@ export function useBimChat() {
   const submit = (text = draft) => {
     const own = text === draft
     const attached = own ? photos : []
-    if ((!text.trim() && !attached.length) || busy) return
+    // Never waits on a running turn: the line queues and gets its own reply slot (`useBimChatStore.send`).
+    if (!text.trim() && !attached.length) return
     void send(text, attached)
     if (own) {
       setDraft("")
