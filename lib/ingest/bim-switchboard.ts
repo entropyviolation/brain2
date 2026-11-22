@@ -8,7 +8,8 @@
  * gets a reply from the chat lane (`chat-lane.ts`) and is not filed either.
  * Every other label, an unsure route, no reachable model, or a failed run hands
  * the line back to the executor unchanged. Desktop and iPhone
- * only: Telegram never comes through here. Plan: `docs/BIM_CHAT_SWITCHBOARD_PLAN.md`.
+ * and, since 2026-11-21, Telegram through the hub after the executor has replied (`telegram-llm.ts`).
+ * Plan: `docs/BIM_CHAT_SWITCHBOARD_PLAN.md`.
  */
 
 import { create } from "zustand"

@@ -85,7 +85,7 @@ export const BIM_CHAT_ID = "bim-chat"
 
 /** BIM chat's turns, one at a time in send order. */
 const bimTurns = createChatQueue()
-/** The longest one turn may hold the queue: the Ask lane's 120 s cap plus the router and the cues. */
+/** The longest one turn may hold the queue: well past every lane's own cap (Stream's long reads included). */
 export const TURN_LIMIT_MS = 180_000
 export const BIM_CHAT_SOURCE: IngestSource = { channel: "simulate", chatId: BIM_CHAT_ID }
 const TRANSCRIPT_KEY = "bimchat-transcript"

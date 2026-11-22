@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-11-01_
 
-All of this is **Planned** unless it says built. **Built 2026-11-01:** the crew (`crew.ts`, router escalation only; flows still use the two `ModelPlan` tiers), the router, the switchboard hook with an LLM on/off switch (desktop + iPhone, never Telegram), and the Ask lane in chat (phases 1–3, minus the eval set and the keycap fallback: an unsure route goes to the executor). It extends what exists. Nothing here
+All of this is **Planned** unless it says built. **Built 2026-11-01:** the crew (`crew.ts`, router escalation only; flows still use the two `ModelPlan` tiers), the router, the switchboard hook with an LLM on/off switch (desktop + iPhone; _2026-11-21:_ Telegram too, see §6), and the Ask lane in chat (phases 1–3, minus the eval set and the keycap fallback: an unsure route goes to the executor). It extends what exists. Nothing here
 replaces the grammar ladder, the executor, or the flow bench.
 
 The person's question: how can BIM's chat be better, using automated routing, real
@@ -226,7 +226,7 @@ to log ("log tired?") as a keycap, which is how chat feeds tracking without gues
 |---------|-------|----------------------|
 | Desktop console (Electron) | grammar | full switchboard; Ollama is local |
 | Phone BIM tab / iOS desk sheet | grammar | grammar on the phone; L1+ is sent to the Mac hub when it is reachable, else the line is logged and marked "BIM will answer when the Mac is awake" |
-| Telegram | grammar | the same, through the hub (`scripts/phone-hub.ts`) |
+| Telegram | grammar | **Built 2026-11-21:** the executor replies at once, as before; then, for a line it could only log or turned away as a question, the hub runs the switchboard and sends the answer or chat reply as a second message with the route chip (`lib/ingest/telegram-llm.ts`, `scripts/phone-hub.ts`). Same lanes and timeouts. `PHONE_HUB_LLM=0` turns it off. Why it changed: the person asked for the bot to have the full LLM features. **Planned:** edit the first reply instead of a second message; follow the device switch |
 | Oracle relay | sealed relay | **never runs flows.** It holds no clear vault (`ORACLE_CAPTURE_BOX.md`) |
 | Mac mini (future) | — | the always-on home for Ollama and the switchboard (`boa-and-temporary-oracle-relay`) |
 
