@@ -102,11 +102,18 @@ export function withCellHistory(
   next: TaskCompletion,
   source: HabitCellChangeSource,
   at: Date = new Date(),
+  note?: string,
 ): TaskCompletion {
   const change = describeCellChange(task, previous, next, source, at)
   const base = Array.isArray(previous?.changes) ? previous.changes : undefined
+  const said = note?.trim()
+  // A note with no change in the reading ("counts as skincare" on a cell already done) is still kept, as its own row.
+  if (!change && said) {
+    const reading = cellReading(task, next)
+    return { ...next, changes: appendCellChange(base, { at: at.toISOString(), source, from: reading, to: reading, note: said }) }
+  }
   if (!change) return base ? { ...next, changes: base } : next
-  return { ...next, changes: appendCellChange(base, change) }
+  return { ...next, changes: appendCellChange(base, said ? { ...change, note: change.note ? `${change.note}; ${said}` : said } : change) }
 }
 
 /** The wand waived or required this period. The cell may not exist yet. */

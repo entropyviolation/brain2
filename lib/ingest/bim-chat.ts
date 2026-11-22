@@ -914,6 +914,8 @@ function grammarCommand(piece: GrammarPiece, now: Date): { text: string; at: Dat
       return { text: `currently ${activityPenName(piece.what)}`, at: piece.since ? sinceDate(piece.since, now) : now }
     case "stop":
       return { text: `stopped ${activityPenName(piece.what)}`, at: now }
+    case "habit":
+      return { text: `did: ${piece.what}${piece.note ? ` -- ${piece.note}` : ""}`, at: now }
     case "rest":
       return { text: `log: ${piece.what}`, at: now }
   }

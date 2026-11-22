@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseMessage } from "./parse-message"
+import { looksLikeVerb, parseMessage } from "./parse-message"
 
 describe("parseMessage", () => {
   it("treats prefix-less text as inbox capture", () => {
@@ -205,5 +205,13 @@ describe("parseMessage", () => {
 
   it("returns unknown for empty input", () => {
     expect(parseMessage("   ").kind).toBe("unknown")
+  })
+})
+
+describe("bare doing / tracking before an article", () => {
+  it("is prose, not the track verb", () => {
+    expect(looksLikeVerb("doing a facemask rn so counts as skincare")).toBe(false)
+    expect(looksLikeVerb("doing: facemask")).toBe(true)
+    expect(looksLikeVerb("doing gym")).toBe(true)
   })
 })

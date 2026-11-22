@@ -66,3 +66,10 @@ describe("day-stream grammar", () => {
     expect(sinceDate({ h: 4, m: 40, pm: false }, now).getHours()).toBe(4)
   })
 })
+
+describe("counts as <habit>", () => {
+  it("reads the habit and keeps the rest as its note", () => {
+    expect(readDayStream("doing a facemask rn so counts as skincare")).toEqual([{ kind: "habit", what: "skincare", note: "doing a facemask" }])
+    expect(readDayStream("walked to the store, that counts for my steps habit")).toEqual([{ kind: "habit", what: "steps", note: "walked to the store" }])
+  })
+})

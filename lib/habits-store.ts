@@ -945,7 +945,7 @@ interface HabitsState {
    * one: a missed-op patch is `wand`, otherwise `manual-ios` in the phone
    * shell and `manual-desktop` elsewhere.
    */
-  updateCompletion: (taskId: string, date: Date, completion: TaskCompletion, source?: HabitCellChangeSource) => void
+  updateCompletion: (taskId: string, date: Date, completion: TaskCompletion, source?: HabitCellChangeSource, note?: string) => void
   /**
    * Write the tracking-link contribution (`lib/habit-tracking-sync.ts`).
    * Daily habits land on `date`; weekly/monthly habits land on the week/month
@@ -1680,7 +1680,7 @@ export const useHabitsStore = create<HabitsState>()(
           categories,
         })),
 
-      updateCompletion: (taskId, date, completion, source) => {
+      updateCompletion: (taskId, date, completion, source, note) => {
         const cellSource = resolveCellSource(completion, source)
         const liveTask = get().tasks.find((t) => t.id === taskId)
         const dateKey = formatLocalDateKey(date)
@@ -1700,7 +1700,7 @@ export const useHabitsStore = create<HabitsState>()(
           const reconciled = reconcileManualEntry(task, previous, mergeCompletionPatch(previous, completion))
           const marked = withHandMark(task, completion, reconciled)
           const finalCompletion = completionWithGoalFlag(task, marked, { date, weeklyData: state.weeklyData })
-          day[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, cellSource))
+          day[taskId] = stampCompletion(withCellHistory(task, previous, finalCompletion, cellSource, new Date(), note))
           weeklyData[dateKey] = day
           sync = { task, previous, final: day[taskId], priorData: state.weeklyData }
           return { weeklyData, contentRev: nextContentRev(state.contentRev) }
