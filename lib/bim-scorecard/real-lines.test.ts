@@ -14,8 +14,8 @@ import { replayLines } from "./replay"
 
 /** Code only. 2026-11-21 baseline 19; 25 with the day-stream grammar (`lib/ingest/bim-grammar.ts`). Floors, not targets. */
 export const FLOOR = { lane: 25, action: 25, clean: 41 }
-/** The flagged social line (many people in one line): checks passed of 6. 0 today; step 3 raises it. */
-export const SOCIAL_FLOOR = 0
+/** The flagged social line (many people in one line): checks passed of 6. 0 before step 3, 6 since. */
+export const SOCIAL_FLOOR = 6
 
 function reset() {
   resetAllStores()

@@ -129,6 +129,11 @@ let ingestIncomingAsync: ExecutorModule["ingestIncomingAsync"]
 let dropLocationDuringRitual: ExecutorModule["dropLocationDuringRitual"] | undefined
 let deliverIngestReply: typeof import("../lib/ingest/deliver-reply")["deliverIngestReply"]
 let incomingFromTelegram: typeof import("../lib/ingest/telegram-bridge")["incomingFromTelegram"]
+let telegramFollowUp: typeof import("../lib/ingest/telegram-llm")["telegramFollowUp"] | undefined
+/** BIM chat's LLM lanes on Telegram (`lib/ingest/telegram-llm.ts`). On unless `PHONE_HUB_LLM=0`. */
+const HUB_LLM = process.env.PHONE_HUB_LLM !== "0"
+/** BIM's last message per chat, so a reply to "Do you know?" is read against it. */
+const lastBimByChat = new Map<string, string>()
 let stores: HydratedStore[] = []
 let trackingKey = ""
 let flushing = false
@@ -211,6 +216,7 @@ async function loadStores() {
   await Promise.all(stores.map(waitHydrated))
   trackingKey = tracking.useTimeTrackingStore.persist.getOptions().name ?? ""
   ingestIncomingAsync = exec.ingestIncomingAsync
+  if (HUB_LLM) telegramFollowUp = (await import("../lib/ingest/telegram-llm")).telegramFollowUp
   dropLocationDuringRitual = exec.dropLocationDuringRitual
   deliverIngestReply = deliver.deliverIngestReply
   incomingFromTelegram = bridge.incomingFromTelegram
@@ -313,10 +319,23 @@ async function handlePayload(payload: IncomingTelegramPayload, rehydrate = false
   ) {
     return
   }
-  const result = await ingestIncomingAsync(incomingFromTelegram(payload))
+  const incoming = incomingFromTelegram(payload)
+  const result = await ingestIncomingAsync(incoming)
   const note = drained ? staleReplyNote(payload.receivedAt, Date.now(), DRAIN_STALE_MINUTES) : ""
+  // The executor's reply goes out at once; a model never holds it.
   await deliverIngestReply(payload.chatId, result, note ? lateTransport(note) : transport)
   flushVault()
+  // Then BIM chat's LLM lanes, for a line the executor could only log or turned away as a question: the answer or
+  // reply comes as a second message. Inside the chat's queue, so the next line waits for it and order holds.
+  const chatKey = String(payload.chatId)
+  if ("reply" in result && result.reply) lastBimByChat.set(chatKey, result.reply)
+  if (telegramFollowUp && payload.text && !payload.attachments?.length) {
+    const more = await telegramFollowUp(payload.text, new Date(incoming.receivedAt ?? Date.now()), incoming.source, result, { llm: true, lastBim: lastBimByChat.get(chatKey) })
+    if (more) {
+      await transport.send(chatKey, more)
+      lastBimByChat.set(chatKey, more)
+    }
+  }
 }
 
 const enqueueChat = createChatQueue()
