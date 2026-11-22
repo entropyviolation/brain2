@@ -1,0 +1,237 @@
+/**
+ * components/chrome/chrome-primitives.css — Keycap, Fascia, CrtWell, Nameplate
+ *
+ * The four shared pieces of metal, painted only from `app/chrome-tokens.css`.
+ * Each rule is one class deep, so any room rule wins. A room changes the look
+ * by setting the locals below on itself, not by re-typing the gradients:
+ *
+ *   Keycap    --cap-top --cap-top2 --cap-skirt --cap-edge --cap-legend
+ *   Fascia    --fascia-face (background) --fascia-edge (box-shadow)
+ *   CrtWell   --crt-ink --crt-pad
+ *   Nameplate --plate-face --plate-size --plate-tracking
+ *
+ * Keycaps carry `data-no95`, so the global Win95 button skin in
+ * `app/win95.css` leaves them alone. docs/DESIGN_STYLE.md#keycaps,
+ * #milled-fascia, #phosphor.
+ */
+
+/* ---- Keycap: the pale silver word key ---- */
+
+.b2-keycap {
+  --cap-top: var(--keycap-top);
+  --cap-top2: var(--keycap-top2);
+  --cap-skirt: var(--keycap-skirt);
+  --cap-edge: var(--keycap-edge);
+  --cap-legend: var(--keycap-legend);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--cap-legend);
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) padding-box;
+  border: 1px solid var(--cap-edge);
+  border-radius: var(--r-4, 4px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    var(--keycap-cast);
+  outline: 0;
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.b2-keycap:hover:not(:disabled) {
+  filter: brightness(1.03);
+}
+
+.b2-keycap[data-plastic="mod"] {
+  --cap-top: var(--keycap-mod-top);
+  --cap-top2: var(--keycap-mod-top2);
+  --cap-skirt: var(--keycap-mod-skirt);
+  --cap-edge: var(--keycap-mod-edge);
+  --cap-legend: var(--keycap-mod-legend);
+}
+
+.b2-keycap[data-plastic="seafoam"] {
+  --cap-top: var(--keycap-seafoam-top);
+  --cap-top2: var(--keycap-seafoam-top2);
+  --cap-skirt: var(--keycap-seafoam-skirt);
+  --cap-edge: var(--keycap-seafoam-edge);
+  --cap-legend: var(--keycap-seafoam-legend);
+}
+
+.b2-keycap[data-plastic="cornflower"] {
+  --cap-top: var(--keycap-cornflower-top);
+  --cap-top2: var(--keycap-cornflower-top2);
+  --cap-skirt: var(--keycap-cornflower-skirt);
+  --cap-edge: var(--keycap-cornflower-edge);
+  --cap-legend: var(--keycap-cornflower-legend);
+}
+
+.b2-keycap[data-plastic="primary"] {
+  --cap-edge: #2a3570;
+  --cap-legend: #1a2556;
+  letter-spacing: 0.02em;
+  outline: 2px solid var(--keycap-navy);
+  outline-offset: 1px;
+}
+
+.b2-keycap[data-plastic="primary"]::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--keycap-navy);
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+/* Press, or a word key that stays on: the 2px drop. */
+.b2-keycap:active:not(:disabled),
+.b2-keycap[aria-pressed="true"] {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    var(--keycap-press-shadow);
+}
+
+.b2-keycap:disabled {
+  --cap-top: var(--keycap-dead-top);
+  --cap-top2: var(--keycap-dead-top2);
+  --cap-legend: var(--keycap-dead-legend);
+  cursor: default;
+}
+
+.b2-keycap:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+/* Latching key: a lamp at the left, and CRT glass when selected. */
+.b2-keycap[data-latch]::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c8ccd0, #6e7378);
+  box-shadow: 0 0 0 1px #141816;
+}
+
+.b2-keycap[data-latch="on"] {
+  --cap-legend: var(--crt-phosphor);
+  background: var(--fascia-crt-glass);
+  border-color: var(--chrome-pressed);
+  box-shadow: var(--fascia-crt-ring);
+  text-shadow: var(--crt-glow);
+}
+
+.b2-keycap[data-latch="on"]::before {
+  background: var(--keycap-lamp-on);
+  box-shadow: var(--keycap-lamp-ring);
+}
+
+/* A selected latch stays the CRT through a press; only the cap drops. */
+.b2-keycap[data-latch="on"]:active:not(:disabled) {
+  box-shadow: var(--fascia-crt-ring);
+}
+
+/* ---- Fascia: the brushed bay a row of instruments sits in ---- */
+
+.b2-fascia {
+  --fascia-face: var(--fascia-bay);
+  --fascia-edge: var(--fascia-bay-ring);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--r-3, 3px);
+  background: var(--fascia-face);
+  box-shadow: var(--fascia-edge);
+}
+
+.b2-fascia[data-finish="mill"] {
+  --fascia-face: var(--fascia-mill);
+  --fascia-edge: 0 0 0 1px var(--chrome-lip), inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 2px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- CrtWell: a value in black glass ---- */
+
+.b2-crt {
+  --crt-ink: var(--crt-phosphor);
+  --crt-pad: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--crt-pad);
+  border-radius: var(--r-2, 2px);
+  color: var(--crt-ink);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 3px var(--crt-ink);
+  background: var(--fascia-crt-glass);
+  box-shadow: var(--fascia-crt-ring);
+}
+
+.b2-crt[data-size="small"] {
+  --crt-pad: 3px 8px;
+}
+
+/* ---- Nameplate: engraved uppercase label on a smooth plate ---- */
+
+.b2-nameplate {
+  --plate-face: var(--chrome-face);
+  --plate-size: 11px;
+  --plate-tracking: 0.14em;
+  margin: 0;
+  min-height: 24px;
+  padding: 5px 12px 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--r-2, 2px);
+  font-size: var(--plate-size);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: var(--plate-tracking);
+  text-transform: uppercase;
+  color: var(--plate-ink);
+  text-shadow: none;
+  background-image:
+    var(--mill-lines-28),
+    linear-gradient(180deg, var(--chrome-mist) 0%, var(--plate-face) 48%, var(--chrome-foot) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px var(--chrome-lip);
+}
+
+/* The light lip only on a smooth face. On a pixel face it reads as lace. */
+.b2-nameplate[data-face="smooth"] {
+  text-shadow: var(--plate-lip);
+}
+
+.b2-nameplate[data-lamp]::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c8ccd0, #6e7378);
+  box-shadow: 0 0 0 1px #141816;
+}
+
+.b2-nameplate[data-lamp="on"]::before {
+  background: var(--keycap-lamp-on);
+  box-shadow: var(--keycap-lamp-ring);
+}

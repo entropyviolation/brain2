@@ -48,7 +48,7 @@ describe("inline question buttons", () => {
         ],
       },
     })
-    expect(markup?.inline_keyboard.map((row) => row[0]?.callback_data)).toEqual(["n:1", "n:2"])
+    expect(markup?.inline_keyboard.map((row) => row[0]?.callback_data)).toEqual(["n:1", "n:2", "w:skip"])
     expect(markup?.inline_keyboard[0][0]?.text).toBe("1. Read")
     expect(JSON.stringify(markup)).not.toMatch(/habit-very-long/)
     expect(JSON.stringify(markup)).not.toMatch(/reply_keyboard/)
@@ -81,6 +81,16 @@ describe("inline question buttons", () => {
     })
     const data = markup?.inline_keyboard.flat().map((button) => button?.callback_data)
     expect(data).toEqual(["n:1", "w:inv", "w:skip"])
+  })
+
+  it("gives an activity pick new and skip, so it always has a way out", () => {
+    const markup = inlineKeyboardForResult({
+      status: "needs_clarify",
+      pending: { kind: "start", query: "no", createName: "no", scopeId: "activity", candidates: [{ id: "a", name: "Rest" }] },
+    })
+    const data = markup?.inline_keyboard.flat().map((button) => button?.callback_data)
+    expect(data).toEqual(["n:1", "w:new", "w:skip"])
+    expect(choiceTextFromCallback("w:new")).toBe("new")
   })
 
   it("leaves ritual questions as plain text", () => {

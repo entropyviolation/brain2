@@ -312,6 +312,24 @@ describe("ingestIncoming", () => {
     expect(result.status).toBe("needs_clarify")
   })
 
+  it("never loops on an activity pick: a reply that picks nothing closes it, and no/skip escape it", () => {
+    const asked = ingestIncoming(sim("track: zzqx"), NOW)
+    expect(asked.status).toBe("needs_clarify")
+    expect(asked.reply).toMatch(/skip/)
+    const again = ingestIncoming(sim("qqqq blorp"), NOW)
+    expect(again.reply ?? "").not.toMatch(/Which activity/)
+    expect(useIngestStore.getState().getPending("simulate", "sim")).toBeFalsy()
+
+    ingestIncoming(sim("track: zzqx"), NOW)
+    const no = ingestIncoming(sim("no no no"), NOW)
+    expect(no.status).toBe("ok")
+    expect(no.reply).toBe("Okay, left it.")
+    expect(useIngestStore.getState().getPending("simulate", "sim")).toBeFalsy()
+
+    ingestIncoming(sim("track: zzqx"), NOW)
+    expect(ingestIncoming(sim("skip"), NOW).reply).toBe("Okay, left it.")
+  })
+
   it("paints location from now until end of day", () => {
     const result = ingestIncoming(sim("at: home"), NOW)
     expect(result.status).toBe("ok")

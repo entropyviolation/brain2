@@ -374,7 +374,7 @@ describe("WeeklyTaskTracker", () => {
     )
     const shell = document.querySelector(".hab95")
     expect(shell).toBeTruthy()
-    expect(getComputedStyle(shell!).getPropertyValue("--hab-crt-green").trim()).toBe("#7dffc4")
+    expect(getComputedStyle(shell!).getPropertyValue("--hab-crt-green").trim()).toBe("var(--crt-phosphor)")
     expect(getComputedStyle(shell!).getPropertyValue("--hab-crt-glow").trim()).toBe(
       "0 0 3px var(--hab-crt-green)",
     )

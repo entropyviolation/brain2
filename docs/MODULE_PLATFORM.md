@@ -26,8 +26,9 @@ the rows, sources, and annotation
 **Infinite adaptability, one nervous system.** New organs grow on that same
 graph.
 
-The next platform step is **rung 2**, a hand-written manifest: one serializable
-object, written by hand. Rung 3 (paste / port an arbitrary `.tsx`), rung 4
+**Rung 2 — Manifest (schema shipped, 2026-11-21).** A hand-written manifest is
+one serializable object: a package plus `capabilities`. Every template has one.
+Only list access is enforced so far. See "A hand-written manifest" below. Rung 3 (paste / port an arbitrary `.tsx`), rung 4
 (LLM mapping), rung 5 (share), and the sixth workflow law are **UNBUILT**.
 They live in the appendix.
 
@@ -129,11 +130,21 @@ Tidy keeps its stylesheet and its genius. The pocket is the shim, not the home.
 
 ---
 
-## Next platform step: a hand-written manifest (rung 2)
+## A hand-written manifest (rung 2)
 
-Rung 2 is the next platform step. It does not outrank the private-database
-rule, and it is not the install wizard. A person writes one serializable
-object. No functions. No pasted `.tsx`. No model.
+_Last mapped: 2026-11-21._ **Shipped:** `lib/module-manifest.ts`. The shape
+below was the plan. What shipped differs: a manifest is a package (`slots`,
+not `lists`) plus `manifest: 1` and `capabilities: { lists, bridges }`.
+`capabilities.lists` gives each slot `read` or `write`. Bridges add `lists`,
+`network`, `desktop`, and `private-store` (debt, compiled templates only).
+`habits` names measures, not habit ids, because a habit picks its feeds
+(`moduleFeeds`). Every template has a manifest, tested against its build. Only
+list access is enforced, inside the sandbox bridge. Item types are not yet
+merged into the registry. Details: `components/Modules/README.md` → "Module
+manifests".
+
+Rung 2 does not outrank the private-database rule, and it is not the install
+wizard. A person writes one serializable object. No functions. No pasted `.tsx`. No model.
 
 ```ts
 interface ModuleManifest {
@@ -293,7 +304,8 @@ the refactor order that makes that step honest.
    ingest phrase claims — through them.
 5. **Ship the manifest** (rung 2) and re-express the existing templates as
    manifests. If Itinerary and Budget cannot be stated as manifests, the manifest
-   is wrong.
+   is wrong. **Done 2026-11-21:** all nine are stated; Budget and Book Tasting
+   are built from theirs, the other seven declare beside their builders.
 6. **Migrate the shadow databases** onto Items, keeping both stylesheets
    untouched. **Partial (Wave 10):** Items are the write path; config dual-write
    shim for one release; drop the shim and finish two-way Lists sync next.

@@ -145,7 +145,7 @@ describe("HomeOverview", () => {
     }
     const overview = screen.getByTestId("home-overview")
     expect(getComputedStyle(overview.closest(".home95")!).getPropertyValue("--hab-crt-green").trim()).toBe(
-      "#7dffc4",
+      "var(--crt-phosphor)",
     )
     expect(container.querySelector(".hab-progress-title")).toBeNull()
     expect(screen.getByText("Today's Progress")).toBeInTheDocument()

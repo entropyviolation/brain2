@@ -265,7 +265,48 @@ All of the model is pure functions in `lib/house-cleaning.ts` over `HouseCleanin
 | **GradSearch** | None — the catalog is the bundled research dataset, not Brain2 items | **Explorer** (`grad-search`): the standalone GradSearch app, shadow-DOM mounted so it looks and behaves the same (search, filters, scoring model, compare, verify, favorites, hide). |
 | **Blank Workspace** | New List | Empty starting point — add your own lists and views |
 
-_Last mapped: 2026-10-27._ Budget and Book Tasting read their lists, attributes, views, and workflows from `lib/packages/golden/budget.json` and `lib/packages/golden/book-tasting.json`. `buildBudget` and `buildBookTasting` still create the sample rows (Book Tasting PDFs include extracted text) and set `templateId` to `budget` or `book-tasting`. `buildModuleTemplate` and `instantiateModuleTemplate` stay the door for those cards. Itinerary, Tidy, Film DNA, GradSearch, Sweep, and Blank stay written in `lib/module-templates.ts`. A new build reads the JSON. Modules already stored are left as they are.
+_Last mapped: 2026-10-27._ Budget and Book Tasting read their lists, attributes, views, and workflows from `lib/packages/golden/budget.json` and `lib/packages/golden/book-tasting.json`. `buildBudget` and `buildBookTasting` still create the sample rows (Book Tasting PDFs include extracted text) and set `templateId` to `budget` or `book-tasting`. `buildModuleTemplate` and `instantiateModuleTemplate` stay the door for those cards. Itinerary, Tidy, Film DNA, GradSearch, Sweep, and Blank stay written in `lib/module-templates.ts`. A new build reads the JSON. Modules already stored are left as they are. Each template also has a manifest; see "Module manifests" below.
+
+## Module manifests (`lib/module-manifest.ts`) — rung 2
+
+_Last mapped: 2026-11-21._
+
+A manifest is a package with two more fields: `manifest: 1` and
+`capabilities`. `capabilities.lists` gives every slot `"read"` or `"write"`.
+A slot with no entry is an error, not a default. `capabilities.bridges` lists
+each door the module uses past its own lists, as a `ModuleBridgeGrant`:
+`items` (by item type), `lists` (mints lists at run time), `docs`,
+`schedule`, `habits` (measures), `tracking`, `points`, `ingest` (phrases),
+`network` (host names), `desktop` (a local API door), and `private-store`.
+`private-store` is debt stated so it can be counted. A file cannot grant
+itself `private-store` or `desktop`; only a compiled template's manifest may.
+
+`parseModuleManifest` also checks that views name real slots and that a
+workflow which changes items writes only slots marked write. A workflow whose
+actions are only `throw`, `runWorkflow`, or `syncPlan` may watch a read slot.
+
+There are two kinds. A **recipe** has no `nativeTemplate`: Budget and Book
+Tasting (`lib/packages/golden/*.json` are now manifests). A **declaration**
+has `nativeTemplate`; the compiled builder still builds the module, and the
+manifest states its lists, views, workflows, and doors
+(`lib/packages/manifests/*.json`). `lib/module-template-manifests.ts` maps
+every `ModuleTemplateId` to its manifest, so a new template does not compile
+without one. `lib/module-template-manifests.test.ts` runs `manifestGaps`
+against each build, so a builder that adds a list, view, or workflow fails
+until its manifest says so. The same test pins the debt: Itinerary and Tidy on
+`module.config`, GradSearch and Speed Read in `localStorage`.
+
+**Enforced now:** list access, in the sandbox. **Install package** sends a file
+with a `manifest` field to `installModuleManifest`. A recipe records
+`capabilities.lists` on `config.package.access`. A `package-app` frame then
+writes only the write slots (`writableListIds` → `packageAppGrants` →
+`HtmlBridgeGrants.writeListIds`, checked in `handleBridgeCall`). A module with
+no recorded access keeps the old rule.
+
+**Planned:** the other bridges are declared, not enforced. Compiled views
+still reach `task-store`, habits, Tracking, and the network directly. Next is
+routing those doors through the grant (`docs/MODULE_PLATFORM.md`, step 4), then
+showing a manifest's capabilities in the install dialog before it commits.
 
 ## Module packages (`lib/module-package.ts`)
 

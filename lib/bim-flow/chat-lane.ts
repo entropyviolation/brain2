@@ -59,6 +59,9 @@ export interface ChatGround {
 }
 
 /** Step 1, in code: what in this line could be looked up. */
+/** The generic "I" of a how-to: "how do I", "how can we", "how would you". */
+const HOW_TO = /\bhow (?:do|does|can|could|should|would|to) (?:i|we|you|one)\b/gi
+
 export function groundLine(snap: VaultSnapshot, text: string, now: Date): ChatGround {
   const mentions = linkText(snap, text).filter((m) => m.status !== "nil")
   const person = mentions.find((m) => m.status === "linked" && m.best?.sub === "person")?.best?.label
@@ -67,7 +70,8 @@ export function groundLine(snap: VaultSnapshot, text: string, now: Date): ChatGr
     known: premiseCheck(snap, contentWords(text)).known,
     ...(person ? { person } : {}),
     timed: !!parseWhen(text, now),
-    self: /\b(i|i'm|im|i've|ive|i'd|i'll|my|me|mine|myself|we|our|us)\b/i.test(text),
+    // "How do I convert Celsius?" is a how-to, not about the person: that "I" is anyone (`HOW_TO`).
+    self: /\b(i|i'm|im|i've|ive|i'd|i'll|my|me|mine|myself|we|our|us)\b/i.test(text.replace(HOW_TO, " ")),
   }
 }
 
