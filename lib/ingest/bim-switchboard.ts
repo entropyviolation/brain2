@@ -26,7 +26,9 @@ import { traceOfFlowRun } from "@/lib/agents/trace-adapters"
 import { saveTrace } from "@/lib/agents/trace-store"
 import type { TraceRecorder } from "@/lib/agents/trace"
 import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
-import type { Answer, Flow } from "@/lib/bim-flow/types"
+import { retrieve } from "@/lib/bim-flow/retrieve"
+import { contentWords, type VaultSnapshot } from "@/lib/bim-flow/vault-search"
+import type { Answer, Evidence, Flow } from "@/lib/bim-flow/types"
 import { useIngestStore } from "./ingest-store"
 import { parseLinkMessage } from "@/lib/saved-links"
 import { looksLikeVerb, parseMessage } from "./parse-message"
@@ -34,7 +36,8 @@ import type { IngestSource } from "./types"
 
 const MODE_KEY = "bimchat-llm-mode"
 const ROUTE_TIMEOUT_MS = 45_000
-const ASK_TIMEOUT_MS = 120_000
+/** The Ask flow's whole budget, a retry included. Past it, BIM says what code found (fix 8, `docs/BIM_CHAT_USAGE.md` §7). */
+export const ASK_TIMEOUT_MS = 30_000
 const CHAT_TIMEOUT_MS = 90_000
 
 type LlmModeState = { on: boolean; setOn: (on: boolean) => void }
@@ -109,42 +112,84 @@ export interface SwitchboardResult {
   sure?: boolean
 }
 
-async function askLane(text: string, crew: Crew, now: Date): Promise<{ answer: SwitchboardAnswer; models: string[] }> {
+/** A model reply that was empty or not JSON: worth one more try. A timeout or a refused connection is not. */
+export function retryable(error: unknown): boolean {
+  if (!(error instanceof Error) || error.name === "AbortError" || /abort/i.test(error.message)) return false
+  return /json|empty|unexpected (?:end|token)|gave no answer/i.test(error.message)
+}
+
+/**
+ * The Ask flow failed or ran out of time, but code can still look: the rows that mention the question's words,
+ * said plainly as "what I found" with the reason the model did not finish. Null when code found nothing either.
+ */
+export function foundAnswer(why: string, ev: Evidence | null): SwitchboardAnswer | null {
+  if (!ev?.rows.length && !ev?.facts.length) return null
+  const rows = ev.rows.map((r) => `${r.when} · ${r.source} · ${r.text}`)
+  const shown = [...ev.facts, ...rows].slice(0, 3)
+  return {
+    text: `The model did not finish (${why}). What your data has on it:\n${shown.map((l) => `• ${l}`).join("\n")}`,
+    confidence: "medium",
+    evidence: [...ev.facts, ...rows].slice(0, 12),
+  }
+}
+
+/** Code's own look, with no model: the last 90 days of text rows that name the question's words. */
+async function codeLook(text: string, snap: VaultSnapshot, now: Date): Promise<Evidence | null> {
+  const terms = contentWords(text)
+  if (!terms.length) return null
+  try {
+    return await retrieve(snap, { kind: "text", days: 90, limit: 8 }, { terms, now })
+  } catch {
+    return null
+  }
+}
+
+async function askOnce(text: string, crew: Crew, now: Date, signal: AbortSignal): Promise<{ answer: SwitchboardAnswer; models: string[] }> {
+  const flow = savedFlow("ask")
+  const run = await runFlow(
+    flow,
+    [{ id: `bim-chat-${now.getTime()}`, text, at: now.toISOString(), prior: [] }],
+    ollamaCall(crew.main, signal),
+    snapshotFromStores(),
+    {
+      model: crew.main,
+      // Chat keeps the answer on `main` (the 14B) beside the 3B gates: both stay loaded on a 32 GB Mac.
+      // The 30B prose model would push the 14B out and reload on every question (2+ minutes).
+      models: { ...crewModelPlan(crew), prose: crew.main },
+      getFlow: (id) => (FLOWS.some((f) => f.id === id) ? flowDef(id as FlowId).build() : undefined),
+    },
+  )
+  // The Ask flow's own Trace. It is not yet nested under the chat turn's Trace; both carry the same input.
+  try {
+    saveTrace(traceOfFlowRun(flow, run, { flowId: "ask", origin: "app", input: text }))
+  } catch {}
+  const steps = run.messages[0]?.steps ?? []
+  const failed = steps.find((s) => s.error)
+  const answers = run.messages[0]?.answers ?? []
+  const final = answers[answers.length - 1]
+  if (!final) throw new Error(failed?.error ?? "the Ask flow gave no answer")
+  const used = new Set(final.used)
+  const rows = final.evidence.filter((_, i) => used.has(i + 1))
+  return {
+    answer: {
+      text: final.text,
+      confidence: final.confidence,
+      evidence: [...final.facts, ...rows.map((r) => `${r.when} · ${r.source} · ${r.text}`)].slice(0, 12),
+    },
+    models: [crew.main, ...steps.map((s) => s.model).filter((m): m is string => !!m)],
+  }
+}
+
+/** The Ask flow inside one budget (`ASK_TIMEOUT_MS`), tried a second time when the model's reply was empty or not JSON. */
+async function askLane(text: string, crew: Crew, now: Date): Promise<{ answer: SwitchboardAnswer; models: string[]; tries: number }> {
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), ASK_TIMEOUT_MS)
   try {
-    const flow = savedFlow("ask")
-    const run = await runFlow(
-      flow,
-      [{ id: `bim-chat-${now.getTime()}`, text, at: now.toISOString(), prior: [] }],
-      ollamaCall(crew.main, abort.signal),
-      snapshotFromStores(),
-      {
-        model: crew.main,
-        // Chat keeps the answer on `main` (the 14B) beside the 3B gates: both stay loaded on a 32 GB Mac.
-        // The 30B prose model would push the 14B out and reload on every question (2+ minutes).
-        models: { ...crewModelPlan(crew), prose: crew.main },
-        getFlow: (id) => (FLOWS.some((f) => f.id === id) ? flowDef(id as FlowId).build() : undefined),
-      },
-    )
-    // The Ask flow's own Trace. It is not yet nested under the chat turn's Trace; both carry the same input.
     try {
-      saveTrace(traceOfFlowRun(flow, run, { flowId: "ask", origin: "app", input: text }))
-    } catch {}
-    const steps = run.messages[0]?.steps ?? []
-    const failed = steps.find((s) => s.error)
-    const answers = run.messages[0]?.answers ?? []
-    const final = answers[answers.length - 1]
-    if (!final) throw new Error(failed?.error ?? "the Ask flow gave no answer")
-    const used = new Set(final.used)
-    const rows = final.evidence.filter((_, i) => used.has(i + 1))
-    return {
-      answer: {
-        text: final.text,
-        confidence: final.confidence,
-        evidence: [...final.facts, ...rows.map((r) => `${r.when} · ${r.source} · ${r.text}`)].slice(0, 12),
-      },
-      models: [crew.main, ...steps.map((s) => s.model).filter((m): m is string => !!m)],
+      return { ...(await askOnce(text, crew, now, abort.signal)), tries: 1 }
+    } catch (error) {
+      if (!retryable(error) || abort.signal.aborted) throw error
+      return { ...(await askOnce(text, crew, now, abort.signal)), tries: 2 }
     }
   } finally {
     clearTimeout(timer)
@@ -220,12 +265,15 @@ export async function runSwitchboard(
   const passThrough = route.intent !== "ask" || !route.sure
   if (!wantsAsk) return { route: routeChip(route, Date.now() - t0), passThrough: true, intent: route.intent, sure: route.sure }
   try {
-    const { answer, models } = await timed("ask", () => askLane(text, crew, now))
-    return { route: routeChip(route, Date.now() - t0, models), answer, passThrough, intent: route.intent, sure: route.sure }
+    const { answer, models, tries } = await timed("ask", () => askLane(text, crew, now))
+    return { route: `${routeChip(route, Date.now() - t0, models)}${tries > 1 ? " · retried" : ""}`, answer, passThrough, intent: route.intent, sure: route.sure }
   } catch (error) {
     const aborted = error instanceof Error && (error.name === "AbortError" || /abort/i.test(error.message))
     const why = aborted ? `timed out after ${ASK_TIMEOUT_MS / 1000}s` : error instanceof Error ? error.message : String(error)
     const failed = why.slice(0, 80)
+    // Say what code found rather than only that the model failed.
+    const found = foundAnswer(failed, await codeLook(text, snap ?? snapshotFromStores(), now))
+    if (found) return { route: `${routeChip(route, Date.now() - t0)} · ask failed · code look`, answer: found, passThrough, intent: route.intent, sure: route.sure }
     return { route: `${routeChip(route, Date.now() - t0)} · ask failed`, failed, passThrough, intent: route.intent, sure: route.sure }
   }
 }

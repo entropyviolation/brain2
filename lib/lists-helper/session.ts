@@ -286,6 +286,13 @@ export function step(prev: Session, text: string, port: Port): { session: Sessio
       return done()
     }
     case "tool": {
+      // A count or duplicates search about another scope ends the old focus, so the next count is not read in it.
+      const call = intent.call
+      if (s.listId && (call.tool === "find-items" || call.tool === "find-duplicates") && call.listId !== s.listId) {
+        const was = world.lists.find((l) => l.id === s.listId)?.name
+        s.listId = undefined
+        replies.push({ kind: "say", text: `Left "${was ?? "the list"}". No list in focus.` })
+      }
       const res = runTool(port.world(), intent.call, { now: port.now(), isDismissed: port.isDismissed })
       trace(res, res.kind === "error" ? `Tool refused: ${res.text}` : res.kind === "answer" ? "Answered. Nothing to approve." : res.kind === "plan" ? `Plan ready: ${res.plan.total} item(s) touched. Waiting for your yes.` : `${res.groups.length} group(s) found.`)
       if (res.kind === "error") replies.push({ kind: "say", text: res.text })

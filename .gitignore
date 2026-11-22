@@ -79,3 +79,9 @@ docs/shortcuts/*.plist
 /scripts/texts-analysis/**/*.sqlite
 /scripts/texts-analysis/**/*.db
 /data/link-peek/
+
+# Python bytecode
+__pycache__/
+*.pyc
+# Zip of homedesignref/ (the folder is committed)
+homedesignref.zip

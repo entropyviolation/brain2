@@ -147,6 +147,15 @@ function scopeOf(w: World, t: string, orig = t): { typeId?: string; listId?: str
   return out
 }
 
+/**
+ * The focused list a count or duplicates search falls back to. A question that names a type ("how many Book
+ * items") or says "all / every / total / across" is about everything, not the list still in focus.
+ */
+function focusFor(t: string, sc: { typeId?: string }, ctx: Context): string | undefined {
+  if (sc.typeId || /\b(?:all|every|everything|total|overall|across|anywhere|everywhere)\b/i.test(t)) return undefined
+  return ctx.listId
+}
+
 export function parseIntent(w: World, text: string, ctx: Context = {}): Intent {
   const t = text.trim()
   if (!t) return { kind: "none" }
@@ -248,7 +257,7 @@ export function parseIntent(w: World, text: string, ctx: Context = {}): Intent {
   if (/\b(duplicates?|dupes?|same item|identical)\b/i.test(t) && /\b(find|show|suggest|look|help|any|check|merge|list|review|start)\b/i.test(t)) {
     const sc = scopeOf(w, t)
     if (sc.fail) return sc.fail
-    return { kind: "tool", call: { tool: "find-duplicates", typeId: sc.typeId, listId: sc.listId ?? ctx.listId } }
+    return { kind: "tool", call: { tool: "find-duplicates", typeId: sc.typeId, listId: sc.listId ?? focusFor(t, sc, ctx) } }
   }
 
   // Change type: "change all Task items in Reading to Book".
@@ -286,7 +295,7 @@ export function parseIntent(w: World, text: string, ctx: Context = {}): Intent {
     const named = /\b(?:named|called|containing|with the word)\s+["“]?([^"”?]+?)["”]?\s*[?.!]*$/i.exec(t)
     return {
       kind: "tool",
-      call: { tool: "find-items", typeId: sc.typeId, listId: sc.listId ?? ctx.listId, text: named?.[1], lacksAttribute: lacks?.[1] },
+      call: { tool: "find-items", typeId: sc.typeId, listId: sc.listId ?? focusFor(t, sc, ctx), text: named?.[1], lacksAttribute: lacks?.[1] },
     }
   }
 

@@ -600,6 +600,43 @@ describe("find items that lack an attribute", () => {
   })
 })
 
+describe("a count and the list in focus", () => {
+  const make = () =>
+    harness(
+      [
+        task("a", "Dune", { type: "book", lists: ["read"] }),
+        task("b", "Emma", { type: "book", lists: ["gifts"] }),
+        task("c", "Mug", { type: "task", lists: ["gifts"] }),
+      ],
+      [list("read", "Reading"), list("gifts", "Gifts")],
+    )
+  const text = (rs: unknown) => JSON.stringify(rs)
+  it("counts in the focused list when the question names no scope", () => {
+    const h = make()
+    h.say("focus on list Gifts")
+    expect(text(h.say("how many items"))).toContain("2 matches")
+  })
+  it("counts a named type everywhere and drops the old focus", () => {
+    const h = make()
+    h.say("focus on list Reading")
+    const out = text(h.say("how many Book items"))
+    expect(out).toContain("2 matches")
+    expect(out).toContain("No list in focus")
+    expect(text(h.say("how many items"))).toContain("3 matches")
+  })
+  it("reads all / total as everything", () => {
+    const h = make()
+    h.say("focus on list Reading")
+    expect(text(h.say("how many items in total"))).toContain("3 matches")
+  })
+  it("a count in another named list moves off the focus", () => {
+    const h = make()
+    h.say("focus on list Reading")
+    expect(text(h.say("how many items in Gifts"))).toContain("2 matches")
+    expect(text(h.say("how many items"))).toContain("3 matches")
+  })
+})
+
 describe("shopping-list", () => {
   const rows = () => [
     task("s1", "jolene brow bleach", { lists: ["needed"] }),

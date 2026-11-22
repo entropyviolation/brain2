@@ -27,6 +27,7 @@ import {
   type ModulePackageSlot,
 } from "@/lib/module-package"
 import { scoreSlot, type SlotScoreDecision } from "@/lib/module-slot-score"
+import { installModuleManifest, looksLikeModuleManifest } from "@/lib/module-manifest"
 
 const PACKAGE_KEYS = new Set(["id", "name", "version", "description", "slots", "views", "workflows", "nativeTemplate"])
 

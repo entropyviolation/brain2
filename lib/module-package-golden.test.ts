@@ -2,7 +2,7 @@
  * Golden recipes for Budget and Book Tasting.
  *
  * Each file is a full package (slots, views, workflows), parsed with
- * `parseModulePackage` and compared to `buildModuleTemplate(..., 1)`.
+ * `parseModuleManifest` (each is a recipe manifest) and compared to `buildModuleTemplate(..., 1)`.
  * Generated ids (`tmpl-1-…`, module ids, view ids, workflow ids, dashboard
  * card ids) are dropped; list ids in views and workflows are slot roles.
  *
@@ -13,7 +13,8 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import type { DashboardCard, ModuleView, ModuleViewConfig } from "@/lib/modules-store"
 import type { WorkflowDefinition } from "@/lib/types"
-import { parseModulePackage, type ModulePackage, type ModulePackageView, type ModulePackageWorkflow } from "@/lib/module-package"
+import type { ModulePackage, ModulePackageView, ModulePackageWorkflow } from "@/lib/module-package"
+import { parseModuleManifest } from "@/lib/module-manifest"
 import { buildModuleTemplate, type BuiltModuleTemplate, type ModuleTemplateId } from "@/lib/module-templates"
 
 function loadGolden(name: string): string {
@@ -128,7 +129,7 @@ function workflowFromPackage(wf: ModulePackageWorkflow): ModulePackageWorkflow {
 }
 
 function assertMatches(id: ModuleTemplateId, file: string) {
-  const pkg = parseModulePackage(loadGolden(file))
+  const pkg = parseModuleManifest(loadGolden(file))
   const built = buildModuleTemplate(id, 1)
   const roles = roleByListId(built, pkg)
 

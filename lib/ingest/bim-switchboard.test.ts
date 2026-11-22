@@ -18,9 +18,10 @@ vi.mock("@/lib/bim-flow/chat-lane", async (original) => ({
 
 vi.mock("@/lib/bim-flow/chat-models", () => ({ chatCrew: async () => state.crew }))
 vi.mock("@/lib/bim-flow/chat-router", () => ({ routeChat: async () => state.route }))
-vi.mock("@/lib/bim-flow/run-flow", () => ({ runFlow: async () => state.run }))
+// `state.run` may be a function, so one test can fail the first run and answer the second.
+vi.mock("@/lib/bim-flow/run-flow", () => ({ runFlow: async () => (typeof state.run === "function" ? (state.run as () => unknown)() : state.run) }))
 
-import { routable } from "./bim-switchboard"
+import { foundAnswer, retryable, routable } from "./bim-switchboard"
 import { checkInLine, openAskBack, sendToBim } from "./bim-chat"
 import { useIngestStore } from "./ingest-store"
 
@@ -97,6 +98,30 @@ describe("BIM chat LLM mode", () => {
     const line = await sendToBim("I'm so tired of this", new Date(), { llm: true })
     expect(line.route).toMatch(/chat failed$/)
     expect(useIngestStore.getState().events).toHaveLength(1)
+  })
+
+  it("on: an empty or broken JSON reply is tried once more, and the chip says so", async () => {
+    let calls = 0
+    state.run = () => {
+      calls++
+      if (calls === 1) throw new Error("Unexpected end of JSON input")
+      return answered("Oct 30, 2 days ago.")
+    }
+    const line = await sendToBim("when did I last shower?", new Date(), { llm: true })
+    expect(calls).toBe(2)
+    expect(line.text).toBe("Oct 30, 2 days ago.")
+    expect(line.route).toMatch(/retried$/)
+  })
+
+  it("on: a timeout is not retried", async () => {
+    let calls = 0
+    state.run = () => {
+      calls++
+      throw Object.assign(new Error("This operation was aborted"), { name: "AbortError" })
+    }
+    const line = await sendToBim("when did I last shower?", new Date(), { llm: true })
+    expect(calls).toBe(1)
+    expect(line.status).not.toBe("ok")
   })
 
   it("routes only lines the ladder would capture", () => {
@@ -192,5 +217,26 @@ describe("BIM chat LLM mode", () => {
     const line = await sendToBim("when did I last shower?", new Date(), { llm: true })
     expect(line.text).toBe("Oct 30, 2 days ago.")
     expect(openAskBack()).toBeNull()
+  })
+})
+
+describe("Ask when the model does not finish", () => {
+  it("retries only an empty or non-JSON reply", () => {
+    expect(retryable(new Error("Unexpected end of JSON input"))).toBe(true)
+    expect(retryable(new Error("the Ask flow gave no answer"))).toBe(true)
+    expect(retryable(Object.assign(new Error("aborted"), { name: "AbortError" }))).toBe(false)
+    expect(retryable(new Error("fetch failed"))).toBe(false)
+  })
+  it("says what code found, three lines inline and the rest in the fold", () => {
+    const rows = Array.from({ length: 5 }, (_, i) => ({ when: `Nov ${i + 1}`, source: "log", text: `flight ${i}` }))
+    const a = foundAnswer("timed out after 30s", { kind: "text", terms: ["flight"], rows, total: 5, facts: [] })!
+    expect(a.text).toMatch(/^The model did not finish \(timed out after 30s\)/)
+    expect(a.text.split("\n").filter((l) => l.startsWith("• "))).toHaveLength(3)
+    expect(a.evidence).toHaveLength(5)
+    expect(a.confidence).toBe("medium")
+  })
+  it("is null when code found nothing either", () => {
+    expect(foundAnswer("x", { kind: "text", terms: [], rows: [], total: 0, facts: [] })).toBeNull()
+    expect(foundAnswer("x", null)).toBeNull()
   })
 })
