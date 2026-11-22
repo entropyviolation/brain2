@@ -55,7 +55,8 @@
   touch-action: manipulation;
 }
 
-.pl-stage.is-garage {
+.pl-stage.is-garage,
+.pl-stage.is-night {
   height: 360px;
   background: #0c1430;
 }
@@ -71,7 +72,8 @@
     height: 220px;
   }
 
-  .pl-stage.is-garage {
+  .pl-stage.is-garage,
+  .pl-stage.is-night {
     height: 260px;
   }
 }
@@ -80,7 +82,8 @@
 
 .todo-session-parked.pl-skin-rack .pl-detail,
 .todo-session-parked.pl-skin-well .pl-detail,
-.todo-session-parked.pl-skin-garage .pl-detail {
+.todo-session-parked.pl-skin-garage .pl-detail,
+.todo-session-parked.pl-skin-night .pl-detail {
   padding: 10px 12px;
   border-radius: 4px;
 }
@@ -97,7 +100,7 @@
   box-shadow: 0 0 0 1px #8b9298, inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.todo-session-parked.pl-skin-garage .pl-detail {
+.todo-session-parked.pl-skin-night .pl-detail {
   background: linear-gradient(180deg, rgba(20, 30, 62, 0.96), rgba(12, 18, 40, 0.98));
   color: #e8eefc;
   box-shadow: 0 0 0 1px rgba(154, 215, 255, 0.28);
@@ -110,7 +113,8 @@
 
 .todo-session-parked.pl-skin-rack .pl-detail .todo-session-runline.is-current,
 .todo-session-parked.pl-skin-well .pl-detail .todo-session-runline.is-current,
-.todo-session-parked.pl-skin-garage .pl-detail .todo-session-runline.is-current {
+.todo-session-parked.pl-skin-garage .pl-detail .todo-session-runline.is-current,
+.todo-session-parked.pl-skin-night .pl-detail .todo-session-runline.is-current {
   background: rgba(125, 255, 196, 0.12);
 }
 
@@ -124,4 +128,15 @@
 .pl-detail .todo-session-runline.is-done .todo-session-runname {
   color: inherit;
   opacity: 0.55;
+}
+
+/* Garage (Solarpunk Sanctuary): white concrete and leaf glass. */
+.pl-stage.is-garage {
+  background: #1b2a2a;
+}
+
+.todo-session-parked.pl-skin-garage .pl-detail {
+  background: linear-gradient(180deg, rgba(240, 238, 230, 0.97), rgba(226, 232, 222, 0.98));
+  color: #1f2a24;
+  box-shadow: 0 0 0 1px rgba(60, 110, 80, 0.35);
 }
