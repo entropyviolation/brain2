@@ -28,6 +28,7 @@ export const TEXT_PEOPLE_DAYS = 183
 export const TEXT_PEOPLE_DONE_KEY = persistKey("texts-people-v1")
 export const TEXT_PEOPLE_AUTO_KEY = persistKey("texts-people-auto")
 const EVERY_MS = 6 * 3600_000
+const FIRST_RUN_DELAY_MS = 120_000
 
 export type TextPeopleRow = { handle: string; inbound: number; outbound: number; last: number }
 export type TextPeoplePerson = { id: string; names: string[]; handles: string[] }
@@ -151,12 +152,16 @@ export async function runTextPeopleBimby(opts: { base?: string; force?: boolean 
 /** Start after the task vault hydrates, then every six hours. Returns a stop. */
 export function startTextPeopleBimby(): () => void {
   let timer: ReturnType<typeof setInterval> | undefined
+  let first: ReturnType<typeof setTimeout> | undefined
   const stopHydrate = afterPersistHydrated(useTaskStore.persist, () => {
-    void runTextPeopleBimby()
+    // Wait out the first minutes: a window can hydrate from an older local copy and take the
+    // shared vault later, on idle. Running before that saw numbers as unowned and made twins.
+    first = setTimeout(() => void runTextPeopleBimby(), FIRST_RUN_DELAY_MS)
     timer = setInterval(() => void runTextPeopleBimby(), EVERY_MS)
   })
   return () => {
     stopHydrate()
+    if (first) clearTimeout(first)
     if (timer) clearInterval(timer)
   }
 }
