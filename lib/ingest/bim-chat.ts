@@ -17,6 +17,7 @@ import { createJSONStorage, persist } from "zustand/middleware"
 import { linkText } from "@/lib/bim-flow/entity-link"
 import { recordRouteVerdict } from "@/lib/bim-flow/route-verdicts"
 import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
+import { groundLine } from "@/lib/bim-flow/chat-lane"
 import { answerFlightQuestion } from "@/lib/flight-bimby/ask"
 import { addFlightFromInfo } from "@/lib/flight-bimby/file"
 import { useTaskStore } from "@/lib/task-store"
@@ -71,6 +72,7 @@ import { tryWire } from "@/lib/wire-bimby/run"
 import { tryDay } from "@/lib/plan-bimby/day/run"
 import { answerWeb, looksLikeWebQuestion, takeHome, type WebAnswer } from "@/lib/bim-flow/web-ask"
 import { splitAside } from "@/lib/bim-flow/web-lane"
+import { answerSelf } from "./bim-self"
 import { nextQuestion } from "@/lib/follow-through/ask"
 import { observeLine, tryFollowAnswer, tryFollowCommand, type MineSources } from "@/lib/follow-through/run"
 import { followLedger } from "@/lib/follow-through/store"
@@ -421,6 +423,24 @@ async function answerAskBack(text: string, now: Date): Promise<BimLine | null> {
     kind: result.kind,
     ...(choices.length ? { choices } : {}),
   })
+}
+
+/**
+ * The notes could not answer a question that is not about you ("how do I convert Celsius to Fahrenheit?"): look it
+ * up on the web instead of saying "I don't know" and asking you. A question with "I/my", a time, or anything the
+ * vault knows by name in it is about your own data and still asks you. Null keeps the "I don't know" line; so does a failed search.
+ */
+async function webInstead(board: SwitchboardResult, question: string, now: Date): Promise<BimLine | null> {
+  if (!board.answer || !UNSURE.has(board.answer.confidence) || !/\?\s*$/.test(question.trim())) return null
+  const g = groundLine(snapshotFromStores(), question, now)
+  if (g.self || g.timed || g.mentions.length) return null
+  try {
+    const web = await answerWeb(question, now, { llm: true })
+    if (web.askedHome || /^I could not search the web/.test(web.text)) return web.askedHome ? webLine(web) : null
+    return bimLine(web.text, { route: `${board.route} · notes unsure → ${web.route}`, kind: "tell", ...(web.evidence.length ? { evidence: web.evidence } : {}) })
+  } catch {
+    return null
+  }
 }
 
 /** Confidence too low to say: BIM says it does not know and asks you instead. */
@@ -805,7 +825,7 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
   const execute = (said: string) => timed("executor", () => ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: said, receivedAt: now.toISOString() }, now), (r) => `${r.status} · ${r.kind}`)
   let board = opts.llm ? await switchboard(false) : null
   if (board?.chat && !board.passThrough) return chatLine(board, text)
-  if (board?.answer && !board.passThrough) return answerLine(board, text)
+  if (board?.answer && !board.passThrough) return (await webInstead(board, text, now)) ?? answerLine(board, text)
   if (board?.failed && !board.passThrough) return failedLine(board)
   let result = await execute(text)
   // The ladder gave up on a line (a start, mood, or place it could not finish). With LLM on, the
@@ -818,7 +838,7 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
     }
     if (second?.sure && second.answer && !second.passThrough) {
       useIngestStore.getState().setPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID, null)
-      return answerLine(second, text)
+      return (await webInstead(second, text, now)) ?? answerLine(second, text)
     }
     if (second?.sure && second.intent === "log") {
       useIngestStore.getState().setPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID, null)
@@ -970,6 +990,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     return followed ? bimLine(followed.text, { route: followed.route, ...(followed.choices.length ? { choices: followed.choices } : {}) }) : null
   },
   "flight-file": ({ text, now }) => tryFlights(text, now),
+  self: ({ text, opts }) => {
+    const said = answerSelf(text, { llm: !!opts.llm })
+    return said ? bimLine(said.text, { route: said.route, kind: "tell", evidence: said.evidence }) : null
+  },
   keep: async ({ text, now, opts }) => {
     // "stop reminding me about …" starts with one of the executor's words, so the cue commands are read before the verb check.
     const said = tryCueCommand(text, now) ?? (looksLikeVerb(text, now) ? null : tryKeepCue(text, now))

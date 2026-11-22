@@ -4,7 +4,7 @@ import type { Crew } from "@/lib/bim-flow/crew"
 import type { FlowRun } from "@/lib/bim-flow/types"
 
 const crew: Crew = { route: ["small"], gate: ["small"], pick: ["big"], extract: ["big"], prose: ["big"], check: ["big"], critic: ["big"], main: "big" }
-const state = vi.hoisted(() => ({ crew: null as unknown, route: null as unknown, run: null as unknown, chat: null as unknown, chatInputs: [] as unknown[] }))
+const state = vi.hoisted(() => ({ crew: null as unknown, route: null as unknown, run: null as unknown, chat: null as unknown, chatInputs: [] as unknown[], web: null as unknown, webAsked: [] as string[] }))
 
 // The lane's own steps are tested in `lib/bim-flow/chat-lane.test.ts`; here only its reply (or its failure) is scripted.
 vi.mock("@/lib/bim-flow/chat-lane", async (original) => ({
@@ -13,6 +13,15 @@ vi.mock("@/lib/bim-flow/chat-lane", async (original) => ({
     state.chatInputs.push(input)
     if (!state.chat) throw new Error("no model")
     return state.chat
+  },
+}))
+
+// No real search in tests: `state.web` is the answer, or the search fails.
+vi.mock("@/lib/bim-flow/web-ask", async (original) => ({
+  ...(await original<typeof import("@/lib/bim-flow/web-ask")>()),
+  answerWeb: async (q: string) => {
+    state.webAsked.push(q)
+    return state.web ?? { text: `I could not search the web for "${q}" just now (the Mac hub did not answer).`, route: "WEB · none", evidence: [] }
   },
 }))
 
@@ -47,6 +56,8 @@ describe("BIM chat LLM mode", () => {
     state.run = answered("Oct 30, 2 days ago.")
     state.chat = null
     state.chatInputs = []
+    state.web = null
+    state.webAsked = []
   })
 
   it("on: a chat line gets a reply, is not filed, and offers to log your own words", async () => {
@@ -184,6 +195,27 @@ describe("BIM chat LLM mode", () => {
     state.crew = null
     const line = await sendToBim("when did I last shower?", new Date(), { llm: true })
     expect(line.text).toMatch(/can't reach the local models/)
+  })
+
+  it("on, no evidence, a question not about you: BIM looks it up on the web instead of asking you", async () => {
+    const run = answered("The notes do not record how to convert Celsius to Fahrenheit.")
+    run.messages[0]!.answers[0]!.confidence = "none"
+    state.run = run
+    state.web = { text: "Multiply by 9/5 and add 32 [1].", route: "WEB · model big · 1.0s", evidence: ["[1] example"] }
+    const line = await sendToBim("how do i convert celcius to fahrenheit?", new Date(), { llm: true })
+    expect(state.webAsked).toEqual(["how do i convert celcius to fahrenheit?"])
+    expect(line.text).toBe("Multiply by 9/5 and add 32 [1].")
+    expect(line.route).toMatch(/notes unsure → WEB/)
+    expect(openAskBack()).toBeNull()
+  })
+
+  it("on, no evidence, about you: no web search, BIM asks you", async () => {
+    const run = answered("The notes do not record it.")
+    run.messages[0]!.answers[0]!.confidence = "none"
+    state.run = run
+    const line = await sendToBim("when did I last wash my car?", new Date(), { llm: true })
+    expect(state.webAsked).toEqual([])
+    expect(line.text).toMatch(/Tell me and I'll keep it/)
   })
 
   it("on, no evidence: BIM says it does not know, asks you, and files your answer as a log naming the question", async () => {

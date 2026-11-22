@@ -4,19 +4,35 @@
     {
       "name": "mockups",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "exec python3 -m http.server \"${PORT:-8765}\" --bind 127.0.0.1"],
+      "runtimeArgs": [
+        "-c",
+        "exec python3 -m http.server \"${PORT:-8765}\" --bind 127.0.0.1"
+      ],
       "port": 8765,
       "autoPort": true
     },
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
     },
     {
       "name": "app (running)",
       "url": "http://localhost:3000"
+    },
+    {
+      "name": "ios-out",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd out && exec python3 -m http.server \"${PORT:-8790}\" --bind 127.0.0.1"
+      ],
+      "port": 8790,
+      "autoPort": true
     }
   ]
 }

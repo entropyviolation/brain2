@@ -47,6 +47,8 @@ export const CHAT_LANES = [
   // Before the fact and tell shapes, which would read a booking's clocks as facts.
   { id: "flight-file", cost: "code", skipWhen: OPEN, does: "A pasted booking confirmation becomes Flight items and calendar events." },
   { id: "flight-ask", cost: "code", skipWhen: ["tell-open"], does: "“When am I flying to New York?” is answered from the Flight items." },
+  // Before keep, web and the router: "can you answer questions that need a web search?" is about BIM, not a search or an Ask.
+  { id: "self", cost: "code", skipWhen: OPEN, does: "“Can you …?”, “are you able to …?” or “what can you do?” about BIM itself is answered from a fixed sheet of what each lane does." },
   // Before every lane that would read the same words as a plan, a fact or a log line: these two take only their own exact shapes.
   { id: "keep", cost: "local-model", skipWhen: OPEN, does: "“Don't forget to cancel Instacart” becomes a To Do, and “to do later X to do later Y” one To Do each (spelling mended by a model when LLM is on); “<fact>, remind me if <situation>” is kept and said back only in that situation." },
   // Before money and the router: "mark that I regretted …" is a log line, not a regret over a purchase or a correction.

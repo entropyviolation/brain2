@@ -1023,7 +1023,9 @@ _Last mapped: 2026-10-27_
 
 | Concern | Where it lives |
 |---------|----------------|
-| Global furniture and pixel font | `app/win95.css`; `public/fonts/w95fa.woff`; `--chrome-face`, `--fascia-*`, `--hab-crt-*` |
+| Global furniture and pixel font | `app/win95.css`; `public/fonts/w95fa.woff` |
+| Shared metal tokens | `app/chrome-tokens.css`: `--chrome-*`, `--fascia-*`, `--hab-crt-*`, `--crt-phosphor` / `--crt-scope` / `--crt-glow`, `--plate-ink`, `--mill-lines-*`, `--key-gloss`, `--keycap-*`, `--period-*`. Rooms alias these; they do not re-type `#7dffc4`, `#070c0a`, `#2a2c2e` or the mill gradients. |
+| Keycap, Fascia, CrtWell, Nameplate | `components/chrome/` (`chrome-primitives.css`). A new room reaches for these first, and sets the locals (`--cap-*`, `--fascia-face`, `--crt-ink`, `--plate-face`) to differ. Existing room skins (`.todo-cap`, `.b2-keycap-tab`, `.hpp95`) still paint themselves from the same tokens. |
 | Chrome warmth and Bouba/Kiki | `lib/chrome-patina.ts`, `lib/drift-clock.ts`, `lib/corner-mix.ts`, `app/chrome-patina.css`, Settings → Window gray / Bouba/Kiki |
 | Sand close | `components/ui/window-sand-close.tsx`, `components/ui/window-sand-sim.ts`; wired from `daily-task-form-dialog.tsx` |
 | Pause / Play / Stop | `components/dvd-transport-keys.tsx` (`DvdTransportKey`) and `dvd-transport-keys.css`. The glassy 28px disc. Reuse it; do not invent another transport icon. |
