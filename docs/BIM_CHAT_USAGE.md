@@ -451,7 +451,29 @@ left out (6). The CI copy is a 41-line paraphrased fixture with a floor (`real-l
   Turn timing) will show the split on the next slow turn in the app. Two leads: the Habits BIMBY model call
   above, and the app's vault save around the executor's write.
 
-**LLM on:** see the next commit on this branch; the full run takes about 55 minutes.
+**LLM on (chat crew: 3B router, 14B main), 508 lines, run 70 min:** lane right 165 (32%), action right 165
+(32%), no invented write 496 (98%). **Worse than code only** (217 of the same 508, 43%). Where it lost:
+
+- **Bare links are not saved.** 42 of 72 reels went to the chat lane, which replied ("looks like you shared a
+  reel…") and filed nothing. Code only saves them. This loses data and is the first thing to fix with LLM on.
+- **Notes, moods and dreams get a reply instead of a filing:** log 15, mood 17, dream 2 went to chat.
+- **Statements read as questions.** "spent $80 on…", "2nd energy drink" went to Ask: 5 model calls, about 45 s,
+  then "I don't know".
+- Gains: chat 1 → 11 of 15, ask 3 → 5 of 11.
+
+Stages with LLM on: turn p50 3.8 s, p95 27 s, max 174 s; 21 turns over 30 s. Router p50 2.8 s, p95 5.1 s. Model
+calls 1023, about 2 a turn (router 670, chat 230, Ask 78, Stream 24).
+
+**Where the 35–45 s goes:** model swaps. The slow turns are:
+
+- **Stream BIMBY** on long lines: 50–174 s, 2–3 calls, sometimes on `qwen3:30b-a3b`, with 11–14 s of load.
+- **Ask on a statement:** about 45 s for 5 calls.
+- **A router call after a swap:** after a 30B call, the next 3B/14B call reloads. One router took 45.0 s, the
+  full `ROUTE_TIMEOUT_MS`, on a one-word line. A chat turn spent 24 s of its 43.6 s on load alone.
+
+On a 32 GB Mac the 30B pushes the 14B and the 3B out. Every lane that may pick the 30B (Stream, Ask prose)
+makes the next turns pay a reload. Fix: keep chat-path lanes off the 30B (the switchboard already does this
+for Ask), and keep the 3B loaded with `keep_alive: -1`. This is fix 2.
 
 ## Limits
 

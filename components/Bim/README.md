@@ -159,7 +159,7 @@ _Last mapped: 2026-11-21_ A chat turn's Trace now says where its time went. Befo
 - **Every model call** made during the turn is a `model-reply` event, heard from `ollamaCall` (`watchModelCalls` in `lib/bim-flow/ollama.ts`). Its actor is the stage that asked (`ladder:router`, `ladder:ask`, `cues`, `keep`), and its note has Ollama's own load, prompt and answer times. A large load is a cold or swapped model. The disk archive's `model-call` records carry `ms` and those times too.
 - **The ladder's stages** are events of their own: `ladder:switchboard`, inside it `switchboard:crew`, `switchboard:router`, `switchboard:ask` or `switchboard:chat`, then `ladder:executor` (the write).
 
-The scorecard (`lib/bim-scorecard/README.md`) reads these per line. Replayed headless on 2026-11-21 with the person's vault, no turn came near 45s: warm turns took about 2–4s, a cold 14B load added about 10s. **Planned:** show the stage split in the route chip's Runs sheet; find the app-only gap from the first real slow turn with these events.
+The scorecard (`lib/bim-scorecard/README.md`) reads these per line. Replayed on 2026-11-21 with the person's vault: warm turns take about 2–4s and a cold 14B load adds about 10s. The 35–45s turns are model swaps: a Stream BIMBY or Ask call on `qwen3:30b-a3b` pushes the 3B and 14B out, and the next router call reloads them (one hit the 45s route timeout). Numbers: `docs/BIM_CHAT_USAGE.md` §9. **Planned:** show the stage split in the route chip's Runs sheet.
 
 ## Wire card
 
