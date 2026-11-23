@@ -71,14 +71,27 @@ export const usePointsStore = create<PointsStore>()(
       upsertPoints: (taskId: string, points: number, taskDescription: string, date = new Date()) => {
         const dateKey = formatLocalDateKey(date)
         set((state) => {
-          const rest = state.pointsHistory.filter((e) => !(e.taskId === taskId && e.date === dateKey))
-          if (!Number.isFinite(points) || points === 0) return { pointsHistory: rest }
-          return {
-            pointsHistory: [
-              ...rest,
-              { date: dateKey, taskId, points, taskDescription },
-            ],
+          const history = state.pointsHistory
+          const hits: number[] = []
+          for (let i = 0; i < history.length; i++) {
+            if (history[i].taskId === taskId && history[i].date === dateKey) hits.push(i)
           }
+          if (!Number.isFinite(points) || points === 0) {
+            if (!hits.length) return state
+            return { pointsHistory: history.filter((e) => !(e.taskId === taskId && e.date === dateKey)) }
+          }
+          // The same row already there: no new array, so no persist write. A grade walk re-asserts
+          // hundreds of unchanged bonuses; a remove-and-append used to reorder them, which the hub
+          // and the desk each saved as new content and the open phone re-downloaded every minute.
+          if (hits.length === 1) {
+            const row = history[hits[0]]
+            if (row.points === points && row.taskDescription === taskDescription) return state
+            const next = history.slice()
+            next[hits[0]] = { ...row, points, taskDescription }
+            return { pointsHistory: next }
+          }
+          const rest = history.filter((e) => !(e.taskId === taskId && e.date === dateKey))
+          return { pointsHistory: [...rest, { date: dateKey, taskId, points, taskDescription }] }
         })
       },
 

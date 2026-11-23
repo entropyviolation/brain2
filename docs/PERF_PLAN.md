@@ -97,6 +97,14 @@ The same night the machine had a load average near 385, about 0.7 GB free RAM, a
 
 ---
 
+## Phone: the vault reload loop (2026-11-22)
+
+_Last mapped: 2026-11-22_
+
+**Done.** The phone hub ran near 100% CPU, and its `contentAt` moved 2–3 times a minute with no real edit, so an open phone kept re-downloading the 18 MB window (`lib/hub-stamp-watch.ts`). A CPU profile put the time in `syncGradeBonusesFromState` (`lib/habits-store.ts`) and in vault-guard merges. `upsertPoints` re-appended unchanged bonus rows. It now returns the same state. `scripts/persist-api.mjs` puts `contentAt` back when a flush changes no data key. **Planned:** the Habits rehydrate still walks every week of history on each disk change. On the hub it has no idle time to wait for, so it should walk only the weeks that changed.
+
+---
+
 ## Plan
 
 _Last mapped: 2026-10-16_

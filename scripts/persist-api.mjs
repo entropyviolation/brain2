@@ -115,6 +115,13 @@ const hub = {
   /** Like `updatedAt` / `source`, but heartbeat keys do not move it, so a watcher pulls only for data. */
   contentAt: null,
   contentSource: null,
+  /**
+   * Since the last write: each data key's value before it was touched, and the content stamp before
+   * the first touch. A flush where every touched key ends where it began puts the stamp back
+   * (`settleContentStamp`), so a write-then-write-back does not send the phone for the whole vault.
+   */
+  contentBase: new Map(),
+  contentBefore: null,
   /** canonical key -> value */
   items: {},
   /** Canonical keys changed since the last successful write. */
@@ -323,6 +330,7 @@ function syncFromDisk() {
         continue
       }
       const theirs = disk.items[key]
+      if (hub.contentBase.has(key)) hub.contentBase.set(key, theirs)
       if (typeof theirs === "string" && theirs !== ours) {
         const merged = mergeIntoHub(theirs, ours, key)
         disk.items[key] = typeof merged === "string" ? merged : ours
@@ -331,6 +339,7 @@ function syncFromDisk() {
       }
     }
     hub.updatedAt = new Date().toISOString()
+    if (hub.contentBefore && disk.contentAt) hub.contentBefore = { at: disk.contentAt, source: disk.contentSource ?? null }
     if (disk.contentAt && (!hub.contentAt || disk.contentAt > hub.contentAt)) {
       hub.contentAt = disk.contentAt
       hub.contentSource = disk.contentSource
@@ -427,6 +436,7 @@ function commitToStore() {
   if (!store || hub.storeMode !== "sqlite") return false
   try {
     syncFromDisk()
+    settleContentStamp()
     if (hub.replaceAllNext) {
       replaceAll(store, hub.items, stamps())
       hub.replaceAllNext = false
@@ -509,6 +519,7 @@ export function flushSharedPersistSync() {
   const written = [...hub.dirty]
   try {
     syncFromDisk()
+    settleContentStamp()
     ensureDataDir()
     const tmp = hubTmpPath()
     hub.syncGen++
@@ -537,6 +548,7 @@ export function flushSharedPersist() {
     }
     if (!hub.loaded || !hub.dirty.size) return
     syncFromDisk()
+    settleContentStamp()
     const version = hub.version
     const gen = hub.syncGen
     const flushed = [...hub.dirty]
@@ -594,12 +606,38 @@ function scheduleFlush() {
   hub.timer.unref?.()
 }
 
-function touch(key, source) {
+/**
+ * Just before a write: when every data key touched since the last write ends with the value it
+ * had then, nothing changed for a reader, so the content stamp goes back to what it was.
+ * The phone hub re-saves stores after a disk rehydrate; those land equal to the disk copy.
+ */
+function settleContentStamp() {
+  const before = hub.contentBefore
+  if (before) {
+    let same = true
+    for (const [key, value] of hub.contentBase) {
+      if (hub.items[key] !== value) {
+        same = false
+        break
+      }
+    }
+    if (same) {
+      hub.contentAt = before.at
+      hub.contentSource = before.source
+    }
+  }
+  hub.contentBase = new Map()
+  hub.contentBefore = null
+}
+
+function touch(key, source, before) {
   hub.dirty.add(key)
   hub.version++
   hub.updatedAt = new Date().toISOString()
   hub.source = source ?? hub.source ?? "hub"
   if (!isHeartbeatKey(key)) {
+    if (!hub.contentBefore) hub.contentBefore = { at: hub.contentAt, source: hub.contentSource }
+    if (!hub.contentBase.has(key)) hub.contentBase.set(key, before)
     hub.contentAt = hub.updatedAt
     hub.contentSource = hub.source
   }
@@ -664,6 +702,10 @@ export function _resetSharedPersistForTests(file = DEFAULT_DATA_FILE, opts = {})
   hub.source = null
   hub.items = {}
   hub.dirty = new Set()
+  hub.contentBase = new Map()
+  hub.contentBefore = null
+  hub.contentAt = null
+  hub.contentSource = null
   hub.sig = null
   if (hub.rows) closeRowStore(hub.rows)
   hub.rows = null
@@ -698,13 +740,15 @@ function writeVaultItem(name, value, source) {
   const key = canonKey(name)
   if (isFriendPicPersistName(name) || (isPlanTextPersistName(name) && typeof value === "string" && value === "")) {
     if (!(key in hub.items)) return false
+    const before = hub.items[key]
     delete hub.items[key]
-    touch(key, source)
+    touch(key, source, before)
     return true
   }
   if (hub.items[key] === value) return false
+  const before = hub.items[key]
   hub.items[key] = value
-  touch(key, source)
+  touch(key, source, before)
   return true
 }
 

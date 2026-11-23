@@ -159,6 +159,32 @@ describe("hub in-memory copy (isolated tmp file)", () => {
     for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
   })
 
+  it("a write and its write-back before the flush leave the content stamp alone", async () => {
+    const file = setup({ updatedAt: "t0", source: "desk", contentAt: "c0", contentSource: "desk", items: { legacy: "L" } })
+    mergeSharedPersistItems({ legacy: "L2" }, "phone-hub")
+    mergeSharedPersistItems({ legacy: "L" }, "phone-hub")
+    await flushSharedPersist()
+    expect(disk(file).contentAt).toBe("c0")
+    expect(disk(file).contentSource).toBe("desk")
+    mergeSharedPersistItems({ legacy: "L3" }, "phone-hub")
+    await flushSharedPersist()
+    expect(disk(file).contentAt).not.toBe("c0")
+    expect(disk(file).contentSource).toBe("phone-hub")
+  })
+
+  it("a write equal to what another process already saved keeps that process's stamp", async () => {
+    const file = setup({ updatedAt: "t0", source: "desk", contentAt: "c0", contentSource: "desk", items: { legacy: "L" } })
+    readItems()
+    // The desk saves L2 to the file; this process, still holding L, then saves the same L2.
+    await new Promise((r) => setTimeout(r, 5))
+    writeFileSync(file, JSON.stringify({ updatedAt: "t1", source: "electron", contentAt: "c1", contentSource: "electron", items: { legacy: "L2" } }), "utf8")
+    mergeSharedPersistItems({ legacy: "L2" }, "phone-hub")
+    await flushSharedPersist()
+    expect(disk(file).items.legacy).toBe("L2")
+    expect(disk(file).contentAt).toBe("c1")
+    expect(disk(file).contentSource).toBe("electron")
+  })
+
   it("reads an old double-aliased file once and answers either alias", () => {
     const file = setup({ updatedAt: "x", source: "old", items: { "brain2-a": "1", "cogs-a": "1", "friend-pic:z": "img", legacy: "L" } })
     const items = readItems()
@@ -295,6 +321,8 @@ describe("persist HTTP canon and phone patch", () => {
     req.method = method
     req.url = url
     req.headers = headers
+    // A caller on this Mac, as the LAN gate (`lib/ingest/lan-gate.mjs`) sees it.
+    Object.assign(req, { socket: { remoteAddress: "127.0.0.1" } })
     const res = {
       statusCode: 0,
       headers: {} as Record<string, unknown>,
