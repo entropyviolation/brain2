@@ -46,6 +46,8 @@ const QUICK_CAPTURE_IPC_CHANNEL = "quick-capture:open"
 // `EXTRACT_PDF_TEXT_IPC_CHANNEL` in electron/main.js + `extractPdfText` in
 // electron/ipc/channels.js. Consumed by lib/file-extract.ts.
 const EXTRACT_PDF_TEXT_IPC_CHANNEL = "cogs:file:extractPdfText"
+// Must match `TRANSCRIBE_AUDIO_IPC_CHANNEL` in electron/dictate.js.
+const TRANSCRIBE_AUDIO_IPC_CHANNEL = "cogs:dictate:transcribe"
 
 // Code documentation reader. MUST match `CODE_DOCS_LIST` / `CODE_DOCS_READ`
 // in electron/code-docs.js. The dev server answers the same files over HTTP;
@@ -364,6 +366,8 @@ contextBridge.exposeInMainWorld("desktop", {
   // Best-effort PDF → text extraction in the main process (lib/file-extract.ts).
   // Resolves to "" when extraction is unavailable; never rejects in practice.
   extractPdfText: (dataUrl) => ipcRenderer.invoke(EXTRACT_PDF_TEXT_IPC_CHANNEL, dataUrl),
+  // Dictation: recorded audio → local Whisper (electron/dictate.js). Resolves `{ ok, text | error }`.
+  transcribeAudio: (bytes, mime) => ipcRenderer.invoke(TRANSCRIBE_AUDIO_IPC_CHANNEL, bytes, mime),
   // Open a module (or sheet) in its own window at `/popout/?module=` /
   // `/popout/?sheet=` (legacy `#popout/…` hashes still accepted). Fire-and-forget;
   // the web build lacks this method so callers fall back to `window.open`.

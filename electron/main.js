@@ -24,6 +24,7 @@ const { createStaticFileResolver } = require("./static-file")
 const { LINK_SCHEME_PRIVILEGES, registerFileLinkIpc } = require("./file-links")
 const { INSTAGRAM_SCHEME_PRIVILEGES, registerInstagramIpc, reportWindowOpen, adoptReportWindow, isReportUrl } = require("./instagram-ipc")
 const { isAppNavigationUrl, isBlankPopup, openExternalWeb } = require("./external-url")
+const { registerDictateIpc } = require("./dictate")
 
 const isDev = !app.isPackaged
 
@@ -504,6 +505,7 @@ app.whenReady().then(async () => {
   createWindow()
   registerQuickCaptureShortcut()
   registerFileIpcHandlers()
+  registerDictateIpc(ipcMain)
   registerWindowIpcHandlers()
   // One broken registration must not leave the rest of the app unwired — the
   // renderer would only see "No handler registered" with no cause.

@@ -398,6 +398,10 @@
   .bim-sw-knob {
     transition: none;
   }
+
+  .bim-crt .bim-send button.bim-dictate.is-live {
+    animation: none;
+  }
 }
 
 /* "Include secrets": the plain checkbox, not a keycap; Lock reads as a link. */
@@ -693,6 +697,12 @@
   min-width: 96px;
   padding: 10px 12px 13px;
   font-size: 11px;
+}
+
+/* Dictate key (Electron only). Listening: the cap lights in the fault ink and pulses. */
+.bim-crt .bim-send button.bim-dictate.is-live {
+  color: var(--bim-fault);
+  animation: bim-pulse 1.2s ease-in-out infinite;
 }
 
 .bim-quick {
@@ -1140,7 +1150,7 @@
 
   /* Texting-app row: paperclip left, the well, a round send arrow right. */
   .bim-compose {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     gap: 6px;
     align-items: end;
   }
@@ -1170,6 +1180,10 @@
   }
 
   .bim-crt .bim-send button.is-primary {
+    grid-column: 4;
+  }
+
+  .bim-crt .bim-send button.bim-dictate {
     grid-column: 3;
   }
 

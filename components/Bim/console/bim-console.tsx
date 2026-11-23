@@ -12,7 +12,7 @@
 "use client"
 
 import { Fragment, memo, useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react"
-import { ArrowUp, Paperclip } from "lucide-react"
+import { ArrowUp, Mic, Paperclip } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
 import { BIM_FULL, BIM_HANDLE, BIM_INTRO, BIM_SHORT } from "@/lib/ingest/bim"
@@ -28,6 +28,7 @@ import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
 import { HabitCard } from "@/components/Bim/habit-card"
 import { LlmSuggestions } from "./llm-suggestions"
+import { appendDictated, useDesktopDictation } from "@/lib/desktop-dictation"
 import "@/components/Bim/bim-ink.css"
 import "./bim-console.css"
 
@@ -117,6 +118,11 @@ function ChatPane() {
   const choices = openChoices(lines)
   const box = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  // Electron only: mic → local Whisper (`lib/desktop-dictation.ts`); the words join the draft.
+  const dictate = useDesktopDictation((text) => {
+    setDraft(appendDictated(draft, text))
+    box.current?.focus()
+  })
 
   /** While a question is open and nothing is typed, a digit taps that numbered answer. */
   const onKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -176,6 +182,7 @@ function ChatPane() {
             </div>
           ) : null}
           {photoError ? <p className="bim-photo-error">{photoError}</p> : null}
+          {dictate.error ? <p className="bim-photo-error">{dictate.error}</p> : null}
           {replyTarget ? (
             <p className="bim-replying">
               ↳ replying to <b>{replyTarget.label}</b>
@@ -198,6 +205,21 @@ function ChatPane() {
             <span className="bim-key-word">📷</span>
             <Paperclip className="bim-key-icon" aria-hidden="true" />
           </button>
+          {dictate.available ? (
+            <button
+              data-no95
+              type="button"
+              className={dictate.state === "listening" ? "is-mod bim-dictate is-live" : "is-mod bim-dictate"}
+              aria-label={dictate.state === "listening" ? "Stop dictation" : "Dictate"}
+              aria-pressed={dictate.state === "listening"}
+              title={dictate.state === "listening" ? "Stop and transcribe" : dictate.state === "transcribing" ? "Transcribing…" : "Dictate (local Whisper)"}
+              disabled={dictate.state === "transcribing"}
+              onClick={() => void dictate.toggle()}
+            >
+              <span className="bim-key-word">{dictate.state === "listening" ? "● STOP" : dictate.state === "transcribing" ? "…" : "🎙 TALK"}</span>
+              <Mic className="bim-key-icon" aria-hidden="true" />
+            </button>
+          ) : null}
           <button data-no95 type="button" className="is-primary" aria-label="Send" disabled={!draft.trim() && !photos.length} onClick={() => submit()}>
             <span className="bim-key-word">SEND ↵</span>
             <ArrowUp className="bim-key-icon" aria-hidden="true" />

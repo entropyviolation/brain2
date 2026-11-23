@@ -22,6 +22,7 @@ import { taughtExamples, taughtRoute } from "@/lib/bim-flow/route-verdicts"
 import { FLOW_REV, flowDef, FLOWS, type FlowId } from "@/lib/bim-flow/flows"
 import { ollamaCall } from "@/lib/bim-flow/ollama"
 import { phoneSearch, useHomeStore } from "@/lib/bim-flow/web-ask"
+import { aboutBlock } from "@/lib/coach-bimby/context"
 import { runFlow } from "@/lib/bim-flow/run-flow"
 import { traceOfFlowRun } from "@/lib/agents/trace-adapters"
 import { saveTrace } from "@/lib/agents/trace-store"
@@ -209,7 +210,14 @@ async function chatLane(text: string, crew: Crew, now: Date, turns: ChatTurn[] |
   // The search is the Web BIMBY's, and so is home (`web-ask.ts`); only the query leaves the Mac.
   const home = useHomeStore.getState().home
   const web = { search: async (q: string) => (await phoneSearch())(q), ...(home ? { home } : {}) }
-  return runChatLane({ text, turns, now, snap, call: ollamaCall(crew.main, AbortSignal.timeout(CHAT_TIMEOUT_MS)), pick: crew.pick, main: crew.main, web })
+  // What BIM knows about you (Coach BIMBY), so the reply can speak to who you are and what you are working toward.
+  let about = ""
+  try {
+    about = aboutBlock(now)
+  } catch {
+    /* a store not loaded here: talk without it */
+  }
+  return runChatLane({ text, turns, now, snap, call: ollamaCall(crew.main, AbortSignal.timeout(CHAT_TIMEOUT_MS)), pick: crew.pick, main: crew.main, web, ...(about ? { about } : {}) })
 }
 
 /**

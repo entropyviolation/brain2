@@ -347,3 +347,26 @@ describe("BIM Chat: many lines at once", () => {
     expect(useBimChatStore.getState()).toMatchObject({ busy: false, queued: 0 })
   })
 })
+
+describe("Coach BIMBY lanes in BIM chat", () => {
+  beforeEach(() => {
+    resetAllStores()
+  })
+  it("files a timed reminder, keeps a goal, says what it knows, and coaches", async () => {
+    const { useMeStore } = await import("@/lib/coach-bimby/me-store")
+    useMeStore.setState({ notes: [] })
+    const now = new Date(2026, 10, 22, 14, 10)
+    const reminded = await sendToBim("remind me at 5pm to call mom", now, { llm: false })
+    expect(reminded.route).toBe("REMIND · reminder · code")
+    expect(reminded.text).toMatch(/5:00 PM: Call mom/)
+    const kept = await sendToBim("my goals are to swim more and launch my shop", now, { llm: false })
+    expect(kept.route).toBe("ME · remember · code")
+    const known = await sendToBim("what do you know about me?", now, { llm: false })
+    expect(known.text).toMatch(/launch my shop/)
+    const coached = await sendToBim("what should I do now?", now, { llm: false })
+    expect(coached.route).toBe("COACH · now · code")
+    // A plain To Do is still the keep lane's.
+    const todo = await sendToBim("remind me to water the plants", now, { llm: false })
+    expect(todo.route).toBe("KEEP · to do · code")
+  })
+})

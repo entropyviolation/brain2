@@ -115,10 +115,13 @@ const pickSchema = (web: boolean) => ({
 })
 
 const REPLY_SYSTEM =
-  "You are BIM, the assistant inside one person's own tracking app, talking with that person. Reply in one to three short plain sentences. " +
+  "You are BIM, the assistant inside one person's own tracking app, talking with that person like a close friend who is also a good life coach. " +
+  "Talk naturally, in one to four short plain sentences, matching their tone and length; keep the thread of EARLIER IN THIS CHAT. " +
+  "ABOUT THEM, when given, is what they told you about themselves, their goals and today's list: use it so they feel known, by name and specifics, never inventing beyond it. " +
+  "When a goal or a to-do from ABOUT THEM bears on what they said, connect it in a few words; when it fits, end with one short question that moves them forward. " +
   "FACTS and ROWS, when given, are counted by code from their own data: use them for anything you say about their life, and say nothing about their life that is not there. " +
   "With no FACTS or ROWS you know nothing about their life: answer from general knowledge, or just respond to what they said, and do not pretend to know their data. " +
-  "When they share a feeling, be warm and brief; offer a fact from FACTS only if it bears on it; never lecture or give advice they did not ask for. " +
+  "When they share a feeling, be warm first; offer a fact from FACTS only if it bears on it; do not lecture, and give at most one small suggestion. " +
   "Refer to people by name. Never use he, she, him, her, his or hers for anyone. " +
   "basis is data only when the reply states something taken from FACTS or ROWS; otherwise general. "
 const REPLY_WEB =
@@ -130,7 +133,7 @@ const REPLY_END = "No lists, no headings, no emoji. JSON only."
 
 const replySchema = (web: boolean) => ({
   type: "object",
-  properties: { reply: { type: "string", maxLength: web ? 900 : 600 }, basis: { type: "string", enum: web ? ["data", "web", "general"] : ["data", "general"] } },
+  properties: { reply: { type: "string", maxLength: web ? 900 : 700 }, basis: { type: "string", enum: web ? ["data", "web", "general"] : ["data", "general"] } },
   required: ["reply", "basis"],
 })
 
@@ -192,6 +195,8 @@ export interface ChatLaneInput {
   pick: string[]
   /** The model that writes the reply. */
   main: string
+  /** What BIM knows about the person (`lib/coach-bimby/context.ts` `aboutBlock`): their notes, goals, today's list. */
+  about?: string
   /** A web search the pick model may choose for a question. Absent: the lane reads the vault only. `home` is where the person lives. */
   web?: { search: WebSearch; home?: string }
 }
@@ -253,10 +258,11 @@ export async function runChatLane(input: ChatLaneInput): Promise<ChatLaneReply> 
   const searched = webTry as { query: string; got: WebLines | null } | null
   const webGot = searched?.got ?? null
   const user = [
+    input.about ? `ABOUT THEM:\n${input.about.slice(0, 2400)}` : "",
     turns.length ? `EARLIER IN THIS CHAT:\n${turns.map((t) => `${t.who === "you" ? "THEM" : "BIM"}: ${t.text.slice(0, 300)}`).join("\n")}` : "",
     found ? `FACTS (counted by code):\n${found.facts.join("\n") || "(none)"}` : "",
     found?.rows.length ? `ROWS:\n${found.rows.slice(0, 8).map((r) => `${r.when} · ${r.source} · ${r.text}`).join("\n")}` : "",
-    !found ? "No FACTS or ROWS: you know nothing about their life for this reply." : "",
+    !found ? `No FACTS or ROWS: you know nothing about their tracked data for this reply${input.about ? " beyond ABOUT THEM" : ""}.` : "",
     webGot ? `WEB RESULTS (searched just now for "${searched!.query}"):\n${webGot.lines.join("\n")}` : "",
     searched && !webGot ? "The web search failed or found nothing." : "",
     `TODAY: ${now.toDateString()}`,
@@ -268,7 +274,7 @@ export async function runChatLane(input: ChatLaneInput): Promise<ChatLaneReply> 
     user,
     schema: replySchema(!!searched),
     // Room for five sentences inside JSON: at 360 a longer web answer was cut off mid-string.
-    maxTokens: searched ? 520 : 220,
+    maxTokens: searched ? 520 : 300,
     temperature: searched ? 0.2 : 0.5,
   })) as { reply?: string; basis?: string }
   calls += 1

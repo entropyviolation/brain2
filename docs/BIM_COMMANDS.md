@@ -552,6 +552,13 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Does:** A message whose first word is a link lands on Inbox → Links, not the log and not the revisit Inbox. The link is the first word; any text after it is the note. A bare domain needs a known ending (`.com`, `.org`, …). The same open link sent again adds the note to the saved row.
 - **Note:** Checked before clarify answers and pin replies. `-i` at the end also files it in Inbox. `read inbox` lists Links last.
 
+### `<spotify link> favorite of the week`
+
+- **Format:** `https://open.spotify.com/track/… favorite of the month` · a Spotify link, then `I've been listening to this a lot this week`
+- **Forms / aliases:** `… this week`, `… this month`, `favorite of the week`, `favorite of the month`, `a lot this week`, `attached to the month`
+- **Does:** A Spotify song on that week's or month's Songs (the period summary on Data → Summary and in the week / month ritual). The line is the song's note; "favorite" or "a lot" tags it. A bare link waits 30 minutes for the line, or answer it with a Telegram reply. "last week" / "last month" go back one. A playlist link becomes the period's playlist.
+- **Note:** Runs ahead of Links. The bare link's Links row is taken off once it is filed. `undo` takes it back.
+
 ## Pinned grocery card
 
 ### `pin`

@@ -30,6 +30,16 @@ const LLM_OFF_GENERAL = "LLM is off right now, so a general question gets no ans
 /** One per thing BIM does. The first topics win when a line names several; at most two are said. */
 const TOPICS: Topic[] = [
   {
+    id: "coach",
+    words: /\b(?:coach(?:ing)?|life coach|motivat\w*|remember (?:me|who i am|my goals|things about me)|know (?:me|about me)|my goals|text me|telegram|check[- ]?ins?|briefs?|remind me (?:by|on|over) (?:text|telegram))\b/i,
+    say: (llm) =>
+      [
+        "Yes, through the Coach BIMBY. Tell me about yourself (“about me: …”, “remember that I …”, “my goals are …”) and I keep it; with LLM on I also pick up lasting things as we talk. “What do you know about me?” lists it, “forget …” drops one.",
+        "“Remind me at 5pm to call mom” (or “… tomorrow at 9”, “… in 20 minutes”, “… every day at 8am”) texts you on Telegram when it's due, from the Mac hub even with the app closed. A morning brief (9:00) and an evening check-in (21:30) come by Telegram too: “morning brief at 8am”, “stop the evening check-in”.",
+        `“What should I do now?” or “coach me” gives one next step from your goals and today's To Do.${llm ? "" : " With LLM off, code writes it from the list."}`,
+      ].join("\n"),
+  },
+  {
     id: "web",
     words: /\b(?:web|internet|online|google|googl(?:e|ing)|search(?:es|ing)?|look(?:ing)? (?:things |stuff )?up|news|current events)\b/i,
     say: (llm) =>
@@ -61,7 +71,7 @@ const TOPICS: Topic[] = [
     id: "todo",
     words: /\b(?:to ?dos?|tasks?|remind(?:ers?)?|lists?)\b/i,
     say: () =>
-      "Yes. “Don't forget to X” or “need to X” goes on To Do, and “to do later X to do later Y” makes one each. “<fact>, remind me if <situation>” is kept and said back only in that situation. “Have to do before leaving for New York:” with a line per thing makes a trip list.",
+      "Yes. “Don't forget to X” or “need to X” goes on To Do, and “to do later X to do later Y” makes one each. “Remind me at 5pm to X” makes a Reminder that texts you on Telegram. “<fact>, remind me if <situation>” is kept and said back only in that situation. “Have to do before leaving for New York:” with a line per thing makes a trip list.",
   },
   {
     id: "habits",
@@ -94,6 +104,11 @@ const TOPICS: Topic[] = [
     say: () => "Yes. “Remember this command to …” keeps a shell command, and “what's the command to …?” says it back.",
   },
   {
+    id: "food",
+    words: /\b(?:food|meals?|ate|eaten|calories|kcal|nutrition(?:al)?|macros|recipes?)\b/i,
+    say: () => "Yes. Tell me what you ate, as loosely as you like (“yesterday a whole container of ravioli with cheddar and 2 Red Bulls”), and the Food BIMBY reads it into meals, looks up each part (your saved foods, USDA, Open Food Facts, then an estimate), and files each on the Food book with the numbers. A homemade dish is saved as a recipe card. “Undo that” takes it back.",
+  },
+  {
     id: "tracking",
     words: /\b(?:track(?:ing)?|log(?:s|ging)?|food|mood|meds?|sleep|intakes?)\b/i,
     say: () => "Yes. Plain lines are filed as logs: “took another addy”, “starting dishes”, “done with shower”. “Mark that …” logs what follows, and the **ask me** key asks what you're doing or how you feel.",
@@ -114,6 +129,7 @@ const OVERVIEW = [
   "• File what you tell me: To Dos, logs, habits, money, people, flights, facts.",
   "• Turn a list of the rest of your day into a plan card.",
   "• Keep shell commands and say them back.",
+  "• Remember who you are and your goals, text you reminders and a daily brief on Telegram, and coach you to the next step.",
   "Ask “can you …?” about any of these for more.",
 ].join("\n")
 

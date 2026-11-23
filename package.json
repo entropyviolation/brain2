@@ -123,7 +123,8 @@
       "entitlements": "electron/entitlements.mac.plist",
       "entitlementsInherit": "electron/entitlements.mac.plist",
       "extendInfo": {
-        "NSAppleEventsUsageDescription": "Brain2 reads Apple Notes, including iCloud notes from your iPhone, so you can ingest them into lists."
+        "NSAppleEventsUsageDescription": "Brain2 reads Apple Notes, including iCloud notes from your iPhone, so you can ingest them into lists.",
+        "NSMicrophoneUsageDescription": "Brain2 listens while you dictate in BIM chat and turns your words into text on this Mac."
       },
       "target": [
         "dmg",

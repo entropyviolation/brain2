@@ -130,6 +130,8 @@ let dropLocationDuringRitual: ExecutorModule["dropLocationDuringRitual"] | undef
 let deliverIngestReply: typeof import("../lib/ingest/deliver-reply")["deliverIngestReply"]
 let incomingFromTelegram: typeof import("../lib/ingest/telegram-bridge")["incomingFromTelegram"]
 let telegramFollowUp: typeof import("../lib/ingest/telegram-llm")["telegramFollowUp"] | undefined
+/** The Coach BIMBY on Telegram: reminders, memory of you and coaching, read before the executor (`lib/coach-bimby/apply.ts`). */
+let telegramCoachFirst: typeof import("../lib/coach-bimby/apply")["telegramCoachFirst"] | undefined
 /** BIM chat's LLM lanes on Telegram (`lib/ingest/telegram-llm.ts`). On unless `PHONE_HUB_LLM=0`. */
 const HUB_LLM = process.env.PHONE_HUB_LLM !== "0"
 /** BIM's last message per chat, so a reply to "Do you know?" is read against it. */
@@ -198,6 +200,8 @@ async function loadStores() {
   const work = await import("../lib/work-session-store")
   const penNow = await import("../lib/pen-color-session-store")
   const periodSummaries = await import("../lib/period-summary-store")
+  const goals = await import("../lib/goals-store")
+  const coachMe = await import("../lib/coach-bimby/me-store")
   const exec = await import("../lib/ingest/executor")
   const deliver = await import("../lib/ingest/deliver-reply")
   const bridge = await import("../lib/ingest/telegram-bridge")
@@ -212,11 +216,15 @@ async function loadStores() {
     penNow.usePenColorSessionStore,
     // Songs filed on a week or month from Telegram ("favorite of the week").
     periodSummaries.usePeriodSummaryStore,
+    // The Coach BIMBY reads your goals and what BIM knows about you; the brief texts from here.
+    goals.useGoalsStore,
+    coachMe.useMeStore,
   ]
   await Promise.all(stores.map(waitHydrated))
   trackingKey = tracking.useTimeTrackingStore.persist.getOptions().name ?? ""
   ingestIncomingAsync = exec.ingestIncomingAsync
   if (HUB_LLM) telegramFollowUp = (await import("../lib/ingest/telegram-llm")).telegramFollowUp
+  telegramCoachFirst = (await import("../lib/coach-bimby/apply")).telegramCoachFirst
   dropLocationDuringRitual = exec.dropLocationDuringRitual
   deliverIngestReply = deliver.deliverIngestReply
   incomingFromTelegram = bridge.incomingFromTelegram
@@ -320,6 +328,20 @@ async function handlePayload(payload: IncomingTelegramPayload, rehydrate = false
     return
   }
   const incoming = incomingFromTelegram(payload)
+  // The Coach BIMBY first: "remind me at 5pm to …", "my goals are …", "what should I do now?". Not while the executor
+  // holds a ritual or clarify question for this chat (that line is its answer), and never for a photo.
+  if (telegramCoachFirst && payload.text && !payload.attachments?.length) {
+    const held = (await import("../lib/ingest/ingest-store")).useIngestStore.getState().getPending("telegram", String(payload.chatId))
+    if (!held) {
+      const said = await telegramCoachFirst(payload.text, new Date(incoming.receivedAt ?? Date.now()), await coachModel()).catch(() => null)
+      if (said) {
+        await transport.send(String(payload.chatId), said)
+        lastBimByChat.set(String(payload.chatId), said)
+        flushVault()
+        return
+      }
+    }
+  }
   const result = await ingestIncomingAsync(incoming)
   const note = drained ? staleReplyNote(payload.receivedAt, Date.now(), DRAIN_STALE_MINUTES) : ""
   // The executor's reply goes out at once; a model never holds it.
@@ -564,7 +586,7 @@ async function onRequest(req: HttpRequest, res: ServerResponse) {
     return
   }
   if (pathname === "/api/ingest/status" && req.method === "GET") {
-    sendJson(res, 200, { ok: true, polling: true, hub: true, pending: 0, mode: CAPTURE_URL ? "capture-box" : WEBHOOK ? "webhook" : "poll" })
+    sendJson(res, 200, { ok: true, polling: true, hub: true, remindersByHub: brain2Env("HUB_REMINDERS") !== "0", pending: 0, mode: CAPTURE_URL ? "capture-box" : WEBHOOK ? "webhook" : "poll" })
     return
   }
   if ((pathname === "/api/scan" && req.method === "POST") || (pathname === "/api/nfc/tags" && req.method === "GET")) {
@@ -662,6 +684,71 @@ function watchPersist() {
   }
 }
 
+/** The coach's model on the hub: the chat crew's main model, or none (code writes the coach's words). */
+async function coachModel() {
+  if (!HUB_LLM) return null
+  try {
+    const { chatCrew } = await import("../lib/bim-flow/chat-models")
+    const { ollamaCall } = await import("../lib/bim-flow/ollama")
+    const crew = await chatCrew()
+    return crew ? { call: ollamaCall(crew.main, AbortSignal.timeout(60_000)), model: crew.main } : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Once a minute: due Reminders (Inbox + a Telegram text) and the Coach BIMBY's morning brief and evening check-in,
+ * so they arrive with the app closed. The app's own reminder tick stands down while this hub answers
+ * (`hooks/use-reminder-tick.ts`, `remindersByHub` in the status), so nothing is texted twice.
+ * `BRAIN2_HUB_REMINDERS=0` turns it off.
+ */
+async function startReminderTick() {
+  if (brain2Env("HUB_REMINDERS") === "0") return
+  const reminders = await import("../lib/reminders")
+  const { coachTick } = await import("../lib/coach-bimby/tick")
+  const { useIngestStore } = await import("../lib/ingest/ingest-store")
+  const latestChat = () => [...useIngestStore.getState().allowedChats].sort((a, b) => (a.pairedAt < b.pairedAt ? 1 : -1))[0]?.chatId
+  let running = false
+  const tick = async () => {
+    if (running) return
+    running = true
+    try {
+      const now = new Date()
+      reminders.ensureMoonNightReminders(now)
+      const delivered = await reminders.deliverDueReminders(now, {
+        send: async (chatId, text) => {
+          try {
+            await transport.send(chatId, text)
+            return { ok: true }
+          } catch (err) {
+            return { ok: false, error: err instanceof Error ? err.message : "Telegram send failed" }
+          }
+        },
+      })
+      const chatId = latestChat()
+      const coached = chatId
+        ? await coachTick(now, async (text) => {
+            await transport.send(chatId, text)
+            lastBimByChat.set(chatId, text)
+            return true
+          })
+        : []
+      if (delivered.length || coached.length) {
+        console.log(`[phone-hub] reminders: ${delivered.length} delivered${coached.length ? `, coach: ${coached.join(", ")}` : ""}`)
+        flushVault()
+      }
+    } catch (err) {
+      console.error(`[phone-hub] reminder tick: ${err instanceof Error ? err.message : err}`)
+    } finally {
+      running = false
+    }
+  }
+  console.log("[phone-hub] reminders + coach texts: every minute")
+  void tick()
+  setInterval(() => void tick(), 60_000)
+}
+
 // One async entry, not top-level await: jiti loads this file as CommonJS.
 async function main() {
   await loadStores()
@@ -741,6 +828,9 @@ async function main() {
   watchPersist()
   void startPhoneSync().catch((err) => {
     console.error("[phone-hub] phone sync", err instanceof Error ? err.message : err)
+  })
+  void startReminderTick().catch((err) => {
+    console.error("[phone-hub] reminder tick", err instanceof Error ? err.message : err)
   })
   void startBrowserSync().catch((err) => {
     console.error("[phone-hub] browser sync", err instanceof Error ? err.message : err)

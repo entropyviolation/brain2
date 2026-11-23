@@ -48,6 +48,8 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { fireCues, parseKeepTodo, parseKeepTodos, takeTidy, TODO_TIDY_SCHEMA, TODO_TIDY_SYSTEM, tryCueCommand, tryKeepCue, undoLastCue, type KeepTodo } from "./bim-keep"
 import { undoLastMoney } from "@/lib/finance-bimby/apply"
 import { openMoneyQuestion, tryMoney, tryMoneyPhoto } from "@/lib/finance-bimby/run"
+import { undoLastFood } from "@/lib/food-bimby/apply"
+import { tryFood } from "@/lib/food-bimby/run"
 import { escalate } from "@/lib/bim-flow/crew"
 import { CHAT_LANES, runLanes, type ChatLaneId, type LaneBody, type LaneGuard } from "./bim-lanes"
 import { BIM_CHAT_AGENT_ID, BIM_CHAT_REV } from "@/lib/agents/adapters/bim-chat"
@@ -78,6 +80,9 @@ import { replyToCard } from "@/lib/report-bimby/card-reply"
 import type { CardRef } from "@/lib/report-bimby/reply-target"
 import { splitAside } from "@/lib/bim-flow/web-lane"
 import { answerSelf } from "./bim-self"
+import { tryCoach, tryRemind } from "@/lib/coach-bimby/apply"
+import { learnFromLine } from "@/lib/coach-bimby/learn"
+import { parseCoachAsk } from "@/lib/coach-bimby/read"
 import { nextQuestion } from "@/lib/follow-through/ask"
 import { observeLine, tryFollowAnswer, tryFollowCommand, type MineSources } from "@/lib/follow-through/run"
 import { followLedger } from "@/lib/follow-through/store"
@@ -549,6 +554,7 @@ export async function sendToBim(
   const turn: TurnStage = { stage: "correct" }
   const unwatch = watchModelCalls((call) => rec.add(modelEvent(call, turn.stage, rec.clock())))
   const newestBefore = useIngestStore.getState().events[0]?.id
+  let learn = false
   const close = (line: BimLine): BimLine => {
     try {
       const stop: StopReason = line.status === "error" ? "error" : line.status === "needs_clarify" ? "needs-person" : "done"
@@ -572,6 +578,9 @@ export async function sendToBim(
     let t0 = rec.clock()
     const line = await followed(routed, text, now, opts)
     rec.add({ kind: "tool-call", actor: "follow-through", status: line === routed ? "pass" : "ok", t0 })
+    // BIM learns lasting things about you from what you say, after the reply, off the turn (`lib/coach-bimby/learn.ts`).
+    // Started in `finally`, once this turn's Trace stops counting model calls.
+    learn = !!opts.llm && !opts.photos?.length && line.status !== "error" && !/^(ME|COACH|REMIND)\b/.test(line.route ?? "")
     // A cue (“remind me if I'm thinking about ordering food”) is checked against every line, after BIM has answered it.
     if (opts.photos?.length || line.status === "error" || /^(KEEP|CORRECT)/.test(line.route ?? "")) return close(line)
     turn.stage = "cues"
@@ -586,6 +595,23 @@ export async function sendToBim(
     }
   } finally {
     unwatch()
+    if (learn) void learnQuietly(text, now)
+  }
+}
+
+/**
+ * The Coach BIMBY's quiet read of one line, on the main model (the 3B returned nothing for "i'm a freelance
+ * illustrator and my sister dana is visiting"; the 14B kept both and nothing from moods or errands). Never throws,
+ * never holds the turn.
+ */
+async function learnQuietly(text: string, now: Date): Promise<void> {
+  try {
+    const crew = await chatCrew()
+    if (!crew) return
+    const model = crew.main
+    await learnFromLine(text, ollamaCall(model, AbortSignal.timeout(60_000)), model, now)
+  } catch {
+    /* learning is a bonus */
   }
 }
 
@@ -696,6 +722,13 @@ async function tryCorrect(text: string, now: Date, opts: SendOpts): Promise<BimL
       return correctLine(`Moved to ${whenLabel(fix.at)}.\n${again?.text ?? ""}`)
     }
     if (fix.kind !== "leave") return null
+  }
+  if (/^FOOD · logged/.test(turn.route ?? "") && fix.kind === "undo") {
+    lastTurn = null
+    return correctLine(undoLastFood(now) ?? "There is nothing recent of the Food BIMBY's to undo.")
+  }
+  if (/^FOOD · logged/.test(turn.route ?? "") && fix.kind === "when") {
+    return correctLine("Each food entry kept the day it was eaten. To move one, open it in Tracking → Food, or say “undo that” and tell me again with the day.")
   }
   if (/^KEEP · cue/.test(turn.route ?? "") && fix.kind === "undo") {
     lastTurn = null
@@ -1021,9 +1054,24 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     return followed ? bimLine(followed.text, { route: followed.route, ...(followed.choices.length ? { choices: followed.choices } : {}) }) : null
   },
   "flight-file": ({ text, now }) => tryFlights(text, now),
+  food: async ({ text, now, opts }) => {
+    const food = await tryFood(text, now, { llm: !!opts.llm })
+    return food ? bimLine(food.text, { route: food.route, kind: "tell", ...(food.choices?.length ? { choices: food.choices } : {}) }) : null
+  },
   self: ({ text, opts }) => {
     const said = answerSelf(text, { llm: !!opts.llm })
     return said ? bimLine(said.text, { route: said.route, kind: "tell", evidence: said.evidence }) : null
+  },
+  remind: ({ text, now }) => {
+    const said = tryRemind(text, now)
+    return said ? bimLine(said.text, { route: said.route, kind: "tell" }) : null
+  },
+  coach: async ({ text, now, opts }) => {
+    // Only "coach me" / "what should I do now?" uses a model: every other line skips the crew lookup.
+    const crew = opts.llm && parseCoachAsk(text) ? await chatCrew().catch(() => null) : null
+    const model = crew ? { call: ollamaCall(crew.main, AbortSignal.timeout(60_000)), model: crew.main, turns: earlierTurns(text) } : null
+    const said = await tryCoach(text, now, model)
+    return said ? bimLine(said.text, { route: said.route, kind: "tell" }) : null
   },
   keep: async ({ text, now, opts }) => {
     // "stop reminding me about …" starts with one of the executor's words, so the cue commands are read before the verb check.

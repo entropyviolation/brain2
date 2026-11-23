@@ -104,7 +104,7 @@ export function resetHubOfflineBackoff(): void {
 
 export async function fetchPhoneHubStatus(
   baseUrl: string,
-): Promise<{ ok: boolean; polling?: boolean; hub?: boolean; error?: string }> {
+): Promise<{ ok: boolean; polling?: boolean; hub?: boolean; remindersByHub?: boolean; error?: string }> {
   const origin = normalizeHubUrl(baseUrl)
   if (!origin) return { ok: false }
   if ((hubDownUntil.get(origin) ?? 0) > Date.now()) return { ok: false, error: "hub offline" }
@@ -116,6 +116,7 @@ export async function fetchPhoneHubStatus(
       ok: Boolean(data.ok),
       polling: Boolean(data.polling),
       hub: Boolean(data.hub),
+      remindersByHub: Boolean(data.remindersByHub),
     }
   } catch (err) {
     // The browser logs every refused request as a console error, and the
