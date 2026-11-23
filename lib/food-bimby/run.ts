@@ -12,8 +12,8 @@ import { useKitchenStore } from "@/lib/kitchen-store"
 import { addNutrients, scaleNutrients, ZERO_NUTRIENTS, type Nutrients } from "@/lib/kitchen-nutrients"
 import type { FoodHit } from "@/lib/kitchen-search"
 import { fileMeals, type FiledMeal } from "./apply"
-import { looksLikeFoodLog, MEALS_SCHEMA, MEALS_SYSTEM, readMealsInCode, readMealsReply, type MealsReading } from "./read"
-import { researchParts, type FoundBy } from "./research"
+import { codeCanRead, looksLikeFoodLog, MEALS_SCHEMA, MEALS_SYSTEM, readMealsInCode, readMealsReply, type MealsReading } from "./read"
+import { researchParts, type FoodJudge, type FoundBy } from "./research"
 
 export interface FoodReply {
   text: string
@@ -51,19 +51,45 @@ async function modelFor(opts: FoodOpts): Promise<ModelCall | null> {
   }
 }
 
-/** The model's reading, or null when there is no model or it said nothing usable. */
-async function readWithModel(text: string, now: Date, opts: FoodOpts): Promise<MealsReading | null> {
+type ModelRead = { reading: MealsReading } | { failed: string } | null
+
+/** The model's reading; `failed` when a model was asked and gave nothing usable; null when there is no model. */
+async function readWithModel(text: string, now: Date, opts: FoodOpts): Promise<ModelRead> {
   const call = await modelFor(opts)
   if (!call) return null
   try {
     const out = await withTimeout(
-      call({ system: MEALS_SYSTEM, user: `Today is ${formatLocalDateKey(now)}.\n\nThey said:\n${text}`, schema: MEALS_SCHEMA, maxTokens: 2400, temperature: 0 }),
+      call({ system: MEALS_SYSTEM, user: `Today is ${formatLocalDateKey(now)}.\n\nThey said:\n${text}`, schema: MEALS_SCHEMA, maxTokens: 2900, temperature: 0 }),
       120_000,
     )
     const reading = readMealsReply(out)
-    return reading.eaten.length || reading.planned.length ? reading : null
-  } catch {
-    return null
+    return reading.eaten.length || reading.planned.length ? { reading } : { failed: "the model found no food in it" }
+  } catch (error) {
+    return { failed: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+const JUDGE_SYSTEM = [
+  "You check food database matches. For each numbered food, pick the letter of the record that is the same food, or none.",
+  "A different brand or a generic record of the same food is fine. A different food is not: red cabbage is not Red Bull, vegan bacon is not bacon, ramen is not broth, cream cheese is not cheddar, cooked rice is not uncooked rice.",
+  "Reply with JSON: picks, one entry per food in order, the letter's index (a = 0, b = 1, …) or -1 for none.",
+].join("\n")
+
+const LETTERS = "abcd"
+
+/** The model as the judge of each part's database candidates (`research.ts`). */
+function judgeWith(call: ModelCall): FoodJudge {
+  return async (items) => {
+    const user = items
+      .map(({ part, candidates }, n) => [`${n + 1}. ${part.name}, ${part.amount || `${part.grams} g`} (search: ${part.search})`, ...candidates.map((c, k) => `   ${LETTERS[k]}) ${c.name} (${Math.round(c.per100g.kcal)} kcal/100 g)`)].join("\n"))
+      .join("\n")
+    const out = (await withTimeout(
+      call({ system: JUDGE_SYSTEM, user, schema: { type: "object", properties: { picks: { type: "array", items: { type: "integer" } } }, required: ["picks"] }, maxTokens: 200, temperature: 0 }),
+      60_000,
+    )) as { picks?: unknown }
+    const picks = Array.isArray(out?.picks) ? out.picks : null
+    if (!picks || picks.length !== items.length) return null
+    return picks.map((p, k) => (typeof p === "number" && Number.isInteger(p) && p >= -1 && p < items[k]!.candidates.length ? p : 0))
   }
 }
 
@@ -122,7 +148,17 @@ export function foodReplyText(filed: readonly FiledMeal[], planned: readonly str
 export async function tryFood(raw: string, now: Date, opts: FoodOpts = {}): Promise<FoodReply | null> {
   const text = raw.trim()
   if (!looksLikeFoodLog(text)) return null
-  const byModel = await readWithModel(text, now, opts)
+  const read = await readWithModel(text, now, opts)
+  const byModel = read && "reading" in read ? read.reading : null
+  // A long line the model could not read is not guessed at in code: a comma split files a day of food as one plate.
+  if (!byModel && !codeCanRead(text)) {
+    const why = read && "failed" in read ? `The model could not read it (${read.failed}).` : "LLM is off, and this is too long to read without the model."
+    return {
+      text: `${why} Nothing is logged. Try again, or send it a day at a time (“yesterday: …”, “today: …”).`,
+      route: route("unread", read ? "model failed" : "code"),
+      choices: [{ label: "try again", text }],
+    }
+  }
   const reading = byModel ?? readMealsInCode(text)
   const by = byModel ? "model" : "code"
   const plannedChoices = reading.planned.slice(0, 2).map((p) => ({ label: `ate ${p.length > 18 ? `${p.slice(0, 18)}…` : p}`, text: `I ate ${p}` }))
@@ -133,7 +169,9 @@ export async function tryFood(raw: string, now: Date, opts: FoodOpts = {}): Prom
 
   const custom = useKitchenStore.getState().foods
   const all = reading.eaten.flatMap((meal) => meal.parts)
-  const found = await researchParts(all, { custom, ...(opts.search ? { search: opts.search } : {}) })
+  const call = byModel ? await modelFor(opts) : null
+  const judge = call ? judgeWith(call) : undefined
+  const found = await researchParts(all, { custom, ...(opts.search ? { search: opts.search } : {}), ...(judge ? { judge } : {}) })
   let i = 0
   const meals = reading.eaten.map((meal) => ({ meal, found: meal.parts.map(() => found[i++] ?? null) }))
   const filed = fileMeals(meals, now)

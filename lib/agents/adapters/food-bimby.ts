@@ -11,7 +11,8 @@ export const FOOD_BIMBY_ID = "food-bimby"
 export const FOOD_LOG_STAGES: PipelineStage[] = [
   { id: "notice", label: "Notice", cost: "code", does: "Takes a line that asks for food tracking or nutrition, or names eating and two foods." },
   { id: "read", label: "Read", cost: "local-model", does: "Turns the line into meals: day, dish or drink, homemade or bought, each part with grams and a per-100 g guess. Planned food is kept apart. With no model, code splits the line into foods." },
-  { id: "research", label: "Look up", cost: "code", does: "Each part: saved foods and the catalog, then USDA FoodData Central, then Open Food Facts. A hit must share the part's words and sit near the guessed calories; with none, the guess is used and marked estimate." },
+  { id: "research", label: "Look up", cost: "code", does: "Each part: saved foods and the catalog, then USDA FoodData Central, then Open Food Facts. Up to four records that share the part's words, sit near the guessed calories and agree on cooked or raw." },
+  { id: "judge", label: "Judge", cost: "local-model", does: "One call picks the record that is the same food for each part, or none. With none, the guess is used and marked estimate." },
   { id: "file", label: "File", cost: "code", does: "One Food book intake per meal, with an accepted plate and its nutrient snapshot. A homemade dish is saved as a recipe card and the plate is the servings eaten. Undo takes the run back for 30 minutes." },
 ]
 

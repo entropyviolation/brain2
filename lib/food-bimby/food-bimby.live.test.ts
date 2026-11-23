@@ -10,7 +10,7 @@ import { useKitchenStore } from "@/lib/kitchen-store"
 import { tryFood } from "./run"
 
 const LINE =
-  "everything I've eaten today yesterday and the day before. soup which was 1 can of corn 3 smallish medium yukon gold potatoes, a splish or two of heavy whipping cream, chicken broth (maybe like half a boxy little container), 4 thick strips of bacon, some water. (turned out really good would make again maybe save the recipe and create a recipe card). Ate the whole thing over several sittings as well as a BIG container of POM juice 100% pomegranate juice maybe look up the calorie and nutrition info for that. next day had a whole container of pumpkin goat cheese ravioli from target in sauce with shredded cheddar cheese, olive oil (from garlic confit), and splish heavy cream. Also had 2 apple redbulls and 2 mexican cokes (150 calorie ones). Now the plan with this rice is eat it with some fishwife tinned fish, kewpie, sauce. PLEASE LOG ALL THIS FOOD IN FOOD TRACKING INCLUDING RESEARCHING AND LOGGING ALL NUTRITIONAL INFO!!!!"
+  "everything I've eaten today yesterday and the day before. soup which was 1 can of corn 3 smallish medium yukon gold potatoes, a splish or two of heavy whipping cream, chicken broth (maybe like half a boxy little container), 4 thick strips of bacon, some water. (turned out really good would make again maybe save the recipe and create a recipe card). Ate the whole thing over several sittings as well as a BIG container of POM juice 100% pomegranate juice maybe look up the calorie and nutrition info for that. next day had a whole container of pumpkin goat cheese ravioli from target in sauce with shredded cheddar cheese, olive oil (from garlic confit), and splish heavy cream. Also had 2 apple redbulls and 2 mexican cokes (150 calorie ones). tonight ate 1 cup (uncooked) rice is eat it with some fishwife tinned fish, kewpie, sauce. PLEASE LOG ALL THIS FOOD IN FOOD TRACKING INCLUDING RESEARCHING AND LOGGING ALL NUTRITIONAL INFO!!!!"
 
 describe.skipIf(!process.env.FOOD_LIVE)("Food BIMBY, live", () => {
   it("reads, researches and files the pasted day", async () => {
@@ -22,6 +22,8 @@ describe.skipIf(!process.env.FOOD_LIVE)("Food BIMBY, live", () => {
     try {
       const reply = await tryFood(LINE, new Date(), { call: ollamaCall("qwen2.5:14b-instruct"), search: searchFoodsOnline })
       console.log(reply?.route + "\n" + reply?.text)
+      const plates = useKitchenStore.getState().plates
+      console.log(`plates: ${plates.length}`)
       expect(reply?.route).toBe("FOOD · logged · model")
     } finally {
       process.env.VITEST = vitest

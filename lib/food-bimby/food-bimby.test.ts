@@ -91,6 +91,14 @@ describe("readMealsReply", () => {
     expect(r.planned).toEqual(["rice with Fishwife tinned fish, kewpie and sauce"])
   })
 
+  it("drops a plan that only repeats food eaten", () => {
+    const r = readMealsReply({
+      eaten: [{ title: "Fishwife tinned fish with rice", dayOffset: 0, kind: "meal", parts: [part("rice", "rice white raw", "1 cup uncooked", 185, g(365)), part("tinned fish", "Fishwife smoked salmon", "1 tin", 100, g(200)), part("kewpie", "kewpie mayonnaise", "1 tbsp", 14, g(700))] }],
+      planned: ["1 cup (uncooked) rice", "eat it with some fishwife tinned fish", "kewpie", "dessert later"],
+    })
+    expect(r.planned).toEqual(["dessert later"])
+  })
+
   it("drops a part with no grams and a whole-portion calorie guess", () => {
     const r = readMealsReply({ eaten: [{ title: "x", dayOffset: 0, kind: "meal", parts: [part("a", "a", "", 0, g(10)), part("b", "b", "", 50, g(1200))] }], planned: [] })
     expect(r.eaten[0]!.parts).toHaveLength(1)
@@ -107,6 +115,19 @@ describe("guessPer100", () => {
 })
 
 describe("picking a hit", () => {
+  const hit = (name: string, kcal: number): FoodHit => ({ id: name, name, per100g: nutrientsFrom({ kcal }), gramsPerUnit: 100, source: "catalog" })
+
+  it("does not price uncooked rice as cooked", () => {
+    const rice = { name: "rice", search: "rice white raw", amount: "1 cup uncooked", grams: 185, guess: null }
+    expect(pickHit(rice, [hit("Rice, white, cooked", 130), hit("Rice, white, long-grain, raw", 365)])?.name).toBe("Rice, white, long-grain, raw")
+  })
+
+  it("does not let one generic word stand for the food", () => {
+    const cheddar = { name: "cheese", search: "cheddar cheese shredded", amount: "some", grams: 30, guess: null }
+    expect(pickHit(cheddar, [hit("Cream cheese", 342)])).toBeNull()
+    expect(pickHit(cheddar, [hit("Cheese, cheddar, shredded", 403)])?.name).toBe("Cheese, cheddar, shredded")
+  })
+
   it("refuses a name that shares only a generic word", () => {
     const pom = readMealsReply(MODEL_READING).eaten[1]!.parts[0]!
     expect(pickHit(pom, [{ id: "cat_lemon", name: "Lemon juice", per100g: nutrientsFrom({ kcal: 22 }), gramsPerUnit: 100, source: "catalog" }])).toBeNull()
@@ -144,6 +165,22 @@ describe("tryFood", () => {
     expect(reply!.text).toMatch(/Mexican Coca-Cola .*: 300 kcal · estimate/)
   })
 
+  it("lets the model turn down a wrong record (Red Bull is not red cabbage)", async () => {
+    const line = "yesterday had 2 red bulls and a coke, log the food"
+    const reading = { eaten: [{ title: "Red Bull", dayOffset: -1, minute: null, kind: "drink", homemade: false, batchServings: 1, servingsEaten: 1, note: "", parts: [part("Red Bull", "Red Bull apple", "2 cans", 500, g(45, 0, 11, 0, 11))] }], planned: [] }
+    const seen: string[] = []
+    const call = async ({ system, user }: { system: string; user: string }) => {
+      if (system.startsWith("You check")) {
+        seen.push(user)
+        return { picks: [-1] }
+      }
+      return reading
+    }
+    const reply = await tryFood(line, NOW, { call, search: async () => [{ id: "off_1", name: "Red Cabbage with Apple", per100g: nutrientsFrom({ kcal: 50 }), gramsPerUnit: 100, source: "off" }] })
+    expect(seen[0]).toContain("a) Red Cabbage with Apple")
+    expect(reply!.text).toMatch(/Red Bull .*· estimate/)
+  })
+
   it("undo takes back the entries, plates and recipe card", async () => {
     await tryFood(PASTED, NOW, { call: async () => MODEL_READING, search })
     expect(undoLastFood(NOW)).toBe("Undone: 3 food entries.")
@@ -156,6 +193,20 @@ describe("tryFood", () => {
     const reply = await tryFood("yesterday I ate toast and 2 eggs", NOW, { call: null, search: async () => [] })
     expect(reply?.route).toBe("FOOD · logged · code")
     expect(useTimeTrackingStore.getState().entries[0]?.date).toBe("2026-11-21")
+  })
+
+  it("files nothing for a long line the model could not read, and offers to try again", async () => {
+    const reply = await tryFood(PASTED, NOW, { call: async () => { throw new Error("gave cut-off JSON (hit the token cap)") }, search })
+    expect(reply?.route).toBe("FOOD · unread · model failed")
+    expect(reply?.text).toContain("Nothing is logged")
+    expect(reply?.choices?.[0]).toEqual({ label: "try again", text: PASTED })
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(0)
+    expect(useKitchenStore.getState().plates).toHaveLength(0)
+  })
+
+  it("reads the model's seven-number guess", () => {
+    const r = readMealsReply({ eaten: [{ title: "Red Bull", dayOffset: 0, kind: "drink", parts: [{ name: "Red Bull", search: "Red Bull", amount: "2 cans", grams: 500, total: [220, 0, 54, 0, 54, 0, 200], statedKcal: 0 }] }], planned: [] })
+    expect(r.eaten[0]!.parts[0]!.guess).toMatchObject({ kcal: 44, carbG: 10.8, sodiumMg: 40 })
   })
 
   it("leaves a line that is not food", async () => {

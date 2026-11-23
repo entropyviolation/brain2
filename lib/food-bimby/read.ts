@@ -80,19 +80,11 @@ export function looksLikeFoodLog(raw: string): boolean {
 
 // ---------------------------------------------------------------- the model
 
-const GUESS_SCHEMA = {
-  type: "object",
-  properties: {
-    kcal: { type: "number" },
-    proteinG: { type: "number" },
-    carbG: { type: "number" },
-    fatG: { type: "number" },
-    sugarG: { type: "number" },
-    fiberG: { type: "number" },
-    sodiumMg: { type: "number" },
-  },
-  required: ["kcal", "proteinG", "carbG", "fatG", "sugarG", "fiberG", "sodiumMg"],
-}
+/**
+ * The guess is seven numbers in a fixed order, not seven named keys: a day of food is fifteen or more parts,
+ * and named keys pushed the answer past the token cap (2026-11-22, "gave cut-off JSON").
+ */
+const GUESS_SCHEMA = { type: "array", items: { type: "number" }, minItems: 7, maxItems: 7 }
 
 export const MEALS_SCHEMA = {
   type: "object",
@@ -137,16 +129,17 @@ export const MEALS_SCHEMA = {
 export const MEALS_SYSTEM = [
   "You read what a person says they ate and turn it into a food log. Reply with JSON only.",
   "eaten: one entry per dish or drink they actually ate or drank. A drink with calories (juice, soda, energy drink) is its own entry, kind drink.",
-  "dayOffset: 0 today, -1 yesterday, -2 the day before yesterday. When they list days in order (\"the day before\", \"next day\", \"today\"), follow that order. When no day is said, 0.",
+  "dayOffset: 0 today, -1 yesterday, -2 the day before yesterday. When they list days in order, follow that order: \"everything I ate today, yesterday and the day before: A ... next day B ... tonight C\" means A is -2, B is -1, C is 0. When no day is said, 0.",
   "minute: minutes after midnight only if a clock time is said, else null.",
   "homemade: true for something they cooked from parts (a soup they made). Then parts are the recipe's ingredients for the whole batch, batchServings is how many servings the batch makes (guess 4 if unsure), and servingsEaten is how many of those they ate (all of it = batchServings).",
-  "For a bought dish they added things to, parts are the dish plus each addition. For a single item, one part.",
+  "For a bought dish they added things to, parts are the dish plus each addition. Food eaten \"with\" something is a part of that same entry (\"rice with tinned fish, kewpie and sauce\" is one entry of four parts). For a single item, one part.",
   "parts.grams: your best estimate of the grams (or ml) eaten for that amount. Use real package sizes: a standard can of corn is about 432 g with liquid, a medium Yukon Gold potato about 170 g, one thick-cut bacon strip about 28 g raw, a splash of cream about 15 g, a 12 oz soda can or Mexican Coke bottle 355 ml, an 8.4 oz Red Bull 250 ml, a large POM juice bottle 1420 ml (48 oz), a Target refrigerated ravioli container about 255 g. Multiply by the count.",
+  "Say uncooked or dry in search when the amount is uncooked (\"1 cup uncooked rice\" searches \"rice white raw\", about 185 g and 680 kcal).",
   "parts.search: words for a nutrition database search, brand first when said (\"POM Wonderful 100% pomegranate juice\", \"Red Bull apple\", \"Mexican Coca-Cola\", \"Good & Gather pumpkin goat cheese ravioli\", \"bacon raw\", \"heavy whipping cream\"). Plain names, no amounts.",
-  "parts.total: your best nutrition estimate for the whole amount eaten of that part, as on a label times the count (kcal, protein, carb, fat, sugar, fiber in grams, sodium in mg). Two 8.4 oz Red Bulls are about 220 kcal; a 48 oz bottle of pomegranate juice about 960 kcal.",
+  "parts.total: your best nutrition estimate for the whole amount eaten of that part, as on a label times the count, as seven numbers in this order: [kcal, protein g, carb g, fat g, sugar g, fiber g, sodium mg]. Two 8.4 oz Red Bulls are about 220 kcal; a 48 oz bottle of pomegranate juice about 960 kcal.",
   "parts.statedKcal: total calories the person said for that part (\"2 Mexican Cokes, 150 calorie ones\" is 300), else 0.",
   "note: their own words about how it was or wanting to keep the recipe, else empty.",
-  "planned: food they say they will eat or plan to eat, not eaten yet, each as a short phrase. Never put planned food in eaten.",
+  "planned: food they say they will eat or plan to eat, not eaten yet, each as a short phrase. Food is either eaten or planned, never both: \"tonight ate rice\" is eaten and planned is empty.",
 ].join("\n")
 
 const num = (v: unknown, fallback = 0): number => (typeof v === "number" && Number.isFinite(v) ? v : fallback)
@@ -160,7 +153,12 @@ const GUESS_KEYS = ["kcal", "proteinG", "carbG", "fatG", "sugarG", "fiberG", "so
  */
 export function guessPer100(total: unknown, grams: number, statedKcal = 0): Per100Guess | null {
   if (grams <= 0) return null
-  const t = total && typeof total === "object" ? (total as Record<string, unknown>) : {}
+  // Seven numbers in `GUESS_KEYS` order, or (older answers, tests) an object with those keys.
+  const t: Record<string, unknown> = Array.isArray(total)
+    ? Object.fromEntries(GUESS_KEYS.map((k, i) => [k, total[i]]))
+    : total && typeof total === "object"
+      ? (total as Record<string, unknown>)
+      : {}
   const row = Object.fromEntries(GUESS_KEYS.map((k) => [k, Math.max(0, num(t[k]))])) as unknown as Per100Guess
   if (statedKcal > 0) {
     const scale = row.kcal > 0 ? statedKcal / row.kcal : 0
@@ -208,11 +206,26 @@ export function readMealsReply(raw: unknown): MealsReading {
       note: str(meal.note),
     })
   }
+  // The model sometimes repeats eaten food under planned. A plan whose words are all eaten words is dropped.
+  const eatenWords = new Set(out.eaten.flatMap((m) => [m.title, m.note, ...m.parts.flatMap((p) => [p.name, p.search, p.amount])]).flatMap(contentWords))
   for (const p of Array.isArray(body.planned) ? body.planned : []) {
     const said = str(p)
-    if (said) out.planned.push(said)
+    const words = contentWords(said)
+    if (!said || (words.length && words.every((w) => eatenWords.has(w)))) continue
+    out.planned.push(said)
   }
   return out
+}
+
+const FILLER = new Set(["some", "with", "eat", "ate", "the", "and", "this", "that", "plan", "will", "later", "tonight", "cup", "cups", "uncooked", "cooked", "can", "tin", "bit"])
+
+function contentWords(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .split(/\s+/)
+    .map((w) => w.replace(/(?:es|s)$/, ""))
+    .filter((w) => w.length > 2 && !FILLER.has(w))
 }
 
 // ---------------------------------------------------------------- no model
@@ -222,13 +235,24 @@ const DAY_WORD: [RegExp, number][] = [
   [/\byesterday\b/i, -1],
 ]
 
+/** Words past this, or more than one sentence, are more than a comma split can read (several days, a plan, a recipe). */
+export const CODE_MAX_WORDS = 25
+
+/** True when the no-model reading can be trusted with the line: one sentence, a short list of foods. */
+export function codeCanRead(raw: string): boolean {
+  const text = raw.replace(/\bPLEASE\b[\s\S]*$/i, "").trim()
+  const sentences = text.split(/[.!?]+\s+(?=\S)/).filter((s) => s.trim().length > 2)
+  return sentences.length <= 1 && text.split(/\s+/).length <= CODE_MAX_WORDS && !/\b(?:plan|will|going\s+to|later|tomorrow)\b/i.test(text)
+}
+
 /**
- * The line read with no model: split on commas, "and", "also", "as well as"; each piece one food,
+ * The line read with no model, for short lines only (`codeCanRead`): split on commas, "and", "also", "as well as"; each piece one food,
  * all on one plate on the day a day word names (today otherwise). Amounts become grams only when written
  * as a weight or a spoon; a bare count is one 100 g portion.
  */
 export function readMealsInCode(raw: string): MealsReading {
   const text = raw.replace(/\bPLEASE\b[\s\S]*$/i, "").trim()
+  if (!codeCanRead(text)) return { eaten: [], planned: [] }
   const dayOffset = DAY_WORD.find(([re]) => re.test(text))?.[1] ?? 0
   const pieces = text
     .replace(/^(?:today\s+|yesterday\s+)?(?:i\s+)?(?:ate|had|eaten|drank)\s+/i, "")
