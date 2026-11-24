@@ -77,6 +77,8 @@ import { liveSessionDeps, trySocial } from "@/lib/social-bimby/run"
 import { trySocialFollow } from "@/lib/social-bimby/session"
 import { tryStream } from "@/lib/stream-bimby/run"
 import { tryDump } from "@/lib/dump-bimby/run"
+import { beforeAppendix, tryBefore } from "@/lib/before-bimby/run"
+import { notePassing } from "@/lib/passing-bimby/run"
 import { tryGraphTell } from "@/lib/graph-bimby/run"
 import { tryOwed } from "./bim-owed-run"
 import { parsePatternAsk, patternSummaryText, summarize, useThoughtPatternStore } from "@/lib/thought-patterns/store"
@@ -85,13 +87,15 @@ import { tryDay } from "@/lib/plan-bimby/day/run"
 import { answerWeb, looksLikeWebQuestion, takeHome, type WebAnswer } from "@/lib/bim-flow/web-ask"
 import type { WebSearch } from "@/lib/bim-flow/web-lane"
 import { replyToCard } from "@/lib/report-bimby/card-reply"
+import { replyToLine, quoteOf, type LineRef, type Resolution } from "./line-reply"
+import { makeLoggedRowsSecret, wholeSecret } from "./make-secret"
 import type { CardRef } from "@/lib/report-bimby/reply-target"
 import { splitAside } from "@/lib/bim-flow/web-lane"
 import { answerSelf } from "./bim-self"
 import { tryCoach, tryRemind } from "@/lib/coach-bimby/apply"
 import { learnFromLine } from "@/lib/coach-bimby/learn"
 import { hasSecretSpans, stripSecretSpans, stripSecretsDeep } from "@/lib/secrets"
-import { secretsAskedFor } from "@/lib/secrets-store"
+import { secretsAskedFor, useSecretsStore } from "@/lib/secrets-store"
 import { parseCoachAsk } from "@/lib/coach-bimby/read"
 import { useMeStore } from "@/lib/coach-bimby/me-store"
 import { nextQuestion } from "@/lib/follow-through/ask"
@@ -154,6 +158,8 @@ export type BimLine = {
   replyTo?: string
   /** On a line of yours: the card change it replies to ("BIRTHDAY · Nico's birthday", `lib/report-bimby/reply-target.ts`). */
   aboutCard?: string
+  /** On a line of yours: the earlier line it replies to (right-click → Reply to, `line-reply.ts`). Text is a short quote. */
+  aboutLine?: LineRef
   /** On a reply that failed or timed out: your line, sent again by the Retry key on the reply. */
   retry?: string
 }
@@ -488,22 +494,39 @@ async function webInstead(board: SwitchboardResult, question: string, now: Date)
 /** Confidence too low to say: BIM says it does not know and asks you instead. */
 const UNSURE = new Set(["none", "low"])
 
-function answerLine(board: SwitchboardResult, question: string): BimLine {
+/** True when a passphrase is set, so secret notes exist that a reply without secrets did not read. */
+function secretsKept(): boolean {
+  return !!useSecretsStore.getState().record
+}
+
+/**
+ * The Ask lane's answer as a chat line. `secrets` is whether this line included them (`secretsAskedFor`).
+ * - Secrets off and BIM does not know: it says the secrets were not read, and does not ask you to tell it again.
+ * - Secrets on and the answer stands on a secret span: the whole answer is a secret span, so the line is gone
+ *   from chat while the switch is off (`use-bim-chat.ts` drops a line that masking left empty).
+ */
+function answerLine(board: SwitchboardResult, question: string, secrets = false): BimLine {
   const answer = board.answer!
   const unsure = UNSURE.has(answer.confidence)
-  if (unsure) pendingAsk = { kind: "fact", question }
-  const text = unsure
-    ? `I don't know. ${answer.text}\n\nDo you know? Tell me and I'll keep it, so I know next time. (skip to leave it)`
-    : answer.text
+  const locked = unsure && !secrets && secretsKept()
+  if (unsure && !locked) pendingAsk = { kind: "fact", question }
+  const fromSecrets = secrets && answer.evidence.some(hasSecretSpans)
+  const text = locked
+    ? "I don't know from what I can see. Secrets are off, so I did not read your secret notes. Turn on Include secrets in answers and ask again."
+    : unsure
+      ? `I don't know. ${answer.text}\n\nDo you know? Tell me and I'll keep it, so I know next time. (skip to leave it)`
+      : fromSecrets
+        ? `\\secret ${answer.text} \\secret`
+        : answer.text
   return {
     id: lineId(),
     at: new Date().toISOString(),
     who: "bim",
     text,
-    status: unsure ? "needs_clarify" : "ok",
+    status: unsure && !locked ? "needs_clarify" : "ok",
     route: board.route,
     ...(answer.evidence.length ? { evidence: answer.evidence } : {}),
-    ...(unsure ? { choices: [SKIP] } : {}),
+    ...(unsure && !locked ? { choices: [SKIP] } : {}),
   }
 }
 
@@ -572,7 +595,7 @@ function followUp(text: string, now: Date) {
 export async function sendToBim(
   text: string,
   now = new Date(),
-  opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; origin?: TraceOrigin; about?: CardRef; search?: WebSearch } = {},
+  opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; origin?: TraceOrigin; about?: CardRef; line?: LineRef & { pair?: string }; search?: WebSearch } = {},
 ): Promise<BimLine> {
   // Secret spans (`docs/SECRETS.md`): unless this line EXPLICITLY includes secrets (passphrase typed), every reader
   // of the turn — router, lanes, patterns, cues, follow-through, learning, the Trace — gets the line with its
@@ -611,6 +634,17 @@ export async function sendToBim(
       if (replied) return close(bimLine(replied.text, { route: replied.route, ...(replied.reportId ? { reportId: replied.reportId } : {}), ...(replied.evidence?.length ? { evidence: replied.evidence } : {}) }))
       turn.stage = "correct"
     }
+    // A line sent as a reply to an earlier chat line (right-click → Reply to): a to-do that line made may be done or
+    // dropped (`line-reply.ts`). Anything else goes on through the chat with the quoted line as what it answers.
+    if (opts.line) {
+      turn.stage = "line-reply"
+      const t0 = rec.clock()
+      const replied = await replyToLine(text, opts.line, now, opts.llm ? resolveGate : undefined).catch(() => null)
+      rec.add({ kind: "tool-call", actor: "line-reply", status: replied ? "ok" : "pass", t0 })
+      if (replied) return close(bimLine(replied.text, { route: replied.route, kind: "todo-today" as BimLine["kind"] }))
+      opts = { ...opts, lastBim: opts.line.who === "bim" ? opts.line.text : opts.line.pair ?? opts.lastBim }
+      turn.stage = "correct"
+    }
     const routed = await routeToBim(text, now, { ...opts, ...kept, rec, turn }, newestBefore)
     turn.stage = "follow-through"
     let t0 = rec.clock()
@@ -621,15 +655,23 @@ export async function sendToBim(
     learn = !!opts.llm && !opts.photos?.length && line.status !== "error" && !/^(ME|COACH|REMIND)\b/.test(line.route ?? "")
     // A cue (“remind me if I'm thinking about ordering food”) is checked against every line, after BIM has answered it.
     if (opts.photos?.length || line.status === "error" || /^(KEEP|CORRECT)/.test(line.route ?? "")) return close(line)
+    // Things said in passing ("spent a few hrs building playlists", "Elijah gets home 2pm") go on today's Tracking
+    // notes (`lib/passing-bimby/`), unless this turn already filed tracking or the stream card is proposing it.
+    turn.stage = "passing"
+    t0 = rec.clock()
+    const filedTracking = writesSince(newestBefore).some((e) => TRACKING_KINDS.has(String(e.kind)))
+    const passing = filedTracking || /^STREAM/.test(line.route ?? "") || line.status === "needs_clarify" ? null : notePassing(text, now)
+    rec.add({ kind: "tool-call", actor: "passing", status: passing ? "ok" : "pass", t0, ...(passing ? { note: `${passing.notes.length} note(s) on ${passing.date}` } : {}) })
+    const said = passing ? { ...line, text: `${line.text}\n\n${passing.reply}` } : line
     turn.stage = "cues"
     t0 = rec.clock()
     try {
       const cued = await fireCues(text, now, opts.llm ? cueGate : undefined)
       rec.add({ kind: "tool-call", actor: "cues", status: cued ? "ok" : "pass", t0 })
-      return close(cued ? { ...line, text: `${line.text}\n\n${cued.text}`, ...(line.choices?.length ? {} : { choices: cued.choices }) } : line)
+      return close(cued ? { ...said, text: `${said.text}\n\n${cued.text}`, ...(said.choices?.length ? {} : { choices: cued.choices }) } : said)
     } catch {
       rec.add({ kind: "tool-call", actor: "cues", status: "error", t0 })
-      return close(line)
+      return close(said)
     }
   } finally {
     unwatch()
@@ -687,6 +729,23 @@ function modelEvent(call: ModelCallSeen, actor: string, at: number): EventDraft 
     note: parts.join(" · "),
     data: { ...(call.loadMs !== undefined ? { loadMs: call.loadMs } : {}), ...(call.promptMs !== undefined ? { promptMs: call.promptMs } : {}), ...(call.evalMs !== undefined ? { evalMs: call.evalMs } : {}), ...(call.cached ? { cached: true } : {}), ...(call.system ? { system: clip(call.system, 4000) } : {}), ...(call.user ? { user: clip(call.user, 4000) } : {}), ...(call.output !== undefined ? { output: clip(call.output, 3000) } : {}) },
   }
+}
+
+/** The Line Reply BIMBY's one model read when code is unsure: does this reply say the to-do is done, dropped, or neither? */
+async function resolveGate(reply: string, todo: string): Promise<Resolution | "neither" | null> {
+  const crew = await chatCrew().catch(() => null)
+  if (!crew) return null
+  const prompt = {
+    system: 'A to-do and a reply the user wrote about it. Say "done" if the reply says it is done or no longer needs doing because it happened, "dropped" if they no longer want or need to do it, else "neither".',
+    user: `To-do: ${todo}\nReply: ${reply}`,
+    schema: { type: "object", properties: { status: { type: "string", enum: ["done", "dropped", "neither"] } }, required: ["status"] },
+    maxTokens: 20,
+  }
+  const asked = escalate<{ status?: string }>(ollamaCall(crew.main), crew.gate.length ? crew.gate : [crew.main], prompt, () => null)
+  const slow = new Promise<null>((resolve) => setTimeout(() => resolve(null), 20_000))
+  const got = await Promise.race([asked, slow])
+  const status = got?.out?.status
+  return status === "done" || status === "dropped" || status === "neither" ? status : null
 }
 
 /** One yes/no to a small model: is this line the situation a cue waits for? No model, a slow one or a throw means no. */
@@ -853,6 +912,8 @@ function noteTurn(said: string, now: Date, line: BimLine, newestBefore: string |
 }
 
 // ---------------------------------------------------------------- lanes
+/** Executor writes that already put this line on Tracking, so the Passing BIMBY leaves it alone. */
+const TRACKING_KINDS = new Set(["track", "location", "mood", "sleep", "start", "stop", "count", "note", "switch", "log", "intake", "activity"])
 
 type SendOpts = {
   llm?: boolean
@@ -945,8 +1006,8 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
   const execute = (said: string) => timed("executor", () => ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: said, receivedAt: now.toISOString() }, now), (r) => `${r.status} · ${r.kind}`)
   let board = opts.llm ? await switchboard(false) : null
   if (board?.chat && !board.passThrough) return chatLine(board, text)
-  if (board?.answer && !board.passThrough) return (await webInstead(board, text, now)) ?? answerLine(board, text)
-  if (board?.failed && !board.passThrough) return failedLine(board)
+  if (board?.answer && !board.passThrough) return (await webInstead(board, text, now)) ?? withBefore(answerLine(board, text, !!opts.secrets), text, now)
+  if (board?.failed && !board.passThrough) return withBefore(failedLine(board), text, now)
   let result = await execute(asWritten(text))
   // The ladder gave up on a line (a start, mood, or place it could not finish). With LLM on, the
   // router gets it before it becomes a question for you: a sure ask is answered, a sure log is filed.
@@ -958,7 +1019,7 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
     }
     if (second?.sure && second.answer && !second.passThrough) {
       useIngestStore.getState().setPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID, null)
-      return (await webInstead(second, text, now)) ?? answerLine(second, text)
+      return (await webInstead(second, text, now)) ?? answerLine(second, text, !!opts.secrets)
     }
     if (second?.sure && second.intent === "log") {
       useIngestStore.getState().setPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID, null)
@@ -976,6 +1037,20 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
     ...(board ? { route: board.route } : {}),
     ...(board?.answer?.evidence.length ? { evidence: board.answer.evidence } : {}),
   })
+}
+
+/**
+ * An answer to a question that names an event ("how many minutes until elijah gets back?"), with everything you said
+ * today you had to do before it under the model's words (`lib/before-bimby/`). Unchanged when nothing was said.
+ */
+function withBefore(line: BimLine, text: string, now: Date): BimLine {
+  let more: string | null = null
+  try {
+    more = beforeAppendix(text, now)
+  } catch {
+    more = null
+  }
+  return more ? { ...line, text: `${line.text}\n\n${more}` } : line
 }
 
 /** Your To Do words with the spelling mended by the main model, each fix checked (`takeTidy`). No model: your words. */
@@ -1054,6 +1129,8 @@ function grammarCommand(piece: GrammarPiece, now: Date): { text: string; at: Dat
       return { text: `currently ${activityPenName(piece.what)}`, at: piece.since ? sinceDate(piece.since, now) : now }
     case "stop":
       return { text: `stopped ${activityPenName(piece.what)}`, at: now }
+    case "did":
+      return { text: `now: | ${piece.what}`, at: now }
     case "habit":
       return { text: `did: ${piece.what}${piece.note ? ` -- ${piece.note}` : ""}`, at: now }
     case "rest":
@@ -1063,7 +1140,8 @@ function grammarCommand(piece: GrammarPiece, now: Date): { text: string; at: Dat
 
 /**
  * The day-stream grammar (`bim-grammar.ts`): each part of the line through the executor as BIM's own command, so
- * `undo` and the pins work as for a typed one. A stop with nothing open to stop is kept as a log line instead.
+ * `undo` and the pins work as for a typed one. A stop with nothing open to stop is a Tracking event at the send
+ * time instead ("done with shower"), and a log line only if that fails too.
  */
 async function grammarLine(pieces: GrammarPiece[], now: Date): Promise<BimLine> {
   const said: string[] = []
@@ -1073,10 +1151,14 @@ async function grammarLine(pieces: GrammarPiece[], now: Date): Promise<BimLine> 
   for (const piece of pieces) {
     const cmd = grammarCommand(piece, now)
     let result = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: cmd.text, receivedAt: cmd.at.toISOString() }, cmd.at)
-    if (piece.kind === "stop" && result.status !== "ok") result = await executorSend(`log: done with ${piece.what}`, now)
+    if (piece.kind === "stop" && result.status !== "ok") {
+      const said = piece.said ?? `done with ${piece.what}`
+      result = await executorSend(`now: | ${said}`, now)
+      if (result.status !== "ok") result = await executorSend(`log: ${said}`, now)
+    }
     if (result.status !== "ok") status = result.status
     kind ??= result.kind
-    kinds.push(piece.kind === "stop" && result.kind !== "stopped-activity" ? "log" : piece.kind)
+    kinds.push(piece.kind === "stop" && result.kind !== "stopped-activity" ? (result.kind === "now-capture" ? "did" : "log") : piece.kind)
     said.push(bimReplyText(result))
   }
   const lanes = [...new Set(kinds)].join(", ")
@@ -1126,6 +1208,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
   owed: async ({ text, now }) => {
     const owed = await tryOwed(text, now)
     return owed ? bimLine(owed.text, { route: owed.route, kind: "tell", ...(owed.evidence ? { evidence: owed.evidence } : {}) }) : null
+  },
+  before: ({ text, now }) => {
+    const before = tryBefore(text, now)
+    return before ? bimLine(before.text, { route: before.route, kind: before.kind }) : null
   },
   dump: ({ text, now }) => {
     const ask = parsePatternAsk(text)
@@ -1397,7 +1483,7 @@ type BimChatState = {
    * Send a line. Never blocks: the line and its reply slot show at once, and the turn runs after the ones sent
    * before it. Resolves when this line's reply is in.
    */
-  send: (text: string, photos?: IncomingAttachment[], about?: CardRef) => Promise<void>
+  send: (text: string, photos?: IncomingAttachment[], about?: CardRef, line?: LineRef) => Promise<void>
   /** BIM asks you something (a check-in). Without `kind` it alternates doing and mood. */
   checkIn: (kind?: "doing" | "mood") => void
   clear: () => void
@@ -1407,21 +1493,30 @@ type BimChatState = {
   openConvo: (id: string) => void
   /** Delete a past conversation. */
   dropConvo: (id: string) => void
+  /** Right-click → Make secret: the line, the other side of its exchange, and its filed log row become secret (`make-secret.ts`). */
+  makeSecret: (id: string) => void
+}
+
+/** The other side of an exchange: your line's reply, or the line of yours a BIM reply answered. */
+function pairOf(line: LineRef, lines: BimLine[]): string | undefined {
+  const at = lines.find((l) => l.id === line.id)
+  if (line.who === "you") return lines.find((l) => l.replyTo === line.id && !l.waiting)?.text
+  return at?.replyTo ? lines.find((l) => l.id === at.replyTo)?.text : undefined
 }
 
 const unwaited = (lines: BimLine[]): BimLine[] =>
   lines.map((l) => (l.waiting ? { ...l, waiting: undefined, status: "error" as const, text: "Not answered: BIM was closed before this line's turn ran. Send it again." } : l))
 
-type BimChatActions = Pick<BimChatState, "send" | "checkIn" | "clear" | "newConvo" | "openConvo" | "dropConvo">
+type BimChatActions = Pick<BimChatState, "send" | "checkIn" | "clear" | "newConvo" | "openConvo" | "dropConvo" | "makeSecret">
 
 function bimChatActions(set: StoreApi<BimChatState>["setState"], get: StoreApi<BimChatState>["getState"]): BimChatActions {
   return {
-      send: async (raw, photos = [], about) => {
+      send: async (raw, photos = [], about, line) => {
         const text = raw.trim()
         if (!text && !photos.length) return
         const tag = photos.length ? `${photos.length === 1 ? "Photo" : `${photos.length} photos`}` : ""
         const sentAt = new Date()
-        const mine: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "you", text: [tag, text].filter(Boolean).join(" · "), ...(about ? { aboutCard: about.label } : {}) }
+        const mine: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "you", text: [tag, text].filter(Boolean).join(" · "), ...(about ? { aboutCard: about.label } : {}), ...(line && !about ? { aboutLine: { ...line, text: quoteOf(line.text) } } : {}) }
         const ahead = get().queued
         const slot: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "bim", text: ahead ? `queued · ${ahead} ahead` : "…", waiting: true, replyTo: mine.id }
         set((s) => ({ queued: s.queued + 1, lines: [...s.lines, mine, slot].slice(-TRANSCRIPT_CAP), openStartedAt: s.openStartedAt || sentAt.toISOString() }))
@@ -1442,7 +1537,7 @@ function bimChatActions(set: StoreApi<BimChatState>["setState"], get: StoreApi<B
             // A turn that never ends must not hold every line sent after it: past TURN_LIMIT_MS this line is marked
             // failed (with "try again") and the next one runs.
             reply = await Promise.race([
-              sendToBim(text, sentAt, { llm: useBimLlmMode.getState().on, lastBim, photos, ...(about ? { about } : {}) }),
+              sendToBim(text, sentAt, { llm: useBimLlmMode.getState().on, lastBim, photos, ...(about ? { about } : line ? { line: { ...line, pair: pairOf(line, own) } } : {}) }),
               new Promise<BimLine>((done) => setTimeout(() => done(bimLine(`No answer after ${TURN_LIMIT_MS / 1000}s, so I moved on to your next line.`, { status: "error" })), TURN_LIMIT_MS)),
             ])
           } catch (error) {
@@ -1479,6 +1574,18 @@ function bimChatActions(set: StoreApi<BimChatState>["setState"], get: StoreApi<B
         set((s) => ({ past: shelve(s).filter((c) => c.id !== id), lines: target.lines, openId: target.id, openStartedAt: target.startedAt }))
       },
       dropConvo: (id) => set((s) => ({ past: s.past.filter((c) => c.id !== id) })),
+      makeSecret: (id) => {
+        const has = (ls: BimLine[]) => ls.some((l) => l.id === id)
+        const lines = convoLinesWhere(has)
+        const line = lines.find((l) => l.id === id)
+        if (!line || line.waiting) return
+        // The other side: your line's reply, or the line of yours this reply answered.
+        const pair = line.who === "you" ? lines.find((l) => l.replyTo === id && !l.waiting) : lines.find((l) => l.id === line.replyTo)
+        const mine = line.who === "you" ? line : pair?.who === "you" ? pair : undefined
+        const ids = new Set([id, ...(pair ? [pair.id] : [])])
+        set((s) => inConvo(s, has, (ls) => ls.map((l) => (ids.has(l.id) ? { ...l, text: wholeSecret(l.text), ...(l.evidence ? { evidence: l.evidence.map(wholeSecret) } : {}) } : l))))
+        if (mine) makeLoggedRowsSecret(mine.text, mine.at)
+      },
   }
 }
 

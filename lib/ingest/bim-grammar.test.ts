@@ -41,6 +41,25 @@ describe("day-stream grammar", () => {
     expect(kinds("startin now then")).toBeNull()
   })
 
+  it("reads status lines with no start or now: prefix", () => {
+    expect(kinds("Still cooking egg bites")).toEqual(["start:cooking egg bites"])
+    expect(kinds("still feeling tired")).toBeNull()
+    expect(kinds("working on brain2, specifically improving bim chat")).toEqual(["start:brain2", "rest:specifically improving bim chat"])
+    expect(kinds("working on it")).toBeNull()
+    expect(kinds("Changed into blue dress now going on a walk")).toEqual(["did:changed into blue dress", "start:walk"])
+    expect(kinds("Finally changed my outfit")).toEqual(["did:changed my outfit"])
+    expect(kinds("Just got home from walking a few minutes ago")).toEqual(["stop:walking"])
+    expect(kinds("About to leave for another walk")).toBeNull()
+  })
+
+  it("reads waking up as the end of sleep", () => {
+    expect(readDayStream("Up")).toEqual([{ kind: "stop", what: "sleep", said: "woke up" }])
+    expect(readDayStream("Woke in night")).toEqual([{ kind: "stop", what: "sleep", said: "woke in the night" }])
+    expect(kinds("just woke up")).toEqual(["stop:sleep"])
+    expect(kinds("gonna stay up")).toBeNull()
+    expect(kinds("what's up")).toBeNull()
+  })
+
   it("splits parts and keeps a part it cannot read as a log line", () => {
     expect(kinds("done with shower now time to get dressed")).toEqual(["stop:shower", "rest:time to get dressed"])
     expect(kinds("hitting the vape. took an adderall earlier too")).toEqual(["intake:the vape", "intake:an adderall earlier too"])

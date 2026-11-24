@@ -39,6 +39,11 @@ export function routeByCode(text: string): { intent: ChatIntent; sure: boolean; 
   const lower = t.toLowerCase()
   if (/\?\s*$/.test(t) && WH.test(lower)) return { intent: "ask", sure: true, why: "a question word and a question mark" }
   if (/^(how many|how much|how long|how often|when was the last|when did i last)\b/.test(lower)) return { intent: "ask", sure: true, why: "a counting or last-time question" }
+  // A question about yourself with no "?" ("who do I think about when …", "did I take my meds"): the models called
+  // it unclear and it was logged. A question opener plus "I" is asked, so Ask (with secrets, when on) answers it.
+  if (/^((who|what|when|where|why|how|which)\s+)?(do|did|does|am|was|have|had|should|would|will|can|could)\s+i\b/.test(lower)) {
+    return { intent: "ask", sure: true, why: "a question about you" }
+  }
   if (/^(make|create|add|build|set up)\s+(me\s+)?(a|an|new)\s+.*\b(habit|list|widget|countdown|folder|rule|tracker)\b/.test(lower)) {
     return { intent: "build", sure: true, why: "asks to make a habit, list, or widget" }
   }

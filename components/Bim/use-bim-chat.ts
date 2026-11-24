@@ -14,17 +14,24 @@ import { useBimChatStore, type BimLine } from "@/lib/ingest/bim-chat"
 import { maskSecrets, useSecretsShown } from "@/lib/secrets-store"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { useReplyTarget } from "@/lib/report-bimby/reply-target"
+import { useLineReply } from "@/lib/ingest/line-reply"
 import { chatPhotoFromFile } from "@/lib/ingest/chat-photo"
 import type { IncomingAttachment } from "@/lib/ingest/types"
 
 /**
  * The transcript as a screen may draw it (`docs/SECRETS.md`). Locked, every `\secret` span is cut from every line,
- * card ref and choice, and a line of yours that was all secret is not drawn at all. Unlocked with the chat switch
+ * card ref and choice, and a line that was all secret (yours, or BIM's answer from your secrets) is not drawn at all. Unlocked with the chat switch
  * on, the lines come back as written. The store keeps them as written either way.
  */
 export function useShownLines(lines: BimLine[]): BimLine[] {
   const shown = useSecretsShown("chat")
-  return useMemo(() => (shown ? lines : maskSecrets(lines, false).filter((l, i) => l.who !== "you" || !!l.text.trim() || !lines[i]!.text.trim())), [lines, shown])
+  return useMemo(() => {
+    if (shown) return lines
+    const masked = maskSecrets(lines, false)
+    const gone = new Set(masked.filter((l, i) => !l.text.trim() && !!lines[i]!.text.trim()).map((l) => l.id))
+    // The reply to a line that was all secret ("Logged: · 10:59 AM") goes with it.
+    return masked.filter((l) => !gone.has(l.id) && !(l.replyTo && gone.has(l.replyTo)))
+  }, [lines, shown])
 }
 
 export function useBimChat() {
@@ -42,6 +49,12 @@ export function useBimChat() {
   // The card change the next line answers (tap a change on a card). Only your typed line carries it, not a tapped answer.
   const replyTarget = useReplyTarget((s) => s.target)
   const setReplyTarget = useReplyTarget((s) => s.set)
+  // The earlier chat line the next line answers (right-click → Reply to). A card change, when both are set, wins.
+  const lineTarget = useLineReply((s) => s.target)
+  const setLineTarget = useLineReply((s) => s.set)
+  useEffect(() => {
+    if (replyTarget) setLineTarget(null)
+  }, [replyTarget, setLineTarget])
 
   // The unsent line is kept on every keystroke and comes back after a closed
   // screen or a reload. Only a send clears it. Stable, so the memoized log does not repaint per keystroke.
@@ -121,11 +134,12 @@ export function useBimChat() {
     const attached = own ? photos : []
     // Never waits on a running turn: the line queues and gets its own reply slot (`useBimChatStore.send`).
     if (!text.trim() && !attached.length) return
-    void send(text, attached, own && replyTarget ? replyTarget : undefined)
+    void send(text, attached, own && replyTarget ? replyTarget : undefined, own && lineTarget ? lineTarget : undefined)
     if (own) {
       setDraft("")
       setPhotos([])
       if (replyTarget) setReplyTarget(null)
+      if (lineTarget) setLineTarget(null)
     }
   }
 
@@ -137,7 +151,7 @@ export function useBimChat() {
     }
   }
 
-  return { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget: () => setReplyTarget(null) }
+  return { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget: () => setReplyTarget(null), lineTarget, replyToLine: setLineTarget }
 }
 
 /** Last BIM line, when it still carries tap answers. */

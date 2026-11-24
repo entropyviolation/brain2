@@ -9,7 +9,7 @@
 "use client"
 
 import { Camera } from "lucide-react"
-import { Fragment, memo, useLayoutEffect, useRef, useState } from "react"
+import { Fragment, memo, useCallback, useLayoutEffect, useRef, useState } from "react"
 import { BIM_FULL, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
 import { insertSecretMarks } from "@/lib/secrets"
@@ -18,14 +18,19 @@ import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
 import { HabitCard } from "@/components/Bim/habit-card"
+import { jumpToLine, useLineMenu } from "@/components/Bim/line-menu"
+import { quoteOf } from "@/lib/ingest/line-reply"
 import { ConvoKeys, ConvoList } from "@/components/Bim/convo-list"
 import "@/components/Bim/bim-ink.css"
 import "./bim-phone.css"
 
 /** The transcript. Memoized: a keystroke in the compose box does not repaint every line and card. */
-const PhoneLog = memo(function PhoneLog({ lines, onRetry }: { lines: BimLine[]; onRetry: (text: string) => void }) {
+const PhoneLog = memo(function PhoneLog({ lines, onRetry, onReply }: { lines: BimLine[]; onRetry: (text: string) => void; onReply: (line: BimLine) => void }) {
+  // Long-press (or right-click) a line: Reply to, Copy (`line-menu.tsx`).
+  const { menu, lineProps } = useLineMenu(onReply)
   return (
     <>
+      {menu}
       {lines.length === 0 ? (
         <p className="bim-phone-line is-bim">
           <b>BIM</b> Listening. Type anything you would text me — info, groc, gm, log: …
@@ -33,7 +38,12 @@ const PhoneLog = memo(function PhoneLog({ lines, onRetry }: { lines: BimLine[]; 
       ) : (
         lines.map((line) => (
           <Fragment key={line.id}>
-            <p className={`bim-phone-line is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
+            {line.aboutLine ? (
+              <span className="bim-quote" role="button" tabIndex={0} title="Show that line" onClick={() => jumpToLine(line.aboutLine!.id)} onKeyDown={(e) => e.key === "Enter" && jumpToLine(line.aboutLine!.id)}>
+                ↳ {line.aboutLine.who === "you" ? "you" : "BIM"}: {line.aboutLine.text}
+              </span>
+            ) : null}
+            <p className={`bim-phone-line is-${line.who}${line.status === "error" ? " is-error" : ""}`} {...lineProps(line)}>
               <b>{line.who === "you" ? "YOU" : "BIM"}</b> {line.waiting ? (line.text === "…" ? "▮▮▮" : `▮▮▮ ${line.text}`) : line.text}
             </p>
             {line.aboutCard ? <span className="bim-about">↳ re: {line.aboutCard}</span> : null}
@@ -63,7 +73,8 @@ const PhoneLog = memo(function PhoneLog({ lines, onRetry }: { lines: BimLine[]; 
 })
 
 export function BimPhoneScreen() {
-  const { lines, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget } = useBimChat()
+  const { lines, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget, lineTarget, replyToLine } = useBimChat()
+  const onReplyLine = useCallback((line: BimLine) => replyToLine({ id: line.id, who: line.who, text: line.text }), [replyToLine])
   const fileInput = useRef<HTMLInputElement>(null)
   const box = useRef<HTMLTextAreaElement>(null)
   // The SECRET key's caret, placed once the new draft is on screen (a controlled box jumps to the end otherwise).
@@ -99,7 +110,7 @@ export function BimPhoneScreen() {
       </header>
 
       <div className="bim-phone-screen" ref={logRef} role="log" aria-live="polite">
-        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <PhoneLog lines={lines} onRetry={submit} />}
+        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <PhoneLog lines={lines} onRetry={submit} onReply={onReplyLine} />}
         <span className="bim-phone-cursor" aria-hidden="true" />
       </div>
 
@@ -138,6 +149,12 @@ export function BimPhoneScreen() {
           <p className="bim-replying">
             ↳ replying to <b>{replyTarget.label}</b>
             <button type="button" aria-label="Stop replying to the card" onClick={clearReplyTarget}>✕</button>
+          </p>
+        ) : null}
+        {lineTarget && !replyTarget ? (
+          <p className="bim-replying">
+            ↳ replying to <b>{lineTarget.who === "you" ? "you" : "BIM"}: {quoteOf(lineTarget.text)}</b>
+            <button type="button" aria-label="Stop replying to that line" onClick={() => replyToLine(null)}>✕</button>
           </p>
         ) : null}
         <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />

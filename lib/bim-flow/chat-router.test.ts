@@ -24,6 +24,14 @@ describe("routeByCode", () => {
     expect(routeByCode("make a new daily habit for being home")).toMatchObject({ intent: "build", sure: true })
   })
 
+  it("asks a question about you with no question mark", () => {
+    expect(routeByCode("who do i think about what i touch myself")).toMatchObject({ intent: "ask", sure: true })
+    expect(routeByCode("did I take my meds")).toMatchObject({ intent: "ask", sure: true })
+    expect(routeByCode("what did i eat yesterday")).toMatchObject({ intent: "ask", sure: true })
+    expect(routeByCode("i did the dishes")).toBeNull()
+    expect(routeByCode("what a day")).toBeNull()
+  })
+
   it("only hints at a bare question mark, and leaves a log line alone", () => {
     expect(routeByCode("garlic confit tonight?")).toMatchObject({ intent: "ask", sure: false })
     expect(routeByCode("making garlic confit now")).toBeNull()

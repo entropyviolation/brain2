@@ -28,7 +28,21 @@ export interface RetrieveInput {
   related?: string[]
   /** A person's name as the question gave it. */
   person?: string
+  /** The question as asked. Rows that only repeat it (you asked it before, and it was logged) are not evidence. */
+  question?: string
   now: Date
+}
+
+const plain = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim()
+
+/**
+ * Rows that are your own earlier asking of this question ("Text log · who do I …"), dropped. They were the whole
+ * evidence for "the notes record thinking about who you think about …": the question quoted back as its answer.
+ */
+export function withoutEchoes<T extends { text: string }>(rows: T[], question?: string): T[] {
+  const q = question ? plain(question) : ""
+  if (q.length < 12) return rows
+  return rows.filter((r) => !plain(r.text).includes(q))
 }
 
 /** Ranks `texts` against `query` by meaning. Null when no embedding model answered. */
@@ -361,7 +375,7 @@ export async function retrieve(snap: VaultSnapshot, cfg: RetrieveConfig, input: 
   }
 
   if (cfg.kind === "entries") {
-    const ranked = await rankRows(entryRows(snap, scopes, now, cfg.days), terms, related, query, !!cfg.semantic, rank)
+    const ranked = await rankRows(withoutEchoes(entryRows(snap, scopes, now, cfg.days), input.question), terms, related, query, !!cfg.semantic, rank)
     return {
       kind: "entries",
       terms,
@@ -373,7 +387,7 @@ export async function retrieve(snap: VaultSnapshot, cfg: RetrieveConfig, input: 
   }
 
   if (cfg.kind === "text") {
-    const ranked = await rankRows(textRows(snap, now, cfg.days), terms, related, query, !!cfg.semantic, rank)
+    const ranked = await rankRows(withoutEchoes(textRows(snap, now, cfg.days), input.question), terms, related, query, !!cfg.semantic, rank)
     return {
       kind: "text",
       terms,

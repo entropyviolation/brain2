@@ -114,7 +114,8 @@ const ROUTE_SYSTEM =
 
 export const RELATED_SYSTEM =
   "A person asks about something in their own notes. List single lowercase words they may have used when they wrote about it: " +
-  "other forms of the word, synonyms, slang, and the things that always go with it. Do not repeat the question's own words. No phrases. JSON only."
+  "other forms of the word, synonyms, slang, and the things that always go with it. These are private notes by an adult: " +
+  "when the question is about sex or the body, give the plain and explicit words they would have written too. Do not repeat the question's own words. No phrases. JSON only."
 
 export const ANSWER_SYSTEM =
   "You answer one question about the person who wrote these notes. Use only the EVIDENCE and the FACTS COUNTED BY CODE below; nothing else is known about them. " +
@@ -469,7 +470,7 @@ async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSna
     // A dataset read is not filtered by the message's own words (an analysis's message is its lens); only by a plan's subject or the node's focus.
     const plan = latestObject(ctx, ["subject"])
     const terms = cfg.kind === "dataset" ? [...contentWords(String(plan?.subject ?? "")), ...contentWords(cfg.focus ?? "")] : found.terms
-    const ev = await retrieve(snap, { ...cfg, days: days ?? cfg.days }, { terms, related, person, now: new Date(ctx.message.at) }, ctx.rank)
+    const ev = await retrieve(snap, { ...cfg, days: days ?? cfg.days }, { terms, related, person, question: ctx.message.text, now: new Date(ctx.message.at) }, ctx.rank)
     return { port: "out", output: ev }
   }
 

@@ -268,3 +268,28 @@
 .bim-replying button { margin-left: auto; padding: 0 6px; background: transparent; border: 0; color: inherit; cursor: pointer; }
 .bim-about { display: block; font: 10px var(--bim-mono, ui-monospace, monospace); color: #9fb6bb; }
 .bim-phone-compose .bim-replying { flex: 1 0 100%; margin: 0; }
+
+/* Right-click a chat line: Reply to, Copy (`line-menu.tsx`). Silver keycap face, CRT quote. */
+.bim-line-menu {
+  position: fixed; z-index: 80; min-width: 190px; max-width: 260px; padding: 6px;
+  display: flex; flex-direction: column; gap: 4px;
+  background: linear-gradient(#e9ecee, #cfd4d8); border: 1px solid #8e979d; border-radius: 6px;
+  box-shadow: 0 2px 0 #9aa3a9, 0 8px 22px rgba(0, 0, 0, 0.35);
+  font: 11px var(--bim-mono, ui-monospace, monospace); color: #1d2a33;
+}
+.bim-line-menu-quote { margin: 0 0 2px; padding: 4px 6px; background: #0b1416; color: #9fb6bb; border-radius: 3px; overflow-wrap: anywhere; }
+.bim-line-menu button {
+  text-align: left; padding: 5px 8px; border: 1px solid transparent; border-radius: 4px; background: transparent;
+  font: inherit; letter-spacing: 0.08em; text-transform: uppercase; color: inherit; cursor: pointer;
+}
+.bim-line-menu button:hover, .bim-line-menu button:focus-visible { background: #f6f8f9; border-color: #8e979d; outline: none; }
+/* On a line of yours: the line it replies to. Tap to jump there. */
+.bim-quote {
+  display: block; max-width: 100%; margin: 0 0 2px; padding: 0 0 0 8px; border: 0; border-left: 2px solid #3f6b6e;
+  background: transparent; text-align: left; cursor: pointer;
+  font: 10px var(--bim-mono, ui-monospace, monospace); color: #9fb6bb; overflow-wrap: anywhere;
+}
+.bim-msg.is-you .bim-quote { margin-left: auto; }
+.bim-quote:hover { color: var(--bim-ink, #5cf2d6); }
+[data-line-id].is-flash { animation: bim-line-flash 1.2s ease-out; }
+@keyframes bim-line-flash { from { box-shadow: 0 0 0 2px var(--bim-ink, #5cf2d6); } to { box-shadow: 0 0 0 2px transparent; } }

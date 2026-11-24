@@ -30,6 +30,8 @@ import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
 import { HabitCard } from "@/components/Bim/habit-card"
+import { jumpToLine, useLineMenu } from "@/components/Bim/line-menu"
+import { quoteOf } from "@/lib/ingest/line-reply"
 import { BimBlob } from "@/components/Bim/bim-blob"
 import { listOllamaModels } from "@/lib/bim-flow/ollama"
 import { LlmSuggestions } from "./llm-suggestions"
@@ -77,9 +79,12 @@ export function clock(iso: string, now = new Date()): string {
 }
 
 /** The chat history. Memoized: a keystroke in the well does not repaint every line under the glass. */
-const ChatLog = memo(function ChatLog({ lines, onTry, onThought, onRetry }: { lines: BimLine[]; onTry: (text: string) => void; onThought: (line: BimLine) => void; onRetry: (text: string) => void }) {
+const ChatLog = memo(function ChatLog({ lines, onTry, onThought, onRetry, onReply }: { lines: BimLine[]; onTry: (text: string) => void; onThought: (line: BimLine) => void; onRetry: (text: string) => void; onReply: (line: BimLine) => void }) {
+  // Right-click a line's background: Reply to, Copy (`line-menu.tsx`).
+  const { menu, lineProps } = useLineMenu(onReply)
   return (
     <>
+      {menu}
       {lines.length === 0 ? (
         <div className="bim-empty">
           <p className="bim-legend">BIM · listening</p>
@@ -94,10 +99,15 @@ const ChatLog = memo(function ChatLog({ lines, onTry, onThought, onRetry }: { li
         </div>
       ) : (
         lines.map((line) => (
-          <div key={line.id} className={`bim-msg is-${line.who}${line.status === "error" ? " is-error" : ""}`}>
+          <div key={line.id} className={`bim-msg is-${line.who}${line.status === "error" ? " is-error" : ""}`} {...lineProps(line)}>
             <span className="bim-msg-who">
               {line.who === "you" ? "YOU" : "BIM"} {clock(line.at)}
             </span>
+            {line.aboutLine ? (
+              <span className="bim-quote" role="button" tabIndex={0} title="Show that line" onClick={() => jumpToLine(line.aboutLine!.id)} onKeyDown={(e) => e.key === "Enter" && jumpToLine(line.aboutLine!.id)}>
+                ↳ {line.aboutLine.who === "you" ? "you" : "BIM"}: {line.aboutLine.text}
+              </span>
+            ) : null}
             {line.waiting ? (
               <span className="bim-wait" role="status" aria-label={line.text === "…" ? "BIM is working" : `BIM: ${line.text}`}>
                 <i />
@@ -211,9 +221,16 @@ function EvidenceFold({ line, onThought }: { line: BimLine; onThought: (line: Bi
 }
 
 function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
-  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget } = useBimChat()
+  const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget, lineTarget, replyToLine } = useBimChat()
   const choices = openChoices(lines)
   const box = useRef<HTMLTextAreaElement>(null)
+  const onReplyLine = useCallback(
+    (line: BimLine) => {
+      replyToLine({ id: line.id, who: line.who, text: line.text })
+      box.current?.focus()
+    },
+    [replyToLine],
+  )
   // The SECRET key's caret, placed once the new draft is on screen (a controlled box jumps to the end otherwise).
   const caretTo = useRef<number | null>(null)
   useLayoutEffect(() => {
@@ -231,6 +248,8 @@ function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
     setDraft(appendDictated(draft, text))
     box.current?.focus()
   })
+  const dictating = dictate.state !== "idle"
+  const micOn = dictate.state === "warming" || dictate.state === "listening"
 
   /** While a question is open and nothing is typed, a digit taps that numbered answer. */
   const onKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -262,7 +281,7 @@ function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
         <ConvoKeys showing={showPast} setShowing={setShowPast} />
       </div>
       <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
-        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} onThought={onThought} onRetry={submit} />}
+        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} onThought={onThought} onRetry={submit} onReply={onReplyLine} />}
       </div>
       <div className="bim-compose">
         <div className={editing || draft ? "bim-glass bim-well is-editing" : "bim-glass bim-well"}>
@@ -291,17 +310,31 @@ function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
           ) : null}
           {photoError ? <p className="bim-photo-error">{photoError}</p> : null}
           {dictate.error ? <p className="bim-photo-error">{dictate.error}</p> : null}
+          {dictating ? (
+            <p className={`bim-dictate-status is-${dictate.state}`} role="status" aria-live="polite">
+              <span className="bim-dictate-lamp" aria-hidden="true" />
+              {dictate.state === "warming" ? "MIC ON · LOADING WHISPER…" : dictate.state === "listening" ? "LISTENING · PRESS MIC TO STOP" : "FINISHING…"}
+            </p>
+          ) : null}
           {replyTarget ? (
             <p className="bim-replying">
               ↳ replying to <b>{replyTarget.label}</b>
               <button data-no95 type="button" aria-label="Stop replying to the card" onClick={clearReplyTarget}>✕</button>
             </p>
           ) : null}
+          {lineTarget && !replyTarget ? (
+            <p className="bim-replying">
+              ↳ replying to <b>{lineTarget.who === "you" ? "you" : "BIM"}: {quoteOf(lineTarget.text)}</b>
+              <button data-no95 type="button" aria-label="Stop replying to that line" onClick={() => replyToLine(null)}>✕</button>
+            </p>
+          ) : null}
           <textarea
             ref={box}
             aria-label="Message BIM"
-            value={draft}
-            placeholder={photos.length ? "Caption (or leave blank and I will ask)…" : replyTarget ? "Say what's wrong or what you know…" : choices.length ? "Type an answer, or press a number…" : "Message BIM…"}
+            value={dictating && dictate.live ? appendDictated(draft, dictate.live) : draft}
+            readOnly={dictating}
+            className={dictating ? "is-dictating" : undefined}
+            placeholder={photos.length ? "Caption (or leave blank and I will ask)…" : replyTarget ? "Say what's wrong or what you know…" : lineTarget ? "Reply to that line (\"found one\", \"never mind\")…" : choices.length ? "Type an answer, or press a number…" : "Message BIM…"}
             onChange={(event) => {
               setEditing(true)
               setDraft(event.target.value)
@@ -323,10 +356,10 @@ function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
               <button
                 data-no95
                 type="button"
-                className={dictate.state === "listening" ? "is-mod bim-dictate is-live" : "is-mod bim-dictate"}
-                aria-label={dictate.state === "listening" ? "Stop dictation" : "Dictate"}
-                aria-pressed={dictate.state === "listening"}
-                title={dictate.state === "listening" ? "Stop and transcribe" : dictate.state === "transcribing" ? "Transcribing…" : "Dictate (local Whisper)"}
+                className={micOn ? "is-mod bim-dictate is-live" : "is-mod bim-dictate"}
+                aria-label={micOn ? "Stop dictation" : "Dictate"}
+                aria-pressed={micOn}
+                title={micOn ? "Stop and transcribe" : dictate.state === "transcribing" ? "Transcribing…" : "Dictate (local Whisper)"}
                 disabled={dictate.state === "transcribing"}
                 onClick={() => void dictate.toggle()}
               >
