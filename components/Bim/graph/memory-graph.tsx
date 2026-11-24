@@ -5,7 +5,10 @@
  * or any item and everything around it. Nodes settle by a small force layout (no library), sit on rings by
  * their distance from the center, and can be dragged; drag the glass to pan, wheel to zoom. Click a node to
  * read it in the inspector: ASK BIM puts a question about it in the compose well (never sent on its own),
- * OPEN opens the item, CENTER walks the graph to it (double-click does too), THOUGHT opens a turn's Thought.
+ * TELL BIM puts "Tell BIM about <it>: " there instead, so what you say next is read into proposed changes
+ * (`lib/graph-bimby/`); on a date node it opens that day's Day Log correction. Shift-click picks several items,
+ * and TELL BIM ABOUT THESE tells about them as a group. Waiting changes are drawn as dashed nodes with
+ * ACCEPT / REJECT. OPEN opens the item, CENTER walks the graph to it (double-click does too), THOUGHT opens a turn's Thought.
  * Search centers on any item in Brain2. `openBimGraph(id)` (`lib/memory-graph/open.ts`) opens here from outside.
  */
 "use client"
@@ -13,15 +16,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useBimChatStore, type BimLine } from "@/lib/ingest/bim-chat"
+import { useShownLines } from "@/components/Bim/use-bim-chat"
 import { bimGraph, itemGraph, searchItems, type GraphNode, type GraphNodeKind, type MemoryGraph } from "@/lib/memory-graph/build"
 import { useBimGraphFocus } from "@/lib/memory-graph/open"
 import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { itemTitle } from "@/lib/item-utils"
+import { useReportStore } from "@/lib/report-bimby/store"
+import { acceptEffect, rejectEffect } from "@/lib/report-bimby/decide"
+import { withProposals } from "@/lib/graph-bimby/ghosts"
+import { tellLead } from "@/lib/graph-bimby/parse"
+import { useGraphTellTarget } from "@/lib/graph-bimby/target"
 import "./memory-graph.css"
 
 type Body = { x: number; y: number; vx: number; vy: number; ring: number; pinned?: boolean }
 
-const RADIUS: Partial<Record<GraphNodeKind, number>> = { hub: 15, project: 10, person: 9, item: 8, lane: 8, list: 7, date: 7, turn: 6, step: 5, note: 6, resource: 6, evidence: 4 }
+const RADIUS: Partial<Record<GraphNodeKind, number>> = { place: 8, proposal: 6, hub: 15, project: 10, person: 9, item: 8, lane: 8, list: 7, date: 7, turn: 6, step: 5, note: 6, resource: 6, evidence: 4 }
 
 const KIND_SAYS: Record<GraphNodeKind, string> = {
   hub: "BIM core",
@@ -36,6 +45,8 @@ const KIND_SAYS: Record<GraphNodeKind, string> = {
   lane: "lane",
   turn: "chat turn",
   evidence: "evidence row",
+  place: "place",
+  proposal: "proposed change",
 }
 
 /** Distance from the center along edges: the ring a node sits on. */
@@ -163,14 +174,21 @@ function useLayout(graph: MemoryGraph, size: { w: number; h: number }) {
 export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) => void; onThought: (line: BimLine) => void }) {
   const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
-  const lines = useBimChatStore((s) => s.lines)
+  const lines = useShownLines(useBimChatStore((s) => s.lines))
   const centerId = useBimGraphFocus((s) => s.centerId)
   const setCenter = useBimGraphFocus((s) => s.setCenter)
   const [trail, setTrail] = useState<(string | null)[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [query, setQuery] = useState("")
+  const [picked, setPicked] = useState<string[]>([])
+  const plans = useReportStore((s) => s.plans)
+  const order = useReportStore((s) => s.order)
+  const setTargets = useGraphTellTarget((s) => s.set)
 
-  const graph = useMemo(() => (centerId ? itemGraph(centerId, tasks, lists, new Date(), lines) : bimGraph(lines, tasks)), [centerId, tasks, lists, lines])
+  const base = useMemo(() => (centerId ? itemGraph(centerId, tasks, lists, new Date(), lines) : bimGraph(lines, tasks)), [centerId, tasks, lists, lines])
+  // Changes BIM proposed about the center and you have not decided yet: dashed nodes on the graph.
+  const graph = useMemo(() => (centerId ? withProposals(base, order.map((id) => plans[id]).filter(Boolean)) : base), [base, centerId, plans, order])
+  const proposedCount = graph.nodes.filter((n) => n.kind === "proposal").length
   const byId = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n])), [graph])
   const found = useMemo(() => searchItems(query, tasks), [query, tasks])
 
@@ -205,7 +223,7 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
   }
 
   // Pointer: a node drags (and selects on a still click); the glass pans.
-  const drag = useRef<{ id: string | null; x: number; y: number; moved: boolean; vx: number; vy: number } | null>(null)
+  const drag = useRef<{ id: string | null; x: number; y: number; moved: boolean; vx: number; vy: number; shift: boolean } | null>(null)
   const toGraph = (e: ReactPointerEvent) => {
     const r = wrap.current!.getBoundingClientRect()
     return { x: (e.clientX - r.left - r.width / 2 - view.x) / view.k, y: (e.clientY - r.top - r.height / 2 - view.y) / view.k }
@@ -213,7 +231,7 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
   const onDown = (e: ReactPointerEvent, id: string | null) => {
     e.stopPropagation()
     ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
-    drag.current = { id, x: e.clientX, y: e.clientY, moved: false, vx: view.x, vy: view.y }
+    drag.current = { id, x: e.clientX, y: e.clientY, moved: false, vx: view.x, vy: view.y, shift: e.shiftKey || e.metaKey }
   }
   const onMove = (e: ReactPointerEvent) => {
     const d = drag.current
@@ -232,7 +250,10 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
     const d = drag.current
     drag.current = null
     if (!d) return
-    if (d.id && !d.moved) setSelected(d.id)
+    // Shift-click (or Cmd-click) picks an item for a group; a plain click selects.
+    const itemId = d.id ? byId.get(d.id)?.itemId : undefined
+    if (d.id && !d.moved && d.shift && itemId) setPicked((p) => (p.includes(itemId) ? p.filter((x) => x !== itemId) : [...p, itemId]))
+    else if (d.id && !d.moved) setSelected(d.id)
     if (!d.id && !d.moved) setSelected(null)
     // A dragged node stays where it was put; the center stays pinned anyway.
   }
@@ -247,6 +268,15 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
   const dense = graph.nodes.length > 34
   const center = byId.get(graph.centerId)
   const thoughtLine = sel?.traceId ? lines.find((l) => l.traceId === sel.traceId) : undefined
+  const selEffect = sel?.proposal ? plans[sel.proposal.planId]?.effects.find((e) => e.id === sel.proposal!.effectId) : undefined
+  const pickedItems = picked.map((id) => tasks.find((t) => t.id === id)).filter((t): t is NonNullable<typeof t> => !!t)
+
+  /** "Tell BIM about …: " in the compose well, with the exact ids kept so a shared name is never mixed up. */
+  const tell = (items: { id: string; name: string }[]) => {
+    if (!items.length) return
+    setTargets(items)
+    onAsk(tellLead(items.map((i) => i.name)))
+  }
 
   return (
     <div className="bim-crt-pane bim-graph-pane">
@@ -256,7 +286,8 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
             GRAPH // {centerId ? (center?.label ?? "item").toUpperCase() : "BIM MEMORY"}
           </span>
           <span className="bim-graph-count">
-            {graph.nodes.length} nodes · {graph.edges.length} links
+            {graph.nodes.length - proposedCount} nodes · {graph.edges.length - proposedCount} links
+            {proposedCount ? <em className="bim-graph-proposed"> · {proposedCount} proposed</em> : null}
           </span>
           <span className="bim-graph-gap" />
           <button data-no95 type="button" className="bim-graph-key" disabled={!trail.length} onClick={back} title="Back to the last center">
@@ -302,7 +333,7 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
                 if (!p || !q) return null
                 const hot = selEdges.has(`${e.a}>${e.b}`)
                 return (
-                  <g key={`${e.a}>${e.b}`} className={`bim-graph-edge${hot ? " is-hot" : ""}`}>
+                  <g key={`${e.a}>${e.b}`} className={`bim-graph-edge${hot ? " is-hot" : ""}${e.proposed ? " is-proposed" : ""}`}>
                     <line x1={p.x} y1={p.y} x2={q.x} y2={q.y} />
                     {hot && e.label ? (
                       <text x={(p.x + q.x) / 2} y={(p.y + q.y) / 2 - 4} textAnchor="middle">
@@ -320,7 +351,7 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
                 return (
                   <g
                     key={n.id}
-                    className={`bim-graph-node is-${n.kind}${n.id === selected ? " is-sel" : ""}${n.id === graph.centerId ? " is-center" : ""}${n.dim ? " is-dim" : ""}`}
+                    className={`bim-graph-node is-${n.kind}${n.id === selected ? " is-sel" : ""}${n.itemId && picked.includes(n.itemId) ? " is-picked" : ""}${n.id === graph.centerId ? " is-center" : ""}${n.dim ? " is-dim" : ""}`}
                     transform={`translate(${b.x} ${b.y})`}
                     onPointerDown={(e) => onDown(e, n.id)}
                     onDoubleClick={() => n.itemId && go(n.itemId)}
@@ -363,9 +394,29 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
                 </ul>
               ) : null}
               <div className="bim-graph-acts">
+                {selEffect && (selEffect.status === "pending" || selEffect.status === "failed") ? (
+                  <>
+                    <button data-no95 type="button" className="bim-graph-ask" onClick={() => void acceptEffect(sel.proposal!.planId, selEffect.id)}>
+                      Accept ✓
+                    </button>
+                    <button data-no95 type="button" onClick={() => rejectEffect(sel.proposal!.planId, selEffect.id)}>
+                      reject
+                    </button>
+                  </>
+                ) : null}
                 {sel.ask ? (
                   <button data-no95 type="button" className="bim-graph-ask" onClick={() => onAsk(sel.ask!)}>
                     Ask BIM about this ↵
+                  </button>
+                ) : null}
+                {sel.itemId ? (
+                  <button data-no95 type="button" className="bim-graph-ask bim-graph-tell" onClick={() => tell([{ id: sel.itemId!, name: sel.label }])} title="What you say next is read into changes to this item, proposed for you to accept">
+                    Tell BIM about this ↵
+                  </button>
+                ) : null}
+                {sel.day ? (
+                  <button data-no95 type="button" className="bim-graph-ask bim-graph-tell" onClick={() => onAsk(`day log for ${sel.day}: `)} title="What you say next is kept, word for word, in that day's Day Log">
+                    Tell BIM about this day ↵
                   </button>
                 ) : null}
                 {sel.itemId ? (
@@ -386,7 +437,20 @@ export function MemoryGraphPane({ onAsk, onThought }: { onAsk: (text: string) =>
               </div>
             </aside>
           ) : null}
-          <p className="bim-graph-hint">drag nodes · drag glass to pan · wheel zooms · double-click walks</p>
+          {pickedItems.length ? (
+            <div className="bim-graph-group bim-graph-acts" onPointerDown={(e) => e.stopPropagation()}>
+              <span>
+                GROUP · {pickedItems.length} picked: {pickedItems.map((t) => itemTitle(t) || "Untitled").join(" + ")}
+              </span>
+              <button data-no95 type="button" className="bim-graph-ask bim-graph-tell" onClick={() => tell(pickedItems.map((t) => ({ id: t.id, name: itemTitle(t) || "Untitled" })))}>
+                Tell BIM about {pickedItems.length > 1 ? "these" : "this"} ↵
+              </button>
+              <button data-no95 type="button" onClick={() => setPicked([])}>
+                clear
+              </button>
+            </div>
+          ) : null}
+          <p className="bim-graph-hint">drag nodes · drag glass to pan · wheel zooms · double-click walks · shift-click picks a group</p>
         </div>
       </div>
     </div>

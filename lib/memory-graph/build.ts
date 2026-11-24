@@ -33,6 +33,9 @@ export type GraphNodeKind =
   | "lane"
   | "turn"
   | "evidence"
+  | "place"
+  /** A change BIM proposes and you have not accepted yet (`lib/graph-bimby/ghosts.ts`). */
+  | "proposal"
 
 export interface GraphNode {
   id: string
@@ -48,12 +51,18 @@ export interface GraphNode {
   ask?: string
   /** On a turn: the reply's Trace, for the Thought popup. */
   traceId?: string
+  /** On a date node: the local day (YYYY-MM-DD), so you can tell BIM about that day. */
+  day?: string
+  /** On a proposal node: the card and the change, so it can be accepted from the graph. */
+  proposal?: { planId: string; effectId: string }
 }
 
 export interface GraphEdge {
   a: string
   b: string
   label?: string
+  /** To a proposal node: drawn dashed. */
+  proposed?: boolean
 }
 
 export interface MemoryGraph {
@@ -76,6 +85,14 @@ const dayOf = (value: unknown): string | undefined => {
   return d.toLocaleDateString([], { month: "short", day: "numeric", year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric" })
 }
 
+/** The local day of a date value, YYYY-MM-DD. */
+const isoDay = (value: unknown): string | undefined => {
+  if (!value) return undefined
+  const d = value instanceof Date ? value : new Date(String(value))
+  if (Number.isNaN(d.getTime())) return undefined
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
 const isPast = (value: unknown, now: Date) => {
   const d = value instanceof Date ? value : value ? new Date(String(value)) : null
   return !!d && !Number.isNaN(d.getTime()) && d.getTime() < now.getTime()
@@ -83,7 +100,8 @@ const isPast = (value: unknown, now: Date) => {
 
 /** Person, project (has children or steps), or a plain item. */
 export function kindOfItem(item: ItemRecord, all: readonly ItemRecord[]): GraphNodeKind {
-  if (item.personProfile) return "person"
+  if (item.personProfile || item.type === "person") return "person"
+  if (item.type === "location") return "place"
   if (item.subtasks?.length || all.some((t) => t.parentTaskId === item.id)) return "project"
   return "item"
 }
@@ -93,6 +111,8 @@ export function askFor(kind: GraphNodeKind, label: string): string {
   switch (kind) {
     case "person":
       return `When did I last see ${label}, and is there anything I owe them?`
+    case "place":
+      return `Who and what is at ${label}?`
     case "project":
       return `What is the state of ${label}: what is done, what is left, and what should I do next?`
     case "hub":
@@ -116,6 +136,14 @@ export function itemFacts(item: ItemRecord, all: readonly ItemRecord[], now = ne
   if (item.why) facts.push(`why: ${cut(item.why, 90)}`)
   const p = item.personProfile
   if (p?.relation) facts.push(`relation: ${p.relation}`)
+  if (p?.address?.text) facts.push(`lives: ${cut(p.address.text, 70)}`)
+  const lastSeen = (p?.interactions ?? []).filter((i) => i.saw).map((i) => i.date).sort().at(-1)
+  if (lastSeen) facts.push(`last seen ${dayOf(`${lastSeen}T12:00:00`)}`)
+  const placeAddress = item.type === "location" ? item.attributes?.address : undefined
+  if (typeof placeAddress === "string" && placeAddress) facts.push(`address: ${cut(placeAddress, 70)}`)
+  // A person's standing notes (the Notes attribute): the facts told about them, one per line.
+  const standing = item.attributes?.notes
+  if (typeof standing === "string") for (const row of standing.split("\n").map((r) => r.trim()).filter(Boolean).slice(0, 4)) facts.push(`· ${cut(row, 90)}`)
   const lastNote = item.noteLog?.length ? item.noteLog[item.noteLog.length - 1] : undefined
   if (lastNote) facts.push(`note ${lastNote.date}: ${cut(lastNote.text, 90)}`)
   else if (item.notes) facts.push(`note: ${cut(item.notes, 90)}`)
@@ -185,8 +213,16 @@ export function itemGraph(
     if (name) add({ id: `list:${id}`, kind: "list", label: name, facts: [`${all.filter((t) => t.lists?.includes(id)).length} items in this list`] }, "in")
   }
 
-  if (center.deadline) add({ id: `date:due:${center.id}`, kind: "date", label: `due ${dayOf(center.deadline)}`, facts: [isPast(center.deadline, now) && !center.completed ? "overdue" : "deadline"], dim: center.completed }, "deadline")
-  if (center.scheduledDate) add({ id: `date:sched:${center.id}`, kind: "date", label: `${dayOf(center.scheduledDate)}${center.scheduledTime ? ` ${center.scheduledTime}` : ""}`, facts: ["scheduled"] }, "scheduled")
+  if (center.deadline) add({ id: `date:due:${center.id}`, kind: "date", label: `due ${dayOf(center.deadline)}`, facts: [isPast(center.deadline, now) && !center.completed ? "overdue" : "deadline"], dim: center.completed, day: isoDay(center.deadline) }, "deadline")
+  if (center.scheduledDate) add({ id: `date:sched:${center.id}`, kind: "date", label: `${dayOf(center.scheduledDate)}${center.scheduledTime ? ` ${center.scheduledTime}` : ""}`, facts: ["scheduled"], day: isoDay(center.scheduledDate) }, "scheduled")
+
+  // A person's address, unless a Location item linked to them already says it; and the days you saw them.
+  const profile = center.personProfile
+  const address = profile?.address?.text?.trim()
+  if (address && ![...nodes.values()].some((n) => n.kind === "place" && n.label.toLowerCase() === address.toLowerCase()))
+    add({ id: `place:${center.id}`, kind: "place", label: cut(address, 34), facts: [`address (${profile!.address!.precision})`, address] }, "lives at")
+  const sightings = (profile?.interactions ?? []).filter((i) => i.saw).sort((a, b) => b.date.localeCompare(a.date)).slice(0, CAP.notes)
+  for (const s of sightings) add({ id: `seen:${center.id}:${s.id}`, kind: "date", label: `saw ${dayOf(`${s.date}T12:00:00`)}`, facts: [s.date, ...(s.text ? [s.text] : [])], day: s.date }, "saw")
 
   const notes = (center.noteLog ?? []).slice(-CAP.notes).reverse()
   for (const note of notes) add({ id: `note:${center.id}:${note.id}`, kind: "note", label: cut(note.text, 34), facts: [`${note.date}${note.time ? ` ${note.time}` : ""}`, note.text] }, "note")
