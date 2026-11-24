@@ -199,6 +199,11 @@ export function parseIntent(w: World, text: string, ctx: Context = {}): Intent {
     return failed(t, typeWords, ty)
   }
 
+  // A list's items should be a type, and not another: "all the Affirmations on this list should have item type
+  // "Affirmation" and NOT be item type task!" Only the first sentence is the job; the rest is reasons.
+  const setType = parseShouldBeType(w, t, ctx)
+  if (setType) return setType
+
   // Make one type primary: "remove the Task item type from all Book type items".
   const drop =
     new RegExp(`(?:remove|drop|take off|strip)\\s+(?:the\\s+)?${Q}([\\w ]+?)${Q}\\s+(?:item\\s+)?type\\s+from\\s+(?:all\\s+|every\\s+)?${Q}([\\w ]+?)${Q}\\s+(?:type\\s+)?items`, "i").exec(t) ??
@@ -609,4 +614,49 @@ function parseShopping(w: World, t: string, now: Date): Intent | null {
   const call: ToolCall = { tool: "shopping-list", name: shoppingName(t, now), mustHave: mustHaves(t) }
   if (skipIds.length) call.skipListIds = [...new Set(skipIds)]
   return { kind: "tool", call }
+}
+
+/**
+ * "all the X on this list should have item type "Y" and NOT be item type Z": the items of one list (this list,
+ * a named list, or a list named like the items) get type Y as primary; a pin on Z moves to Y. Y is made when it
+ * does not exist (an Affirmation comes with its counts).
+ */
+function parseShouldBeType(w: World, text: string, ctx: Context): Intent | null {
+  const first = text.split(/(?<=[!?])\s|(?<=\.)\s+(?=[A-Z])|\n/)[0]!.trim()
+  const want = /\b(?:should|must|need to|needs to|to)\s+(?:all\s+)?(?:have|be|get|become|use)\s+(?:the\s+|an?\s+)?(new\s+|existing\s+)?(?:item\s+)?type\s+(?:["“”]([^"“”]+)["“”]|([\w][\w ]*?))(?=\s+(?:and|but|instead|not|rather)\b|[,.!?]|\s*$)/i.exec(first)
+  if (!want) return null
+  const flag = want[1]?.trim().toLowerCase()
+  const typeWords = unquote(want[2] ?? want[3]!)
+  // Which list: "this list" is the open one; a quoted or named list; else a list named like the items ("all the Affirmations").
+  let listId: string | undefined
+  const subject = /^(?:make\s+)?(?:all\s+|every\s+)?(?:of\s+)?(?:the\s+)?(?:items?\s+)?([\w][\w '’-]*?)\s+(?:items?\s+)?(?:on|in)\s+(?:this|the|my)\s+(?:list|one)\b/i.exec(first)
+  const named = /\b(?:on|in)\s+(?:the\s+)?list\s+(?:["“”]([^"“”]+)["“”]|(\S[^,.?!]*?))(?=\s+(?:should|must|need|to)\b)/i.exec(first)
+  if (named) {
+    const r = resolveList(w, unquote(named[1] ?? named[2]!))
+    if (!r.ok) return failed(text, named[1] ?? named[2]!, r)
+    listId = r.id
+  } else if (/\b(?:on|in)\s+(?:this|the current|the open)\s+list\b/i.test(first) && ctx.listId) {
+    listId = ctx.listId
+  } else if (subject && !/^(?:items?|things?|ones?)$/i.test(subject[1]!.trim())) {
+    const r = resolveList(w, subject[1]!.trim())
+    if (r.ok) listId = r.id
+    else if (ctx.listId) listId = ctx.listId
+    else return failed(text, subject[1]!, r)
+  } else if (ctx.listId) {
+    listId = ctx.listId
+  }
+  if (!listId) return err("Which list? Open the list first, or name it: on list \"Affirmations\".")
+  const not = /\b(?:not|never|n['’]t)\s+(?:be\s+|have\s+)?(?:an?\s+|the\s+)?(?:item\s+)?type\s+(?:["“”]([^"“”]+)["“”]|([\w]+))/i.exec(first)
+  let dropTypeId: string | undefined
+  if (not) {
+    const d = resolveType(w, unquote(not[1] ?? not[2]!))
+    if (!d.ok) return failed(text, not[1] ?? not[2]!, d)
+    dropTypeId = d.id
+  }
+  const call: Extract<ToolCall, { tool: "retype-items" }> = { tool: "retype-items", to: "", listId, ...(dropTypeId ? { dropTypeId } : {}) }
+  if (flag === "new") return { kind: "tool", call: { ...call, newTypeName: typeWords } }
+  const ty = resolveType(w, typeWords)
+  if (ty.ok) return { kind: "tool", call: { ...call, to: ty.id } }
+  if (flag !== "existing" && !ty.options?.length) return { kind: "tool", call: { ...call, newTypeName: typeWords } }
+  return failed(text, typeWords, ty)
 }

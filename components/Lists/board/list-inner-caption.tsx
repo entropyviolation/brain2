@@ -6,6 +6,7 @@
  * Open-list caption bar. Search state stays in useOpenListItems. This bar
  * only draws the name, the search field, and the caption keys.
  */
+import { KeycapClose } from "@/components/keycap-close"
 import { PhoneLedTitle } from "@/components/Lists/board/phone-led-title"
 import { usePhoneListsLayout } from "@/components/Lists/board/use-phone-lists-layout"
 import { ListCaptionSearch, CaptionKeyGlyph } from "@/components/Lists/list-content/ListCaptionSearch"
@@ -106,9 +107,7 @@ export function ListInnerCaption({
             <CaptionKeyGlyph kind="settings" />
           </button>
         )}
-        <button type="button" data-no95 className="fm-cap-key fm-cap-key-close" title="Close list" aria-label="Close" onClick={closeTarget}>
-          <CaptionKeyGlyph kind="close" />
-        </button>
+        <KeycapClose label="Close" title="Close list" onClick={closeTarget} />
       </div>
     </div>
   )

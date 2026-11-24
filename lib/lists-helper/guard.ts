@@ -8,6 +8,7 @@
  * request was worded. Plan: `components/Lab/ListsHelper/README.md`.
  */
 
+import { AFFIRMATION_STAT_IDS } from "@/lib/affirmation-type"
 import type { Task } from "@/lib/types"
 import type { Plan, ToolName } from "./types"
 
@@ -19,7 +20,7 @@ export const WRITABLE: Record<ToolName, readonly string[]> = {
   "merge-items": [],
   "exclusive-type": ["type", "lists", "listMembershipExclusions"],
   "copy-attributes": ["itemAttributeDefinitions"],
-  "retype-items": ["type"],
+  "retype-items": ["type", "attributes"],
   "add-items": [],
   "collect-items": ["lists", "listMembershipExclusions"],
   "shopping-list": ["lists", "listMembershipExclusions"],
@@ -47,7 +48,15 @@ export function refusal(plan: Plan): string | null {
   if (plan.dropLists && plan.dropLists.length > LIMITS.lists) return `That merge would remove ${plan.dropLists.length} lists. I stop at ${LIMITS.lists}.`
   if (plan.setup && plan.tool === "shopping-list" && (plan.setup.folder || plan.setup.type)) return "A shopping list may make its list, never a folder or an item type."
   if (plan.setup && plan.tool !== "collect-items" && plan.tool !== "shopping-list" && !((plan.tool === "retype-items" || plan.tool === "merge-lists") && !plan.setup.list && !plan.setup.folder)) return "Only collecting items may make a list or folder, and only collecting or changing a type may make an item type."
+  if (plan.setup?.repin && plan.tool !== "retype-items") return "Only changing a type may move a list's pinned type."
+  if (plan.setup?.repin && !(plan.setup.repin.itemTypeIds ?? []).length) return "This plan would leave a list with no pinned type. I wrote nothing."
   for (const c of plan.changes) {
+    // A type change may fill only the built-in counts it owns (the Affirmation type), never a value someone typed.
+    if ("attributes" in c.patch) {
+      const keys = Object.keys((c.patch.attributes ?? {}) as Record<string, unknown>)
+      const odd = keys.find((k) => !AFFIRMATION_STAT_IDS.includes(k))
+      if (odd) return `This plan tried to change the value "${odd}" on "${c.title}", which is not a built-in count. I wrote nothing.`
+    }
     if (plan.tool === "collect-items" || plan.tool === "shopping-list") {
       const was = (c.before.lists as string[] | undefined) ?? []
       const now = (c.patch.lists as string[] | undefined) ?? []
@@ -72,7 +81,16 @@ export function verification(plan: Plan, tasks: Task[], countBefore: number): st
   for (const c of plan.changes) {
     const row = byId.get(c.id)
     if (!row) return `"${c.title}" is gone.`
-    for (const [k, v] of Object.entries(c.patch)) if (!same(row[k], v)) return `"${c.title}" did not take the change to ${k}.`
+    for (const [k, v] of Object.entries(c.patch)) {
+      // Attributes merge key by key, so only the keys patched are checked.
+      if (k === "attributes") {
+        const bag = (row.attributes ?? {}) as Record<string, unknown>
+        const miss = Object.entries(v as Record<string, unknown>).find(([ak, av]) => !same(bag[ak] ?? null, av ?? null))
+        if (miss) return `"${c.title}" did not take the change to ${miss[0]}.`
+        continue
+      }
+      if (!same(row[k], v)) return `"${c.title}" did not take the change to ${k}.`
+    }
   }
   return null
 }

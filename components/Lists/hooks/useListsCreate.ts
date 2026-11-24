@@ -94,6 +94,7 @@ export function useListsCreate({
       order: categories.length,
       scheduleable: fields.scheduleable,
       itemAttributes: template?.attributes.length ? template.attributes.map((a) => ({ ...a })) : undefined,
+      ...(template?.itemTypeId ? { itemTypeId: template.itemTypeId, itemTypeIds: [template.itemTypeId] } : {}),
     })
     if (currentFolder) addListToFolder(currentFolder.id, id)
     if (isHome) toggleHomePin(id)

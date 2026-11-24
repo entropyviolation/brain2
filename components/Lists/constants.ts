@@ -1,4 +1,5 @@
 import type { AttributeDefinition } from "@/lib/types"
+import { PHOTO_TYPE_ID } from "@/lib/photo-types"
 import type { ListTemplate, SmartId } from "./types"
 
 export const ROOT_ALL_FOLDER_ID = "__root__"
@@ -40,6 +41,7 @@ export const LIST_TEMPLATES: Record<string, ListTemplate> = {
       { id: "pages", name: "Pages", type: "number", allowFloat: false },
     ] as AttributeDefinition[],
   },
+  gallery: { label: "Photo gallery", attributes: [], itemTypeId: PHOTO_TYPE_ID },
 }
 
 export const SMART_LISTS: { id: SmartId; name: string; color: string }[] = [

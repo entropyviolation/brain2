@@ -48,9 +48,11 @@ export interface CsvImportState {
   targetCategoryId: string
 }
 
-export type ListTemplateKey = "none" | "shopping" | "reading"
+export type ListTemplateKey = "none" | "shopping" | "reading" | "gallery"
 
 export interface ListTemplate {
   label: string
   attributes: AttributeDefinition[]
+  /** Item type the list takes. A Photo list opens in the Gallery display. */
+  itemTypeId?: string
 }

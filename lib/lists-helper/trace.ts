@@ -93,6 +93,7 @@ export function describeCall(w: World, c: ToolCall): string[] {
       add("from", c.from && typeName(w, c.from))
       add("to", c.newTypeName ? `NEW ${q(c.newTypeName)}` : typeName(w, c.to))
       add("list", c.listId && ln(c.listId))
+      add("not", c.dropTypeId && typeName(w, c.dropTypeId))
       break
   }
   return out

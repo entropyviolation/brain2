@@ -31,8 +31,15 @@ export function applyPlan(port: Port, call: ToolCall, approved: Plan): ApplyOutc
 
   // A new list, folder, or item type goes in first so the changes have somewhere to land.
   if (plan.setup) {
-    const { type, list, folder, fileInFolderId } = plan.setup
+    const { type, list, folder, fileInFolderId, repin } = plan.setup
     undo.made = {}
+    if (repin) {
+      const was = port.world().lists.find((l) => l.id === repin.id)
+      if (was) {
+        undo.repinned = was
+        port.updateList(repin)
+      }
+    }
     if (type) {
       port.addType(type)
       undo.made.typeId = String(type.id)
@@ -94,7 +101,8 @@ function doneText(plan: Plan): string {
   if (plan.tool === "shopping-list") return `${plan.setup?.list ? `Made the list "${plan.setup.list.name}" with` : "Added"} ${plan.changes.length} ${plan.changes.length === 1 ? "thing" : "things"} from your buy lists${plan.creates?.length ? ` and ${plan.creates.length} new must-have${plan.creates.length === 1 ? "" : "s"}` : ""}. Say "undo" to take it all back.`
   if (plan.setup?.list) return `Made the list "${plan.setup.list.name}" and added ${plan.total} ${plan.total === 1 ? "item" : "items"} to it. Say "undo" to take it all back.`
   if (plan.tool === "collect-items") return `Added ${plan.total} ${plan.total === 1 ? "item" : "items"} to the list. Say "undo" to take them off again.`
-  if (plan.tool === "retype-items" && plan.setup?.type) return `Made the item type "${plan.setup.type.name}" and applied it to ${plan.total} ${plan.total === 1 ? "item" : "items"}. Say "undo" to take it all back.`
+  if (plan.tool === "retype-items" && plan.setup?.type) return `Made the item type "${plan.setup.type.name}" and applied it to ${plan.total} ${plan.total === 1 ? "item" : "items"}${plan.setup.repin ? `; "${plan.setup.repin.name}" now pins it` : ""}. Say "undo" to take it all back.`
+  if (plan.tool === "retype-items" && plan.setup?.repin) return `Done: ${plan.total} ${plan.total === 1 ? "item" : "items"} changed and "${plan.setup.repin.name}" pins the new type. Say "undo" to put them back.`
   if (plan.creates) return `Added ${plan.creates.length}. Say "undo" to remove them.`
   return `Done: ${plan.total} ${plan.total === 1 ? "item" : "items"} changed. Say "undo" to put them back.`
 }
@@ -127,6 +135,10 @@ export function undoPlan(port: Port, undo: Undo): string {
     if (!port.world().tasks.some((t) => t.id === id)) continue
     port.removeItem(id)
     restored++
+  }
+  if (undo.repinned) {
+    const now = port.world().lists.find((l) => l.id === undo.repinned!.id)
+    if (now) port.updateList({ ...now, itemTypeId: undo.repinned.itemTypeId, itemTypeIds: undo.repinned.itemTypeIds })
   }
   const kept: string[] = []
   if (undo.made) {

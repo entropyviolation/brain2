@@ -7,6 +7,7 @@
  * later) only has to pick a tool and fill its parameters.
  */
 
+import { AFFIRMATION_STAT_IDS, AFFIRMATION_TYPE_ID, affirmationStats, affirmationTypeDefinition, isAffirmationTypeName } from "@/lib/affirmation-type"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { applyItemMerge, defaultItemMergePlan, isHeldValue } from "@/lib/item-merge"
 import {
@@ -315,7 +316,7 @@ function retypeItems(w: World, c: Extract<ToolCall, { tool: "retype-items" }>): 
   let made: ItemTypeDefinition | undefined
   const warnings = ["Lists that pin another type still make these items read as that type too."]
   if (c.newTypeName?.trim()) {
-    const existing = w.types.find((t) => sameName(t.name, c.newTypeName!))
+    const existing = w.types.find((t) => sameName(t.name, c.newTypeName!) || (isAffirmationTypeName(c.newTypeName!) && isAffirmationTypeName(t.name)))
     if (existing) {
       to = String(existing.id)
       warnings.unshift(`An item type "${existing.name}" already exists, so I use that one.`)
@@ -324,40 +325,91 @@ function retypeItems(w: World, c: Extract<ToolCall, { tool: "retype-items" }>): 
       to = String(made.id)
     }
   }
+  const toType = made ?? w.types.find((t) => String(t.id) === to)
+  const toName = toType?.name ?? typeName(w, to)
+  // The Affirmation type's counts come from the logs, so they are filled as the type is applied.
+  const statIds = new Set((toType?.attributes ?? []).map((a) => a.id).filter((id) => AFFIRMATION_STAT_IDS.includes(id)))
+  const fillStats = !!toType && isAffirmationTypeName(toType.name) && statIds.size > 0 && !!w.affirmations
+  if (toType && isAffirmationTypeName(toType.name) && !statIds.size) warnings.unshift(`"${toType.name}" has no count attributes, so I only set the type. I did not change the type itself.`)
+  if (toType && isAffirmationTypeName(toType.name) && statIds.size && !w.affirmations) warnings.unshift("I could not read the ritual and said-aloud logs, so the counts stay empty.")
+  const statPatch = (t: Task): Record<string, AttributeValue> | null => {
+    if (!fillStats) return null
+    const stats = affirmationStats(titleOf(t), w.affirmations!)
+    const out: Record<string, AttributeValue> = {}
+    for (const [k, v] of Object.entries(stats)) if (statIds.has(k) && JSON.stringify(t.attributes?.[k] ?? null) !== JSON.stringify(v)) out[k] = v
+    return Object.keys(out).length ? out : null
+  }
+
   const pool = c.from
     ? w.tasks.filter((t) => descendantTypeIds(c.from!, w.types).has(String(t.type ?? "")))
     : itemsInScope(w, { listId: c.listId })
-  const rows = (c.listId ? pool.filter((t) => (t.lists ?? []).includes(c.listId!)) : pool).filter((t) => String(t.type ?? "") !== to)
-  const toName = made ? made.name : typeName(w, to)
-  if (!rows.length) return { kind: "answer", text: `Nothing to change: no matching item is not already ${toName}.` }
-  const changes: ItemChange[] = rows.map((t) => ({
-    id: t.id,
-    title: titleOf(t),
-    patch: { type: to },
-    before: { type: t.type },
-    note: `${String(t.type ?? "item")} → ${toName}`,
-  }))
+  const scoped = c.listId ? pool.filter((t) => (t.lists ?? []).includes(c.listId!)) : pool
+  const changes: ItemChange[] = []
+  for (const t of scoped) {
+    const retype = String(t.type ?? "") !== to
+    const stats = statPatch(t)
+    if (!retype && !stats) continue
+    const patch: Record<string, unknown> = {}
+    const before: Record<string, unknown> = {}
+    if (retype) {
+      patch.type = to
+      before.type = t.type
+    }
+    if (stats) {
+      patch.attributes = stats
+      before.attributes = Object.fromEntries(Object.keys(stats).map((k) => [k, t.attributes?.[k] ?? null]))
+    }
+    changes.push({ id: t.id, title: titleOf(t), patch, before, note: retype ? `${String(t.type ?? "item")} → ${toName}` : "counts filled" })
+  }
+
+  // "and NOT be item type Task": a list that pins Task makes its items read as Task, so the pin moves to the new type.
+  let repin: List | undefined
+  const list = c.listId ? w.lists.find((l) => l.id === c.listId) : undefined
+  if (list && c.dropTypeId) {
+    const pins = listAllowedTypeIds(list).map(String)
+    if (pins.includes(c.dropTypeId)) {
+      const next = [...new Set(pins.map((id) => (id === c.dropTypeId ? to : id)))]
+      repin = { ...list, itemTypeId: String(list.itemTypeId ?? "") === c.dropTypeId || !list.itemTypeId ? to : list.itemTypeId, itemTypeIds: next }
+    }
+    const elsewhere = scoped.filter((t) => (t.lists ?? []).some((id) => id !== list.id && listAllowedTypeIds(w.lists.find((l) => l.id === id) ?? {}).map(String).includes(c.dropTypeId!)))
+    if (elsewhere.length) warnings.push(`${plural(elsewhere.length, "item")} also sit on other lists that pin ${typeName(w, c.dropTypeId)}; I left those lists alone, so there they still read as ${typeName(w, c.dropTypeId)}.`)
+  }
+
+  if (!changes.length && !repin) return { kind: "answer", text: `Nothing to change: every matching item is already ${toName}${fillStats ? " with its counts up to date" : ""}.` }
+  const retyped = changes.filter((x) => "type" in x.patch).length
+  const filled = changes.filter((x) => "attributes" in x.patch).length
+  const summary = [`Their primary type becomes ${toName}. Notes, lists, dates and every other value are not touched.`]
+  if (made?.attributes?.length) summary.push(`"${made.name}" comes with ${made.attributes.map((a) => a.name).join(", ")}.`)
+  if (filled) summary.push(`Counts and days are read from the morning ritual (came up) and the said-aloud log (said).`)
+  if (repin) summary.push(`"${list!.name}" pins ${toName} in place of ${typeName(w, c.dropTypeId!)}, so its items stop reading as ${typeName(w, c.dropTypeId!)}.`)
   const plan: Plan = {
     tool: "retype-items",
     working: `Changing types to ${toName}`,
-    title: `Make ${plural(rows.length, "item")} ${toName}`,
-    summary: [`Their primary type becomes ${toName}. Lists and values are not touched.`],
-    impacts: [...(made ? [{ count: 1, label: `new item type "${made.name}"` }] : []), { count: rows.length, label: `primary type → ${toName}` }],
+    title: `Make ${plural(scoped.length, "item")} ${toName}`,
+    summary,
+    impacts: [
+      ...(made ? [{ count: 1, label: `new item type "${made.name}"` }] : []),
+      ...(retyped ? [{ count: retyped, label: `primary type → ${toName}` }] : []),
+      ...(filled ? [{ count: filled, label: "counts and days filled" }] : []),
+      ...(repin ? [{ count: 1, label: `list "${list!.name}" pins ${toName}, not ${typeName(w, c.dropTypeId!)}` }] : []),
+    ],
     samples: sample(changes.map((x) => x.title)),
     warnings,
     oneTime: true,
     changes,
-    ...(made ? { setup: { type: made } } : {}),
-    total: rows.length,
-    signature: signatureOf({ c: changes.map((x) => [x.id, x.patch]), made: made?.name }),
+    ...(made || repin ? { setup: { ...(made ? { type: made } : {}), ...(repin ? { repin } : {}) } } : {}),
+    total: changes.length,
+    signature: signatureOf({ c: changes.map((x) => [x.id, x.patch]), made: made?.name, repin: repin?.itemTypeIds }),
   }
   return { kind: "plan", plan }
 }
 
-/** A bare item type, as the collect tool makes for "new item type X". */
+/** A bare item type, as the collect tool makes for "new item type X". "Affirmation" comes with its counts. */
 function newType(w: World, name: string): ItemTypeDefinition {
   const label = name.trim()
-  const id = uniqueId(new Set(w.types.map((t) => String(t.id))), slug(label))
+  const taken = new Set(w.types.map((t) => String(t.id)))
+  if (isAffirmationTypeName(label)) return affirmationTypeDefinition(uniqueId(taken, AFFIRMATION_TYPE_ID))
+  const id = uniqueId(taken, slug(label))
   return { id, name: label, pluralName: label.endsWith("s") ? label : `${label}s`, itemLabel: label.toLowerCase(), description: "Made by the Lists BIMBY.", detailPanels: ["details"], attributes: [], capabilities: {} }
 }
 

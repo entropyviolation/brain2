@@ -10,7 +10,9 @@ import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import { applyItemEditPatch, commitItemEdit } from "@/lib/commit-item-edit"
 import { recordItemWritesBatch } from "@/lib/item-activity"
+import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
+import { useReviewsStore } from "@/lib/reviews-store"
 import { noteClearedTaskTombstones, useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 import type { Port } from "./types"
@@ -24,11 +26,21 @@ export const useDismissedDuplicates = create<{ keys: string[]; add: (key: string
   }),
 )
 
+/** The said-aloud log and the lines each morning ritual showed, for the Affirmation type's counts. */
+function affirmationLogs() {
+  const said = useAffirmationLogStore.getState().recitations.map((r) => ({ key: r.key, date: r.date }))
+  const shown = useReviewsStore
+    .getState()
+    .reviews.filter((r) => r.period === "day" && r.morning?.shownAffirmations?.length)
+    .map((r) => ({ date: r.periodKey, lines: r.morning!.shownAffirmations! }))
+  return { said, shown }
+}
+
 export function browserPort(): Port {
   return {
     world: () => {
       const s = useTaskStore.getState()
-      return { tasks: s.tasks, lists: s.lists, types: useItemTypeStore.getState().types, folders: s.folders }
+      return { tasks: s.tasks, lists: s.lists, types: useItemTypeStore.getState().types, folders: s.folders, affirmations: affirmationLogs() }
     },
     now: () => new Date(),
     commit: (id, patch) => {
@@ -56,6 +68,7 @@ export function browserPort(): Port {
     addItem: (task) => useTaskStore.getState().addTask(task, LISTS_HELPER_ATTRIBUTION),
     removeItem: (id) => useTaskStore.getState().deleteTask(id),
     addList: (list) => useTaskStore.getState().addList(list),
+    updateList: (list) => useTaskStore.getState().updateList(list),
     removeList: (id) => {
       const s = useTaskStore.getState()
       for (const f of s.folders) if (f.listIds.includes(id)) s.removeListFromFolder(f.id, id)

@@ -8,6 +8,7 @@
 
 import type { ItemMergePlan } from "@/lib/item-merge"
 import type { DueFilter } from "./dates"
+import type { AffirmationLogs } from "@/lib/affirmation-type"
 import type { Folder, ItemTypeDefinition, List, Task } from "@/lib/types"
 
 /** Everything a tool may read. Never mutated. */
@@ -17,6 +18,8 @@ export interface World {
   types: ItemTypeDefinition[]
   /** Folders, for filing a new list. Omitted in a snapshot that has none. */
   folders?: Folder[]
+  /** Morning-ritual and said-aloud logs, for the Affirmation type's built-in counts. Omitted in a snapshot that has none. */
+  affirmations?: AffirmationLogs
 }
 
 export type ToolName =
@@ -39,7 +42,16 @@ export type ToolCall =
   | { tool: "merge-items"; ids: string[]; survivorId?: string }
   | { tool: "exclusive-type"; keep: string; drop: string }
   | { tool: "copy-attributes"; fromItemId: string; typeId?: string; listId?: string }
-  | { tool: "retype-items"; to: string; from?: string; listId?: string; /** Make this item type first, and use it as `to` (which is then ignored). */ newTypeName?: string }
+  | {
+      tool: "retype-items"
+      to: string
+      from?: string
+      listId?: string
+      /** Make this item type first, and use it as `to` (which is then ignored). */
+      newTypeName?: string
+      /** "and NOT be item type Task": if the list pins this type, the pin moves to the new type so its items stop reading as it. */
+      dropTypeId?: string
+    }
   | { tool: "add-items"; listId: string; titles: string[]; attributes: Record<string, string> }
   | { tool: "collect-items"; filter: CollectFilter; dest: CollectDest }
   | { tool: "merge-lists"; listIds: string[]; /** The list that stays. Defaults to the one holding the most items. */ keepId?: string; /** An existing item type every merged item becomes. */ typeId?: string; /** Make this item type first, and use it (then `typeId` is ignored). */ newTypeName?: string }
@@ -137,7 +149,7 @@ export interface Plan {
   merge?: ItemMergePlan
   creates?: Task[]
   /** A list, folder, or item type made first so the changes have somewhere to land. Undo takes them away again. */
-  setup?: { list?: List; folder?: Folder; fileInFolderId?: string; type?: ItemTypeDefinition }
+  setup?: { list?: List; folder?: Folder; fileInFolderId?: string; type?: ItemTypeDefinition; /** A list whose pinned types change (`retype-items` only): the list as it will be. */ repin?: List }
   /** Lists folded into another and taken away once their items have moved (`merge-lists` only). Undo puts them back. */
   dropLists?: { list: List; folderId?: string }[]
   /** Items touched in all (changes, discards, creates). Over `CONFIRM_COUNT_ABOVE` the person types the number. */
@@ -179,6 +191,8 @@ export interface Port {
   addItem(task: Task): void
   /** Make a list, a folder, or an item type, and file a list in a folder. Only `collect-items` calls these. */
   addList(list: List): void
+  /** Replace a list's own fields (its pinned item types). Only `retype-items` with `dropTypeId` calls this. */
+  updateList(list: List): void
   removeList(id: string): void
   addFolder(folder: Folder): void
   removeFolder(id: string): void
@@ -201,6 +215,8 @@ export interface Undo {
   tombstoned: string[]
   /** What a plan made besides items. */
   made?: { listId?: string; folderId?: string; typeId?: string }
+  /** A list whose pinned types a plan changed, as it was before. */
+  repinned?: List
   /** Lists a merge took away, and the folder each was in. */
   removedLists?: { list: List; folderId?: string }[]
 }

@@ -535,11 +535,9 @@ the title bar, on `--b2-close-top` / `--b2-close-right` when it is the corner
 key. It is not a transparent pip, and it is not a smaller off-center mark.
 
 **Caption keys.** A caption bar that carries a row of actions (the open list’s
-Search / Add / Settings / Close in Lists) uses one family of keys instead: a
-30px gunmetal cap with an 8px radius, darker than the fascia keys, with a
-specular top lip, a 2px pressed foot, and a stamped 16px mark (near-black ink
-over a 1px light lip, like the transport discs). The × in that row is one of
-these keys so the set matches; it is not the 22px dialog close key. An “on”
+Search / Add / Settings / Close in Lists) wears the window title-bar keys: a
+22px milled-metal square (the `.fm-title-btn` face and ring) with a small
+dark mark (ink over a 1px light lip), and the × is `KeycapClose`. An “on”
 key (search open) turns to CRT glass with a phosphor mark.
 `.fm-cap-key` + `CaptionKeyGlyph` in `components/Lists/`.
 
@@ -620,7 +618,7 @@ The two color faces set the four locals the shape already uses (`--cap-top`, `--
 
 A milled fascia key (a bay’s raised metal) is a different object. Its press stays the milled sink. Pause, Play, and Stop stay the transport disc. A title-bar × stays `KeycapClose`.
 
-Title-bar × keys are this cap. `KeycapClose` in `components/keycap-close.tsx` is the grey modifier at 26px with a round ×. Hover and keyboard focus turn that plastic brick: face `#7A3C31`, lower face `#78292E`, a darker skirt, a warm legend. The brick is only that hover. It is not a word-key color. The open-list caption × stays the gunmetal caption key.
+Title-bar × keys are this cap. `KeycapClose` in `components/keycap-close.tsx` is the grey modifier at 26px with a round ×. Hover and keyboard focus turn that plastic brick: face `#7A3C31`, lower face `#78292E`, a darker skirt, a warm legend. The brick is only that hover. It is not a word-key color. The open-list caption × is this key too.
 
 Tracking’s period ‹ › and Today, and the Day | Week span keys, are this same short cap (`.trk-keycap` in `tracking-chrome.css`, about 26px). The selected Day or Week stays the CRT. A press is the keycap drop. They do not stretch up to the date plate.
 

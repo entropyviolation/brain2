@@ -19,9 +19,9 @@ const task = (id: string, title: string, extra: Partial<Task> = {}): Task => ({
 })
 
 function harness(tasks: Task[], lists: List[], folders: Folder[] = [], typeRows: ItemTypeDefinition[] = types) {
-  const state = { tasks, lists, folders, types: typeRows, dismissed: new Set<string>(), tomb: [] as string[], writes: 0 }
+  const state = { tasks, lists, folders, types: typeRows, dismissed: new Set<string>(), tomb: [] as string[], writes: 0, affirmations: undefined as World["affirmations"] }
   const port: Port = {
-    world: (): World => ({ tasks: state.tasks, lists: state.lists, types: state.types, folders: state.folders }),
+    world: (): World => ({ tasks: state.tasks, lists: state.lists, types: state.types, folders: state.folders, ...(state.affirmations ? { affirmations: state.affirmations } : {}) }),
     now: () => new Date(2026, 10, 2, 12),
     commit: (id, patch) => {
       state.writes++
@@ -53,6 +53,9 @@ function harness(tasks: Task[], lists: List[], folders: Folder[] = [], typeRows:
     },
     addList: (l) => {
       state.lists = [...state.lists, l]
+    },
+    updateList: (l) => {
+      state.lists = state.lists.map((x) => (x.id === l.id ? l : x))
     },
     removeList: (id) => {
       state.lists = state.lists.filter((l) => l.id !== id)
@@ -695,5 +698,83 @@ describe("shopping-list", () => {
     h.say("yes")
     const again = h.say('create a shopping list called "Orders" skip "misc". it must have at least brow bleach')
     expect(JSON.stringify(again)).toMatch(/Nothing to add/)
+  })
+})
+
+describe("an Affirmation item type for a list's items", () => {
+  const LINE =
+    'all the Affirmations on this list should have item type "Affirmation" and NOT be item type task! affirmations have built in attributes of number of times repeated (based on how many times it has randomly come up on a day and times the user actually said it) and the dates.'
+  const make = () => {
+    const h = harness(
+      [
+        task("a", "I am calm.", { lists: ["aff"], type: "task", noteLog: [{ id: "n1", date: "2026-11-01", text: "felt true" }], attributes: { mine: "kept" } }),
+        task("b", "I keep my word", { lists: ["aff", "todo"], type: "task", completed: true }),
+        task("c", "buy milk", { lists: ["todo"], type: "task" }),
+      ],
+      [list("aff", "Affirmations", { itemTypeId: "task" }), list("todo", "To do", { itemTypeId: "task" })],
+    )
+    h.state.affirmations = {
+      said: [
+        { key: "i am calm", date: "2026-11-20" },
+        { key: "i am calm", date: "2026-11-20" },
+        { key: "i am calm", date: "2026-11-22" },
+      ],
+      shown: [
+        { date: "2026-11-19", lines: ["I am calm", "Other"] },
+        { date: "2026-11-22", lines: ["I AM CALM!", "I keep my word"] },
+      ],
+    }
+    return h
+  }
+  const row = (h: ReturnType<typeof harness>, id: string) => h.state.tasks.find((t) => t.id === id)!
+
+  it("makes the type with its counts, applies it to the open list only, moves the list's Task pin, and undoes", () => {
+    const h = make()
+    h.say("focus on list Affirmations")
+    const before = JSON.stringify(h.state.tasks.map((t) => ({ ...t, type: undefined, attributes: undefined })))
+    const plan = JSON.stringify(h.say(LINE))
+    expect(plan).toContain('"kind":"plan"')
+    expect(plan).toContain('new item type \\"Affirmation\\"')
+    h.say("yes")
+    const type = h.state.types.find((t) => t.name === "Affirmation")!
+    expect(type.attributes!.map((a) => a.name)).toEqual(["Times came up", "Times said", "Days came up", "Days said", "Last said"])
+    expect(row(h, "a").type).toBe(type.id)
+    expect(row(h, "b").type).toBe(type.id)
+    expect(row(h, "c").type).toBe("task")
+    expect(row(h, "a").attributes).toMatchObject({
+      mine: "kept",
+      "affirmation-times-shown": 2,
+      "affirmation-times-said": 3,
+      "affirmation-days-said": ["2026-11-20", "2026-11-22"],
+      "affirmation-last-said": "2026-11-22",
+    })
+    expect(row(h, "b").attributes?.["affirmation-times-shown"]).toBe(1)
+    // Nothing else on any item moved: notes, lists, done state.
+    expect(JSON.stringify(h.state.tasks.map((t) => ({ ...t, type: undefined, attributes: undefined })))).toBe(before)
+    expect(h.state.lists.find((l) => l.id === "aff")!.itemTypeIds).toEqual([type.id])
+    expect(h.state.lists.find((l) => l.id === "todo")!.itemTypeId).toBe("task")
+    h.say("undo")
+    expect(row(h, "a").type).toBe("task")
+    expect(row(h, "a").attributes).toMatchObject({ mine: "kept" })
+    expect(row(h, "a").attributes?.["affirmation-times-said"] ?? null).toBeNull()
+    expect(h.state.lists.find((l) => l.id === "aff")!.itemTypeId).toBe("task")
+    expect(h.state.lists.find((l) => l.id === "aff")!.itemTypeIds).toBeUndefined()
+    expect(h.state.types.some((t) => t.name === "Affirmation")).toBe(false)
+  })
+
+  it("finds the list from the items' name when no list is open, and reuses an Affirmation type that exists", () => {
+    const h = make()
+    h.say(LINE)
+    h.say("yes")
+    const id = h.state.types.find((t) => t.name === "Affirmation")!.id
+    expect(row(h, "a").type).toBe(id)
+    // Asking again only refreshes counts that changed.
+    h.state.affirmations!.said.push({ key: "i am calm", date: "2026-11-23" })
+    const again = JSON.stringify(h.say(LINE))
+    expect(again).toContain("counts and days filled")
+    expect(again).not.toContain("new item type")
+    h.say("yes")
+    expect(row(h, "a").attributes?.["affirmation-times-said"]).toBe(4)
+    expect(h.state.types.filter((t) => t.name === "Affirmation")).toHaveLength(1)
   })
 })

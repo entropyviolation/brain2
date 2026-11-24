@@ -195,11 +195,12 @@
 }
 
 /* ===== Open-list caption (name + one-list search + caption keys) =====
-   The keys are one family: rounded gunmetal caps with a specular top lip, a
-   pressed foot, and a stamped 16px mark (ink over a 1px light lip), after the
-   transport discs (docs/DESIGN_STYLE.md#transport-keys). `data-no95` keeps the
-   generic square fascia skin off them. The search key, while open, turns to
-   CRT glass with a phosphor mark — the same "on" language as the Display deck. */
+   The caption keys wear the window title-bar key (`.fm-title-btn`, the
+   minimize / maximize / close row above): a 22px square of milled metal with
+   a specular lip, the fascia ring, and a small dark mark (ink over a 1px light
+   lip). `data-no95` keeps the generic fascia lip from stacking on top. The
+   search key, while open, turns to CRT glass with a phosphor mark — the same
+   "on" language as the Display deck. */
 .fm98 .fm-title-bar.fm-list-caption {
   margin-bottom: 3px;
   padding: 5px 6px 5px 8px;
@@ -223,49 +224,36 @@
 }
 
 .fm98 .fm-cap-keys {
-  gap: 5px;
+  gap: 4px;
   align-items: center;
 }
 
 .fm98 .fm-cap-key {
   box-sizing: border-box;
   position: relative;
-  flex: 0 0 30px;
-  width: 30px;
-  height: 30px;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #3b3f43;
-  border-radius: 8px;
-  background:
-    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255, 255, 255, 0.55), transparent 70%),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #b9bfc5 0%, #9aa1a8 48%, #7d848b 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    inset 0 -2px 0 rgba(30, 33, 36, 0.35),
-    inset 1px 0 0 rgba(255, 255, 255, 0.25),
-    inset -1px 0 0 rgba(30, 33, 36, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.55),
-    0 2px 3px rgba(0, 0, 0, 0.25);
+  border: none;
+  border-radius: var(--r-2, 2px);
+  background: var(--fm-key-face);
+  box-shadow: var(--fm-key-ring);
   cursor: pointer;
-  transition: filter 80ms ease;
 }
 
 .fm98 .fm-cap-key:hover {
-  filter: brightness(1.07);
+  filter: brightness(1.04);
 }
 
 .fm98 .fm-cap-key:active {
-  background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 2px),
-    linear-gradient(180deg, #7d848b 0%, #8f969d 55%, #a2a9b0 100%);
   box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.45),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.25),
-    0 1px 0 rgba(255, 255, 255, 0.55);
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 1px var(--chrome-pressed);
   filter: none;
 }
 
@@ -276,17 +264,17 @@
 
 .fm98 .fm-cap-glyph {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 11px;
+  height: 11px;
   overflow: visible;
 }
 
 .fm98 .fm-cap-glyph-ink {
-  fill: #141618;
+  fill: #1c1e20;
 }
 
 .fm98 .fm-cap-glyph-lip {
-  fill: rgba(255, 255, 255, 0.6);
+  fill: rgba(255, 255, 255, 0.55);
 }
 
 .fm98 .fm-cap-key:active .fm-cap-glyph {
@@ -294,12 +282,10 @@
 }
 
 .fm98 .fm-cap-key[aria-pressed="true"] {
-  border-color: var(--chrome-pressed, #000);
   background: var(--fm-crt-glass);
   box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.6),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-    0 1px 0 rgba(255, 255, 255, 0.55);
+    inset 0 1px 3px rgba(0, 0, 0, 0.6),
+    0 0 0 1px var(--chrome-pressed, #000);
 }
 
 .fm98 .fm-cap-key[aria-pressed="true"] .fm-cap-glyph-ink {

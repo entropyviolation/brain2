@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import type { Folder } from "@/lib/types"
 import type { ItemPlacementMode } from "@/lib/item-selection"
 import { LIST_TEMPLATES } from "@/components/Lists/constants"
-import { Button } from "@/components/ui/button"
+import { Keycap } from "@/components/chrome"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -166,7 +166,7 @@ export function NewListDialog({
                 ))}
               </NativeSelect>
               <p className="text-xs text-muted-foreground">
-                Gives items in this list a starting set of attributes (e.g. price &amp; store, or author &amp; pages). Editable later.
+                Gives items in this list a starting set of attributes (e.g. price &amp; store, or author &amp; pages). Photo gallery makes a list of Photo items that opens as a thumbnail wall. Editable later.
               </p>
             </div>
           )}
@@ -188,11 +188,12 @@ export function NewListDialog({
             />
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Keycap plastic="mod" onClick={() => onOpenChange(false)}>
               Cancel
-            </Button>
+            </Keycap>
             {bulkMode ? (
-              <Button
+              <Keycap
+                plastic="primary"
                 onClick={() =>
                   onBulkCreate?.({
                     names: bulkNames,
@@ -205,11 +206,11 @@ export function NewListDialog({
                 disabled={bulkNames.length === 0}
               >
                 Create {bulkNames.length || ""} List{bulkNames.length === 1 ? "" : "s"}
-              </Button>
+              </Keycap>
             ) : (
-              <Button onClick={() => onCreate({ name, description, color, scheduleable, template })}>
+              <Keycap plastic="primary" onClick={() => onCreate({ name, description, color, scheduleable, template })}>
                 Create List
-              </Button>
+              </Keycap>
             )}
           </div>
         </div>
