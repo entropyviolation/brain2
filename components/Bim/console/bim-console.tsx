@@ -15,7 +15,7 @@ import { Fragment, memo, useCallback, useMemo, useRef, useState, type KeyboardEv
 import { ArrowUp, Mic, Paperclip } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
-import { BIM_FULL, BIM_HANDLE, BIM_INTRO, BIM_SHORT } from "@/lib/ingest/bim"
+import { BIM_CONSOLE_BIO, BIM_FULL, BIM_HANDLE, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_CHAT_ID, useBimChatStore, type BimLine } from "@/lib/ingest/bim-chat"
 import { ConvoKeys, ConvoList } from "../convo-list"
 import { ALL_COMMANDS } from "@/lib/ingest/command-glossary"
@@ -27,8 +27,11 @@ import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
 import { HabitCard } from "@/components/Bim/habit-card"
+import { BimBlob } from "@/components/Bim/bim-blob"
 import { LlmSuggestions } from "./llm-suggestions"
 import { appendDictated, useDesktopDictation } from "@/lib/desktop-dictation"
+import { dmMonoFace } from "@/lib/fonts/dm-mono"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 import "@/components/Bim/bim-ink.css"
 import "./bim-console.css"
 
@@ -340,10 +343,8 @@ function Dossier() {
   return (
     <aside className="bim-crt-side">
       <div className="bim-glass bim-card">
-        <div className={`bim-face${busy ? " is-busy" : ""}`} aria-hidden="true">
-          <i />
-          <i />
-          <b />
+        <div className={`bim-face${busy ? " is-busy" : ""}`} title={busy ? "BIM is thinking" : undefined}>
+          <BimBlob thinking={busy} />
         </div>
         <dl>
           <dt>NAME</dt>
@@ -360,13 +361,15 @@ function Dossier() {
           <dd>{count}</dd>
         </dl>
       </div>
-      <div className="bim-glass bim-scroll bim-bio">{BIM_INTRO}</div>
+      <div className="bim-glass bim-scroll bim-bio">{BIM_CONSOLE_BIO}</div>
     </aside>
   )
 }
 
 export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [tab, setTab] = useState<ConsoleTab>("chat")
+  // The dialog portals to <body>, so the keys' DM Mono variable goes on <html>.
+  useStampFontVariables(dmMonoFace)
   const planned = PLANNED[tab]
   const busy = useBimChatStore((s) => s.busy)
   const firstSoon = TABS.findIndex((t) => PLANNED[t])

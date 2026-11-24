@@ -25,12 +25,12 @@ export function ConvoKeys({ showing, setShowing, keyClass = "" }: { showing: boo
   const newConvo = useBimChatStore((s) => s.newConvo)
   return (
     <span className="bim-convo-keys">
+      {/* Never disabled: on an empty chat it still closes the list and drops BIM's open question, so the key always answers. */}
       <button
         data-no95
         type="button"
         className={`${keyClass} bim-convo-new`.trim()}
-        disabled={!hasLines}
-        title="Start a new conversation. This one is kept under chats."
+        title={hasLines ? "Start a new conversation. This one is kept under chats." : "This chat is already new. Type to start it."}
         onClick={() => {
           newConvo()
           setShowing(false)

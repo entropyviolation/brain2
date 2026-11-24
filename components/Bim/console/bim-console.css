@@ -24,6 +24,8 @@
     linear-gradient(180deg, #e6e6e6 0%, #c8c8c8 42%, #9a9a9a 100%) !important;
   color: #1c140f !important;
   font: 14px/1.5 var(--bim-mono);
+  /* Keys read in DM Mono (2026-11-24): Silkscreen was hard to read on a keycap. Headings keep the pixel face. */
+  --bim-key: var(--font-dmmono), "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
   box-shadow:
     inset 0 1px 0 #fff,
     inset 0 -1px 0 rgba(0, 0, 0, 0.35),
@@ -34,7 +36,7 @@
 
 /* The Win95 skin and button resets paint their own face; these stay. */
 .ui-dialog-content.bim-crt button {
-  font-family: var(--bim-pixel) !important;
+  font-family: var(--bim-key) !important;
 }
 
 .ui-dialog-content.bim-crt .bim-chips button,
@@ -56,8 +58,8 @@
   justify-content: center;
   gap: 5px;
   min-height: 28px;
-  font: 700 10px/1.1 var(--bim-pixel);
-  letter-spacing: 0.06em;
+  font: 500 11px/1.1 var(--bim-key);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   color: #1f2226;
@@ -787,64 +789,123 @@
   text-shadow: var(--bim-glow-2);
 }
 
-/* A pixel face. It blinks, and its mouth moves while BIM is working. */
+/* BIM's face: the pixel blob sprite (`components/Bim/bim-blob.tsx`). Idle it bobs and blinks.
+   While BIM works (`.is-busy`) it bobs faster, glances up and about, and thought dots pop in. */
 .bim-face {
   position: relative;
-  width: 64px;
-  height: 64px;
+  display: grid;
+  place-items: end center;
+  width: 72px;
+  height: 72px;
+  padding-bottom: 2px;
+  box-sizing: border-box;
   border-radius: 4px;
   background: #020708;
   box-shadow: inset 0 0 0 1px var(--bim-line), inset 0 0 14px rgba(0, 0, 0, 0.8);
 }
 
-.bim-face i {
-  position: absolute;
-  top: 20px;
-  width: 9px;
-  height: 11px;
-  background: var(--bim-ink);
-  box-shadow: var(--bim-glow);
-  animation: bim-blink 5s steps(1) infinite;
+.bim-blob {
+  width: 66px;
+  height: 69px;
+  overflow: visible;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--bim-ink) 45%, transparent));
 }
 
-.bim-face i:nth-of-type(1) {
-  left: 14px;
+.bim-blob-body {
+  animation: bim-blob-bob 1.6s steps(1) infinite;
 }
 
-.bim-face i:nth-of-type(2) {
-  right: 14px;
+.bim-blob-open {
+  animation: bim-blob-blink 4.2s steps(1) infinite;
 }
 
-.bim-face b {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 14px;
-  height: 3px;
-  background: var(--bim-ink);
-  box-shadow: var(--bim-glow);
+.bim-blob-shut {
+  visibility: hidden;
+  animation: bim-blob-blink-shut 4.2s steps(1) infinite;
 }
 
-.bim-face.is-busy b {
-  animation: bim-talk 0.45s steps(1) infinite;
+.bim-blob-dot {
+  fill: var(--bim-ink);
+  visibility: hidden;
 }
 
-@keyframes bim-blink {
-  0%,
-  94%,
-  100% {
-    transform: scaleY(1);
-  }
-  96% {
-    transform: scaleY(0.1);
-  }
+/* Thinking: quicker bob, eyes glance up-left, up-right, and the dots pop in one by one. */
+.bim-blob.is-thinking .bim-blob-body {
+  animation-duration: 0.7s;
 }
 
-@keyframes bim-talk {
+.bim-blob.is-thinking .bim-blob-eyes {
+  animation: bim-blob-glance 1.8s steps(1) infinite;
+}
+
+.bim-blob.is-thinking .bim-blob-dot {
+  animation: bim-blob-dot 1.5s steps(1) infinite;
+}
+
+.bim-blob.is-thinking .bim-blob-dot:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+.bim-blob.is-thinking .bim-blob-dot:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+@keyframes bim-blob-bob {
   50% {
-    height: 7px;
-    left: 24px;
-    right: 24px;
+    transform: translateY(1px);
+  }
+}
+
+@keyframes bim-blob-blink {
+  94% {
+    visibility: hidden;
+  }
+  97% {
+    visibility: visible;
+  }
+}
+
+@keyframes bim-blob-blink-shut {
+  0% {
+    visibility: hidden;
+  }
+  94% {
+    visibility: visible;
+  }
+  97% {
+    visibility: hidden;
+  }
+}
+
+@keyframes bim-blob-glance {
+  0% {
+    transform: translate(-1px, -1px);
+  }
+  50% {
+    transform: translate(1px, -1px);
+  }
+}
+
+@keyframes bim-blob-dot {
+  0% {
+    visibility: hidden;
+  }
+  25% {
+    visibility: visible;
+  }
+  85% {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bim-blob *,
+  .bim-blob.is-thinking * {
+    animation: none !important;
+  }
+
+  .bim-blob.is-thinking .bim-blob-dot {
+    visibility: visible;
   }
 }
 
@@ -987,10 +1048,66 @@
   white-space: normal;
 }
 
-.bim-llm-main .bim-dim {
-  font: 8px/1.6 var(--bim-pixel);
-  letter-spacing: 0.08em;
+/* The row is a ghost in the glass, not a keycap. `.bim-crt button` outranked `.bim-glass .bim-llm-main`,
+   so a closed row painted pale silver under ghost ink and could not be read (fixed 2026-11-24). */
+.ui-dialog-content.bim-crt .bim-glass button.bim-llm-main:not([aria-expanded="true"]) {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--bim-line);
+  box-shadow: none;
+  color: var(--bim-lcd);
+  transform: none;
+}
+
+.ui-dialog-content.bim-crt .bim-glass button.bim-llm-main:not([aria-expanded="true"]):hover {
+  background: color-mix(in srgb, var(--bim-ink) 12%, rgba(0, 0, 0, 0.28));
+}
+
+.bim-llm-detail {
+  font: 12px/1.5 var(--bim-mono);
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--bim-lcd) 72%, transparent);
+  text-shadow: none;
+}
+
+/* What it read: the whole messages, then both sides of a text thread. */
+.bim-llm-read {
+  margin: 4px 0 8px;
+}
+
+.bim-llm-src {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--bim-line);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.bim-llm-why .bim-llm-src-head {
+  margin: 0 0 6px;
+  font: 9px/1.3 var(--bim-pixel);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--bim-ink-2);
+}
+
+.bim-llm-why .bim-llm-src-body {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--bim-lcd);
+}
+
+.bim-llm-why .bim-llm-text {
+  margin: 0 0 4px;
+  color: var(--bim-ink);
+}
+
+.bim-llm-why .bim-llm-text.is-me {
+  color: var(--bim-lcd);
+}
+
+.bim-llm-text span {
+  opacity: 0.6;
+  margin-right: 6px;
 }
 
 .bim-glass .bim-llm-main[aria-expanded="true"] {

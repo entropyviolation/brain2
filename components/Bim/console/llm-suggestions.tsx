@@ -27,6 +27,7 @@ import { DEFAULT_MODEL, listOllamaModels, ollamaCall } from "@/lib/bim-flow/olla
 import { loadHubVault, snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
 import { SUGGESTION_KINDS, suggestWeek, type Suggestion } from "@/lib/bim-flow/suggestions"
 import { loadTexts } from "@/lib/bim-flow/texts-client"
+import { localDay, type TextRow } from "@/lib/bim-flow/texts"
 import type { Flow, MessageRun, ModelPlan } from "@/lib/bim-flow/types"
 
 const FLOW_ID: FlowId = "log-routed"
@@ -67,6 +68,90 @@ function saveCached(c: Cached) {
 }
 
 const clock = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`
+
+const SOURCE_LABEL: Record<Suggestion["source"], string> = { bim: "BIM message", text: "texts you sent", screen: "Screen Time", files: "file saves" }
+const hm = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+const PAD_MIN = 30
+
+/** "Conversation with Elijah Gibbins-Croft" → the name, so both sides can be read from that thread. */
+function personOf(s: Suggestion): string | null {
+  for (const m of [...(s.sources ?? []).map((x) => x.text), ...s.evidence]) {
+    const hit = /Conversation with ([^\n]+)/.exec(m)
+    if (hit && hit[1] !== "group chat") return hit[1]!.trim()
+  }
+  return null
+}
+
+/**
+ * The deeper folds of an open row. First the whole messages the flow read (a text burst in full, not its
+ * first line), then for texts both sides of the conversation around that time, read from the hub on demand.
+ */
+function WhatItRead({ s }: { s: Suggestion }) {
+  const [showFull, setShowFull] = useState(false)
+  const [convo, setConvo] = useState<TextRow[] | "loading" | "none" | null>(null)
+  const full = s.sources ?? []
+  const fromTexts = s.source === "text" || full.some((x) => x.source === "text")
+
+  const loadConvo = async () => {
+    setConvo("loading")
+    const from = Date.parse(s.at) - PAD_MIN * 60_000
+    const to = Date.parse(s.end ?? s.at) + PAD_MIN * 60_000
+    const days = [...new Set([localDay(new Date(from).toISOString()), localDay(new Date(to).toISOString())])]
+    // Same names and hidden handles as the pass itself, so a hidden thread stays hidden here too.
+    const snap = snapshotFromStores()
+    const got = (await Promise.all(days.map((day) => loadTexts({ day, days: 60, people: snap.people, hideHandles: snap.secretHandles })))).flatMap((r) => r ?? [])
+    const who = personOf(s)
+    const near = got.filter((r) => {
+      const t = Date.parse(r.at)
+      return t >= from && t <= to
+    })
+    // The thread of the person named, when one is; else every thread with a text of mine in the window.
+    const threads = new Set(near.filter((r) => (who ? r.who === who : r.dir === "out")).map((r) => r.thread))
+    const rows = near.filter((r) => threads.has(r.thread)).sort((a, b) => a.at.localeCompare(b.at))
+    setConvo(rows.length ? rows : "none")
+  }
+
+  if (!full.length && !fromTexts) return null
+  return (
+    <div className="bim-llm-read">
+      <div className="bim-chips">
+        {full.length ? (
+          <button data-no95 type="button" aria-expanded={showFull} onClick={() => setShowFull((v) => !v)}>
+            {showFull ? "Hide" : "Show"} what it read ({full.length})
+          </button>
+        ) : null}
+        {fromTexts ? (
+          <button data-no95 type="button" disabled={convo === "loading"} onClick={() => (convo && convo !== "loading" ? setConvo(null) : void loadConvo())}>
+            {convo === "loading" ? "Reading texts…" : convo ? "Hide the conversation" : "Both sides of the conversation"}
+          </button>
+        ) : null}
+      </div>
+      {showFull
+        ? full.map((m, i) => (
+            <div key={i} className="bim-llm-src">
+              <p className="bim-llm-src-head">
+                {SOURCE_LABEL[m.source]} · {localDay(m.at)} {hm(m.at)}
+              </p>
+              <p className="bim-llm-src-body">{m.text}</p>
+            </div>
+          ))
+        : null}
+      {convo === "none" ? <p className="bim-dim">No texts came back for that time. The hub may be off, or the texts are older than it keeps.</p> : null}
+      {Array.isArray(convo) ? (
+        <div className="bim-llm-src">
+          <p className="bim-llm-src-head">
+            {personOf(s) ?? "Texts"} · {PAD_MIN} min either side
+          </p>
+          {convo.map((r, i) => (
+            <p key={i} className={`bim-llm-text${r.dir === "out" ? " is-me" : ""}`}>
+              <span>{hm(r.at)} {r.dir === "out" ? "me" : r.who}</span> {r.text}
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 type Phase = "idle" | "loading" | "running" | "done" | "no-ollama"
 
@@ -257,7 +342,7 @@ export function LlmSuggestions() {
               <div key={s.id} className="bim-llm-row">
                 <button data-no95 type="button" className="bim-llm-main" aria-expanded={open === s.id} onClick={() => setOpen(open === s.id ? null : s.id)}>
                   <span>{s.title}</span>
-                  <span className="bim-dim">
+                  <span className="bim-llm-detail">
                     {s.detail}
                     {s.estimated ? " · estimated" : ""} · {s.source}
                     {s.at.slice(0, 10) === today ? " · today" : ""}
@@ -281,6 +366,7 @@ export function LlmSuggestions() {
                         &gt; {line}
                       </p>
                     ))}
+                    <WhatItRead s={s} />
                     <label className="bim-legend" htmlFor={`bim-llm-words-${s.id}`}>
                       {rejecting === s.id ? "Why is this wrong? Kept so the flow can learn from it." : "Note (optional). Accept keeps it on the block."}
                     </label>

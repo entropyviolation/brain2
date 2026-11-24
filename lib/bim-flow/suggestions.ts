@@ -42,6 +42,15 @@ export interface Detection {
   source: SuggestionSource
   why: string
   evidence: string[]
+  /** The whole messages it read (BIM lines, text bursts), so the row can show them in full. */
+  sources?: SourceMessage[]
+}
+
+/** One message a suggestion rests on, uncut. */
+export interface SourceMessage {
+  at: string
+  source: SuggestionSource
+  text: string
 }
 
 export interface Suggestion {
@@ -65,6 +74,8 @@ export interface Suggestion {
   habitId?: string
   /** timeblock: every detection behind it, oldest first. More than one means the same activity was seen more than once. */
   detections?: Detection[]
+  /** The whole messages behind `evidence`, oldest first. Missing on suggestions kept from before 2026-11-24. */
+  sources?: SourceMessage[]
 }
 
 export const WEEK_DAYS = 7
@@ -180,6 +191,11 @@ export function collectSuggestions(input: CollectInput): Suggestion[] {
     return m ? `${stamp(m.at)} ${m.text.split("\n")[0]!.slice(0, 120)}` : id
   }
   const sourceOf = (id: string): SuggestionSource => source.get(id) ?? "bim"
+  const fullOf = (ids: string[]): SourceMessage[] =>
+    ids.flatMap((id) => {
+      const m = byId.get(id)
+      return m ? [{ at: m.at, source: sourceOf(id), text: m.text }] : []
+    })
   const out: Suggestion[] = []
   const since = weekStart(now).getTime()
 
@@ -193,8 +209,9 @@ export function collectSuggestions(input: CollectInput): Suggestion[] {
     const start = Date.parse(b.start)
     const end = Date.parse(b.end)
     if (start < since || end > now.getTime() + MIN || (end - start) / MIN < MIN_BLOCK_MIN) continue
-    const evidence = src === "bim" || src === "text" ? b.evidence.map(lineOf) : b.evidence
-    seen.push({ title: b.activity, estimated: b.estimated, d: { start: b.start, end: b.end, source: src, why: b.why, evidence } })
+    const fromWords = src === "bim" || src === "text"
+    const evidence = fromWords ? b.evidence.map(lineOf) : b.evidence
+    seen.push({ title: b.activity, estimated: b.estimated, d: { start: b.start, end: b.end, source: src, why: b.why, evidence, ...(fromWords ? { sources: fullOf(b.evidence) } : {}) } })
   }
   for (const group of sameBlockGroups(seen)) out.push(blockSuggestion(group))
 
@@ -212,7 +229,7 @@ export function collectSuggestions(input: CollectInput): Suggestion[] {
         const key = norm(title)
         if (!key || have.has(key)) continue
         have.add(key)
-        out.push({ id: `it-${hash(key)}`, kind: "item", list: picks[0], title, detail: `on ${picks.join(", ") || "Inbox"} · ${stamp(m.at)}`, at: m.at, source: src, why: `kept on ${picks.join(", ") || "Inbox"}`, evidence: [lineOf(m.id)] })
+        out.push({ id: `it-${hash(key)}`, kind: "item", list: picks[0], title, detail: `on ${picks.join(", ") || "Inbox"} · ${stamp(m.at)}`, at: m.at, source: src, why: `kept on ${picks.join(", ") || "Inbox"}`, evidence: [lineOf(m.id)], sources: fullOf([m.id]) })
       }
       if (p.action === "habit-done") {
         const date = localDateKey(new Date(m.at))
@@ -221,7 +238,7 @@ export function collectSuggestions(input: CollectInput): Suggestion[] {
           if (!habit || habitDone(habit.id, date)) continue
           const id = `hb-${hash(`${habit.id}|${date}`)}`
           if (out.some((s) => s.id === id)) continue
-          out.push({ id, kind: "habit", habitId: habit.id, title: habit.title, detail: `done ${date}`, at: m.at, source: src, why: "message shows it was done", evidence: [lineOf(m.id)] })
+          out.push({ id, kind: "habit", habitId: habit.id, title: habit.title, detail: `done ${date}`, at: m.at, source: src, why: "message shows it was done", evidence: [lineOf(m.id)], sources: fullOf([m.id]) })
         }
       }
     }
@@ -259,6 +276,7 @@ function blockSuggestion(group: { title: string; estimated: boolean; d: Detectio
     why: many ? `detected ${ds.length} times: ${ds.map((d) => d.why).join("; ")}` : ds[0]!.why,
     evidence: ds.flatMap((d) => d.evidence),
     detections: ds,
+    sources: ds.flatMap((d) => d.sources ?? []),
   }
 }
 
