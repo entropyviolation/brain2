@@ -7,6 +7,18 @@
  * the standalone explorer. `hooks.onReload` replaces `location.reload()` so
  * reverting a verified edit rebuilds from the bundled catalog.
  */
+import { gsIcon } from "./icons";
+
+/** Program marks from the catalog, drawn as icons after the name. */
+const MARK_ICON = { star: ["star", "Starred"], company: ["building", "Company"], global: ["globe", "Global / remote"], paid: ["coins", "Paid"], free: ["gift", "Free"] };
+function marksHTML(p) {
+  const marks = Array.isArray(p.marks) ? p.marks : [];
+  return marks.map((m) => (MARK_ICON[m] ? " " + gsIcon(MARK_ICON[m][0], MARK_ICON[m][1]) : "")).join("");
+}
+/** A field the catalog flagged to double-check gets a warning icon. */
+function warnHTML(p, field) {
+  return Array.isArray(p.warn) && p.warn.includes(field) ? gsIcon("alert", "Check this") + " " : "";
+}
 export function mountGradSearch(root, data, hooks = {}) {
   let detachKey = () => {};
 
@@ -281,7 +293,7 @@ export function mountGradSearch(root, data, hooks = {}) {
     if (!when && !apply) return "";
     return `<div class="card-facts">
       ${when ? `<div class="card-deadline" title="Application deadline"><span class="card-fact-k">Deadline</span><span>${esc(when)}</span></div>` : ""}
-      ${apply ? `<p class="card-apply" title="Application process"><span class="card-fact-k">Apply</span> ${esc(apply)}</p>` : ""}
+      ${apply ? `<p class="card-apply" title="Application process"><span class="card-fact-k">Apply</span> ${warnHTML(p, "note")}${esc(apply)}</p>` : ""}
     </div>`;
   }
 
@@ -291,7 +303,7 @@ export function mountGradSearch(root, data, hooks = {}) {
     if (!when && !apply) return "";
     return `<div class="d-callouts">
       ${when ? `<div class="deadline-callout"><div class="k">Deadline</div><div class="v">${esc(when)}</div></div>` : ""}
-      ${apply ? `<div class="apply-callout"><div class="k">Application</div><div class="v">${esc(apply)}</div></div>` : ""}
+      ${apply ? `<div class="apply-callout"><div class="k">Application</div><div class="v">${warnHTML(p, "note")}${esc(apply)}</div></div>` : ""}
     </div>`;
   }
 
@@ -343,11 +355,11 @@ export function mountGradSearch(root, data, hooks = {}) {
     const tier1 = PROGRAMS.filter((p) => p.tier === 1).length;
     const countries = new Set(PROGRAMS.map((p) => p.country).filter(Boolean)).size;
     const cards = [
-      { num: n, label: "Programs tracked", icon: "🎓" },
-      { num: philsci, label: "Philosophy of Science", icon: "🔬" },
-      { num: funded, label: "Funded / free", icon: "💰" },
-      { num: tier1, label: "Tier-1 city programs", icon: "⭐" },
-      { num: countries, label: "Countries", icon: "🌍" },
+      { num: n, label: "Programs tracked", icon: gsIcon("gradCap") },
+      { num: philsci, label: "Philosophy of Science", icon: gsIcon("microscope") },
+      { num: funded, label: "Funded / free", icon: gsIcon("coins") },
+      { num: tier1, label: "Tier-1 city programs", icon: gsIcon("star") },
+      { num: countries, label: "Countries", icon: gsIcon("globe") },
     ];
     $("#stats").innerHTML = cards
       .map(
@@ -532,7 +544,7 @@ export function mountGradSearch(root, data, hooks = {}) {
       <div class="card-top">
         <div class="score-badge" style="background:${scoreGrad(sc)}">${fmtScore(sc)}</div>
         <div class="card-title">
-          <h3>${esc(p.program)}</h3>
+          <h3>${esc(p.program)}${marksHTML(p)}</h3>
           <div class="inst">${esc(p.institution)}</div>
           ${ref}
         </div>
@@ -543,7 +555,7 @@ export function mountGradSearch(root, data, hooks = {}) {
         ${p.duration ? `<span class="tag">${esc(p.duration)}</span>` : ""}
         <span class="tag">${esc(p.fundingType)}</span>
         ${edited ? '<span class="tag tag-edited">✎ edited</span>' : ""}
-        ${note ? '<span class="tag tag-note" title="You have notes on this program">📝 note</span>' : ""}
+        ${note ? '<span class="tag tag-note" title="You have notes on this program">${gsIcon("note")} note</span>' : ""}
       </div>
       ${cardFactsHTML(p)}
       <div class="card-foot">
@@ -577,7 +589,7 @@ export function mountGradSearch(root, data, hooks = {}) {
       <tbody>
         ${list.map((p) => `<tr data-id="${p.id}">
           <td class="t-score" style="color:${scoreColor(activeScore(p))}">${fmtScore(activeScore(p))}${isCustomized(p) ? ' <span style="color:var(--accent)">✎</span>' : ""}</td>
-          <td>${esc(p.program)}${hasNote(p) ? ' <span title="Has notes">📝</span>' : ""}${deadlineText(p) ? `<div class="t-deadline">Deadline ${esc(deadlineText(p))}</div>` : ""}${applyText(p) ? `<div class="t-apply">${esc(applyText(p))}</div>` : ""}</td>
+          <td>${esc(p.program)}${marksHTML(p)}${hasNote(p) ? " " + gsIcon("note", "Has notes") : ""}${deadlineText(p) ? `<div class="t-deadline">Deadline ${esc(deadlineText(p))}</div>` : ""}${applyText(p) ? `<div class="t-apply">${warnHTML(p, "note")}${esc(applyText(p))}</div>` : ""}</td>
           <td>${esc(p.institution)}</td>
           <td>${esc(p.city)}${p.country && p.city !== p.country ? ", " + esc(p.country) : ""}</td>
           <td>${esc(p.degreeLevel)}</td>
@@ -619,7 +631,7 @@ export function mountGradSearch(root, data, hooks = {}) {
     const rAll = $("#restoreAll");
     if (nDismissed > 0 && !state.viewFavorites) {
       dToggle.hidden = false;
-      dToggle.textContent = state.viewDismissed ? "← Back to programs" : `🗑 ${nDismissed} hidden`;
+      dToggle.innerHTML = state.viewDismissed ? "← Back to programs" : `${gsIcon("trash")} ${nDismissed} hidden`;
       dToggle.classList.toggle("ghost", !state.viewDismissed);
       rAll.hidden = !state.viewDismissed;
     } else {
@@ -734,7 +746,7 @@ export function mountGradSearch(root, data, hooks = {}) {
     $("#drawer").innerHTML = `
       <div class="drawer-hd">
         <button class="icon-btn close" id="closeDrawer" aria-label="Close">✕</button>
-        <button class="icon-btn verify-btn" id="verifyBtn" title="Verify info with web search" aria-label="Verify info with web search">🔍</button>
+        <button class="icon-btn verify-btn" id="verifyBtn" title="Verify info with web search" aria-label="Verify info with web search">${gsIcon("search")}</button>
         <div class="drawer-score">
           <div class="score-badge" id="drawerBadge" style="background:${scoreGrad(sc)}">${fmtScore(sc)}</div>
           <div>
@@ -746,7 +758,7 @@ export function mountGradSearch(root, data, hooks = {}) {
             </div>
           </div>
         </div>
-        <h2>${esc(p.program)}</h2>
+        <h2>${esc(p.program)}${marksHTML(p)}</h2>
         <div class="d-inst">${esc(p.institution)}</div>
       </div>
       <div class="drawer-body">
@@ -758,7 +770,7 @@ export function mountGradSearch(root, data, hooks = {}) {
             <div class="d-fact"><div class="k">Field</div><div class="v">${esc(p.field || p.fieldCategory)}</div></div>
             <div class="d-fact"><div class="k">Degree</div><div class="v">${esc(p.degree || p.degreeLevel)}</div></div>
             <div class="d-fact"><div class="k">Duration</div><div class="v">${esc(p.duration || "—")}</div></div>
-            <div class="d-fact"><div class="k">Language</div><div class="v">${esc(p.language || "English")}</div></div>
+            <div class="d-fact"><div class="k">Language</div><div class="v">${warnHTML(p, "language")}${esc(p.language || "English")}</div></div>
             <div class="d-fact"><div class="k">Funding</div><div class="v">${esc(p.fundingType)}</div></div>
           </div>
         </div>
@@ -785,14 +797,14 @@ export function mountGradSearch(root, data, hooks = {}) {
         ${datesDrawerHTML(p)}
         <div class="d-section">
           <h4>Funding / tuition detail</h4>
-          <div class="funding-note">${esc(p.funding || "Not specified — verify on the official page.")}</div>
+          <div class="funding-note">${warnHTML(p, "funding")}${esc(p.funding || "Not specified — verify on the official page.")}</div>
         </div>
         <div class="drawer-actions">
           <button class="btn drawer-fav ${state.favorites.has(keyOf(p)) ? "fav-active" : ""}" id="drawerFav">${state.favorites.has(keyOf(p)) ? "★ Saved" : "☆ Save"}</button>
           <button class="btn ${state.compare.has(p.id) ? "primary" : ""}" id="drawerCompare">${state.compare.has(p.id) ? "✓ In compare" : "+ Compare"}</button>
           ${p.link ? `<a class="btn primary" href="${esc(p.link)}" target="_blank" rel="noopener">Official ↗</a>` : ""}
         </div>
-        <button class="btn btn-dismiss" id="drawerDismiss">🗑 Hide this program</button>
+        <button class="btn btn-dismiss" id="drawerDismiss">${gsIcon("trash")} Hide this program</button>
       </div>`;
     const pk = keyOf(p);
     $("#drawer").classList.remove("hidden");
@@ -967,8 +979,8 @@ export function mountGradSearch(root, data, hooks = {}) {
       { label: "Field", cell: (p) => `<span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${fieldColor(p.fieldCategory)};margin-right:5px"></span>${esc(p.field || p.fieldCategory)}` },
       { label: "Degree", cell: (p) => esc(p.degree || p.degreeLevel) },
       { label: "Duration", cell: (p) => `<span class="${p.years === bestDur ? "cmp-best" : ""}">${esc(p.duration || "—")}</span>` },
-      { label: "Language", cell: (p) => esc(p.language || "English") },
-      { label: "Funding detail", cell: (p) => `<span style="font-size:12px;color:var(--text-dim)">${esc(p.funding || "—")}</span>` },
+      { label: "Language", cell: (p) => warnHTML(p, "language") + esc(p.language || "English") },
+      { label: "Funding detail", cell: (p) => `<span style="font-size:12px;color:var(--text-dim)">${warnHTML(p, "funding")}${esc(p.funding || "—")}</span>` },
       { label: "Field fit", cell: (p) => bar(effComponents(p).field) },
       { label: "Location fit", cell: (p) => bar(effComponents(p).location) },
       { label: "Funding fit", cell: (p) => bar(effComponents(p).funding) },
@@ -995,7 +1007,7 @@ export function mountGradSearch(root, data, hooks = {}) {
   // ============================================================
   //  VERIFY WITH WEB SEARCH
   //  The app is static (file://, no backend) so it can't crawl the web itself.
-  //  Instead the 🔍 button (a) opens one-click web searches for manual webnav,
+  //  Instead the search (verify) button (a) opens one-click web searches for manual webnav,
   //  (b) generates a copy-ready task prompt for an AI agent that DOES have web
   //  search + navigation (e.g. Cursor), and (c) accepts the agent's JSON findings,
   //  shows a field-by-field diff (changed / missing), and lets you apply the
@@ -1084,12 +1096,12 @@ export function mountGradSearch(root, data, hooks = {}) {
     const prompt = buildVerifyPrompt(p);
     const q = `${p.program} ${p.institution}`.trim();
     const links = [
-      { label: "🔎 Program (Google)", url: searchUrl(`${q} ${p.city || ""}`.trim()) },
-      { label: "💰 Funding / tuition", url: searchUrl(`${q} tuition funding scholarship stipend cost`) },
-      { label: "⏰ Deadline / intake", url: searchUrl(`${q} application deadline intake`) },
-      { label: "🌐 Language of instruction", url: searchUrl(`${q} language of instruction English taught`) },
+      { icon: "search", label: "Program (Google)", url: searchUrl(`${q} ${p.city || ""}`.trim()) },
+      { icon: "coins", label: "Funding / tuition", url: searchUrl(`${q} tuition funding scholarship stipend cost`) },
+      { icon: "clock", label: "Deadline / intake", url: searchUrl(`${q} application deadline intake`) },
+      { icon: "globe", label: "Language of instruction", url: searchUrl(`${q} language of instruction English taught`) },
     ];
-    if (p.link) links.unshift({ label: "↗ Official page", url: p.link, primary: true });
+    if (p.link) links.unshift({ icon: "link", label: "Official page", url: p.link, primary: true });
 
     $("#verifyBody").innerHTML = `
       <div class="verify-wrap">
@@ -1103,7 +1115,7 @@ export function mountGradSearch(root, data, hooks = {}) {
           <h4><span class="vstep-n">1</span> Look it up on the web</h4>
           <p class="score-hint">Open these in new tabs to webnav the official source yourself.</p>
           <div class="verify-links">
-            ${links.map((l) => `<a class="btn ${l.primary ? "primary" : "ghost"}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}
+            ${links.map((l) => `<a class="btn ${l.primary ? "primary" : "ghost"}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.icon ? gsIcon(l.icon) + " " : ""}${esc(l.label)}</a>`).join("")}
           </div>
         </div>
 

@@ -595,7 +595,7 @@ function openRelationship(eid) {
     body.innerHTML = "";
     const cl = e.closeness;
     body.append(h("p", { class: "take" }, `${fmt(e.total)} messages from ${e.first} to ${e.last}` + (cl ? ` · closeness ${cl.score} (#${cl.rank} of 20)` : "") + "."));
-    body.append(h("div", { class: "row" }, [link("Messages", () => openThread(eid), "btn"), link("Words ☁", () => openWords(e), "btn"), link("Calendar", () => openCalendar(e), "btn")]));
+    body.append(h("div", { class: "row" }, [link("Messages", () => openThread(eid), "btn"), link("Word cloud", () => openWords(e), "btn"), link("Calendar", () => openCalendar(e), "btn")]));
     brain2Card(body, e);
     mergeCard(body, e);
     const top = h("div", { class: "grid2" }); body.append(top);

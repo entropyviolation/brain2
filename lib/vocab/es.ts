@@ -12,7 +12,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A colorless liquid that we drink and that falls when it rains.",
       example: "Bebo un vaso de agua fría.",
       exampleEn: "I drink a glass of cold water.",
-      picture: "💧",
+      picture: "water",
     },
     {
       word: "el pan",
@@ -22,7 +22,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "Food made with flour, water and salt, baked in the oven.",
       example: "Compro pan todas las mañanas.",
       exampleEn: "I buy bread every morning.",
-      picture: "🍞",
+      picture: "bread",
     },
     {
       word: "la manzana",
@@ -32,7 +32,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A round fruit, red, green or yellow, that grows on a tree.",
       example: "Mi hijo come una manzana en el recreo.",
       exampleEn: "My son eats an apple at recess.",
-      picture: "🍎",
+      picture: "apple",
     },
     {
       word: "la leche",
@@ -42,7 +42,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A white liquid that cows and other animals give.",
       example: "¿Quieres café con leche?",
       exampleEn: "Do you want coffee with milk?",
-      picture: "🥛",
+      picture: "milk",
     },
     {
       word: "el huevo",
@@ -52,7 +52,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "An oval thing that hens lay and that people eat.",
       example: "Para desayunar, hago dos huevos fritos.",
       exampleEn: "For breakfast, I make two fried eggs.",
-      picture: "🥚",
+      picture: "egg",
     },
     {
       word: "el queso",
@@ -62,7 +62,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A solid food made from milk.",
       example: "Este queso es de Galicia.",
       exampleEn: "This cheese is from Galicia.",
-      picture: "🧀",
+      picture: "cheese",
     },
     {
       word: "el café",
@@ -72,7 +72,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A dark, hot drink that helps us wake up.",
       example: "Tomamos un café después de comer.",
       exampleEn: "We have a coffee after lunch.",
-      picture: "☕",
+      picture: "coffee",
     },
     {
       word: "la naranja",
@@ -82,7 +82,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A round, sweet, orange-colored fruit with a lot of juice.",
       example: "Exprimo tres naranjas para hacer zumo.",
       exampleEn: "I squeeze three oranges to make juice.",
-      picture: "🍊",
+      picture: "citrus",
     },
     {
       word: "el perro",
@@ -92,7 +92,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A pet animal that barks and is a friend to people.",
       example: "El perro duerme en el sofá.",
       exampleEn: "The dog sleeps on the sofa.",
-      picture: "🐕",
+      picture: "dog",
     },
     {
       word: "el gato",
@@ -102,7 +102,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A small pet animal that meows and hunts mice.",
       example: "Mi gato se llama Lucas.",
       exampleEn: "My cat's name is Lucas.",
-      picture: "🐈",
+      picture: "cat",
     },
     {
       word: "el pájaro",
@@ -112,7 +112,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "An animal with feathers and wings that usually flies.",
       example: "Un pájaro canta en la ventana.",
       exampleEn: "A bird is singing at the window.",
-      picture: "🐦",
+      picture: "bird",
     },
     {
       word: "el pez",
@@ -122,7 +122,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "An animal that lives in water and breathes through gills.",
       example: "Hay un pez rojo en la pecera.",
       exampleEn: "There is a red fish in the fishbowl.",
-      picture: "🐟",
+      picture: "fish",
     },
     {
       word: "el caballo",
@@ -132,7 +132,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A large four-legged animal that people can ride.",
       example: "Mi abuelo tenía un caballo blanco.",
       exampleEn: "My grandfather had a white horse.",
-      picture: "🐎",
+      picture: "horse",
     },
     {
       word: "la vaca",
@@ -142,7 +142,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A large farm animal that gives us milk.",
       example: "Las vacas comen hierba en el prado.",
       exampleEn: "The cows eat grass in the meadow.",
-      picture: "🐄",
+      picture: "cow",
     },
     {
       word: "la casa",
@@ -152,7 +152,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A building where a person or a family lives.",
       example: "Vuelvo a casa a las seis.",
       exampleEn: "I go back home at six.",
-      picture: "🏠",
+      picture: "house",
     },
     {
       word: "la silla",
@@ -162,7 +162,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A piece of furniture with legs and a back for one person to sit on.",
       example: "Siéntate en esta silla, por favor.",
       exampleEn: "Sit on this chair, please.",
-      picture: "🪑",
+      picture: "chair",
     },
     {
       word: "la cama",
@@ -172,7 +172,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A piece of furniture where we lie down to sleep.",
       example: "Los niños ya están en la cama.",
       exampleEn: "The children are already in bed.",
-      picture: "🛏️",
+      picture: "bed",
     },
     {
       word: "la puerta",
@@ -182,7 +182,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "Part of a wall that opens and closes to go in or out.",
       example: "Cierra la puerta, que hace frío.",
       exampleEn: "Close the door, it's cold.",
-      picture: "🚪",
+      picture: "door",
     },
     {
       word: "la ventana",
@@ -192,7 +192,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "An opening with glass in a wall to let in light and air.",
       example: "Desde la ventana se ve el mar.",
       exampleEn: "You can see the sea from the window.",
-      picture: "🪟",
+      picture: "window",
     },
     {
       word: "el libro",
@@ -202,7 +202,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A set of pages with text, bound together for reading.",
       example: "Estoy leyendo un libro muy bueno.",
       exampleEn: "I'm reading a very good book.",
-      picture: "📖",
+      picture: "book",
     },
     {
       word: "el coche",
@@ -212,7 +212,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A vehicle with four wheels and an engine for traveling on the road.",
       example: "Vamos al pueblo en coche.",
       exampleEn: "We're going to the village by car.",
-      picture: "🚗",
+      picture: "car",
     },
     {
       word: "la llave",
@@ -222,7 +222,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A small metal object used to open a door.",
       example: "No encuentro las llaves de casa.",
       exampleEn: "I can't find the house keys.",
-      picture: "🔑",
+      picture: "key",
     },
     {
       word: "la mano",
@@ -232,7 +232,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the arm, with five fingers.",
       example: "Lávate las manos antes de comer.",
       exampleEn: "Wash your hands before eating.",
-      picture: "✋",
+      picture: "hand",
     },
     {
       word: "el ojo",
@@ -242,7 +242,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The part of the face we use to see.",
       example: "Ana tiene los ojos verdes.",
       exampleEn: "Ana has green eyes.",
-      picture: "👁️",
+      picture: "eye",
     },
     {
       word: "la boca",
@@ -252,7 +252,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The part of the face we use to eat and speak.",
       example: "No hables con la boca llena.",
       exampleEn: "Don't talk with your mouth full.",
-      picture: "👄",
+      picture: "mouth",
     },
     {
       word: "el pie",
@@ -262,7 +262,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the leg, which we stand on.",
       example: "Me duele el pie derecho.",
       exampleEn: "My right foot hurts.",
-      picture: "🦶",
+      picture: "foot",
     },
     {
       word: "la nariz",
@@ -272,7 +272,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The part of the face we use to smell and breathe.",
       example: "Con este frío tengo la nariz roja.",
       exampleEn: "With this cold weather my nose is red.",
-      picture: "👃",
+      picture: "nose",
     },
     {
       word: "la madre",
@@ -282,7 +282,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A woman who has a son or a daughter.",
       example: "Mi madre trabaja en un hospital.",
       exampleEn: "My mother works in a hospital.",
-      picture: "👩",
+      picture: "mother",
     },
     {
       word: "el padre",
@@ -292,7 +292,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A man who has a son or a daughter.",
       example: "Mi padre cocina muy bien.",
       exampleEn: "My father cooks very well.",
-      picture: "👨",
+      picture: "father",
     },
     {
       word: "el hermano",
@@ -311,7 +311,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A very small child who doesn't talk or walk yet.",
       example: "El bebé está dormido.",
       exampleEn: "The baby is asleep.",
-      picture: "👶",
+      picture: "baby",
     },
     {
       word: "la familia",
@@ -321,7 +321,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A group of people joined by blood or marriage, like parents and children.",
       example: "Paso la Navidad con mi familia.",
       exampleEn: "I spend Christmas with my family.",
-      picture: "👪",
+      picture: "family",
     },
     {
       word: "rojo",
@@ -331,7 +331,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The color of blood or of a ripe tomato.",
       example: "Quiero el vestido rojo.",
       exampleEn: "I want the red dress.",
-      picture: "🔴",
+      picture: "swatch-red",
     },
     {
       word: "azul",
@@ -341,7 +341,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The color of the sky when there are no clouds.",
       example: "El mar está muy azul hoy.",
       exampleEn: "The sea is very blue today.",
-      picture: "🔵",
+      picture: "swatch-blue",
     },
     {
       word: "verde",
@@ -351,7 +351,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The color of grass and of the leaves on trees.",
       example: "En primavera el parque está muy verde.",
       exampleEn: "In spring the park is very green.",
-      picture: "🟢",
+      picture: "swatch-green",
     },
     {
       word: "negro",
@@ -361,7 +361,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The darkest color, like the night without light.",
       example: "Tengo un gato negro.",
       exampleEn: "I have a black cat.",
-      picture: "⚫",
+      picture: "swatch-black",
     },
     {
       word: "blanco",
@@ -371,7 +371,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The color of milk or of snow.",
       example: "Las paredes de mi cuarto son blancas.",
       exampleEn: "The walls of my room are white.",
-      picture: "⚪",
+      picture: "swatch-white",
     },
     {
       word: "el sol",
@@ -381,7 +381,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The star that gives us light and heat during the day.",
       example: "Hoy hace mucho sol.",
       exampleEn: "It's very sunny today.",
-      picture: "☀️",
+      picture: "sun",
     },
     {
       word: "la lluvia",
@@ -391,7 +391,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "Water that falls from the clouds in drops.",
       example: "La lluvia no para desde ayer.",
       exampleEn: "The rain hasn't stopped since yesterday.",
-      picture: "🌧️",
+      picture: "rain",
     },
     {
       word: "la nieve",
@@ -401,7 +401,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "Frozen water that falls from the sky in white flakes when it is very cold.",
       example: "Los niños juegan en la nieve.",
       exampleEn: "The children are playing in the snow.",
-      picture: "❄️",
+      picture: "snow",
     },
     {
       word: "la nube",
@@ -411,7 +411,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A white or gray mass of water that floats in the sky.",
       example: "No hay ni una nube en el cielo.",
       exampleEn: "There isn't a single cloud in the sky.",
-      picture: "☁️",
+      picture: "cloud",
     },
     {
       word: "el viento",
@@ -421,7 +421,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "Air that moves with force outdoors.",
       example: "El viento se llevó mi sombrero.",
       exampleEn: "The wind blew my hat away.",
-      picture: "💨",
+      picture: "wind",
     },
     {
       word: "el árbol",
@@ -431,7 +431,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "A large plant with a wooden trunk, branches and leaves.",
       example: "Leemos a la sombra de un árbol.",
       exampleEn: "We read in the shade of a tree.",
-      picture: "🌳",
+      picture: "tree",
     },
     {
       word: "la flor",
@@ -441,7 +441,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "The pretty, colorful part of a plant, which often smells good.",
       example: "Le regalé unas flores a mi abuela.",
       exampleEn: "I gave my grandmother some flowers.",
-      picture: "🌸",
+      picture: "flower",
     },
     {
       word: "comer",
@@ -451,7 +451,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "To take food in through the mouth.",
       example: "Comemos a las dos.",
       exampleEn: "We eat lunch at two.",
-      picture: "🍽️",
+      picture: "eat",
     },
     {
       word: "beber",
@@ -461,7 +461,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "To take a liquid in through the mouth.",
       example: "Hay que beber mucha agua en verano.",
       exampleEn: "You have to drink a lot of water in summer.",
-      picture: "🥤",
+      picture: "drink",
     },
     {
       word: "dormir",
@@ -471,7 +471,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "To rest with your eyes closed, usually at night.",
       example: "Anoche dormí nueve horas.",
       exampleEn: "Last night I slept nine hours.",
-      picture: "😴",
+      picture: "sleep",
     },
     {
       word: "correr",
@@ -481,7 +481,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "To move very fast on your legs.",
       example: "Corro en el parque los domingos.",
       exampleEn: "I run in the park on Sundays.",
-      picture: "🏃",
+      picture: "run",
     },
     {
       word: "hablar",
@@ -491,7 +491,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "To say words with your voice.",
       example: "¿Hablas inglés?",
       exampleEn: "Do you speak English?",
-      picture: "🗣️",
+      picture: "speak",
     },
     {
       word: "ver",
@@ -501,7 +501,7 @@ export const ES_BANK: VocabBank = {
       definitionEn: "To notice something with your eyes.",
       example: "Desde aquí veo la playa.",
       exampleEn: "I can see the beach from here.",
-      picture: "👀",
+      picture: "look",
     },
   ],
   everyday: [

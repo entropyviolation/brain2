@@ -94,3 +94,21 @@ shrunk desktop is the wrong shape.
     delete, 123, ABC, space, hide, and return are the darker modifier cap.
     A locked shift is the black CRT with a green legend. Do not draw a flat
     or pill key on that deck.
+
+13. **No emojis anywhere.** _Last mapped: 2026-11-24._
+    No emoji in labels, keys, sheets, toasts, empty states, BIM or BIMBY
+    replies, or generated copy. Use a word or a drawn icon. A symbol iOS may
+    draw as a color emoji (`⚙`, `✅`, `❌`, `✨`, `⭐`) counts. The person's own
+    words may hold emoji; that is data. Same rule as
+    [No emojis](DESIGN_STYLE.md#no-emojis) on the desktop.
+
+14. **Braun and Teenage Engineering discipline.** _Last mapped: 2026-11-24._
+    The phone's visual identity is still open, but its hardware sense is set:
+    1970s and 1980s Braun and Teenage Engineering. Keys on an even grid,
+    small exact legends, a quiet body, one accent per job, state shown by the
+    part itself. This is a sense of order, not desktop tokens.
+
+15. **Steer away from orange.** _Last mapped: 2026-11-24._
+    No orange or amber in chrome, accents, lamps, charts, or warnings unless
+    nothing else will do. Reach for sage, green, blue, violet, or neutral ink
+    first. A color the person picked is theirs.

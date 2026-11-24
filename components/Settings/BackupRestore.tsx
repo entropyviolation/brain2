@@ -17,7 +17,7 @@
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Database, DownloadCloud, UploadCloud } from "lucide-react"
+import { CircleCheck, CircleX, Database, DownloadCloud, UploadCloud } from "lucide-react"
 import {
   downloadBackup,
   listRecoveryBackups,
@@ -88,9 +88,9 @@ export function BackupRestore() {
   const handleExport = async () => {
     try {
       await downloadBackup()
-      setStatus({ kind: "ok", message: "✅ Full backup downloaded." })
+      setStatus({ kind: "ok", message: "Full backup downloaded." })
     } catch (e) {
-      setStatus({ kind: "error", message: `❌ Export failed: ${e instanceof Error ? e.message : "Unknown error"}` })
+      setStatus({ kind: "error", message: `Export failed: ${e instanceof Error ? e.message : "Unknown error"}` })
     }
   }
 
@@ -104,7 +104,7 @@ export function BackupRestore() {
       } catch (err) {
         setStatus({
           kind: "error",
-          message: `❌ Restore failed: ${err instanceof Error ? err.message : "Invalid backup file"}`,
+          message: `Restore failed: ${err instanceof Error ? err.message : "Invalid backup file"}`,
         })
         setPending(null)
       } finally {
@@ -121,7 +121,7 @@ export function BackupRestore() {
     } catch (err) {
       setStatus({
         kind: "error",
-        message: `❌ Could not read recovery snapshot: ${err instanceof Error ? err.message : "Unknown error"}`,
+        message: `Could not read recovery snapshot: ${err instanceof Error ? err.message : "Unknown error"}`,
       })
     }
   }
@@ -151,14 +151,14 @@ export function BackupRestore() {
       })
       setStatus({
         kind: "ok",
-        message: `✅ Restored ${result.stores} data stores, ${result.planText} plan entries, and ${result.extras} other saved keys (${mode}).`,
+        message: `Restored ${result.stores} data stores, ${result.planText} plan entries, and ${result.extras} other saved keys (${mode}).`,
       })
       setPending(null)
       setConfirming(false)
     } catch (err) {
       setStatus({
         kind: "error",
-        message: `❌ Restore failed: ${err instanceof Error ? err.message : "Invalid backup file"}`,
+        message: `Restore failed: ${err instanceof Error ? err.message : "Invalid backup file"}`,
       })
     } finally {
       setBusy(false)
@@ -306,13 +306,14 @@ export function BackupRestore() {
 
       {status && (
         <div
-          className={`rounded p-2 text-sm ${
+          className={`flex items-start gap-1.5 rounded p-2 text-sm ${
             status.kind === "ok"
               ? "border border-green-200 bg-green-50 text-green-700"
               : "border border-red-200 bg-red-50 text-red-700"
           }`}
         >
-          {status.message}
+          {status.kind === "ok" ? <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> : <CircleX className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />}
+          <span>{status.message}</span>
         </div>
       )}
     </div>

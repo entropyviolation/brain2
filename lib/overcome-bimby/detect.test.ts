@@ -48,7 +48,7 @@ describe("chat lane", () => {
   it("tags, offers an experiment, and records the outcome", async () => {
     const r = await tryResistance(SAID, false)
     expect(r?.route).toMatch(/^RESISTANCE/)
-    expect(r?.text).toContain("🧪")
+    expect(r?.text).toContain("New to try: ")
     const log = useOvercomeStore.getState().log
     expect(log[0]?.source).toBe("chat")
     expect(log[0]?.experiment).toBeTruthy()

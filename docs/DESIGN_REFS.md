@@ -114,6 +114,14 @@ row as a new eyewitness citation.
   (`2902904327ee778cd54eb65ae0c231ec.jpg`), the Sony editor, the flower CRTs
   (`9d225800a3f631bc7559c83d11f1aaa2.jpg`), and the pixel forest inside the
   Display Properties monitor (`60d7202cb958e11734ce0567eb382868.jpg`).
+- **No Braun or Teenage Engineering still.** _Added 2026-11-24._ They are the
+  hardware discipline under every room
+  ([`DESIGN_STYLE.md`](DESIGN_STYLE.md#braun-and-teenage-engineering)): an
+  even key grid, small exact legends, one accent per job. Not pictured here
+  yet. When stills are added, take the grid and the legends, not their orange
+  or yellow keys ([steer away from orange](DESIGN_STYLE.md#steer-away-from-orange)).
+- **TENO's orange lamp is not a color to copy.** Its green lamp and nixie
+  digits are. House lamps are green, blue, and violet.
 - **No still of the three shipped interactions.** Willpower-gem physics, Lists
   orb drag and auto-organize, and the collapsing-sand close are in code
   ([`DESIGN_STYLE.md`](DESIGN_STYLE.md)). Do not wait on a reference photograph

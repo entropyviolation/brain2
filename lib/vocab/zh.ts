@@ -13,7 +13,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A small animal often kept at home that goes \"meow.\"",
       example: "我家的猫很喜欢睡觉。",
       exampleEn: "My family's cat loves to sleep.",
-      picture: "🐈",
+      picture: "cat",
     },
     {
       word: "狗",
@@ -24,7 +24,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "An animal that is very close to people and goes \"woof woof.\"",
       example: "他每天早上都带狗去公园。",
       exampleEn: "He takes the dog to the park every morning.",
-      picture: "🐕",
+      picture: "dog",
     },
     {
       word: "鱼",
@@ -35,7 +35,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "An animal that lives in water and can swim.",
       example: "妈妈今天做了鱼。",
       exampleEn: "Mom made fish today.",
-      picture: "🐟",
+      picture: "fish",
     },
     {
       word: "鸟",
@@ -46,7 +46,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "An animal with feathers that can fly in the sky.",
       example: "树上有一只小鸟。",
       exampleEn: "There is a little bird in the tree.",
-      picture: "🐦",
+      picture: "bird",
     },
     {
       word: "苹果",
@@ -57,7 +57,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A round fruit, often red, that is very sweet.",
       example: "我每天吃一个苹果。",
       exampleEn: "I eat an apple every day.",
-      picture: "🍎",
+      picture: "apple",
     },
     {
       word: "水",
@@ -68,7 +68,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Something with no color or taste that you can drink.",
       example: "请给我一杯水。",
       exampleEn: "Please give me a glass of water.",
-      picture: "💧",
+      picture: "water",
     },
     {
       word: "茶",
@@ -79,7 +79,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A drink made with tea leaves and hot water.",
       example: "你想喝茶还是咖啡？",
       exampleEn: "Would you like tea or coffee?",
-      picture: "🍵",
+      picture: "tea",
     },
     {
       word: "米饭",
@@ -90,7 +90,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Rice that has been cooked.",
       example: "中午我想吃米饭。",
       exampleEn: "I want to eat rice at lunch.",
-      picture: "🍚",
+      picture: "rice",
     },
     {
       word: "面条",
@@ -101,7 +101,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A thin, long food made from flour.",
       example: "这家店的面条很好吃。",
       exampleEn: "The noodles at this restaurant are delicious.",
-      picture: "🍜",
+      picture: "noodles",
     },
     {
       word: "鸡蛋",
@@ -112,7 +112,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "An egg laid by a chicken, which can be eaten.",
       example: "早饭我吃了两个鸡蛋。",
       exampleEn: "I ate two eggs for breakfast.",
-      picture: "🥚",
+      picture: "egg",
     },
     {
       word: "牛奶",
@@ -123,7 +123,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A white drink that comes from cows.",
       example: "孩子每天喝一杯牛奶。",
       exampleEn: "The child drinks a glass of milk every day.",
-      picture: "🥛",
+      picture: "milk",
     },
     {
       word: "西瓜",
@@ -134,7 +134,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A big fruit, green outside and red inside, full of juice.",
       example: "夏天吃西瓜最舒服了。",
       exampleEn: "Eating watermelon in summer feels the best.",
-      picture: "🍉",
+      picture: "watermelon",
     },
     {
       word: "家",
@@ -145,7 +145,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The place where a family lives together.",
       example: "我下午五点回家。",
       exampleEn: "I go home at five in the afternoon.",
-      picture: "🏠",
+      picture: "house",
     },
     {
       word: "书",
@@ -156,7 +156,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Pages with writing bound together for people to read.",
       example: "这本书很有意思。",
       exampleEn: "This book is very interesting.",
-      picture: "📚",
+      picture: "books",
     },
     {
       word: "椅子",
@@ -167,7 +167,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A piece of furniture for sitting on, with a back.",
       example: "请坐在这把椅子上。",
       exampleEn: "Please sit on this chair.",
-      picture: "🪑",
+      picture: "chair",
     },
     {
       word: "桌子",
@@ -188,7 +188,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A small device you carry with you and use to make calls.",
       example: "我的手机没电了。",
       exampleEn: "My phone is out of battery.",
-      picture: "📱",
+      picture: "phone",
     },
     {
       word: "电脑",
@@ -199,7 +199,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A machine you can use to go online, write, and do lots of work.",
       example: "他每天用电脑工作。",
       exampleEn: "He works on a computer every day.",
-      picture: "💻",
+      picture: "laptop",
     },
     {
       word: "车",
@@ -210,7 +210,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A means of transport with wheels that runs on roads.",
       example: "外面车很多，过马路要小心。",
       exampleEn: "There are lots of cars outside, so be careful crossing the street.",
-      picture: "🚗",
+      picture: "car",
     },
     {
       word: "飞机",
@@ -221,7 +221,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A vehicle that flies in the sky and takes people far away.",
       example: "我们坐飞机去北京。",
       exampleEn: "We're flying to Beijing.",
-      picture: "✈️",
+      picture: "plane",
     },
     {
       word: "眼睛",
@@ -232,7 +232,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The part of the face used for seeing.",
       example: "她的眼睛很大。",
       exampleEn: "Her eyes are very big.",
-      picture: "👁️",
+      picture: "eye",
     },
     {
       word: "手",
@@ -243,7 +243,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The part at the end of the arm used for holding things.",
       example: "吃饭前要洗手。",
       exampleEn: "You should wash your hands before eating.",
-      picture: "✋",
+      picture: "hand",
     },
     {
       word: "嘴",
@@ -254,7 +254,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The part of the face used for eating and talking.",
       example: "请张开嘴。",
       exampleEn: "Please open your mouth.",
-      picture: "👄",
+      picture: "mouth",
     },
     {
       word: "耳朵",
@@ -265,7 +265,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The parts on both sides of the head used for hearing.",
       example: "兔子的耳朵很长。",
       exampleEn: "Rabbits' ears are very long.",
-      picture: "👂",
+      picture: "ear",
     },
     {
       word: "妈妈",
@@ -276,7 +276,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The woman who gave birth to you; your mother.",
       example: "妈妈在做饭。",
       exampleEn: "Mom is cooking.",
-      picture: "👩",
+      picture: "mother",
     },
     {
       word: "爸爸",
@@ -287,7 +287,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Your father.",
       example: "爸爸每天开车上班。",
       exampleEn: "Dad drives to work every day.",
-      picture: "👨",
+      picture: "father",
     },
     {
       word: "孩子",
@@ -298,7 +298,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A young person who hasn't grown up yet.",
       example: "孩子们在外面玩儿。",
       exampleEn: "The children are playing outside.",
-      picture: "🧒",
+      picture: "child",
     },
     {
       word: "朋友",
@@ -309,7 +309,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Someone you get along well with and often spend time with.",
       example: "他是我最好的朋友。",
       exampleEn: "He is my best friend.",
-      picture: "🧑‍🤝‍🧑",
+      picture: "friend",
     },
     {
       word: "红",
@@ -320,7 +320,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The color of blood or apples.",
       example: "她穿了一件红衣服。",
       exampleEn: "She is wearing a red outfit.",
-      picture: "🟥",
+      picture: "swatch-red",
     },
     {
       word: "白",
@@ -331,7 +331,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The color of snow or milk.",
       example: "外面下雪了，到处都是白的。",
       exampleEn: "It snowed outside; everything is white.",
-      picture: "⬜",
+      picture: "swatch-white",
     },
     {
       word: "黑",
@@ -342,7 +342,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The color of the night when there are no lights.",
       example: "天黑了，我们回家吧。",
       exampleEn: "It's dark now; let's go home.",
-      picture: "⬛",
+      picture: "swatch-black",
     },
     {
       word: "蓝",
@@ -353,7 +353,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The color of a clear sky or the sea.",
       example: "今天的天特别蓝。",
       exampleEn: "The sky is especially blue today.",
-      picture: "🟦",
+      picture: "swatch-blue",
     },
     {
       word: "雨",
@@ -364,7 +364,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Water that falls from the sky.",
       example: "雨下得很大，别出去了。",
       exampleEn: "It's raining hard; don't go out.",
-      picture: "🌧️",
+      picture: "rain",
     },
     {
       word: "雪",
@@ -375,7 +375,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "White, cold stuff that falls from the sky in winter.",
       example: "北方冬天常常下雪。",
       exampleEn: "It often snows in the north in winter.",
-      picture: "❄️",
+      picture: "snow",
     },
     {
       word: "天气",
@@ -386,7 +386,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Conditions such as wind, rain, or sunshine.",
       example: "今天天气很好。",
       exampleEn: "The weather is very nice today.",
-      picture: "🌤️",
+      picture: "weather",
     },
     {
       word: "太阳",
@@ -397,7 +397,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The thing in the sky that gives light and heat during the day.",
       example: "太阳出来了。",
       exampleEn: "The sun has come out.",
-      picture: "☀️",
+      picture: "sun",
     },
     {
       word: "花",
@@ -408,7 +408,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "The pretty, colorful part that blooms on a plant.",
       example: "春天公园里开了很多花。",
       exampleEn: "In spring, lots of flowers bloom in the park.",
-      picture: "🌸",
+      picture: "flower",
     },
     {
       word: "山",
@@ -419,7 +419,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "A very high place on the land.",
       example: "周末我们去爬山吧。",
       exampleEn: "Let's go hiking in the mountains this weekend.",
-      picture: "⛰️",
+      picture: "mountain",
     },
     {
       word: "吃",
@@ -430,7 +430,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "To put food in your mouth, chew it, and swallow it.",
       example: "你吃饭了吗？",
       exampleEn: "Have you eaten?",
-      picture: "🍽️",
+      picture: "eat",
     },
     {
       word: "喝",
@@ -441,7 +441,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "To swallow things like water or tea.",
       example: "我想喝点儿水。",
       exampleEn: "I'd like to drink some water.",
-      picture: "🥤",
+      picture: "drink",
     },
     {
       word: "看",
@@ -452,7 +452,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "To take in things with your eyes.",
       example: "晚上我喜欢看电视。",
       exampleEn: "I like to watch TV in the evening.",
-      picture: "👀",
+      picture: "look",
     },
     {
       word: "去",
@@ -483,7 +483,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "To close your eyes, rest, and fall asleep.",
       example: "我晚上十一点睡觉。",
       exampleEn: "I go to bed at eleven at night.",
-      picture: "😴",
+      picture: "sleep",
     },
     {
       word: "写",
@@ -494,7 +494,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "To put characters on paper with a pen.",
       example: "请在这里写你的名字。",
       exampleEn: "Please write your name here.",
-      picture: "✍️",
+      picture: "write",
     },
     {
       word: "读",
@@ -505,7 +505,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "To say written words aloud, or to look at and understand them.",
       example: "老师让我们读课文。",
       exampleEn: "The teacher had us read the text aloud.",
-      picture: "📖",
+      picture: "book",
     },
     {
       word: "大",
@@ -526,7 +526,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Having a high temperature that makes you uncomfortable.",
       example: "今天太热了！",
       exampleEn: "It's way too hot today!",
-      picture: "🥵",
+      picture: "hot",
     },
     {
       word: "冷",
@@ -537,7 +537,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Having a low temperature; the opposite of \"hot.\"",
       example: "外面很冷，多穿点儿衣服。",
       exampleEn: "It's cold out, so put on more clothes.",
-      picture: "🥶",
+      picture: "cold",
     },
     {
       word: "衣服",
@@ -548,7 +548,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Things you wear on your body.",
       example: "我昨天买了一件新衣服。",
       exampleEn: "I bought a new piece of clothing yesterday.",
-      picture: "👕",
+      picture: "shirt",
     },
   ],
   everyday: [
@@ -851,7 +851,7 @@ export const ZH_BANK: VocabBank = {
       definitionEn: "Something you give someone to show you care.",
       example: "这是我给你的生日礼物。",
       exampleEn: "This is my birthday present for you.",
-      picture: "🎁",
+      picture: "gift",
     },
   ],
   advanced: [

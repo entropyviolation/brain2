@@ -12,7 +12,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A round fruit, red, yellow or green, that grows on a tree.",
       example: "Je mange une pomme tous les matins.",
       exampleEn: "I eat an apple every morning.",
-      picture: "🍎",
+      picture: "apple",
     },
     {
       word: "le pain",
@@ -22,7 +22,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A food made with flour, water and salt, baked in the oven.",
       example: "Il achète du pain à la boulangerie.",
       exampleEn: "He buys bread at the bakery.",
-      picture: "🍞",
+      picture: "bread",
     },
     {
       word: "l'eau (f)",
@@ -32,7 +32,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The clear liquid that we drink and that falls with the rain.",
       example: "Tu veux un verre d'eau ?",
       exampleEn: "Do you want a glass of water?",
-      picture: "💧",
+      picture: "water",
     },
     {
       word: "le lait",
@@ -42,7 +42,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The white liquid that cows give.",
       example: "Les enfants boivent du lait au petit-déjeuner.",
       exampleEn: "The children drink milk at breakfast.",
-      picture: "🥛",
+      picture: "milk",
     },
     {
       word: "le fromage",
@@ -52,7 +52,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A food made with milk.",
       example: "La France produit beaucoup de fromages.",
       exampleEn: "France produces a lot of cheeses.",
-      picture: "🧀",
+      picture: "cheese",
     },
     {
       word: "l'œuf (m)",
@@ -62,7 +62,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The round thing that a hen lays and that we can eat.",
       example: "Elle fait une omelette avec trois œufs.",
       exampleEn: "She makes an omelette with three eggs.",
-      picture: "🥚",
+      picture: "egg",
     },
     {
       word: "le poisson",
@@ -72,7 +72,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "An animal that lives in water and swims.",
       example: "Le vendredi, nous mangeons du poisson.",
       exampleEn: "On Fridays, we eat fish.",
-      picture: "🐟",
+      picture: "fish",
     },
     {
       word: "le chat",
@@ -82,7 +82,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A small house animal that says \"meow\".",
       example: "Le chat dort sur le canapé.",
       exampleEn: "The cat is sleeping on the sofa.",
-      picture: "🐈",
+      picture: "cat",
     },
     {
       word: "le chien",
@@ -92,7 +92,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A house animal that barks and likes to go for walks.",
       example: "Mon chien m'attend devant la porte.",
       exampleEn: "My dog waits for me in front of the door.",
-      picture: "🐕",
+      picture: "dog",
     },
     {
       word: "l'oiseau (m)",
@@ -102,7 +102,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "An animal with feathers and wings, that can fly.",
       example: "Un oiseau chante dans le jardin.",
       exampleEn: "A bird is singing in the garden.",
-      picture: "🐦",
+      picture: "bird",
     },
     {
       word: "le cheval",
@@ -112,7 +112,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A large animal that you can ride.",
       example: "Elle monte à cheval le dimanche.",
       exampleEn: "She goes horseback riding on Sundays.",
-      picture: "🐎",
+      picture: "horse",
     },
     {
       word: "la vache",
@@ -122,7 +122,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A large farm animal that gives milk.",
       example: "Les vaches mangent de l'herbe dans le pré.",
       exampleEn: "The cows are eating grass in the meadow.",
-      picture: "🐄",
+      picture: "cow",
     },
     {
       word: "la maison",
@@ -132,7 +132,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A building where you live.",
       example: "Leur maison a un grand jardin.",
       exampleEn: "Their house has a big garden.",
-      picture: "🏠",
+      picture: "house",
     },
     {
       word: "la chaise",
@@ -142,7 +142,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A piece of furniture for sitting, with a back.",
       example: "Prends une chaise et assieds-toi.",
       exampleEn: "Take a chair and sit down.",
-      picture: "🪑",
+      picture: "chair",
     },
     {
       word: "le lit",
@@ -152,7 +152,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The piece of furniture you sleep on.",
       example: "Je vais au lit à dix heures.",
       exampleEn: "I go to bed at ten o'clock.",
-      picture: "🛏️",
+      picture: "bed",
     },
     {
       word: "la porte",
@@ -162,7 +162,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "What you open to go into a room or a house.",
       example: "Ferme la porte, s'il te plaît.",
       exampleEn: "Close the door, please.",
-      picture: "🚪",
+      picture: "door",
     },
     {
       word: "la fenêtre",
@@ -172,7 +172,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "An opening in a wall, with glass, to see outside.",
       example: "J'ouvre la fenêtre parce qu'il fait chaud.",
       exampleEn: "I open the window because it is hot.",
-      picture: "🪟",
+      picture: "window",
     },
     {
       word: "la clé",
@@ -182,7 +182,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A small metal object that opens and closes a door.",
       example: "J'ai perdu mes clés.",
       exampleEn: "I lost my keys.",
-      picture: "🔑",
+      picture: "key",
     },
     {
       word: "le livre",
@@ -192,7 +192,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "Pages with text, attached together, that you read.",
       example: "Je lis un livre avant de dormir.",
       exampleEn: "I read a book before sleeping.",
-      picture: "📖",
+      picture: "book",
     },
     {
       word: "la voiture",
@@ -202,7 +202,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A vehicle with four wheels and an engine.",
       example: "Nous allons au travail en voiture.",
       exampleEn: "We go to work by car.",
-      picture: "🚗",
+      picture: "car",
     },
     {
       word: "la main",
@@ -212,7 +212,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the arm, with five fingers.",
       example: "Lave-toi les mains avant de manger.",
       exampleEn: "Wash your hands before eating.",
-      picture: "✋",
+      picture: "hand",
     },
     {
       word: "l'œil (m)",
@@ -222,7 +222,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The part of the face used for seeing. In the plural: les yeux.",
       example: "Elle a les yeux bleus.",
       exampleEn: "She has blue eyes.",
-      picture: "👁️",
+      picture: "eye",
     },
     {
       word: "la bouche",
@@ -232,7 +232,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The part of the face used for eating and speaking.",
       example: "Ne parle pas la bouche pleine.",
       exampleEn: "Don't talk with your mouth full.",
-      picture: "👄",
+      picture: "mouth",
     },
     {
       word: "le pied",
@@ -242,7 +242,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the leg, that you walk on.",
       example: "Je vais à l'école à pied.",
       exampleEn: "I walk to school.",
-      picture: "🦶",
+      picture: "foot",
     },
     {
       word: "le nez",
@@ -252,7 +252,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The part of the face used for smelling.",
       example: "J'ai le nez qui coule.",
       exampleEn: "My nose is running.",
-      picture: "👃",
+      picture: "nose",
     },
     {
       word: "l'oreille (f)",
@@ -262,7 +262,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The part of the head used for hearing.",
       example: "Il me parle à l'oreille.",
       exampleEn: "He speaks into my ear.",
-      picture: "👂",
+      picture: "ear",
     },
     {
       word: "la mère",
@@ -272,7 +272,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The woman who has a child.",
       example: "Ma mère travaille à l'hôpital.",
       exampleEn: "My mother works at the hospital.",
-      picture: "👩",
+      picture: "mother",
     },
     {
       word: "le père",
@@ -282,7 +282,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The man who has a child.",
       example: "Mon père fait la cuisine le soir.",
       exampleEn: "My father cooks in the evening.",
-      picture: "👨",
+      picture: "father",
     },
     {
       word: "le bébé",
@@ -292,7 +292,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A very small child, who does not walk yet.",
       example: "Le bébé dort, parle doucement.",
       exampleEn: "The baby is sleeping, speak quietly.",
-      picture: "👶",
+      picture: "baby",
     },
     {
       word: "la famille",
@@ -302,7 +302,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "Parents, children and the other people of the same blood.",
       example: "Toute la famille mange ensemble le dimanche.",
       exampleEn: "The whole family eats together on Sundays.",
-      picture: "👪",
+      picture: "family",
     },
     {
       word: "rouge",
@@ -312,7 +312,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The color of blood or of a tomato.",
       example: "Elle porte une robe rouge.",
       exampleEn: "She is wearing a red dress.",
-      picture: "🔴",
+      picture: "swatch-red",
     },
     {
       word: "bleu",
@@ -322,7 +322,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The color of the sky when the weather is nice.",
       example: "La mer est très bleue aujourd'hui.",
       exampleEn: "The sea is very blue today.",
-      picture: "🔵",
+      picture: "swatch-blue",
     },
     {
       word: "vert",
@@ -332,7 +332,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The color of grass and leaves.",
       example: "Il a acheté un vélo vert.",
       exampleEn: "He bought a green bike.",
-      picture: "🟢",
+      picture: "swatch-green",
     },
     {
       word: "blanc",
@@ -342,7 +342,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The color of snow or milk.",
       example: "Les murs de la cuisine sont blancs.",
       exampleEn: "The kitchen walls are white.",
-      picture: "⚪",
+      picture: "swatch-white",
     },
     {
       word: "noir",
@@ -352,7 +352,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The color of the night without light.",
       example: "J'ai un chat noir.",
       exampleEn: "I have a black cat.",
-      picture: "⚫",
+      picture: "swatch-black",
     },
     {
       word: "le soleil",
@@ -362,7 +362,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The star that gives us light and heat during the day.",
       example: "Aujourd'hui, il y a du soleil.",
       exampleEn: "Today, it is sunny.",
-      picture: "☀️",
+      picture: "sun",
     },
     {
       word: "la pluie",
@@ -372,7 +372,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The water that falls from the clouds.",
       example: "Prends ton parapluie, la pluie arrive.",
       exampleEn: "Take your umbrella, the rain is coming.",
-      picture: "🌧️",
+      picture: "rain",
     },
     {
       word: "la neige",
@@ -382,7 +382,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "Frozen white water that falls from the sky when it is very cold.",
       example: "Les enfants jouent dans la neige.",
       exampleEn: "The children are playing in the snow.",
-      picture: "❄️",
+      picture: "snow",
     },
     {
       word: "le vent",
@@ -392,7 +392,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The air that moves outside.",
       example: "Le vent est très fort ce soir.",
       exampleEn: "The wind is very strong tonight.",
-      picture: "🌬️",
+      picture: "wind",
     },
     {
       word: "le nuage",
@@ -402,7 +402,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A white or gray mass in the sky.",
       example: "Il n'y a pas un nuage dans le ciel.",
       exampleEn: "There isn't a cloud in the sky.",
-      picture: "☁️",
+      picture: "cloud",
     },
     {
       word: "manger",
@@ -412,7 +412,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "To put food in your mouth and swallow it.",
       example: "Nous mangeons à midi.",
       exampleEn: "We eat at noon.",
-      picture: "🍽️",
+      picture: "eat",
     },
     {
       word: "boire",
@@ -422,7 +422,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "To swallow a liquid.",
       example: "Il faut boire beaucoup d'eau quand il fait chaud.",
       exampleEn: "You have to drink a lot of water when it is hot.",
-      picture: "🥤",
+      picture: "drink",
     },
     {
       word: "dormir",
@@ -432,7 +432,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "To close your eyes and rest, at night for example.",
       example: "Le dimanche, je dors jusqu'à neuf heures.",
       exampleEn: "On Sundays, I sleep until nine o'clock.",
-      picture: "😴",
+      picture: "sleep",
     },
     {
       word: "aller",
@@ -451,7 +451,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "To say words with your voice.",
       example: "Tu parles français ?",
       exampleEn: "Do you speak French?",
-      picture: "🗣️",
+      picture: "speak",
     },
     {
       word: "voir",
@@ -461,7 +461,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "To look and understand with your eyes.",
       example: "Je vois la tour Eiffel depuis ma fenêtre.",
       exampleEn: "I can see the Eiffel Tower from my window.",
-      picture: "👀",
+      picture: "look",
     },
     {
       word: "l'arbre (m)",
@@ -471,7 +471,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A large plant with a trunk, branches and leaves.",
       example: "Il y a un vieil arbre devant l'école.",
       exampleEn: "There is an old tree in front of the school.",
-      picture: "🌳",
+      picture: "tree",
     },
     {
       word: "la fleur",
@@ -481,7 +481,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The colorful part of a plant, which often smells nice.",
       example: "Il offre des fleurs à sa grand-mère.",
       exampleEn: "He gives flowers to his grandmother.",
-      picture: "🌸",
+      picture: "flower",
     },
     {
       word: "la lune",
@@ -491,7 +491,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "The big ball that shines in the sky at night.",
       example: "Ce soir, la lune est pleine.",
       exampleEn: "Tonight, the moon is full.",
-      picture: "🌙",
+      picture: "moon",
     },
     {
       word: "le café",
@@ -501,7 +501,7 @@ export const FR_BANK: VocabBank = {
       definitionEn: "A hot black drink, made with roasted beans.",
       example: "Je bois un café avant de partir.",
       exampleEn: "I drink a coffee before leaving.",
-      picture: "☕",
+      picture: "coffee",
     },
   ],
   everyday: [

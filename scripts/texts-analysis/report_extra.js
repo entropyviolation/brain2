@@ -166,7 +166,7 @@ function openCalendar(e) { renderCalendar(openModal(`${e.name}: every day`), e);
       h("div", { class: "dmeta" }, `${fmt(e.total)} messages · ${e.first.slice(0, 4)}–${e.last.slice(0, 4)}`),
       h("div", { class: "dline", html: `<span>Common</span> ${both.map((r) => r.term).join(", ")}` }),
       h("div", { class: "dline", html: `<span>Distinctive</span> ${dist.map((r) => r.term).join(", ") || "–"}` }),
-      h("div", { class: "row" }, [...(e.kind === "person" ? [link("Relationship", () => openRelationship(e.id), "btn")] : []), link("Words ☁", () => openWords(e), "btn"), link("Messages", () => openThread(e.id), "btn")]),
+      h("div", { class: "row" }, [...(e.kind === "person" ? [link("Relationship", () => openRelationship(e.id), "btn")] : []), link("Word cloud", () => openWords(e), "btn"), link("Messages", () => openThread(e.id), "btn")]),
     ]);
     grid.append(c);
   });
@@ -267,7 +267,7 @@ function relSparks(e) {
     c.append(h("ul", { class: "facts" }, facts.map((f) => h("li", {}, f))));
     c.append(relSparks(e));
     if (e.inflections.length) c.append(h("div", { class: "dline", html: `<span>Turning points</span> ` + e.inflections.map((x) => `${mlabel(x.month)}: ${x.metric} ${x.direction === "up" ? "↑" : "↓"}`).join(" · ") }));
-    c.append(h("div", { class: "row" }, [link("Relationship →", () => openRelationship(e.id), "btn"), link("Words ☁", () => openWords(e), "btn"), link("Messages", () => openThread(e.id), "btn")]));
+    c.append(h("div", { class: "row" }, [link("Relationship →", () => openRelationship(e.id), "btn"), link("Word cloud", () => openWords(e), "btn"), link("Messages", () => openThread(e.id), "btn")]));
     grid.append(c);
   });
 }

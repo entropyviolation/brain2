@@ -24,6 +24,8 @@ import {
   type VocabLevel,
 } from "@/lib/vocab-words"
 import { cn } from "@/lib/utils"
+import { Heart } from "lucide-react"
+import { VocabPicture } from "@/components/Icons/vocab-picture"
 
 type Card = { entry: VocabEntry; level: VocabLevel }
 type Lead = "term" | "meaning"
@@ -112,10 +114,10 @@ export function VocabFlashcards({
   if (deck.length === 0) {
     return (
       <div className="home-vocab-flash-empty">
-        <p className="home-vocab-flash-empty-mark" aria-hidden="true">♡</p>
+        <p className="home-vocab-flash-empty-mark" aria-hidden="true"><Heart size="1em" /></p>
         <p>No {VOCAB_LANG_LABEL[lang]} favorites yet.</p>
         <p className="home-widget-note">
-          Press ♡ Favorite on a word of the day and it joins this deck. Shuffle to find more.
+          Press Favorite on a word of the day and it joins this deck. Shuffle to find more.
         </p>
       </div>
     )
@@ -180,7 +182,7 @@ export function VocabFlashcards({
 
   const term = (
     <div className="home-vocab-flash-term" lang={VOCAB_LANG_SPEECH[lang]}>
-      {entry.picture ? <span className="home-vocab-flash-picture" aria-hidden="true">{entry.picture}</span> : null}
+      {entry.picture ? <span className="home-vocab-flash-picture" aria-hidden="true"><VocabPicture name={entry.picture} size="1em" /></span> : null}
       <span className="home-vocab-flash-word">{entry.word}</span>
       {reading ? <span className="home-vocab-flash-reading">{reading}</span> : null}
       {vocabIpa(lang, entry.word) ? <span className="home-vocab-flash-reading home-vocab-flash-ipa">/{vocabIpa(lang, entry.word)}/</span> : null}
@@ -293,7 +295,7 @@ export function VocabFlashcards({
           Shuffle
         </button>
         <button type="button" className="home-review-key" onClick={() => onUnfavorite(entry.word)}>
-          Remove ♥
+          <Heart size="1em" aria-hidden="true" fill="currentColor" className="home-vocab-glyph" /> Remove
         </button>
       </div>
       <p className="home-widget-note home-vocab-flash-keys">

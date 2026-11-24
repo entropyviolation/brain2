@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Settings, Save, Trash2, Download, Upload, FileText, Database } from "lucide-react"
+import { Settings, Save, Trash2, Download, Upload, FileText, Database, CircleCheck, CircleX } from "lucide-react"
 import type { Folder, List, Task } from "@/lib/types"
 import { BackupRestore } from "@/components/Settings/BackupRestore"
 import { downloadCategoryExport, parseCategoryExport, importCategory } from "@/lib/data/backup"
@@ -66,7 +66,9 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
 
   const [localLists, setLocalLists] = useState<List[]>([])
   const [localFolders, setLocalFolders] = useState<Folder[]>([])
-  const [importStatus, setImportStatus] = useState<string>("")
+  const [importStatus, setImportStatusRaw] = useState<{ ok: boolean; text: string } | null>(null)
+  /** "" clears; a status is a neutral fact, and the icon carries ok or error. */
+  const setImportStatus = (text: string, ok = true) => setImportStatusRaw(text ? { ok, text } : null)
   const [pendingImport, setPendingImport] = useState<ExportData | null>(null)
   const [showImportChoice, setShowImportChoice] = useState(false)
   const [exportCategoryId, setExportCategoryId] = useState<string>("")
@@ -139,7 +141,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
 
-    setImportStatus(`✅ Exported ${lists.length} lists and ${tasks.length} tasks successfully!`)
+    setImportStatus(`Exported ${lists.length} lists and ${tasks.length} tasks.`)
     setTimeout(() => setImportStatus(""), 3000)
   }
 
@@ -148,7 +150,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
     if (!id) return
     const cat = lists.find((c) => c.id === id)
     downloadCategoryExport(id)
-    setImportStatus(`✅ Exported list "${cat?.name ?? id}" (with sublists) as JSON.`)
+    setImportStatus(`Exported list "${cat?.name ?? id}" (with sublists) as JSON.`)
     setTimeout(() => setImportStatus(""), 3000)
   }
 
@@ -167,9 +169,9 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
         const data = parseCategoryExport(e.target?.result as string)
         const result = importCategory(data, "merge")
         rememberVault()
-        setImportStatus(`✅ Imported ${result.lists} list(s) and ${result.tasks} task(s).`)
+        setImportStatus(`Imported ${result.lists} list(s) and ${result.tasks} task(s).`)
       } catch (error) {
-        setImportStatus(`❌ Error importing list: ${error instanceof Error ? error.message : "Unknown error"}`)
+        setImportStatus(`Error importing list: ${error instanceof Error ? error.message : "Unknown error"}`, false)
       }
       setTimeout(() => setImportStatus(""), 5000)
     }
@@ -206,7 +208,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
         setShowImportChoice(true)
       } catch (error) {
         console.error("Import error:", error)
-        setImportStatus(`❌ Error importing data: ${error instanceof Error ? error.message : "Unknown error"}`)
+        setImportStatus(`Error importing data: ${error instanceof Error ? error.message : "Unknown error"}`, false)
         setTimeout(() => setImportStatus(""), 5000)
       }
     }
@@ -221,7 +223,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
       setTasks(pendingImport.tasks)
       setLocalLists(pendingImport.lists)
       setImportStatus(
-        `✅ Successfully imported ${pendingImport.lists.length} lists and ${pendingImport.tasks.length} tasks! (Replaced)`,
+        `Successfully imported ${pendingImport.lists.length} lists and ${pendingImport.tasks.length} tasks (replaced).`,
       )
     } else {
       const existingCategoryIds = new Set(lists.map((c) => c.id))
@@ -232,7 +234,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
       setTasks(mergedTasks)
       setLocalLists(mergedCategories)
       setImportStatus(
-        `✅ Successfully imported ${pendingImport.lists.length} lists and ${pendingImport.tasks.length} tasks! (Added)`,
+        `Successfully imported ${pendingImport.lists.length} lists and ${pendingImport.tasks.length} tasks (added).`,
       )
     }
     setShowImportChoice(false)
@@ -413,13 +415,14 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
                     <Input id="import-file" type="file" accept=".json" onChange={handleImport} className="cursor-pointer" />
                     {importStatus && (
                       <div
-                        className={`text-sm p-2 rounded ${
-                          importStatus.startsWith("✅")
+                        className={`flex items-start gap-1.5 text-sm p-2 rounded ${
+                          importStatus.ok
                             ? "bg-green-50 text-green-700 border border-green-200"
                             : "bg-red-50 text-red-700 border border-red-200"
                         }`}
                       >
-                        {importStatus}
+                        {importStatus.ok ? <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> : <CircleX className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />}
+                        <span>{importStatus.text}</span>
                       </div>
                     )}
                   </div>
@@ -485,7 +488,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
                         clearAllData()
                         setLocalLists([])
                         setLocalFolders([])
-                        setImportStatus("✅ All data cleared!")
+                        setImportStatus("All data cleared.")
                         setTimeout(() => setImportStatus(""), 3000)
                       }
                     }}

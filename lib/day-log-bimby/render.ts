@@ -55,7 +55,7 @@ function when(e: Evidence): string {
 }
 
 function flags(e: Evidence): string {
-  return `${e.machine ? " ⚙" : ""}${e.source === "amendment" ? " ✎" : ""}`
+  return `${e.machine ? " [auto]" : ""}${e.source === "amendment" ? " ✎" : ""}`
 }
 
 function rowItem(e: Evidence): string {
@@ -120,7 +120,7 @@ export function renderDayLog(input: RenderInput): string {
   out.push(
     `<p style="${MUTED}">Day ${esc(date)} · version ${input.version} · built ${esc(input.builtAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }))} · ${evidence.length} rows from ${sourcesUsed.length} sources · ${narrative?.model ? `narrative by ${esc(narrative.model)}` : narrative ? "narrative by the local model" : "no narrative yet (code only)"}${input.note ? ` · ${esc(input.note)}` : ""}</p>`,
   )
-  out.push(`<p style="${MUTED}">Key: ❝ ❞ my own words · ✎ my amendment · ⚙ recorded automatically · ~ estimated time · [E12] row 12 of the ledger at the end.</p>`)
+  out.push(`<p style="${MUTED}">Key: ❝ ❞ my own words · ✎ my amendment · [auto] recorded automatically · ~ estimated time · [E12] row 12 of the ledger at the end.</p>`)
 
   // 1. Brief
   out.push(`<h2>1. The day in brief</h2>`)
@@ -166,7 +166,7 @@ export function renderDayLog(input: RenderInput): string {
     out.push(`<h3>${part.name} · ${clock(part.from)}–${clock(part.to)}</h3>`)
     for (const w of told) out.push(paragraphs(w.text))
     if (rows.length) out.push(`<ul>${rows.map(rowItem).join("")}</ul>`)
-    if (screens.length) out.push(`<p style="${MUTED}">Screens: ${screens.map(([k, m]) => `${esc(k)} ${duration(m)}`).join(" · ")} ⚙</p>`)
+    if (screens.length) out.push(`<p style="${MUTED}">Screens: ${screens.map(([k, m]) => `${esc(k)} ${duration(m)}`).join(" · ")} [auto]</p>`)
   }
   const untimed = evidence.filter((e) => e.startMin === null && e.source !== "amendment")
   if (untimed.length) {

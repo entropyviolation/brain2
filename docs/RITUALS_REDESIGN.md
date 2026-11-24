@@ -175,6 +175,8 @@ _Last mapped: 2026-10-17_ **Built:** tone per rite on `RitualStepper` (`tone` pr
   Generous spacing. No nested borders.
 - Tone by rite: dawn amber for Morning and Start, ink blue for Night and End,
   north silver for Star Lord. Tokens live in `ritual-steps.css`.
+  **Planned (2026-11-24):** move dawn off amber onto a non-orange tone
+  ([steer away from orange](DESIGN_STYLE.md#steer-away-from-orange)).
 - Rows (unfinished, due) are the To Do silver cards, not bordered boxes.
 - Widget: CRT shows the next rite's name and count; the detail lists rites
   as rows with their own lamp and one **Open** key.

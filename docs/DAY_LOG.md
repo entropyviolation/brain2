@@ -16,7 +16,7 @@ One document per day, in **Docs → LOG DOCS → DAY LOGS**, written by the Day 
 | --- | --- |
 | ❝ ❞ | My own words, verbatim. Never reworded. |
 | ✎ | An amendment I gave. It wins over every other row. |
-| ⚙ | Recorded automatically (phone sync, Screen Time, Health, location). |
+| [auto] | Recorded automatically (phone sync, Screen Time, Health, location). |
 | ~ | The time is estimated. |
 | [E12] | Row 12 of the ledger at the end. Every claim in the prose cites its rows. |
 

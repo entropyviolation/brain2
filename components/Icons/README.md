@@ -17,6 +17,8 @@ in `components/Lists/lib/icon-utils.tsx`, `components/Lists/dialogs/OrbPickerDia
 | `OrbPicker.tsx` | `OrbPickerDialog` — orb gallery + custom upload (background removed via `lib/remove-background`) + search; an "Edit gallery" mode hides/restores orbs, and your uploads live in a personal library. Hidden orbs + the uploaded library persist in `lib/lists-ui-store`. Exports `OrbPickerDialogProps`. _Last mapped: 2026-10-16:_ `container?` portals it inside an open dialog (item detail) so it stacks on top. |
 | `icon-registry.ts` | Central data registry: re-exports the orb manifest (`ORB_IMAGES`, `ORB_PATHS`), folder manifest, freeform grid layout (`computeIconGridPositions`), and Rituals glyphs (`RitualSunIcon`, `RitualMoonIcon` from lucide). |
 | `index.ts` | Barrel exporting the public surface. |
+| `house-glyphs.tsx` | _Last mapped: 2026-11-24._ Line icons lucide does not ship (horse, cow, cheese, mouth, nose, window, mother, teacup, rice bowl, watermelon, shoe), built with lucide's `createLucideIcon` so they take the same props. They replaced emoji ([no emojis](../../docs/DESIGN_STYLE.md#no-emojis)). |
+| `vocab-picture.tsx` | _Last mapped: 2026-11-24._ `VocabPicture({ name })`: the vector picture for a vocab word's `picture` name (`lib/vocab/pictures.ts`). Lucide or a house glyph; a `swatch-*` color word draws a flat chip. Unknown name draws nothing. Imported directly, not through the barrel. |
 
 ## Public surface
 

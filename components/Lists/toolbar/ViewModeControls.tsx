@@ -1,5 +1,6 @@
 "use client"
 
+import { Settings2 } from "lucide-react"
 import type { FolderView, ListDisplay } from "@/lib/lists-ui-store"
 import { LIST_DISPLAY_MODES, type ListDisplayMode } from "@/lib/types"
 import type { OpenTarget } from "@/components/Lists/types"
@@ -212,7 +213,7 @@ export function ViewModeControls({
             tabIndex={listIconsDesktop ? undefined : -1}
             onClick={() => onGravitySettings?.()}
           >
-            ⚙
+            <Settings2 size="1em" aria-hidden />
           </button>
           {listIconsGravity && listIconsDesktop && (
             <button

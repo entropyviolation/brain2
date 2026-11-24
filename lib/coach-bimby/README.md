@@ -17,6 +17,8 @@ was open, and nothing in chat could set a timed one.
 
 All of these work in BIM chat and on Telegram.
 
+_2026-11-24:_ A hello in front is skipped (`lib/ingest/greeting.ts`): "hi. remember that my name is Allie" is kept as a `who` note. Before this it was logged.
+
 ## Learning as you talk
 
 With LLM on, after BIM answers a line, the main model reads that line once, off the turn (`learn.ts`). It starts after the turn's Trace closes, so its call is not counted in that turn, and it skips a line that failed. The `coach` lane looks up the model crew only for a coaching ask. The line must speak of you ("I", "my"), have some substance, and not be a command or a question. The model returns lasting facts only: who you are, a goal, a want, a need, a like, a dislike, or a person in your life. Moods, today's plans and errands are dropped. A fact is kept only when the line states it. Three in four of its words must be in the line, and every capitalized name in it too. The notes are marked "(picked up)" in the list.

@@ -103,7 +103,7 @@
   cursor: default;
 }
 
-/* Modifier cap: a darker grey for keys that act on the chat, not in it (clear, ✕, 📷). */
+/* Modifier cap: a darker grey for keys that act on the chat, not in it (clear, ✕, camera). */
 .bim-crt button.is-mod {
   --cap-top: #c9ccd0;
   --cap-top2: #b9bdc1;

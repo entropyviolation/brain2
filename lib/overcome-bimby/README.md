@@ -16,7 +16,7 @@ READ (`read.ts`, one model call, `extract` ladder) → LOG (`store.ts`) → GATH
 
 ## In BIM chat
 
-`lib/ingest/bim-resistance.ts`, called from `sendToBim` (`lib/ingest/bim-chat.ts`) after the tell/fact steps and before the LLM router, on a line `routable` would only capture. A hit runs the pipeline (rules only when LLM mode is off), logs a `chat` entry (that is the tag; the chat line also carries `tag: "resistance"` and a `RESISTANCE · barrier · task` route chip), and replies with the push, the three tactics (one marked 🧪 as the test), and tap answers `started: <tactic>` / `stuck: <tactic>`. Those lines are caught first and mark the newest chat entry that offered the tactic. The line is not also filed as a note.
+`lib/ingest/bim-resistance.ts`, called from `sendToBim` (`lib/ingest/bim-chat.ts`) after the tell/fact steps and before the LLM router, on a line `routable` would only capture. A hit runs the pipeline (rules only when LLM mode is off), logs a `chat` entry (that is the tag; the chat line also carries `tag: "resistance"` and a `RESISTANCE · barrier · task` route chip), and replies with the push, the three tactics (one marked "New to try:" as the test), and tap answers `started: <tactic>` / `stuck: <tactic>`. Those lines are caught first and mark the newest chat entry that offered the tactic. The line is not also filed as a note.
 
 ## The loop (redesigned 2026-11-03)
 

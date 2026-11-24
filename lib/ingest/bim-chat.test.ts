@@ -260,7 +260,7 @@ describe("photos in BIM chat", () => {
   it("shows the photo in the transcript and sends a photo with no words", async () => {
     await useBimChatStore.getState().send("", [photo])
     const lines = useBimChatStore.getState().lines
-    expect(lines[0]?.text).toContain("📷")
+    expect(lines[0]?.text).toBe("Photo")
     expect(lines).toHaveLength(2)
   })
 })

@@ -9,7 +9,7 @@
  * definition aloud (neural voice, `lib/vocab-speech.ts`), shows IPA, and
  * Translate reveals the English for a target language. Dictionary entry opens
  * the full Wiktionary entry in that language (`home-vocab-dictionary.tsx`).
- * ♡ Favorite saves a word to that language's deck; Flashcards reviews the
+ * Favorite (a heart key) saves a word to that language's deck; Flashcards reviews the
  * deck (`home-vocab-flashcards.tsx`). **1000 words** works through that
  * language's most common words list in Lists (`home-vocab-thousand.tsx`), and
  * **Look up** finds any word. Banks: `lib/vocab/`.
@@ -17,6 +17,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { Heart, Volume2 } from "lucide-react"
+import { VocabPicture } from "@/components/Icons/vocab-picture"
 import { VocabDictionaryFold, VocabLookup } from "@/components/Home/vocab/home-vocab-dictionary"
 import { VocabFlashcards } from "@/components/Home/vocab/home-vocab-flashcards"
 import { VocabThousand } from "@/components/Home/vocab/home-vocab-thousand"
@@ -150,7 +152,7 @@ export function VocabTile({
             ) : entry ? (
               <>
                 {entry.picture ? (
-                  <span className="home-vocab-picture" aria-hidden="true">{entry.picture}</span>
+                  <span className="home-vocab-picture" aria-hidden="true"><VocabPicture name={entry.picture} size="1em" /></span>
                 ) : null}
                 <span className="home-vocab-word-stack">
                   <span className="home-vocab-word">{entry.word}</span>
@@ -309,7 +311,7 @@ function VocabDetail({
             onClick={() => setMode(value)}
           >
             {label}
-            {value === "cards" ? <span className="home-vocab-mode-count">♥ {deck.length}</span> : null}
+            {value === "cards" ? <span className="home-vocab-mode-count"><Heart className="home-vocab-glyph" size="1em" aria-hidden="true" /> {deck.length}</span> : null}
           </button>
         ))}
       </div>
@@ -332,7 +334,7 @@ function VocabDetail({
         <section className="home-vocab-card" lang={VOCAB_LANG_SPEECH[active]} aria-live="polite">
           <div className="home-vocab-card-head">
             {entry.picture ? (
-              <span className="home-vocab-card-picture" aria-hidden="true">{entry.picture}</span>
+              <span className="home-vocab-card-picture" aria-hidden="true"><VocabPicture name={entry.picture} size="1em" /></span>
             ) : null}
             <div className="home-vocab-card-title">
               <p className="home-widget-lead home-vocab-card-word">{entry.word}</p>
@@ -349,7 +351,8 @@ function VocabDetail({
                 aria-pressed={isFavorite(entry.word)}
                 onClick={() => toggleFavorite(active, entry.word)}
               >
-                {isFavorite(entry.word) ? "♥ Favorited" : "♡ Favorite"}
+                <Heart className="home-vocab-glyph" size="1em" aria-hidden="true" fill={isFavorite(entry.word) ? "currentColor" : "none"} />{" "}
+                {isFavorite(entry.word) ? "Favorited" : "Favorite"}
               </button>
               <button
                 type="button"
@@ -370,7 +373,7 @@ function VocabDetail({
               aria-label="Say the definition aloud"
               onClick={() => speakVocab(entry.definition, active)}
             >
-              ♪
+              <Volume2 size="1em" aria-hidden="true" />
             </button>
           </p>
           {entry.example ? (
@@ -382,7 +385,7 @@ function VocabDetail({
                 aria-label="Say the example aloud"
                 onClick={() => speakVocab(entry.example!, active)}
               >
-                ♪
+                <Volume2 size="1em" aria-hidden="true" />
               </button>
             </p>
           ) : null}
@@ -471,10 +474,14 @@ function VocabDetail({
                   aria-label={`${isFavorite(row.entry.word) ? "Unfavorite" : "Favorite"} ${row.entry.word}`}
                   onClick={() => toggleFavorite(active, row.entry.word)}
                 >
-                  {isFavorite(row.entry.word) ? "♥" : "♡"}
+                  <Heart className="home-vocab-glyph" size="1em" aria-hidden="true" fill={isFavorite(row.entry.word) ? "currentColor" : "none"} />
                 </button>{" "}
                 <span className="home-vocab-week-day" lang="en">{row.label}</span>{" "}
-                {row.entry.picture ? `${row.entry.picture} ` : ""}
+                {row.entry.picture ? (
+                  <>
+                    <VocabPicture name={row.entry.picture} size="1em" className="home-vocab-glyph" />{" "}
+                  </>
+                ) : null}
                 <strong>{row.entry.word}</strong>
                 {target && row.entry.gloss ? <span lang="en"> — {row.entry.gloss}</span> : ` — ${row.entry.definition}`}
               </li>

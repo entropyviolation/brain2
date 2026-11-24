@@ -14,7 +14,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A small, soft animal often kept at home. It says \"meow.\"",
       example: "うちの猫はよく寝ます。",
       exampleEn: "Our cat sleeps a lot.",
-      picture: "🐈",
+      picture: "cat",
     },
     {
       word: "犬",
@@ -26,7 +26,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "An animal that lives with people. It says \"woof woof.\"",
       example: "毎朝、犬と散歩します。",
       exampleEn: "I take a walk with my dog every morning.",
-      picture: "🐕",
+      picture: "dog",
     },
     {
       word: "魚",
@@ -38,7 +38,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "An animal that lives and swims in water.",
       example: "今日の晩ご飯は魚です。",
       exampleEn: "Tonight's dinner is fish.",
-      picture: "🐟",
+      picture: "fish",
     },
     {
       word: "鳥",
@@ -50,7 +50,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "An animal with feathers that flies in the sky.",
       example: "木の上で鳥が鳴いています。",
       exampleEn: "A bird is singing in the tree.",
-      picture: "🐦",
+      picture: "bird",
     },
     {
       word: "りんご",
@@ -62,7 +62,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A red, round, sweet fruit.",
       example: "毎日りんごを一つ食べます。",
       exampleEn: "I eat one apple every day.",
-      picture: "🍎",
+      picture: "apple",
     },
     {
       word: "水",
@@ -74,7 +74,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Something with no color or taste that you can drink.",
       example: "水を一杯ください。",
       exampleEn: "A glass of water, please.",
-      picture: "💧",
+      picture: "water",
     },
     {
       word: "お茶",
@@ -86,7 +86,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A drink made by pouring hot water on leaves.",
       example: "温かいお茶を飲みましょう。",
       exampleEn: "Let's drink some hot tea.",
-      picture: "🍵",
+      picture: "tea",
     },
     {
       word: "ご飯",
@@ -98,7 +98,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Cooked rice. Also, a meal.",
       example: "朝ご飯はもう食べましたか。",
       exampleEn: "Have you eaten breakfast yet?",
-      picture: "🍚",
+      picture: "rice",
     },
     {
       word: "パン",
@@ -110,7 +110,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A food made from wheat flour and baked.",
       example: "朝はいつもパンを食べます。",
       exampleEn: "I always eat bread in the morning.",
-      picture: "🍞",
+      picture: "bread",
     },
     {
       word: "卵",
@@ -122,7 +122,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A round thing with a shell that birds lay. It is also eaten as food.",
       example: "卵を二つ買ってきてください。",
       exampleEn: "Please go buy two eggs.",
-      picture: "🥚",
+      picture: "egg",
     },
     {
       word: "牛乳",
@@ -134,7 +134,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A white drink that comes from cows.",
       example: "コーヒーに牛乳を入れます。",
       exampleEn: "I put milk in my coffee.",
-      picture: "🥛",
+      picture: "milk",
     },
     {
       word: "肉",
@@ -146,7 +146,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The part of cows, pigs, chickens, and so on that people eat.",
       example: "肉と野菜を一緒に焼きます。",
       exampleEn: "I grill the meat and vegetables together.",
-      picture: "🍖",
+      picture: "meat",
     },
     {
       word: "家",
@@ -158,7 +158,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A building where people live.",
       example: "私の家は駅から近いです。",
       exampleEn: "My house is close to the station.",
-      picture: "🏠",
+      picture: "house",
     },
     {
       word: "本",
@@ -170,7 +170,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Many sheets of paper with words or pictures, put together as one.",
       example: "図書館で本を借りました。",
       exampleEn: "I borrowed a book from the library.",
-      picture: "📚",
+      picture: "books",
     },
     {
       word: "椅子",
@@ -182,7 +182,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A piece of furniture you use when you sit.",
       example: "どうぞ、この椅子に座ってください。",
       exampleEn: "Please, have a seat in this chair.",
-      picture: "🪑",
+      picture: "chair",
     },
     {
       word: "傘",
@@ -194,7 +194,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A thing you hold over your head when it rains so you don't get wet.",
       example: "傘を忘れないでね。",
       exampleEn: "Don't forget your umbrella.",
-      picture: "🌂",
+      picture: "umbrella",
     },
     {
       word: "時計",
@@ -206,7 +206,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A tool for knowing what time it is now.",
       example: "この時計は五分進んでいます。",
       exampleEn: "This clock is five minutes fast.",
-      picture: "⌚",
+      picture: "watch",
     },
     {
       word: "車",
@@ -218,7 +218,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A vehicle with four tires that runs on roads.",
       example: "父は車で会社に行きます。",
       exampleEn: "My father goes to work by car.",
-      picture: "🚗",
+      picture: "car",
     },
     {
       word: "電車",
@@ -230,7 +230,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A vehicle that runs on rails using electricity.",
       example: "電車がとても混んでいました。",
       exampleEn: "The train was very crowded.",
-      picture: "🚃",
+      picture: "train",
     },
     {
       word: "靴",
@@ -242,7 +242,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Things you wear on your feet when you walk outside.",
       example: "日本の家では靴を脱ぎます。",
       exampleEn: "You take off your shoes in Japanese homes.",
-      picture: "👟",
+      picture: "shoe",
     },
     {
       word: "目",
@@ -254,7 +254,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The part of the face you see things with.",
       example: "彼女は目が大きいです。",
       exampleEn: "She has big eyes.",
-      picture: "👁️",
+      picture: "eye",
     },
     {
       word: "手",
@@ -266,7 +266,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The part at the end of the arm that you hold things with.",
       example: "ご飯の前に手を洗いましょう。",
       exampleEn: "Let's wash our hands before eating.",
-      picture: "✋",
+      picture: "hand",
     },
     {
       word: "口",
@@ -278,7 +278,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The part of the face you eat and talk with.",
       example: "口を大きく開けてください。",
       exampleEn: "Please open your mouth wide.",
-      picture: "👄",
+      picture: "mouth",
     },
     {
       word: "耳",
@@ -290,7 +290,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The part on the side of the head you hear sounds with.",
       example: "うさぎは耳が長いです。",
       exampleEn: "Rabbits have long ears.",
-      picture: "👂",
+      picture: "ear",
     },
     {
       word: "足",
@@ -302,7 +302,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The part at the bottom of the body you walk and stand with.",
       example: "たくさん歩いて足が痛いです。",
       exampleEn: "I walked a lot and my feet hurt.",
-      picture: "🦶",
+      picture: "foot",
     },
     {
       word: "母",
@@ -314,7 +314,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The woman who gave birth to you. Your own mom.",
       example: "母は料理がとても上手です。",
       exampleEn: "My mother is a very good cook.",
-      picture: "👩",
+      picture: "mother",
     },
     {
       word: "父",
@@ -326,7 +326,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Your own dad.",
       example: "父は毎朝新聞を読みます。",
       exampleEn: "My father reads the newspaper every morning.",
-      picture: "👨",
+      picture: "father",
     },
     {
       word: "子ども",
@@ -338,7 +338,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A young person who has not grown up yet.",
       example: "公園で子どもたちが遊んでいます。",
       exampleEn: "Children are playing in the park.",
-      picture: "🧒",
+      picture: "child",
     },
     {
       word: "友達",
@@ -350,7 +350,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Someone you get along with and play or talk with.",
       example: "週末に友達と映画を見ました。",
       exampleEn: "I watched a movie with a friend on the weekend.",
-      picture: "🧑‍🤝‍🧑",
+      picture: "friend",
     },
     {
       word: "赤い",
@@ -362,7 +362,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Having the color of blood or tomatoes.",
       example: "赤い靴を買いました。",
       exampleEn: "I bought red shoes.",
-      picture: "🟥",
+      picture: "swatch-red",
     },
     {
       word: "青い",
@@ -374,7 +374,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Having the color of a clear sky or the sea.",
       example: "今日は空がとても青いです。",
       exampleEn: "The sky is very blue today.",
-      picture: "🟦",
+      picture: "swatch-blue",
     },
     {
       word: "白い",
@@ -386,7 +386,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Having the color of snow or milk.",
       example: "白いシャツを着ています。",
       exampleEn: "I'm wearing a white shirt.",
-      picture: "⬜",
+      picture: "swatch-white",
     },
     {
       word: "黒い",
@@ -398,7 +398,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Having the color of the dark night sky.",
       example: "黒い猫が窓のそばにいます。",
       exampleEn: "There is a black cat by the window.",
-      picture: "⬛",
+      picture: "swatch-black",
     },
     {
       word: "雨",
@@ -410,7 +410,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "Water that falls from the sky.",
       example: "明日は雨が降るでしょう。",
       exampleEn: "It will probably rain tomorrow.",
-      picture: "🌧️",
+      picture: "rain",
     },
     {
       word: "雪",
@@ -422,7 +422,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "White, cold stuff that falls from the sky on cold days.",
       example: "北海道は冬に雪がたくさん降ります。",
       exampleEn: "It snows a lot in Hokkaido in winter.",
-      picture: "❄️",
+      picture: "snow",
     },
     {
       word: "天気",
@@ -434,7 +434,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "How the sky is, such as sunny, rainy, or cloudy.",
       example: "今日はいい天気ですね。",
       exampleEn: "It's nice weather today, isn't it?",
-      picture: "🌤️",
+      picture: "weather",
     },
     {
       word: "花",
@@ -446,7 +446,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The pretty, colorful part that blooms on plants and trees.",
       example: "春になると、たくさんの花が咲きます。",
       exampleEn: "When spring comes, many flowers bloom.",
-      picture: "🌸",
+      picture: "flower",
     },
     {
       word: "山",
@@ -458,7 +458,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A place where the land rises very high.",
       example: "夏休みに山に登りました。",
       exampleEn: "I climbed a mountain during summer vacation.",
-      picture: "⛰️",
+      picture: "mountain",
     },
     {
       word: "川",
@@ -470,7 +470,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "A place where water flows along a long way.",
       example: "子どもたちが川で泳いでいます。",
       exampleEn: "The children are swimming in the river.",
-      picture: "🏞️",
+      picture: "river",
     },
     {
       word: "食べる",
@@ -482,7 +482,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "To put food in your mouth, chew it, and swallow it.",
       example: "一緒に昼ご飯を食べませんか。",
       exampleEn: "Would you like to eat lunch together?",
-      picture: "🍽️",
+      picture: "eat",
     },
     {
       word: "飲む",
@@ -494,7 +494,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "To put water or the like in your mouth and let it go down your throat.",
       example: "寝る前に水を飲みます。",
       exampleEn: "I drink water before going to bed.",
-      picture: "🥤",
+      picture: "drink",
     },
     {
       word: "見る",
@@ -506,7 +506,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "To learn the shape or color of something with your eyes.",
       example: "夜、テレビを見ます。",
       exampleEn: "I watch TV at night.",
-      picture: "👀",
+      picture: "look",
     },
     {
       word: "行く",
@@ -540,7 +540,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "To close your eyes and rest your body. To sleep.",
       example: "昨日は十時に寝ました。",
       exampleEn: "I went to bed at ten yesterday.",
-      picture: "😴",
+      picture: "sleep",
     },
     {
       word: "書く",
@@ -552,7 +552,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "To put letters on paper with a pen or the like.",
       example: "ここに名前を書いてください。",
       exampleEn: "Please write your name here.",
-      picture: "✍️",
+      picture: "write",
     },
     {
       word: "読む",
@@ -564,7 +564,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "To look at written words and understand what they mean.",
       example: "電車の中で本を読みます。",
       exampleEn: "I read books on the train.",
-      picture: "📖",
+      picture: "book",
     },
     {
       word: "大きい",
@@ -587,7 +587,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The air temperature is high and it feels uncomfortable.",
       example: "今年の夏はとても暑いです。",
       exampleEn: "This summer is very hot.",
-      picture: "🥵",
+      picture: "hot",
     },
     {
       word: "寒い",
@@ -599,7 +599,7 @@ export const JA_BANK: VocabBank = {
       definitionEn: "The air temperature is low and it feels chilly.",
       example: "寒いから、窓を閉めてください。",
       exampleEn: "It's cold, so please close the window.",
-      picture: "🥶",
+      picture: "cold",
     },
   ],
   everyday: [

@@ -1,5 +1,6 @@
 "use client"
 
+import { House, Layers, Package, Tag, type LucideIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Folder, ItemTypeDefinition, List } from "@/lib/types"
 import { ITEM_TYPES_FOLDER_NAME, ITEM_TYPES_LOCATION, compareItemTypeLists, itemTypeListLabel } from "@/lib/item-type-lists"
@@ -41,10 +42,10 @@ export interface FolderTreeProps {
   collapsed?: boolean
 }
 
-function QaGlyph({ glyph }: { glyph: string }) {
+function QaGlyph({ icon: Icon }: { icon: LucideIcon }) {
   return (
     <span className="fm-qa-glyph" aria-hidden>
-      {glyph}
+      <Icon size="1em" />
     </span>
   )
 }
@@ -141,7 +142,7 @@ export function FolderTree({
           onClick={() => onNavTo("home")}
           onDragOver={onDragOver}
         >
-          <QaGlyph glyph="🏠" />
+          <QaGlyph icon={House} />
           <span className="fm-tree-label">Home</span>
         </div>
         <div
@@ -151,7 +152,7 @@ export function FolderTree({
           onDragOver={onDragOver}
           onDrop={(e) => onDrop(e, null)}
         >
-          <QaGlyph glyph="🗂" />
+          <QaGlyph icon={Layers} />
           <span className="fm-tree-label">All</span>
         </div>
         <div
@@ -176,7 +177,7 @@ export function FolderTree({
           ) : (
             <span className="fm-tree-toggle-spacer" aria-hidden />
           )}
-          <QaGlyph glyph="🏷" />
+          <QaGlyph icon={Tag} />
           <span className="fm-tree-label">{ITEM_TYPES_FOLDER_NAME}</span>
         </div>
         {itemTypesOpen &&
@@ -209,7 +210,7 @@ export function FolderTree({
             onDragOver={onDragOver}
             onDrop={(e) => onDrop(e, moduleListsFolder)}
           >
-            <QaGlyph glyph="📦" />
+            <QaGlyph icon={Package} />
             <span className="fm-tree-label">{moduleListsFolder.name}</span>
           </div>
         )}

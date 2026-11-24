@@ -1,3 +1,5 @@
+import { gsIconMask } from "./icons"
+
 /** Scoped GradSearch stylesheet (shadow root). Port of gradsearch/app/styles.css. */
 export const GRADSEARCH_CSS = `
 /* ============================================================
@@ -417,7 +419,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .mini-bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
 
 /* ============================================================
-   VERIFY MODAL  (🔍 verify info with web search)
+   VERIFY MODAL  (verify info with web search)
    ============================================================ */
 .drawer-hd .verify-btn { position: absolute; top: 16px; right: 58px; width: 34px; height: 34px; font-size: 15px; }
 .verify-modal { width: min(760px, 100%); }
@@ -577,7 +579,8 @@ select:focus-visible, textarea:focus-visible, .chip:focus-visible {
 .sidebar::-webkit-scrollbar-thumb:hover, .drawer::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
 /* ---- empty state glyph ---- */
-.empty::before { content: "🔍"; display: block; font-size: 40px; opacity: .5; margin-bottom: 10px; }
+.empty::before { content: ""; display: block; width: 40px; height: 40px; margin: 0 auto 10px; opacity: .5; background: currentColor; -webkit-mask: ${gsIconMask("search")} center / contain no-repeat; mask: ${gsIconMask("search")} center / contain no-repeat; }
+.gs-icon { display: inline-block; vertical-align: -0.125em; flex: none; }
 
 /* ---- range sliders: larger, themed thumbs ---- */
 input[type=range] {

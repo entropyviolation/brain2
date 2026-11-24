@@ -54,7 +54,7 @@ import { tryDayLog } from "@/lib/day-log-bimby/run"
 import { escalate } from "@/lib/bim-flow/crew"
 import { CHAT_LANES, runLanes, type ChatLaneId, type LaneBody, type LaneGuard } from "./bim-lanes"
 import { BIM_CHAT_AGENT_ID, BIM_CHAT_REV } from "@/lib/agents/adapters/bim-chat"
-import { recorder, type EventDraft, type StopReason, type TraceOrigin, type TraceRecorder } from "@/lib/agents/trace"
+import { clip, recorder, type EventDraft, type StopReason, type TraceOrigin, type TraceRecorder } from "@/lib/agents/trace"
 import { saveTrace } from "@/lib/agents/trace-store"
 import { answerTextQuestion, mentionsTexts, namedPeople, TEXTS_ASK_DAYS } from "./bim-texts"
 import { readMark } from "./bim-mark"
@@ -635,7 +635,7 @@ function modelEvent(call: ModelCallSeen, actor: string, at: number): EventDraft 
     t0: Math.max(0, at - call.ms),
     t1: at,
     note: parts.join(" · "),
-    data: { ...(call.loadMs !== undefined ? { loadMs: call.loadMs } : {}), ...(call.promptMs !== undefined ? { promptMs: call.promptMs } : {}), ...(call.evalMs !== undefined ? { evalMs: call.evalMs } : {}), ...(call.cached ? { cached: true } : {}) },
+    data: { ...(call.loadMs !== undefined ? { loadMs: call.loadMs } : {}), ...(call.promptMs !== undefined ? { promptMs: call.promptMs } : {}), ...(call.evalMs !== undefined ? { evalMs: call.evalMs } : {}), ...(call.cached ? { cached: true } : {}), ...(call.system ? { system: clip(call.system, 4000) } : {}), ...(call.user ? { user: clip(call.user, 4000) } : {}), ...(call.output !== undefined ? { output: clip(call.output, 3000) } : {}) },
   }
 }
 
@@ -655,8 +655,10 @@ async function followed(line: BimLine, text: string, now: Date, opts: { photos?:
   // A plain line of the stream (and a status report) is still read into the follow-through ledger, by rules, and its gap asked in one tap.
   try {
     if (!observeLine(text, now)) return line
+    // Rating a plan step ("how much do you want to?") belongs to a plan you filed, not to any line that sounds like the future.
     const q = nextQuestion(followLedger(), now)
-    return q ? { ...line, text: `${line.text}\n\n${q.text}`, choices: q.choices } : line
+    if (q?.kind === "pull" || q?.kind === "push") return line
+    return q ?{ ...line, text: `${line.text}\n\n${q.text}`, choices: q.choices } : line
   } catch {
     return line
   }
@@ -1331,19 +1333,14 @@ type BimChatState = {
 const unwaited = (lines: BimLine[]): BimLine[] =>
   lines.map((l) => (l.waiting ? { ...l, waiting: undefined, status: "error" as const, text: "Not answered: BIM was closed before this line's turn ran. Send it again." } : l))
 
-export const useBimChatStore = create<BimChatState>()(
-  persist(
-    (set, get) => ({
-      lines: [],
-      openId: convoId(),
-      openStartedAt: "",
-      past: [],
-      busy: false,
-      queued: 0,
+type BimChatActions = Pick<BimChatState, "send" | "checkIn" | "clear" | "newConvo" | "openConvo" | "dropConvo">
+
+function bimChatActions(set: StoreApi<BimChatState>["setState"], get: StoreApi<BimChatState>["getState"]): BimChatActions {
+  return {
       send: async (raw, photos = [], about) => {
         const text = raw.trim()
         if (!text && !photos.length) return
-        const tag = photos.length ? `📷 ${photos.length === 1 ? "photo" : `${photos.length} photos`}` : ""
+        const tag = photos.length ? `${photos.length === 1 ? "Photo" : `${photos.length} photos`}` : ""
         const sentAt = new Date()
         const mine: BimLine = { id: lineId(), at: sentAt.toISOString(), who: "you", text: [tag, text].filter(Boolean).join(" · "), ...(about ? { aboutCard: about.label } : {}) }
         const ahead = get().queued
@@ -1403,6 +1400,20 @@ export const useBimChatStore = create<BimChatState>()(
         set((s) => ({ past: shelve(s).filter((c) => c.id !== id), lines: target.lines, openId: target.id, openStartedAt: target.startedAt }))
       },
       dropConvo: (id) => set((s) => ({ past: s.past.filter((c) => c.id !== id) })),
+  }
+}
+
+function makeBimChatStore() {
+  return create<BimChatState>()(
+  persist(
+    (set, get) => ({
+      lines: [],
+      openId: convoId(),
+      openStartedAt: "",
+      past: [],
+      busy: false,
+      queued: 0,
+      ...bimChatActions(set, get),
     }),
     {
       name: TRANSCRIPT_KEY,
@@ -1412,4 +1423,15 @@ export const useBimChatStore = create<BimChatState>()(
       partialize: (s) => ({ lines: unwaited(s.lines), openId: s.openId, openStartedAt: s.openStartedAt, past: s.past.map((c) => ({ ...c, lines: unwaited(c.lines) })) }),
     },
   ),
-)
+  )
+}
+
+/**
+ * One chat store per page. A dev hot reload runs this file again; a second store made then left some
+ * screens on the old one, so "chats N" jumped between two counts and ＋ new acted on a copy that held
+ * no lines. Now the store made first is kept, and a reload only hands it this copy's actions.
+ */
+const pageStore = globalThis as { __brain2BimChatStore?: ReturnType<typeof makeBimChatStore> }
+const reloaded = !!pageStore.__brain2BimChatStore
+export const useBimChatStore = (pageStore.__brain2BimChatStore ??= makeBimChatStore())
+if (reloaded) useBimChatStore.setState(bimChatActions(useBimChatStore.setState, useBimChatStore.getState))

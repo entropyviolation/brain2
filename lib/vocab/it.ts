@@ -12,7 +12,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A round fruit, red, yellow or green, that grows on a tree.",
       example: "Mangio una mela ogni mattina.",
       exampleEn: "I eat an apple every morning.",
-      picture: "🍎",
+      picture: "apple",
     },
     {
       word: "il pane",
@@ -22,7 +22,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A food made with flour, water and salt, baked in the oven.",
       example: "Compro il pane dal fornaio.",
       exampleEn: "I buy bread at the baker's.",
-      picture: "🍞",
+      picture: "bread",
     },
     {
       word: "l'acqua (f)",
@@ -32,7 +32,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The clear liquid that we drink and that falls with the rain.",
       example: "Vuoi un bicchiere d'acqua?",
       exampleEn: "Do you want a glass of water?",
-      picture: "💧",
+      picture: "water",
     },
     {
       word: "il latte",
@@ -42,7 +42,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The white liquid that cows give.",
       example: "I bambini bevono il latte a colazione.",
       exampleEn: "The children drink milk at breakfast.",
-      picture: "🥛",
+      picture: "milk",
     },
     {
       word: "il formaggio",
@@ -52,7 +52,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A food made with milk.",
       example: "Metti un po' di formaggio sulla pasta.",
       exampleEn: "Put a little cheese on the pasta.",
-      picture: "🧀",
+      picture: "cheese",
     },
     {
       word: "l'uovo (m)",
@@ -62,7 +62,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The round thing that a hen lays and that can be eaten. In the plural: le uova.",
       example: "Faccio una frittata con tre uova.",
       exampleEn: "I'm making an omelette with three eggs.",
-      picture: "🥚",
+      picture: "egg",
     },
     {
       word: "il pesce",
@@ -72,7 +72,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "An animal that lives in water and swims.",
       example: "Il venerdì mangiamo pesce.",
       exampleEn: "On Fridays we eat fish.",
-      picture: "🐟",
+      picture: "fish",
     },
     {
       word: "il gatto",
@@ -82,7 +82,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A small house animal that says \"meow\".",
       example: "Il gatto dorme sul divano.",
       exampleEn: "The cat is sleeping on the sofa.",
-      picture: "🐈",
+      picture: "cat",
     },
     {
       word: "il cane",
@@ -92,7 +92,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A house animal that barks and loves to go for walks.",
       example: "Il mio cane mi aspetta davanti alla porta.",
       exampleEn: "My dog waits for me in front of the door.",
-      picture: "🐕",
+      picture: "dog",
     },
     {
       word: "l'uccello (m)",
@@ -102,7 +102,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "An animal with feathers and wings, that can fly.",
       example: "Un uccello canta in giardino.",
       exampleEn: "A bird is singing in the garden.",
-      picture: "🐦",
+      picture: "bird",
     },
     {
       word: "il cavallo",
@@ -112,7 +112,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A large animal that you can ride in the saddle.",
       example: "Lei va a cavallo la domenica.",
       exampleEn: "She goes horseback riding on Sundays.",
-      picture: "🐎",
+      picture: "horse",
     },
     {
       word: "la mucca",
@@ -122,7 +122,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A large farm animal that gives milk.",
       example: "Le mucche mangiano l'erba nel prato.",
       exampleEn: "The cows are eating grass in the meadow.",
-      picture: "🐄",
+      picture: "cow",
     },
     {
       word: "la casa",
@@ -132,7 +132,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The building where you live.",
       example: "La loro casa ha un grande giardino.",
       exampleEn: "Their house has a big garden.",
-      picture: "🏠",
+      picture: "house",
     },
     {
       word: "la sedia",
@@ -142,7 +142,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A piece of furniture for sitting, with a back.",
       example: "Prendi una sedia e siediti.",
       exampleEn: "Take a chair and sit down.",
-      picture: "🪑",
+      picture: "chair",
     },
     {
       word: "il letto",
@@ -152,7 +152,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The piece of furniture you sleep on.",
       example: "Vado a letto alle dieci.",
       exampleEn: "I go to bed at ten.",
-      picture: "🛏️",
+      picture: "bed",
     },
     {
       word: "la porta",
@@ -162,7 +162,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "What you open to go into a room or a house.",
       example: "Chiudi la porta, per favore.",
       exampleEn: "Close the door, please.",
-      picture: "🚪",
+      picture: "door",
     },
     {
       word: "la finestra",
@@ -172,7 +172,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "An opening in the wall, with glass, to look outside.",
       example: "Apro la finestra perché fa caldo.",
       exampleEn: "I open the window because it's hot.",
-      picture: "🪟",
+      picture: "window",
     },
     {
       word: "la chiave",
@@ -182,7 +182,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A small metal object that opens and closes a door.",
       example: "Ho perso le chiavi di casa.",
       exampleEn: "I lost my house keys.",
-      picture: "🔑",
+      picture: "key",
     },
     {
       word: "il libro",
@@ -192,7 +192,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "Pages with a text, joined together, that are read.",
       example: "Leggo un libro prima di dormire.",
       exampleEn: "I read a book before sleeping.",
-      picture: "📖",
+      picture: "book",
     },
     {
       word: "la macchina",
@@ -202,7 +202,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A vehicle with four wheels and an engine.",
       example: "Andiamo al lavoro in macchina.",
       exampleEn: "We go to work by car.",
-      picture: "🚗",
+      picture: "car",
     },
     {
       word: "la mano",
@@ -212,7 +212,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the arm, with five fingers. In the plural: le mani.",
       example: "Lavati le mani prima di mangiare.",
       exampleEn: "Wash your hands before eating.",
-      picture: "✋",
+      picture: "hand",
     },
     {
       word: "l'occhio (m)",
@@ -222,7 +222,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The part of the face used for seeing.",
       example: "Lei ha gli occhi azzurri.",
       exampleEn: "She has blue eyes.",
-      picture: "👁️",
+      picture: "eye",
     },
     {
       word: "la bocca",
@@ -232,7 +232,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The part of the face used for eating and speaking.",
       example: "Non parlare con la bocca piena.",
       exampleEn: "Don't talk with your mouth full.",
-      picture: "👄",
+      picture: "mouth",
     },
     {
       word: "il piede",
@@ -242,7 +242,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the leg, that you walk on.",
       example: "Vado a scuola a piedi.",
       exampleEn: "I walk to school.",
-      picture: "🦶",
+      picture: "foot",
     },
     {
       word: "il naso",
@@ -252,7 +252,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The part of the face used for smelling.",
       example: "Ho il naso chiuso per il raffreddore.",
       exampleEn: "My nose is blocked because of my cold.",
-      picture: "👃",
+      picture: "nose",
     },
     {
       word: "l'orecchio (m)",
@@ -262,7 +262,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The part of the head used for hearing sounds.",
       example: "Mi ha detto un segreto all'orecchio.",
       exampleEn: "He told me a secret in my ear.",
-      picture: "👂",
+      picture: "ear",
     },
     {
       word: "la madre",
@@ -272,7 +272,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The woman who has a child.",
       example: "Mia madre lavora in ospedale.",
       exampleEn: "My mother works at the hospital.",
-      picture: "👩",
+      picture: "mother",
     },
     {
       word: "il padre",
@@ -282,7 +282,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The man who has a child.",
       example: "Mio padre cucina la sera.",
       exampleEn: "My father cooks in the evening.",
-      picture: "👨",
+      picture: "father",
     },
     {
       word: "il bambino",
@@ -292,7 +292,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A small person, who is not grown up yet.",
       example: "Il bambino gioca con la palla.",
       exampleEn: "The child is playing with the ball.",
-      picture: "👶",
+      picture: "baby",
     },
     {
       word: "la famiglia",
@@ -302,7 +302,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "Parents, children and the other people of the same blood.",
       example: "Tutta la famiglia pranza insieme la domenica.",
       exampleEn: "The whole family has lunch together on Sundays.",
-      picture: "👪",
+      picture: "family",
     },
     {
       word: "rosso",
@@ -312,7 +312,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The color of blood or of a tomato.",
       example: "Lei porta un vestito rosso.",
       exampleEn: "She is wearing a red dress.",
-      picture: "🔴",
+      picture: "swatch-red",
     },
     {
       word: "blu",
@@ -322,7 +322,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The color of the deep sea. It doesn't change in the feminine or plural.",
       example: "Ho comprato una giacca blu.",
       exampleEn: "I bought a blue jacket.",
-      picture: "🔵",
+      picture: "swatch-blue",
     },
     {
       word: "verde",
@@ -332,7 +332,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The color of grass and leaves.",
       example: "Lui ha una bicicletta verde.",
       exampleEn: "He has a green bicycle.",
-      picture: "🟢",
+      picture: "swatch-green",
     },
     {
       word: "bianco",
@@ -342,7 +342,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The color of snow or milk.",
       example: "I muri della cucina sono bianchi.",
       exampleEn: "The kitchen walls are white.",
-      picture: "⚪",
+      picture: "swatch-white",
     },
     {
       word: "nero",
@@ -352,7 +352,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The color of the night without light.",
       example: "Ho un gatto nero.",
       exampleEn: "I have a black cat.",
-      picture: "⚫",
+      picture: "swatch-black",
     },
     {
       word: "il sole",
@@ -362,7 +362,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The star that gives us light and heat during the day.",
       example: "Oggi c'è il sole.",
       exampleEn: "Today it's sunny.",
-      picture: "☀️",
+      picture: "sun",
     },
     {
       word: "la pioggia",
@@ -372,7 +372,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The water that falls from the clouds.",
       example: "Prendi l'ombrello, arriva la pioggia.",
       exampleEn: "Take your umbrella, the rain is coming.",
-      picture: "🌧️",
+      picture: "rain",
     },
     {
       word: "la neve",
@@ -382,7 +382,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "Frozen white water that falls from the sky when it is very cold.",
       example: "I bambini giocano nella neve.",
       exampleEn: "The children are playing in the snow.",
-      picture: "❄️",
+      picture: "snow",
     },
     {
       word: "il vento",
@@ -392,7 +392,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The air that moves outside.",
       example: "Stasera il vento è molto forte.",
       exampleEn: "Tonight the wind is very strong.",
-      picture: "🌬️",
+      picture: "wind",
     },
     {
       word: "la nuvola",
@@ -402,7 +402,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A white or gray mass in the sky.",
       example: "Non c'è una nuvola in cielo.",
       exampleEn: "There isn't a cloud in the sky.",
-      picture: "☁️",
+      picture: "cloud",
     },
     {
       word: "mangiare",
@@ -412,7 +412,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "To put food in your mouth and swallow it.",
       example: "Mangiamo all'una.",
       exampleEn: "We eat at one o'clock.",
-      picture: "🍽️",
+      picture: "eat",
     },
     {
       word: "bere",
@@ -422,7 +422,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "To swallow a liquid.",
       example: "Bisogna bere molta acqua quando fa caldo.",
       exampleEn: "You need to drink a lot of water when it's hot.",
-      picture: "🥤",
+      picture: "drink",
     },
     {
       word: "dormire",
@@ -432,7 +432,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "To close your eyes and rest, at night for example.",
       example: "La domenica dormo fino alle nove.",
       exampleEn: "On Sundays I sleep until nine.",
-      picture: "😴",
+      picture: "sleep",
     },
     {
       word: "andare",
@@ -451,7 +451,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "To say words with your voice.",
       example: "Parli italiano?",
       exampleEn: "Do you speak Italian?",
-      picture: "🗣️",
+      picture: "speak",
     },
     {
       word: "vedere",
@@ -461,7 +461,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "To look and understand with your eyes.",
       example: "Dalla mia finestra vedo il mare.",
       exampleEn: "From my window I can see the sea.",
-      picture: "👀",
+      picture: "look",
     },
     {
       word: "l'albero (m)",
@@ -471,7 +471,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A large plant with a trunk, branches and leaves.",
       example: "C'è un vecchio albero davanti alla scuola.",
       exampleEn: "There is an old tree in front of the school.",
-      picture: "🌳",
+      picture: "tree",
     },
     {
       word: "il fiore",
@@ -481,7 +481,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The colorful part of a plant, which often smells nice.",
       example: "Ha regalato dei fiori alla nonna.",
       exampleEn: "He gave some flowers to his grandmother.",
-      picture: "🌸",
+      picture: "flower",
     },
     {
       word: "la luna",
@@ -491,7 +491,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "The big ball that shines in the sky at night.",
       example: "Stasera c'è la luna piena.",
       exampleEn: "Tonight there's a full moon.",
-      picture: "🌙",
+      picture: "moon",
     },
     {
       word: "lo zaino",
@@ -501,7 +501,7 @@ export const IT_BANK: VocabBank = {
       definitionEn: "A bag that you carry on your back.",
       example: "Ho messo i libri nello zaino.",
       exampleEn: "I put the books in my backpack.",
-      picture: "🎒",
+      picture: "backpack",
     },
   ],
   everyday: [

@@ -10,6 +10,7 @@
 
 import { useMemo, useState } from "react"
 import { format } from "date-fns"
+import { Telescope } from "lucide-react"
 import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-widget-dialog"
 import { MoneyBook } from "@/components/Home/Tracking/tracking-log/money-book"
 import { CopyCaption } from "@/components/Home/widgets/copy-context"
@@ -37,7 +38,7 @@ export function BudgetTile({ currentDate, onHide }: { currentDate: Date; onHide:
   const face = useMemo(() => monthTotals(budgetRows(entries, lines), monthKey), [entries, lines, monthKey])
   const foot =
     face.aheadAll !== 0
-      ? `🔮 ${short(face.aheadSure)} sure · ${short(face.aheadAll)} with maybes`
+      ? <><Telescope size="1em" aria-hidden style={{ verticalAlign: "-0.125em" }} /> {short(face.aheadSure)} sure · {short(face.aheadAll)} with maybes</>
       : `earned ${formatSpendAmount(face.earned)} · spent ${formatSpendAmount(face.spent)}`
 
   return (

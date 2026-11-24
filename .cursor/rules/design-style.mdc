@@ -18,9 +18,11 @@ Do not hide working chrome behind a File, Capture, or Review menu, or a popover 
 
 Do not add chrome to look busy. Do not put a foreign border color on a panel. No UI text tells the person what they should do. Metal is silver mirror chrome. Never choose gold or brass.
 
+The hardware discipline is 1970s and 1980s Braun and Teenage Engineering: an even key grid, small exact legends, a quiet body, one accent per job, nothing added to look busy. No emojis anywhere, on the desktop or the phone: use a word or a drawn icon. Steer away from orange (amber included) unless nothing else will do. A color the person picked is theirs.
+
 On the desktop, the full authority is `docs/DESIGN_STYLE.md`. On the phone, it is `docs/MOBILE_STYLE.md`.
 
 ```text
-❌ BAD: a new pill for a word, a white card per stat, Capture tucked in a menu
-✅ GOOD: `.todo-cap` for a word key, one instrument, the door still on the machine
+BAD: a new pill for a word, a white card per stat, Capture tucked in a menu, an emoji on a key, an orange accent
+GOOD: `.todo-cap` for a word key, one instrument, the door still on the machine
 ```

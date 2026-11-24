@@ -122,7 +122,7 @@ export const useFinanceBimby = create<FinanceState>()(
       send: async (raw, photos = []) => {
         const text = raw.trim()
         if ((!text && !photos.length) || get().busy) return
-        const tag = photos.length ? `📷 ${photos.length === 1 ? "receipt" : `${photos.length} receipts`}` : ""
+        const tag = photos.length ? `${photos.length === 1 ? "Receipt" : `${photos.length} receipts`}` : ""
         get().say({ who: "you", text: [tag, text].filter(Boolean).join(" · ") })
         set({ busy: true })
         try {

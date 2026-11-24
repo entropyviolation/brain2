@@ -9,6 +9,7 @@
  */
 import { useMemo, useState } from "react"
 import { addMonths, format, subMonths } from "date-fns"
+import { Donut, NotebookPen, PiggyBank, Sprout, Telescope, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
 import { useBudgetStore } from "@/lib/budget-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { formatSpendAmount, isSpendEntry, parseSpendAmount, spendAmountInput } from "@/lib/spend"
@@ -27,12 +28,27 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name" },
 ]
 
-function mood(net: number, earned: number): { face: string; line: string } {
-  if (earned === 0 && net === 0) return { face: "🐷", line: "Nothing in the piggy bank yet." }
-  if (net > 0) return { face: "🐽", line: "Piggy is happy. More came in than went out." }
-  if (net === 0) return { face: "🐷", line: "Dead even this month." }
-  return { face: "🥺", line: "Piggy is nervous. More went out than came in." }
+type Mood = "empty" | "happy" | "even" | "nervous"
+
+function mood(net: number, earned: number): { face: Mood; line: string } {
+  if (earned === 0 && net === 0) return { face: "empty", line: "Nothing in the piggy bank yet." }
+  if (net > 0) return { face: "happy", line: "Piggy is happy. More came in than went out." }
+  if (net === 0) return { face: "even", line: "Dead even this month." }
+  return { face: "nervous", line: "Piggy is nervous. More went out than came in." }
 }
+
+/** The piggy bank, with an up or down trend beside it when the month leans one way. */
+function PiggyFace({ mood }: { mood: Mood }) {
+  const Trend: LucideIcon | null = mood === "happy" ? TrendingUp : mood === "nervous" ? TrendingDown : null
+  return (
+    <span className="trk-budget-face" data-mood={mood} aria-hidden>
+      <PiggyBank size="1em" strokeWidth={1.5} />
+      {Trend ? <Trend className="trk-budget-trend" size="0.45em" /> : null}
+    </span>
+  )
+}
+
+const ICON = { className: "trk-budget-glyph", size: "1em", "aria-hidden": true } as const
 
 export function BudgetPanel({ sources }: { sources: string[] }) {
   const entries = useTimeTrackingStore((s) => s.entries)
@@ -141,13 +157,13 @@ export function BudgetPanel({ sources }: { sources: string[] }) {
       <div className="trk-budget-sorts" role="toolbar" aria-label="Past or ahead">
         {(["both", "past", "ahead"] as const).map((w) => (
           <button key={w} type="button" aria-pressed={when === w} onClick={() => setWhen(w)}>
-            {w === "both" ? "Both" : w === "past" ? "Received" : "🔮 Ahead"}
+            {w === "both" ? "Both" : w === "past" ? "Received" : <><Telescope {...ICON} /> Ahead</>}
           </button>
         ))}
       </div>
 
       <div className="trk-budget-hero">
-        <span className="trk-budget-face" aria-hidden>{face}</span>
+        <PiggyFace mood={face} />
         <div>
           <div className="trk-budget-net" data-neg={net < 0 ? "true" : "false"}>
             {net < 0 ? "-" : "+"}
@@ -160,12 +176,12 @@ export function BudgetPanel({ sources }: { sources: string[] }) {
         <i style={{ width: `${share}%` }} />
       </div>
       <div className="trk-budget-legend">
-        <span>🌱 Earned {formatSpendAmount(earned)}</span>
-        <span>🍩 Spent {formatSpendAmount(spent)}</span>
+        <span><Sprout {...ICON} /> Earned {formatSpendAmount(earned)}</span>
+        <span><Donut {...ICON} /> Spent {formatSpendAmount(spent)}</span>
       </div>
       {ahead.length > 0 ? (
         <p className="trk-budget-ahead">
-          🔮 Ahead: {formatSpendAmount(Math.abs(aheadNet(true)))} {aheadNet(true) < 0 ? "out" : "in"} for sure · with maybes {formatSpendAmount(Math.abs(aheadNet(false)))} {aheadNet(false) < 0 ? "out" : "in"}
+          <Telescope {...ICON} /> Ahead: {formatSpendAmount(Math.abs(aheadNet(true)))} {aheadNet(true) < 0 ? "out" : "in"} for sure · with maybes {formatSpendAmount(Math.abs(aheadNet(false)))} {aheadNet(false) < 0 ? "out" : "in"}
         </p>
       ) : null}
 
@@ -233,7 +249,7 @@ export function BudgetPanel({ sources }: { sources: string[] }) {
         {shown.length === 0 ? <li className="trk-budget-empty">Nothing here this month. Import a statement or add a line below.</li> : null}
         {shown.map((r) => (
           <li key={r.id} data-kind={r.kind} data-expected={r.expected ? "true" : "false"}>
-            <span aria-hidden>{r.expected ? "🔮" : r.kind === "earning" ? "🌱" : "🍩"}</span>
+            <span aria-hidden>{r.expected ? <Telescope {...ICON} /> : r.kind === "earning" ? <Sprout {...ICON} /> : <Donut {...ICON} />}</span>
             <span className="trk-spending-date">{r.date.slice(5)}</span>
             <input defaultValue={r.name} aria-label="Name" onBlur={(e) => e.target.value.trim() && e.target.value !== r.name && edit(r, { name: e.target.value })} />
             <input
@@ -255,7 +271,7 @@ export function BudgetPanel({ sources }: { sources: string[] }) {
             {r.origin === "budget" ? (
               <button type="button" title="Flip earning / spending" onClick={() => edit(r, { kind: r.kind === "earning" ? "spend" : "earning" })}>⇅</button>
             ) : (
-              <span title="Logged on the Tracking log" aria-hidden>📓</span>
+              <span title="Logged on the Tracking log" aria-hidden><NotebookPen {...ICON} /></span>
             )}
             <button type="button" title="Notes, account, attach to an item" aria-expanded={openId === r.id} onClick={() => setOpenId(openId === r.id ? null : r.id)}>⋯</button>
             {r.expected ? (
@@ -288,10 +304,10 @@ export function BudgetPanel({ sources }: { sources: string[] }) {
 
       <div className="trk-budget-add">
         <button type="button" onClick={() => setDraft({ ...draft, kind: draft.kind === "earning" ? "spend" : "earning" })} title="Earning or spending">
-          {draft.kind === "earning" ? "🌱 Earning" : "🍩 Spending"}
+          {draft.kind === "earning" ? <><Sprout {...ICON} /> Earning</> : <><Donut {...ICON} /> Spending</>}
         </button>
         <button type="button" aria-pressed={draft.expected} title="Money you expect, not yet received" onClick={() => setDraft({ ...draft, expected: !draft.expected })}>
-          🔮 {draft.expected ? "Expected" : "Received"}
+          <Telescope {...ICON} /> {draft.expected ? "Expected" : "Received"}
         </button>
         {draft.expected ? (
           <select value={draft.certainty} aria-label="How sure" onChange={(e) => setDraft({ ...draft, certainty: e.target.value as typeof draft.certainty })}>

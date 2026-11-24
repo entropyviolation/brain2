@@ -289,7 +289,7 @@ export const HOME_WIDGET_CATALOG: HomeWidgetBlurb[] = [
     name: "Vocab",
     shows: "A new word every day with its definition. English runs from everyday words through SAT / Word Power to extremely advanced. Add French, Italian, German, Japanese, Spanish, or Mandarin views: common words come with a picture, and the definition is written in that language. ↻ draws another word for the day. The detail sets the level per language, says the word aloud, and Translate shows the English.",
     useful: "A daily word to grow your own vocabulary, or to learn a new language one word at a time.",
-    preview: { caption: "Vocab", crt: "🍎 la pomme", footer: "noun · Un fruit rond, rouge ou vert." },
+    preview: { caption: "Vocab", crt: "la pomme", footer: "noun · Un fruit rond, rouge ou vert." },
   },
 ]
 

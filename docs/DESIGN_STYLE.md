@@ -38,6 +38,11 @@ hard pixel edges, and small glowing indicator lights. The retrofuturistic,
 esoteric-technology vibe is the direction of the redesigns. These docs should
 help that, not freeze a plainer costume.
 
+Under the magic, the hardware discipline is 1970s and 1980s Braun and
+Teenage Engineering. See [Braun and Teenage Engineering](#braun-and-teenage-engineering).
+Two house rules ride with it: [no emojis anywhere](#no-emojis), and
+[steer away from orange](#steer-away-from-orange) unless nothing else will do.
+
 [`DESIGN_REFS.md`](DESIGN_REFS.md) is the stills. [`UI_NEXT.md`](UI_NEXT.md) is
 the open layout work.
 
@@ -92,6 +97,32 @@ fact, in neutral ink.
   The rule covers chrome, not what they typed.
 
 Phase 15 B audit: [`TODO_REDESIGN.md`](TODO_REDESIGN.md) (resolved 2026-10-27; the rule above is what still binds).
+
+## No emojis
+
+_Last mapped: 2026-11-24._ A house rule, on the desktop and on the phone. No
+emoji anywhere: not in labels, keys, tooltips, empty states, toasts, menus,
+placeholders, chat replies a BIM or BIMBY shows, generated copy, or docs.
+
+- A key says its word, or carries a drawn icon from the house set. A Braun or
+  Teenage Engineering legend is a word or a small engraved glyph, never a
+  picture-font sticker.
+- Plain typographic marks are type, not emoji: `×`, `~`, `→`, `·`, `•`.
+  A symbol that the system may draw as a color emoji (for example `⚙`, `✅`,
+  `❌`, `✨`, `⭐`) counts as an emoji. Use a drawn icon or a word.
+- Star *icons* drawn in the house line are fine. A star emoji is not.
+- The person's own words may hold emoji. That is data, not chrome. The rule
+  covers what the app draws and writes.
+- A prompt for a model that writes UI text says no emojis.
+
+Moved off emoji on 2026-11-24. A React screen uses `lucide-react`. A thing
+lucide does not draw is a house glyph in `components/Icons/house-glyphs.tsx`
+(same `createLucideIcon` grid). Vocab words name an icon in `picture`
+(`lib/vocab/pictures.ts`, drawn by `components/Icons/vocab-picture.tsx`).
+A module that builds HTML strings uses lucide's paths as inline SVG
+(`components/Modules/workspace/gradsearch/icons.ts`). Plain text (a BIM chat
+line, a Day Log) uses a word: "Photo", "New to try:", `[auto]`. Two tests
+still hold emoji because they stand for a person's own message.
 
 ---
 
@@ -343,7 +374,9 @@ Tracking view prefs, global Settings fields) stay clean and close at once.
 
 A duration, a clock, or a time the app filled in is marked: a leading `~` and
 a dashed amber **est.** chip (a paper chip, not a light — the no-orange LED
-rule under [DSi pixel and lights](#dsi-pixel-and-lights) still applies). The tooltip states the basis in plain words
+rule under [DSi pixel and lights](#dsi-pixel-and-lights) still applies).
+**Planned:** move the chip off amber, per
+[Steer away from orange](#steer-away-from-orange). The tooltip states the basis in plain words
 (“4 pages × 10 min each”) and the chip can confirm or correct it. The same
 mark anywhere a derived value shows. Implementation:
 `lib/estimated-values.ts`,
@@ -387,6 +420,51 @@ Object chrome, the milled fascia, phosphor, nested depth, and the willpower
 plate are materials and examples. They are not a rule that the next room must
 wear them. A word key is the exception: it is the silver keycap
 ([Keycaps](#keycaps)). Seafoam and cornflower are the spare plastics.
+
+### Braun and Teenage Engineering
+
+_Last mapped: 2026-11-24._ The industrial-design ancestors of every
+instrument in the house: Braun hardware of the 1970s and 1980s (Dieter Rams
+and Dietrich Lubs: the ET calculators, the T and SK radios, the clocks and
+lighters) and Teenage Engineering (OP-1, OP-Z, the Pocket Operators, the
+field series). They sit under the DSi lights and the esoteric technology.
+They are the discipline, not a second costume.
+
+What to take from them:
+
+- **Less, but better.** Every key, lamp, and readout has a job. Nothing is
+  added to look busy. This is the same rule as
+  [The screen stays pleasing](#the-screen-stays-pleasing).
+- **A grid you can see.** Keys sit on one even pitch, in ranks and files.
+  Round or near-square keys, the same size within a group. The grid is the
+  ornament.
+- **Small, exact legends.** Short words or a tiny engraved glyph, in one
+  small face, set to the same edge every time. Labels sit on or right beside
+  the thing they name.
+- **Color as code, not decoration.** A quiet body (silver, pale gray, white,
+  graphite) with one accent per job. An accent marks a function (the action
+  key, the on lamp, the selected track) and means the same thing in every
+  room. Take the accents from the house lamps: phosphor green, ice blue,
+  dusty violet, seafoam, cornflower. Do not borrow the Braun or TE orange or
+  the Braun yellow.
+- **Honest controls.** A knob turns, a slider slides, a key presses down,
+  a switch has two states you can read across the room. Show state with the
+  part itself (a lit lamp, a key that stays down), not with a floating badge.
+- **Playful precision.** TE's humor lives in tiny pixel graphics and odd
+  little animations inside a strict frame. That frame is where the house's
+  magic goes.
+
+### Steer away from orange
+
+_Last mapped: 2026-11-24._ Orange is out of the house palette unless nothing
+else will do. That covers chrome, keys, lamps, accents, charts, focus rings,
+hover states, tags, and warnings, on the desktop and on the phone. Reach for
+green, blue, violet, seafoam, cornflower, silver, or neutral ink first. Amber
+counts as orange. Warm red stays for its few named jobs (the now line, a true
+fault, an estimate overrun). If orange truly is the only clear choice, keep
+it small and say why in the room's README. A color the person picked (a pen,
+a tag) is theirs and may be orange. The LED rule in
+[DSi pixel and lights](#dsi-pixel-and-lights) is the strictest case of this.
 
 ### Magical interaction
 
@@ -915,7 +993,7 @@ Habits console.
   weighted springs, soft collisions, mild orbital swirl — icons suspended by
   information weight. Grab / throw one orb while others keep simulating; empty
   canvas stirs the field. Soft force cords (`list-icon-force-links`) and heavy
-  hub glow read the graph. **⚙ Gravity settings** (separate from On/Off) tunes
+  hub glow read the graph. **Gravity settings** (a gear icon, separate from On/Off) tunes
   global G and connection-source gains (`listIconsGravityField`). **Skip to
   stable** fast-forwards to the settled layout under those **current** settings
   (not hardcoded defaults). **Reset** restores the pre-Gravity freeform snapshot
@@ -1063,6 +1141,11 @@ orb. It may also be an object that room invented.
 - [ ] A word key is the silver [keycap](#keycaps). Seafoam and cornflower
       are the spare plastics. No cream, yellow, orange, or a new word-button
       shape. Pause / Play / Stop stay the transport disc.
+- [ ] [No emojis](#no-emojis) anywhere the app draws or writes.
+- [ ] [No orange](#steer-away-from-orange) unless nothing else will do, and
+      then it is small and the README says why.
+- [ ] Reads like a Braun or Teenage Engineering instrument: an even key grid,
+      small exact legends, one accent per job, nothing added to look busy.
 - [ ] If it moves, it is a verb (or one rare gesture on that verb), and
       reduced motion snaps to the end state.
 - [ ] A number the person did not type wears `~` and an **est.** chip.

@@ -6,8 +6,11 @@
  * reveals on Translate (`gloss`, `definitionEn`, `exampleEn`). Nouns in French,
  * Italian, German, and Spanish keep their article in `word` (`le chat`,
  * `der Hund`). Japanese and Mandarin keep the kana or pinyin in `reading`.
- * `picture` is one emoji for a concrete common word; abstract words leave it out.
+ * `picture` names one vector icon (`lib/vocab/pictures.ts`) for a concrete
+ * common word; abstract words leave it out.
  */
+
+import type { VocabPictureName } from "@/lib/vocab/pictures"
 
 export type VocabLang = "en" | "fr" | "it" | "de" | "ja" | "es" | "zh"
 
@@ -31,8 +34,8 @@ export type VocabEntry = {
   /** One short sentence in the bank's own language. */
   example?: string
   exampleEn?: string
-  /** One emoji, only when the word is concrete enough to picture. */
-  picture?: string
+  /** One icon name, only when the word is concrete enough to picture. */
+  picture?: VocabPictureName
   /** Word-power root or origin note (English banks). */
   root?: string
 }

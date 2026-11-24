@@ -25,7 +25,7 @@ function grouped(tactics: Tactic[], experiment?: string): string {
   const groups = new Map<string, string[]>()
   for (const t of tactics) {
     const h = KIND_HEADING[t.kind]
-    groups.set(h, [...(groups.get(h) ?? []), `• ${t.id === experiment ? "🧪 New to try: " : ""}${t.name}: ${t.do}`])
+    groups.set(h, [...(groups.get(h) ?? []), `• ${t.id === experiment ? "New to try: " : ""}${t.name}: ${t.do}`])
   }
   return [...groups].map(([h, xs]) => `${h}\n${xs.join("\n")}`).join("\n\n")
 }

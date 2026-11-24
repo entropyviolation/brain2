@@ -12,7 +12,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A clear liquid without color. We drink it, and it falls as rain.",
       example: "Ich trinke ein Glas Wasser.",
       exampleEn: "I'm drinking a glass of water.",
-      picture: "💧",
+      picture: "water",
     },
     {
       word: "das Brot",
@@ -22,7 +22,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A food made of flour, water and salt that is baked in the oven.",
       example: "Morgens esse ich Brot mit Butter.",
       exampleEn: "In the morning I eat bread with butter.",
-      picture: "🍞",
+      picture: "bread",
     },
     {
       word: "der Apfel",
@@ -32,7 +32,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A round fruit, red, green or yellow, that grows on a tree.",
       example: "Der Apfel ist sehr süß.",
       exampleEn: "The apple is very sweet.",
-      picture: "🍎",
+      picture: "apple",
     },
     {
       word: "die Milch",
@@ -42,7 +42,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A white liquid that cows and other animals give.",
       example: "Trinkst du deinen Kaffee mit Milch?",
       exampleEn: "Do you take your coffee with milk?",
-      picture: "🥛",
+      picture: "milk",
     },
     {
       word: "das Ei",
@@ -52,7 +52,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "An oval thing that hens lay and that you can eat.",
       example: "Zum Frühstück koche ich ein Ei.",
       exampleEn: "I boil an egg for breakfast.",
-      picture: "🥚",
+      picture: "egg",
     },
     {
       word: "der Käse",
@@ -62,7 +62,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A solid food that is made from milk.",
       example: "Dieser Käse kommt aus der Schweiz.",
       exampleEn: "This cheese comes from Switzerland.",
-      picture: "🧀",
+      picture: "cheese",
     },
     {
       word: "der Kaffee",
@@ -72,7 +72,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A dark, hot drink that wakes you up.",
       example: "Wir trinken nach dem Essen einen Kaffee.",
       exampleEn: "We have a coffee after the meal.",
-      picture: "☕",
+      picture: "coffee",
     },
     {
       word: "die Banane",
@@ -82,7 +82,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A long yellow fruit that is sweet and soft.",
       example: "Die Banane ist noch grün.",
       exampleEn: "The banana is still green.",
-      picture: "🍌",
+      picture: "banana",
     },
     {
       word: "der Hund",
@@ -92,7 +92,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A pet that barks and is a friend of people.",
       example: "Der Hund schläft auf dem Sofa.",
       exampleEn: "The dog is sleeping on the sofa.",
-      picture: "🐕",
+      picture: "dog",
     },
     {
       word: "die Katze",
@@ -102,7 +102,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A small pet that meows and catches mice.",
       example: "Unsere Katze heißt Mimi.",
       exampleEn: "Our cat's name is Mimi.",
-      picture: "🐈",
+      picture: "cat",
     },
     {
       word: "der Vogel",
@@ -112,7 +112,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "An animal with feathers and wings that can usually fly.",
       example: "Ein Vogel singt vor dem Fenster.",
       exampleEn: "A bird is singing outside the window.",
-      picture: "🐦",
+      picture: "bird",
     },
     {
       word: "der Fisch",
@@ -122,7 +122,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "An animal that lives and swims in water.",
       example: "Im Teich schwimmen viele Fische.",
       exampleEn: "Lots of fish are swimming in the pond.",
-      picture: "🐟",
+      picture: "fish",
     },
     {
       word: "das Pferd",
@@ -132,7 +132,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A large animal with four legs that you can ride.",
       example: "Meine Schwester reitet jeden Samstag auf einem Pferd.",
       exampleEn: "My sister rides a horse every Saturday.",
-      picture: "🐎",
+      picture: "horse",
     },
     {
       word: "die Kuh",
@@ -142,7 +142,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A large farm animal that gives us milk.",
       example: "Die Kühe stehen auf der Wiese.",
       exampleEn: "The cows are standing in the meadow.",
-      picture: "🐄",
+      picture: "cow",
     },
     {
       word: "das Haus",
@@ -152,7 +152,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A building in which people live.",
       example: "Das Haus hat einen großen Garten.",
       exampleEn: "The house has a big garden.",
-      picture: "🏠",
+      picture: "house",
     },
     {
       word: "der Stuhl",
@@ -162,7 +162,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A piece of furniture with legs and a back on which one person sits.",
       example: "Setz dich bitte auf den Stuhl.",
       exampleEn: "Please sit down on the chair.",
-      picture: "🪑",
+      picture: "chair",
     },
     {
       word: "das Bett",
@@ -172,7 +172,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A piece of furniture in which you sleep.",
       example: "Die Kinder sind schon im Bett.",
       exampleEn: "The children are already in bed.",
-      picture: "🛏️",
+      picture: "bed",
     },
     {
       word: "die Tür",
@@ -182,7 +182,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A part of the wall that you open to go into a room.",
       example: "Mach bitte die Tür zu.",
       exampleEn: "Please close the door.",
-      picture: "🚪",
+      picture: "door",
     },
     {
       word: "das Fenster",
@@ -192,7 +192,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "An opening with glass in the wall through which light and air come in.",
       example: "Vom Fenster aus sieht man die Berge.",
       exampleEn: "You can see the mountains from the window.",
-      picture: "🪟",
+      picture: "window",
     },
     {
       word: "das Buch",
@@ -202,7 +202,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Many pages of text that are bound together and that you read.",
       example: "Ich lese gerade ein spannendes Buch.",
       exampleEn: "I'm reading an exciting book right now.",
-      picture: "📖",
+      picture: "book",
     },
     {
       word: "das Auto",
@@ -212,7 +212,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A vehicle with four wheels and an engine.",
       example: "Wir fahren mit dem Auto nach Hamburg.",
       exampleEn: "We're driving to Hamburg by car.",
-      picture: "🚗",
+      picture: "car",
     },
     {
       word: "der Schlüssel",
@@ -222,7 +222,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A small metal object with which you open a door.",
       example: "Ich finde meinen Schlüssel nicht.",
       exampleEn: "I can't find my key.",
-      picture: "🔑",
+      picture: "key",
     },
     {
       word: "die Hand",
@@ -232,7 +232,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the arm, with five fingers.",
       example: "Wasch dir vor dem Essen die Hände.",
       exampleEn: "Wash your hands before eating.",
-      picture: "✋",
+      picture: "hand",
     },
     {
       word: "das Auge",
@@ -242,7 +242,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "The part of the face with which you see.",
       example: "Sie hat blaue Augen.",
       exampleEn: "She has blue eyes.",
-      picture: "👁️",
+      picture: "eye",
     },
     {
       word: "der Mund",
@@ -252,7 +252,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "The part of the face with which you eat and speak.",
       example: "Sprich nicht mit vollem Mund!",
       exampleEn: "Don't talk with your mouth full!",
-      picture: "👄",
+      picture: "mouth",
     },
     {
       word: "der Fuß",
@@ -262,7 +262,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "The part of the body at the end of the leg, which you stand on.",
       example: "Mir tut der linke Fuß weh.",
       exampleEn: "My left foot hurts.",
-      picture: "🦶",
+      picture: "foot",
     },
     {
       word: "die Nase",
@@ -272,7 +272,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "The part of the face with which you smell and breathe.",
       example: "Bei der Kälte ist meine Nase ganz rot.",
       exampleEn: "In this cold my nose is all red.",
-      picture: "👃",
+      picture: "nose",
     },
     {
       word: "die Mutter",
@@ -282,7 +282,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A woman who has a child.",
       example: "Meine Mutter arbeitet als Ärztin.",
       exampleEn: "My mother works as a doctor.",
-      picture: "👩",
+      picture: "mother",
     },
     {
       word: "der Vater",
@@ -292,7 +292,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A man who has a child.",
       example: "Mein Vater kocht sehr gern.",
       exampleEn: "My father really likes to cook.",
-      picture: "👨",
+      picture: "father",
     },
     {
       word: "der Bruder",
@@ -311,7 +311,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A very small child who can't talk or walk yet.",
       example: "Das Baby schläft gerade.",
       exampleEn: "The baby is sleeping right now.",
-      picture: "👶",
+      picture: "baby",
     },
     {
       word: "die Familie",
@@ -321,7 +321,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Parents and their children, often grandparents and other relatives too.",
       example: "Weihnachten feiere ich mit meiner Familie.",
       exampleEn: "I celebrate Christmas with my family.",
-      picture: "👪",
+      picture: "family",
     },
     {
       word: "rot",
@@ -331,7 +331,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Having the color of blood or of a ripe tomato.",
       example: "Ich kaufe das rote Kleid.",
       exampleEn: "I'm buying the red dress.",
-      picture: "🔴",
+      picture: "swatch-red",
     },
     {
       word: "blau",
@@ -341,7 +341,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Having the color of the sky when there are no clouds.",
       example: "Das Meer ist heute ganz blau.",
       exampleEn: "The sea is really blue today.",
-      picture: "🔵",
+      picture: "swatch-blue",
     },
     {
       word: "grün",
@@ -351,7 +351,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Having the color of grass and leaves.",
       example: "Im Frühling ist der Park schön grün.",
       exampleEn: "In spring the park is nice and green.",
-      picture: "🟢",
+      picture: "swatch-green",
     },
     {
       word: "schwarz",
@@ -361,7 +361,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Having the darkest color, like the night without light.",
       example: "Er trägt immer schwarze Schuhe.",
       exampleEn: "He always wears black shoes.",
-      picture: "⚫",
+      picture: "swatch-black",
     },
     {
       word: "weiß",
@@ -371,7 +371,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Having the color of milk or snow.",
       example: "Die Wände in meinem Zimmer sind weiß.",
       exampleEn: "The walls in my room are white.",
-      picture: "⚪",
+      picture: "swatch-white",
     },
     {
       word: "die Sonne",
@@ -381,7 +381,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "The star that gives us light and warmth during the day.",
       example: "Heute scheint die Sonne.",
       exampleEn: "The sun is shining today.",
-      picture: "☀️",
+      picture: "sun",
     },
     {
       word: "der Regen",
@@ -391,7 +391,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Water that falls from the clouds in drops.",
       example: "Bei Regen bleiben wir zu Hause.",
       exampleEn: "When it rains, we stay at home.",
-      picture: "🌧️",
+      picture: "rain",
     },
     {
       word: "der Schnee",
@@ -401,7 +401,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "White, cold flakes that fall from the sky in winter.",
       example: "Die Kinder spielen im Schnee.",
       exampleEn: "The children are playing in the snow.",
-      picture: "❄️",
+      picture: "snow",
     },
     {
       word: "die Wolke",
@@ -411,7 +411,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A white or gray mass of water that floats in the sky.",
       example: "Am Himmel ist keine einzige Wolke.",
       exampleEn: "There isn't a single cloud in the sky.",
-      picture: "☁️",
+      picture: "cloud",
     },
     {
       word: "der Wind",
@@ -421,7 +421,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "Air that moves strongly outdoors.",
       example: "Der Wind hat meinen Hut weggeweht.",
       exampleEn: "The wind blew my hat away.",
-      picture: "💨",
+      picture: "wind",
     },
     {
       word: "der Baum",
@@ -431,7 +431,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A large plant with a wooden trunk, branches and leaves.",
       example: "Wir sitzen im Schatten unter einem Baum.",
       exampleEn: "We're sitting in the shade under a tree.",
-      picture: "🌳",
+      picture: "tree",
     },
     {
       word: "die Blume",
@@ -441,7 +441,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "A plant with pretty, colorful blossoms that often smell good.",
       example: "Ich schenke meiner Oma Blumen.",
       exampleEn: "I'm giving my grandma flowers.",
-      picture: "🌸",
+      picture: "flower",
     },
     {
       word: "essen",
@@ -451,7 +451,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "To put food in your mouth and swallow it.",
       example: "Wir essen um zwölf Uhr zu Mittag.",
       exampleEn: "We eat lunch at twelve o'clock.",
-      picture: "🍽️",
+      picture: "eat",
     },
     {
       word: "trinken",
@@ -461,7 +461,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "To take a liquid into your mouth and swallow it.",
       example: "Im Sommer muss man viel trinken.",
       exampleEn: "In summer you have to drink a lot.",
-      picture: "🥤",
+      picture: "drink",
     },
     {
       word: "schlafen",
@@ -471,7 +471,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "To rest with closed eyes, mostly at night.",
       example: "Letzte Nacht habe ich neun Stunden geschlafen.",
       exampleEn: "Last night I slept for nine hours.",
-      picture: "😴",
+      picture: "sleep",
     },
     {
       word: "laufen",
@@ -481,7 +481,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "To move quickly on your legs; also: to go on foot.",
       example: "Sonntags laufe ich im Park.",
       exampleEn: "On Sundays I go running in the park.",
-      picture: "🏃",
+      picture: "run",
     },
     {
       word: "sprechen",
@@ -491,7 +491,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "To say words with your voice.",
       example: "Sprichst du Englisch?",
       exampleEn: "Do you speak English?",
-      picture: "🗣️",
+      picture: "speak",
     },
     {
       word: "sehen",
@@ -501,7 +501,7 @@ export const DE_BANK: VocabBank = {
       definitionEn: "To perceive something with your eyes.",
       example: "Von hier aus sehe ich den Strand.",
       exampleEn: "I can see the beach from here.",
-      picture: "👀",
+      picture: "look",
     },
   ],
   everyday: [

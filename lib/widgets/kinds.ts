@@ -608,7 +608,7 @@ const BUILT_IN_KINDS: WidgetKind[] = [
         "Favorites, shuffles, and known words stay in the Vocab data and the Languages lists, so a reinstall keeps them.",
       ],
       useful: "A daily word to grow your own vocabulary, or a real path through a new language.",
-      preview: { caption: "Français · A2", crt: "🍎 la pomme", footer: "noun · Un fruit rond, rouge ou vert." },
+      preview: { caption: "Français · A2", crt: "la pomme", footer: "noun · Un fruit rond, rouge ou vert." },
     },
     guide: [
       { title: "One per language", body: "Each Language study copy holds one language. Install another from the gallery for the next one." },

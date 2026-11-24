@@ -5802,3 +5802,14 @@ body.win95-app .home-tabs[role="tablist"] {
     font-size: 16px;
   }
 }
+
+/* Vector glyphs that replaced emoji in the vocab tile (no emoji: docs/DESIGN_STYLE.md#no-emojis). */
+.home-vocab-glyph,
+.home-vocab-picture > svg,
+.home-vocab-card-picture > svg,
+.home-vocab-flash-picture > svg,
+.home-vocab-inline-speak > svg,
+.home-vocab-flash-empty-mark > svg {
+  display: inline-block;
+  vertical-align: -0.125em;
+}

@@ -6743,3 +6743,15 @@ body.win95-app .trk95 .daylog-week-switch > button.trk-keycap[data-no95][aria-pr
   display: inline-block;
   transform: rotate(90deg);
 }
+
+/* Budget glyphs: vector icons in place of emoji (docs/DESIGN_STYLE.md#no-emojis). */
+.trk-budget-face {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
+}
+.trk-budget-face[data-mood="empty"] { opacity: 0.55; }
+.trk-budget-trend { margin-left: -0.1em; }
+.trk-budget-face[data-mood="happy"] .trk-budget-trend { color: #3f9a62; }
+.trk-budget-face[data-mood="nervous"] .trk-budget-trend { color: #7d6bb8; }
+.trk-budget-glyph { display: inline-block; vertical-align: -0.125em; }

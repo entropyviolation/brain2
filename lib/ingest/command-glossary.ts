@@ -286,7 +286,7 @@ Shortcuts skip the model. They are instant, exact, and work offline (Telegram un
 • Word: text — files under that name (Brain2: …, Cleaning: …)
 • took / ate / drank … — intake · o · up · back — one-word logs
 • A link first — Inbox → Links
-• 📷 attaches a photo; caption it (inbox: …, outfit: …, journal: …) or leave it blank and I ask what it is
+• The camera key attaches a photo; caption it (inbox: …, outfit: …, journal: …) or leave it blank and I ask what it is
 • groc · gm · today menu · undo
 
 The LLM key turns the model off: shortcuts only.

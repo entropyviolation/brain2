@@ -197,10 +197,19 @@ const DID = /\b(woke up|got up|showered|stretched|walked|went for|cleaned|tidied
 const FUTURE = /\b(gonna|going to|about to|plan to|planning to|i'll|will|want to|need to|have to|gotta|maybe i|then i)\b/i
 const FEEL = /\b(proud|positive|happy|sad|anxious|tired|stressed|calm|grateful|glad|excited|confident|overwhelmed|frustrated|bored|feel|feeling|dread\w*|regret\w*|guilty)\b/i
 
+/** The plan is yours: it says "I"/"we", or it starts on the verb ("gonna eat", "need to call"). */
+const OWN = /\b(i|i'm|im|i'll|ill|i've|we|we'll|we're|let me|lemme)\b/i
+
+/** "Elijah will get home at 2pm" is future tense about someone else: a fact, not your plan. */
+export function ownFuture(text: string): boolean {
+  if (!FUTURE.test(text)) return false
+  return OWN.test(text) || LEAD.test(text.trim())
+}
+
 /** The route a plain chat line would have, for lines the Stream BIMBY never saw. */
 export function routeOf(text: string): string {
   if (displacementIn(text)) return "note"
-  if (FUTURE.test(text)) return "plan"
+  if (ownFuture(text)) return "plan"
   if (FEEL.test(text)) return "mood"
   return "note"
 }

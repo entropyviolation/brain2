@@ -1,3 +1,5 @@
+import { gsIcon } from "./icons"
+
 /** GradSearch markup. Port of gradsearch/app/index.html (no scripts). */
 export const GRADSEARCH_SHELL = `
 <div class="gs-app" data-theme="dark">
@@ -19,7 +21,7 @@ export const GRADSEARCH_SHELL = `
 
     <div class="topbar-actions">
       <button id="themeToggle" class="icon-btn" title="Toggle light / dark" aria-label="Toggle theme">
-        <span class="theme-dark">☾</span><span class="theme-light">☀</span>
+        <span class="theme-dark">${gsIcon("moon")}</span><span class="theme-light">${gsIcon("sun")}</span>
       </button>
     </div>
   </header>
@@ -161,7 +163,7 @@ export const GRADSEARCH_SHELL = `
   <div class="modal-overlay hidden" id="verifyModal">
     <div class="modal verify-modal">
       <div class="modal-head">
-        <h2>🔍 Verify with web search</h2>
+        <h2>${gsIcon("search")} Verify with web search</h2>
         <button class="icon-btn" id="closeVerify" aria-label="Close">✕</button>
       </div>
       <div class="modal-body" id="verifyBody"></div>

@@ -8,6 +8,7 @@
  */
 "use client"
 
+import { Camera } from "lucide-react"
 import { Fragment, memo, useRef, useState } from "react"
 import { BIM_FULL, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
@@ -125,7 +126,7 @@ export function BimPhoneScreen() {
         ) : null}
         <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />
         <button type="button" className="m-keycap bim-phone-attach" aria-label="Attach photo" onClick={() => fileInput.current?.click()}>
-          📷
+          <Camera size="1.1em" aria-hidden />
         </button>
         <textarea
           aria-label="Message BIM"

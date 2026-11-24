@@ -4,7 +4,7 @@
  * A video-game control panel. CRT marquee with the quest name and stage path.
  * TIME is a health bar that drains from est (red once past it); ENDS is the
  * XP bar. Points sit on 7-segment counters driven by convex arcade buttons.
- * Needs are an inventory grid (⚔ task first, ✦ resource, ⌛ awaiting; USE logs
+ * Needs are an inventory grid (swords: task first, gem: resource, hourglass: awaiting; USE logs
  * an event). Unlocks are doors. Notes are a dialog box that types itself.
  * Done is a big CLEAR button: STAGE CLEAR with coins. Eggs: ↑↑↓↓←→←→BA turns
  * on TURBO palette; SOUND switch for blips.
@@ -12,10 +12,16 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { DoorOpen, Gem, Hourglass, Lock, Swords, type LucideIcon } from "lucide-react"
 import { AddNeed, Picker, toPts, TypeOn, useCountUp } from "./kit"
 import { fmtPct, noteDate, NOTE_PROMPT, type NodeModel, type Ref } from "./model"
 
-const ICON: Record<string, string> = { first: "⚔", resource: "✦", await: "⌛", unlock: "⛩" }
+const ICON: Record<string, LucideIcon> = { first: Swords, resource: Gem, await: Hourglass, unlock: DoorOpen }
+
+function SlotIcon({ kind }: { kind: string }) {
+  const Icon = ICON[kind]
+  return Icon ? <Icon size="1em" aria-hidden /> : null
+}
 const KONAMI = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"]
 
 let audio: AudioContext | null = null
@@ -101,8 +107,8 @@ function Slot({ r, n, sound }: { r: Ref; n: NodeModel; sound: boolean }) {
   return (
     <div className={`ar-slot is-${r.kind} is-${r.state}${open ? " is-open" : ""}`}>
       <button type="button" className="ar-slot-face" onClick={() => (blip(sound, 880, 40), setOpen(!open))} title={`${r.label} · ${r.hint} · ${r.state}`}>
-        <span className="ar-slot-icon">{ICON[r.kind]}</span>
-        {r.state === "open" || r.state === "wait" ? <span className="ar-lock">🔒</span> : r.state === "done" ? <span className="ar-check">✓</span> : null}
+        <span className="ar-slot-icon"><SlotIcon kind={r.kind} /></span>
+        {r.state === "open" || r.state === "wait" ? <span className="ar-lock"><Lock size="1em" aria-hidden /></span> : r.state === "done" ? <span className="ar-check">✓</span> : null}
         <span className="ar-slot-name">{r.label}</span>
       </button>
       {open ? (
@@ -222,7 +228,7 @@ export function MockArcade({ n, showMath }: { n: NodeModel; showMath: boolean })
       <section className="ar-deck" aria-label="Needs">
         <header className="ar-deck-head">
           <span className="ar-plate is-wide">INVENTORY</span>
-          <span className="ar-legend">⚔ first · ✦ resource · ⌛ awaiting</span>
+          <span className="ar-legend"><Swords size="1em" aria-hidden /> first · <Gem size="1em" aria-hidden /> resource · <Hourglass size="1em" aria-hidden /> awaiting</span>
         </header>
         <div className="ar-grid">
           {n.needs.map((r) => (
@@ -242,7 +248,7 @@ export function MockArcade({ n, showMath }: { n: NodeModel; showMath: boolean })
             <Slot key={r.key} r={r} n={n} sound={sound} />
           ))}
           <button type="button" className="ar-slot is-empty" disabled={!n.unlockOptions.length} onClick={() => (blip(sound, 440), setAdding(adding === "unlock" ? null : "unlock"))}>
-            <span className="ar-slot-icon">⛩</span>
+            <span className="ar-slot-icon"><DoorOpen size="1em" aria-hidden /></span>
             <span className="ar-slot-name">{n.isTask ? "Make a task wait" : "Make a step wait"}</span>
           </button>
         </div>

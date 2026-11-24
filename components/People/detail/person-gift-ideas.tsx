@@ -2,7 +2,7 @@
  * components/People/detail/person-gift-ideas.tsx — Gift ideas on a person.
  *
  * `GiftIdeasKey` (3.4): one wide metal key at the end of Details,
- * "🎁 {list name} · {n}". With no list it reads "Start gift ideas" and makes
+ * a gift icon, then "{list name} · {n}". With no list it reads "Start gift ideas" and makes
  * one (Close stays as it is). The key opens `GiftIdeasDialog`, a small milled
  * popup: the list's items, a quick add (`addGiftIdeaOnList`, a store write),
  * the quick gift notes (`GiftLog`, on `personProfile.giftIdeas` through the
@@ -14,6 +14,7 @@
  */
 "use client"
 
+import { Gift } from "lucide-react"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import {
@@ -61,7 +62,7 @@ export function GiftIdeasKey({
           setOpen(true)
         }}
       >
-        <span aria-hidden>🎁</span>
+        <Gift className="person-gift-key-glyph" size="1em" aria-hidden />
         {list ? (
           <>
             <span className="person-gift-key-name">{list.name}</span>{" "}

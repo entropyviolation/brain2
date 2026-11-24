@@ -309,7 +309,7 @@ async function captureLists(page) {
   if (await taskLink.count()) {
     await taskLink.click()
   } else {
-    console.warn("  ⚠ no tasks for 21-item-detail-*.png — skipping")
+    console.warn("  warning: no tasks for 21-item-detail-*.png — skipping")
   }
   const detail = page.locator('[role="dialog"][data-state="open"]').last()
   if (await detail.count()) {
@@ -325,7 +325,7 @@ async function captureLists(page) {
     for (const [name, file] of detailTabs) {
       const tab = detail.getByRole("tab", { name, exact: true })
       if (!(await tab.count())) {
-        console.warn(`  ⚠ no ${name} tab — skipping ${file}`)
+        console.warn(`  warning: no ${name} tab — skipping ${file}`)
         continue
       }
       await tab.click()
