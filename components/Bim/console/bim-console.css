@@ -796,19 +796,19 @@
   display: grid;
   place-items: end center;
   width: 72px;
-  height: 72px;
-  padding-bottom: 2px;
+  height: 80px;
+  padding-bottom: 3px;
   box-sizing: border-box;
   border-radius: 4px;
-  background: #020708;
-  box-shadow: inset 0 0 0 1px var(--bim-line), inset 0 0 14px rgba(0, 0, 0, 0.8);
+  /* Pale cool paper, so the silver blob and its dark outline read (2026-11-24; was CRT black). */
+  background: linear-gradient(180deg, #f3f6f8 0%, #dde4e8 100%);
+  box-shadow: inset 0 0 0 1px #9aa3aa, inset 0 1px 0 #fff, inset 0 -6px 10px rgba(40, 60, 70, 0.12);
 }
 
 .bim-blob {
-  width: 66px;
-  height: 69px;
+  width: 60px;
+  height: 72px;
   overflow: visible;
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--bim-ink) 45%, transparent));
 }
 
 .bim-blob-body {
@@ -825,11 +825,11 @@
 }
 
 .bim-blob-dot {
-  fill: var(--bim-ink);
+  fill: color-mix(in srgb, var(--bim-ink) 55%, #0b3b33);
   visibility: hidden;
 }
 
-/* Thinking: quicker bob, eyes glance up-left, up-right, and the dots pop in one by one. */
+/* Thinking: quicker bob, eyes glance up and up-right, and the dots pop in one by one. */
 .bim-blob.is-thinking .bim-blob-body {
   animation-duration: 0.7s;
 }
@@ -877,9 +877,10 @@
   }
 }
 
+/* Up, then up and to the right: the left eye has no room to move left inside the outline. */
 @keyframes bim-blob-glance {
   0% {
-    transform: translate(-1px, -1px);
+    transform: translate(0, -1px);
   }
   50% {
     transform: translate(1px, -1px);
@@ -896,6 +897,15 @@
   85% {
     visibility: hidden;
   }
+}
+
+/* Still: no model in the loop. Nothing bobs, blinks or glances; thinking just lights the dots. */
+.bim-blob.is-still * {
+  animation: none !important;
+}
+
+.bim-blob.is-still.is-thinking .bim-blob-dot {
+  visibility: visible;
 }
 
 @media (prefers-reduced-motion: reduce) {

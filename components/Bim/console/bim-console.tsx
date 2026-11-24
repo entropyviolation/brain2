@@ -11,7 +11,7 @@
  */
 "use client"
 
-import { Fragment, memo, useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { ArrowUp, Mic, Paperclip } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
@@ -28,6 +28,7 @@ import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
 import { HabitCard } from "@/components/Bim/habit-card"
 import { BimBlob } from "@/components/Bim/bim-blob"
+import { listOllamaModels } from "@/lib/bim-flow/ollama"
 import { LlmSuggestions } from "./llm-suggestions"
 import { appendDictated, useDesktopDictation } from "@/lib/desktop-dictation"
 import { dmMonoFace } from "@/lib/fonts/dm-mono"
@@ -335,16 +336,36 @@ function CommandsPane() {
   )
 }
 
+/** With LLM on, asks Ollama for its models now and every minute. `null` until the first answer. */
+function useModelsUp(on: boolean): boolean | null {
+  const [up, setUp] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (!on) return
+    let live = true
+    const check = () => void listOllamaModels().then((m) => live && setUp(!!m))
+    check()
+    const t = window.setInterval(check, 60_000)
+    return () => {
+      live = false
+      window.clearInterval(t)
+    }
+  }, [on])
+  return on ? up : null
+}
+
 function Dossier() {
   const pending = useIngestStore((s) => s.pendingByChat[`simulate:${BIM_CHAT_ID}`])
   const count = useIngestStore((s) => s.events.filter((e) => e.chatId === BIM_CHAT_ID).length)
   const busy = useBimChatStore((s) => s.busy)
   const llm = useBimLlmMode((s) => s.on)
+  const up = useModelsUp(llm)
+  // The blob holds still when no model is in the loop: LLM off (plain routing) or Ollama not answering.
+  const still = !llm || up === false
   return (
     <aside className="bim-crt-side">
       <div className="bim-glass bim-card">
-        <div className={`bim-face${busy ? " is-busy" : ""}`} title={busy ? "BIM is thinking" : undefined}>
-          <BimBlob thinking={busy} />
+        <div className={`bim-face${busy ? " is-busy" : ""}`} title={busy ? "BIM is thinking" : still ? (llm ? "Models not answering: BIM is still" : "Plain routing: BIM is still") : undefined}>
+          <BimBlob thinking={busy} still={still} />
         </div>
         <dl>
           <dt>NAME</dt>
@@ -354,7 +375,7 @@ function Dossier() {
           <dt>TELEGRAM</dt>
           <dd>{BIM_HANDLE}</dd>
           <dt>MODE</dt>
-          <dd>{llm ? "LLM · local models" : "router · no models"}</dd>
+          <dd>{llm ? (up === false ? "LLM · models not answering" : "LLM · local models") : "router · no models"}</dd>
           <dt>OPEN THREAD</dt>
           <dd>{pending ? (pending.ritual?.flow ?? pending.kind) : "none"}</dd>
           <dt>LOGGED</dt>
