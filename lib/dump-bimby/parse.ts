@@ -9,6 +9,7 @@
  * deadline when one is named. Nothing here reads a store; `run.ts` does the matching.
  */
 
+import { readAnchor, readAnchorClock, readMentions } from "@/lib/before-bimby/parse"
 import { parseClock } from "@/lib/ingest/bim-facts"
 import { sentences } from "@/lib/thought-patterns/patterns"
 
@@ -23,6 +24,10 @@ export interface Intention {
   by?: number
   /** "Needs 2.5 and balls first": what the step waits on, when said. */
   gate?: string
+  /** "Elijah gets home": the event it must be done before (`lib/before-bimby/`). */
+  before?: string
+  /** False for a "best case" thing from the list after such an event. */
+  required?: boolean
 }
 
 export interface DumpRead {
@@ -37,8 +42,8 @@ export interface DumpRead {
   rest: string[]
 }
 
-const PLAN_LEAD = String.raw`(?:i\s+)?(?:really\s+|definitely\s+|still\s+)?(?:need to|needa|have to|gotta|got to|must|should|want to|wanna|gonna|going to|to do:?)`
-const STEP_VERBS = String.raw`book|call|text|send|mail|email|write|make|get|buy|order|pick up|return|cancel|clean|wash|pay|finish|schedule|plan|pack|figure out|fix|clear|file|submit|apply|print|renew|sign|post|ship|wrap|bake|reply|respond|follow up|reach out|check|go to|drop off`
+const PLAN_LEAD = String.raw`(?:i\s+)?(?:really\s+|definitely\s+|still\s+)?(?:going to have to|gonna have to|need to|needa|have to|gotta|got to|must|should|want to|wanna|gonna|going to|to do:?)`
+const STEP_VERBS = String.raw`charge|change|book|call|text|send|mail|email|write|make|get|buy|order|pick up|return|cancel|clean|wash|pay|finish|schedule|plan|pack|figure out|fix|clear|file|submit|apply|print|renew|sign|post|ship|wrap|bake|reply|respond|follow up|reach out|check|go to|drop off`
 const LEAD_RE = new RegExp(String.raw`\b${PLAN_LEAD}\s+`, "i")
 const VERB_START = new RegExp(String.raw`^(?:${STEP_VERBS})\b`, "i")
 const FILLER_START = /^(?:and|also|but|so|then|plus|oh and|anyway,?)\s+/i
@@ -86,11 +91,19 @@ function parts(sentence: string): string[] {
 /** One plan from one part, or null. `prevVerb` carries "and lucas thank u note" onto the last verb. */
 function readPart(part: string, prevVerb: string | null, now: Date, said: string): { intentions: Intention[]; verb: string | null } | null {
   let body = part.replace(FILLER_START, "").replace(FILLER_START, "")
-  const urgency: Intention["urgency"] = NOW.test(body) || BEFORE.test(body) ? 5 : ASAP.test(body) ? 4 : 0
+  // "clean house before 2pmish when Elijah gets home": the event is the deadline, and its clock when said.
+  const event = readAnchor(body)
+  let before: string | undefined
   let by: number | undefined
-  const before = BEFORE.exec(body)
-  if (before) {
-    const at = parseClock(`at ${before[1]} today`, now)
+  if (event) {
+    before = event.anchor.label
+    by = readAnchorClock(body, event.anchor.key, now) ?? undefined
+    body = `${body.slice(0, event.index)} ${body.slice(event.end)}`
+  }
+  const urgency: Intention["urgency"] = NOW.test(body) || BEFORE.test(body) || before ? 5 : ASAP.test(body) ? 4 : 0
+  const clockBy = BEFORE.exec(body)
+  if (clockBy) {
+    const at = parseClock(`at ${clockBy[1]} today`, now)
     if (at) by = at.getTime()
     body = body.replace(BEFORE, " ")
   }
@@ -127,7 +140,7 @@ function readPart(part: string, prevVerb: string | null, now: Date, said: string
       }
     }
   }
-  return { verb, intentions: [{ title: sentenceCase(body), source: said, urgency, ...(by ? { by } : {}), ...(gate ? { gate } : {}) }] }
+  return { verb, intentions: [{ title: sentenceCase(body), source: said, urgency, ...(by ? { by } : {}), ...(gate ? { gate } : {}), ...(before ? { before } : {}) }] }
 }
 
 /** "mary lou" → "Mary Lou". Only for names in a split, where the words are people. */
@@ -163,6 +176,19 @@ export function readDump(text: string, now: Date): DumpRead {
     }
     if (!took) prevVerb = null
     if (!took && !drug && !way) out.rest.push(clean(s))
+  }
+  // An event named as a deadline ("before 2pmish when Elijah gets home") and the lists said after it
+  // ("Bare minimum - change sheets, …", "Best case …"): each thing is a plan due before it.
+  const event = readAnchor(text)
+  if (event) {
+    const by = readAnchorClock(text, event.anchor.key, now) ?? undefined
+    const used = new Set<string>()
+    for (const it of readMentions(text, event.anchor.key, now)) {
+      if (it.source) used.add(clean(it.source))
+      if (out.intentions.some((i) => i.title.toLowerCase() === it.title.toLowerCase())) continue
+      out.intentions.push({ title: it.title, source: clip(it.source ?? text), urgency: it.required ? 5 : 0, ...(by ? { by } : {}), before: event.anchor.label, required: it.required })
+    }
+    out.rest = out.rest.filter((r) => !used.has(r))
   }
   // One plan said twice in the dump is one plan.
   const seen = new Set<string>()

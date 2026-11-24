@@ -11,6 +11,7 @@ A brain dump is one long BIM chat message, with no clocks, that says many things
 | A plan that an open task is already about ("book arkansas tickets", and a task "Arkansas tickets") | `amend` (AMEND) | Raises priority, puts it on today's To Do, sets a deadline when one was said, adds a dated note with the words. One undo step |
 | A new plan said as ASAP, right now, or "before 2pm" | `line`: `to do today: Clean entire house by 2pm` | Files it through the executor |
 | A new plan with no day | `line`: `inbox: Make a christmas list` | Same |
+| A plan said before an event ("going to have to clean house before 2pmish when Elijah gets home"), and the list sentences after it ("Bare minimum - change sheets, …", "Best case …") | `line`: `to do today: Change sheets by 2pm (before Elijah gets home)`; a best-case thing adds `, if time` | Same. The reads are the Before BIMBY's (`lib/before-bimby/`), so "what do I have to do before Elijah gets home" finds them |
 | A plan that waits on something ("need 2.5 and balls to call cap") | the plan, with `(needs 2.5 and balls first)` | Same |
 | "send hannah and mary lou and emily shad mail" | one row per person | Same |
 | "and lucas/shelby thank u note and necklace" right after a plan | takes that plan's verb ("Send …") | Same |
@@ -39,7 +40,7 @@ Lane `dump` in `CHAT_LANES` (`lib/ingest/bim-lanes.ts`), after `flight-file`, be
 
 ## Limits
 
-Rules only. A plan said with no lead and no step verb ("arkansas tickets!!") is not read as a plan; it goes to the log row. A plan that names a task in other words ("flights to arkansas" vs a task "Arkansas tickets") is not matched and becomes a new row. Names in a split are capitalized; names elsewhere stay as typed. The live chat was not checked in the browser on 2026-11-24 (the pane was hidden); the tests run the real message.
+Rules only. "Going to have to" is one lead (before 2026-11-24 it was read as "going to" and the plan was lost). A plan said with no lead and no step verb ("arkansas tickets!!") is not read as a plan; it goes to the log row. A plan that names a task in other words ("flights to arkansas" vs a task "Arkansas tickets") is not matched and becomes a new row. Names in a split are capitalized; names elsewhere stay as typed. The live chat was not checked in the browser on 2026-11-24 (the pane was hidden); the tests run the real message.
 
 **Planned:** a model pass for phrasing the rules miss, checked against the text like the Stream BIMBY's; matching against follow-through steps and Plan events, not only tasks; a "done" read ("booked the arkansas tickets") that proposes closing the task; counting "only N left" into Inventory.
 

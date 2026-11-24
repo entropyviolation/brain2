@@ -52,6 +52,9 @@ export const CHAT_LANES = [
   { id: "follow-through", cost: "code", does: "A one-tap follow-through answer, or “day's end”, “findings”, “mine follow-through”." },
   // Before the fact and tell shapes, which would read a booking's clocks as facts.
   { id: "flight-file", cost: "code", skipWhen: OPEN, does: "A pasted booking confirmation becomes Flight items and calendar events." },
+  // Before the dump, which would read "what I need to do before Elijah gets back: …" as one plan; and before every
+  // lane that would log "what do i have to do before elijah gets home" when it has no "?".
+  { id: "before", cost: "code", skipWhen: OPEN, does: "“What I need to do before Elijah gets back: clean the house, shower (45 minutes)” puts each thing on To Do today, required, due by that time when one was said; “what do I have to do before Elijah gets home?” and “how many minutes until Elijah gets back?” answer with the time left and everything you said today you had to do before it." },
   { id: "dump", cost: "code", skipWhen: OPEN, does: "A brain dump (one long message with several plans and no clocks) becomes a card: new plans as To Dos or Inbox items, plans already on your list as amendments to them, a dose, things on the way, notes to BIM, and the thought patterns it shows; “what are my thought patterns?” counts them." },
   { id: "owed", cost: "code", skipWhen: OPEN, does: "“Who do I need to text back?” lists who is waiting on a text (their last text, how long, their number) and your “text X back” to-dos; “already texted Ruggles at 3pm” checks those to-dos off with that time." },
   { id: "flight-ask", cost: "code", skipWhen: ["tell-open"], does: "“When am I flying to New York?” is answered from the Flight items." },

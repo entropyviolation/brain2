@@ -85,13 +85,13 @@ export function buildDumpPlan(text: string, now: Date, data: Stored): { plan: Re
       continue
     }
     counts.fresh++
-    const today = it.urgency > 0 || !!it.by
-    const line = `${today ? "to do today" : "inbox"}: ${it.title}${it.by ? ` by ${clock(it.by)}` : ""}${it.gate ? ` (needs ${it.gate} first)` : ""}`
+    const today = it.urgency > 0 || !!it.by || !!it.before
+    const line = `${today ? "to do today" : "inbox"}: ${it.title}${it.by ? ` by ${clock(it.by)}` : ""}${it.before ? ` (before ${it.before}${it.required === false ? ", if time" : ""})` : ""}${it.gate ? ` (needs ${it.gate} first)` : ""}`
     push({
       kind: "line",
       title: `${today ? "To Do today" : "Inbox"}: ${it.title}`,
       reasoning: [
-        today ? (it.by ? `Due by ${clock(it.by)} today.` : it.urgency === 5 ? "Said as right now." : "Said as ASAP, so today.") : "No day said, so it waits in Inbox.",
+        it.before ? `To do before ${it.before}${it.by ? `, around ${clock(it.by)}` : ""}${it.required === false ? ". Said as best case, so only if time." : "."}` : today ? (it.by ? `Due by ${clock(it.by)} today.` : it.urgency === 5 ? "Said as right now." : "Said as ASAP, so today.") : "No day said, so it waits in Inbox.",
         ...told,
         "No open task is about this yet.",
       ],
