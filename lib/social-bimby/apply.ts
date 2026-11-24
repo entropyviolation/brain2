@@ -5,7 +5,7 @@
  * found by name keeps every field they had, and only blanks are filled. The one move is an Instagram handle,
  * which belongs to one person (`addInstagramToPerson`), and the card says so before Accept. The Phone and
  * Instagram fields may hold several, split by commas: every number is added, the first handle is the main one
- * when they have none and the rest are second accounts. Full name ("Shelby Seal") goes on the profile and the
+ * when they have none and the rest are second accounts. Full name ("Marilyn Monroe") goes on the profile and the
  * item keeps its name.
  * A note, birthday or reminder finds the person by name (or makes them, so a lone Accept still works).
  */

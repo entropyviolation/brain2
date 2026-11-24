@@ -3,7 +3,7 @@
  *
  * "lolll mark that i heavily regretted not reading that text" was read by the router as a correction and filed
  * word for word. Here, in code: the laugh and "mark that" go, a leading "I" goes, and "that text" becomes
- * "Shelby's text" when a recent line of yours asked about someone's texts. The rest is sent to the executor as
+ * "Marilyn's text" when a recent line of yours asked about someone's texts. The rest is sent to the executor as
  * `log: …`, so it files and undoes like any typed log line. Pure: the caller hands in the recent lines and the namer.
  */
 

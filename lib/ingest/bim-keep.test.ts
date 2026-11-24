@@ -78,7 +78,7 @@ describe("BIM chat: keep and money lanes", () => {
   })
 
   it("logs “mark that …” without the laugh, and names whose text it was", async () => {
-    useBimChatStore.setState({ lines: [{ id: "y1", at: new Date().toISOString(), who: "you", text: "what was shelby talking about in her last text to me?" }] })
+    useBimChatStore.setState({ lines: [{ id: "y1", at: new Date().toISOString(), who: "you", text: "what was marilyn talking about in her last text to me?" }] })
     const line = await sendToBim("lolll mark that i heavily regretted not reading that text")
     expect(line.route).toMatch(/^MARK · log · code/)
     expect(line.text).not.toMatch(/lolll|mark that/i)

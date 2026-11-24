@@ -14,7 +14,7 @@ Gonna eat the Samosa, maybe watch a video and then work a little bit on BRAIN2 a
 9:27- 10:05 scrolling
 stretched at 10:05
 https://www.instagram.com/reel/DfZkMfwE9cw/?dlrf=NTc4MTIwNjQ2YQ==
-add to to do list - CALL SHELBY I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY TO DO T
+add to to do list - CALL MARILYN I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY TO DO T
 Thinking very positive and proud of myself because I woke up early this morning.
 10:06 - 10:57 went for a walk`
 
@@ -73,7 +73,7 @@ describe("buildStreamPlan", () => {
     expect(got.some((l) => l.startsWith("note: mood: Thinking very positive"))).toBe(true)
   })
   it("sends a shouted request to To Do today", () => {
-    expect(lines().some((l) => l.startsWith("to do today: CALL SHELBY"))).toBe(true)
+    expect(lines().some((l) => l.startsWith("to do today: CALL MARILYN"))).toBe(true)
   })
   it("proposes one card line per filing, all pending, with the line as an editable field", () => {
     const plan = buildStreamPlan(STREAM, NOW)

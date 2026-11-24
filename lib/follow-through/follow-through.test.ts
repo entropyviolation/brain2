@@ -16,7 +16,7 @@ const DAY: ReadPiece[] = [
   { text: "ate 1 samosa 9:19 - 9:23 add to food tracking", route: "food", hhmm: "09:19", payload: "samosa" },
   { text: "Gonna eat the Samosa, maybe watch a video and then work a little bit on BRAIN2 and then try to get some stuff done for Elijah merch.", route: "plan", hhmm: "09:23" },
   { text: "9:27- 10:05 scrolling", route: "activity", hhmm: "09:27", end: "10:05", payload: "scrolling" },
-  { text: "add to to do list - CALL SHELBY I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY TO DO T", route: "todo", hhmm: "10:05", payload: "CALL SHELBY I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY TO DO T" },
+  { text: "add to to do list - CALL MARILYN I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY TO DO T", route: "todo", hhmm: "10:05", payload: "CALL MARILYN I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY TO DO T" },
   { text: "Thinking very positive and proud of myself because I woke up early this morning.", route: "mood", hhmm: "10:05" },
   { text: "10:06 - 10:57 went for a walk", route: "activity", hhmm: "10:06", end: "10:57", payload: "walk" },
   { text: "1:57 pm started working on BRAIN2", route: "note", hhmm: "13:57" },
@@ -38,11 +38,11 @@ describe("reading", () => {
     expect(hedgeOf("I need to call")).toBe("must")
   })
   it("reads resistance and importance from pleading, with no number typed", () => {
-    const f = beforeFeeling("CALL SHELBY I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY")
+    const f = beforeFeeling("CALL MARILYN I NEED TO I NEED TO I GUESS TODAY IS THE BEST DAY")
     expect(f.resistance).toBe(3)
     expect(f.importance).toBe(4)
     expect(f.excitement).toBeUndefined()
-    expect(todoWhat("CALL SHELBY I NEED TO I NEED TO I GUESS")).toBe("call shelby")
+    expect(todoWhat("CALL MARILYN I NEED TO I NEED TO I GUESS")).toBe("call marilyn")
   })
   it("keeps pull and push apart: both can be stated at once", () => {
     const f = beforeFeeling("so excited to start but I'm dreading the first call")
@@ -71,7 +71,7 @@ describe("follow-through verdicts", () => {
   })
   it("still open: merch and the call; nothing is invented for them", () => {
     expect(step("merch").verdict).toBe("open")
-    expect(step("shelby").verdict).toBe("open")
+    expect(step("marilyn").verdict).toBe("open")
     expect(step("video").verdict).toBe("open")
   })
   it("unplanned: the walk and the scrolling; not the dab pen, not the dishes done before any plan", () => {
@@ -133,7 +133,7 @@ describe("questions", () => {
     expect(nextQuestion(l, new Date(2026, 10, 9, 20, 0))).toBeNull()
   })
   it("does not ask what was already said", () => {
-    const l = ledgerOf([{ text: "CALL SHELBY I NEED TO I NEED TO", route: "todo", hhmm: "13:50", payload: "CALL SHELBY I NEED TO I NEED TO" }])
+    const l = ledgerOf([{ text: "CALL MARILYN I NEED TO I NEED TO", route: "todo", hhmm: "13:50", payload: "CALL MARILYN I NEED TO I NEED TO" }])
     // Resistance was read from the words, so only the pull is a gap.
     expect(nextQuestion(l, NOW)!.kind).toBe("pull")
   })

@@ -130,7 +130,7 @@ export const REAL_TESTS: BimTest[] = [
   },
   {
     id: "real-phone-objective-later", name: "Real · Phone capture: Objective, Later, Idea, Plan prefixes", flowId: "log-phone", entry: "phone-capture",
-    input: { kind: "paste", text: lines("17:44 Objective: make coffee", "13:12 Later: update how bim receives images", "16:30 Idea: using nfc tags to track drinking water, eating, weed, adderall, any pills, and \"went outside\" auto logging", "15:07 Plan: work on cds, finish them and have the 3d mockup emailed with options by 6pm for at least 1 of them to buy time, text shelby and elijah back") },
+    input: { kind: "paste", text: lines("17:44 Objective: make coffee", "13:12 Later: update how bim receives images", "16:30 Idea: using nfc tags to track drinking water, eating, weed, adderall, any pills, and \"went outside\" auto logging", "15:07 Plan: work on cds, finish them and have the 3d mockup emailed with options by 6pm for at least 1 of them to buy time, text marilyn and elijah back") },
     expect: "Objective sets the current objective; Later is a deferred to-do on brain2; Idea is an idea note; Plan becomes a dated plan with a 6pm deadline and two text-back jobs.",
   },
   {
@@ -194,7 +194,7 @@ export const REAL_TESTS: BimTest[] = [
   },
   {
     id: "real-morning-cds", name: "Real · Ritual: morning plan with a deadline", flowId: "ritual-morning", entry: "ritual-morning",
-    input: { kind: "question", text: "Today: work on cds, finish them and have the 3d mockup emailed with options by 6pm for at least 1 of them, text shelby and elijah back, deposit money" },
+    input: { kind: "question", text: "Today: work on cds, finish them and have the 3d mockup emailed with options by 6pm for at least 1 of them, text marilyn and elijah back, deposit money" },
     expect: "Four intentions with a 6pm deadline on one. Compared with past mornings that planned the CDs.",
   },
 
@@ -471,8 +471,8 @@ export const REAL_TESTS: BimTest[] = [
   },
   {
     id: "vault-phone-gift", name: "Vault · Phone capture: a gift for a person", flowId: "log-phone", entry: "phone-capture",
-    input: { kind: "question", text: "Shelby birthday gift necklace" },
-    expect: "An item on the Gifts list tied to Shelby, with the occasion. Not a shopping item without the person.",
+    input: { kind: "question", text: "Marilyn birthday gift necklace" },
+    expect: "An item on the Gifts list tied to Marilyn, with the occasion. Not a shopping item without the person.",
   },
   {
     id: "vault-phone-time-grid-note-zoo", name: "Vault · Time-grid note: a walk with a place", flowId: "log-grid", entry: "time-grid",

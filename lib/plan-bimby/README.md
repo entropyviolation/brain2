@@ -43,7 +43,7 @@ SAY → SEGMENT (`parse.ts`, one model call) → LINK (`links.ts`, code) → SEC
 
 _Last mapped: 2026-11-11_
 
-"what I have to do for the rest of the day: order hairdye … asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read shelby text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text shelby. and then foxtide stuff and planning ny is important as well." becomes a **day card** under BIM's reply (`components/Bim/day-card.tsx`). Nothing is written until **Put on To Do today** or **File and start**.
+"what I have to do for the rest of the day: order hairdye … asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read marilyn text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text marilyn. and then foxtide stuff and planning ny is important as well." becomes a **day card** under BIM's reply (`components/Bim/day-card.tsx`). Nothing is written until **Put on To Do today** or **File and start**.
 
 READ (`day/read.ts`, rules) → ESTIMATE (`day/estimate.ts`, `day/history.ts`) → ORDER and FIT (`day/schedule.ts`) → THINK (`day/llm.ts`, one model call, in the background) → ASK (`day/ask.ts`) → CONFIRM (the card, or changes said in chat: `day/tweak.ts`) → FILE and RUN (`day/apply.ts`) → TRACK (`day/track.ts`).
 
@@ -59,7 +59,7 @@ READ (`day/read.ts`, rules) → ESTIMATE (`day/estimate.ts`, `day/history.ts`) �
 
 Why it left the plan: `modes.ts` planned Today as a second thread in the Plan BIMBY panel. It is a BIM chat lane instead, because the day is talked through over many messages and BIM chat already holds the conversation, the card pattern and the ledger. The run list is shared, so the panel still runs it.
 
-Limits. The card has not been looked at in the running app; it is covered by a render test only. The model step has not been run live; tests cover the checks on its answers. Matching is by shared words, so "work on the app" will not find "BRAIN2". A weighing sentence that names a thing not on the list ("and text shelby" when the list says "read shelby text and reply") matches by words or is missed. An open question takes the next plain line as its answer; the reply shows what was noted and the card can undo it. Reopening a finished row does not un-complete the task. Resistance is kept in follow-through, not on the task (`resistanceReadings` uses another scale). The plan is per device (`localStorage` `bimchat-days`, last 20).
+Limits. The card has not been looked at in the running app; it is covered by a render test only. The model step has not been run live; tests cover the checks on its answers. Matching is by shared words, so "work on the app" will not find "BRAIN2". A weighing sentence that names a thing not on the list ("and text marilyn" when the list says "read marilyn text and reply") matches by words or is missed. An open question takes the next plain line as its answer; the reply shows what was noted and the card can undo it. Reopening a finished row does not un-complete the task. Resistance is kept in follow-through, not on the task (`resistanceReadings` uses another scale). The plan is per device (`localStorage` `bimchat-days`, last 20).
 
 **Planned:** a web search step for an estimate nobody has history for (the app has no search tool yet); the model reading changes the rules miss; the Today key in the panel opening the same card; a nudge when a row runs past its estimate; delivery waits ("dye hair waits on the Walmart order arriving"); Telegram once the hub runs flows.
 
@@ -67,7 +67,7 @@ Limits. The card has not been looked at in the running app; it is covered by a r
 
 _Last mapped: 2026-11-11_
 
-While a plan is live, a long message that talks about it ("update on this plan- … like asking the neighbor if i can use their laundry key? … Scary thing. … did make the order … (update as of 7pm). add to my to do list make shelby gift (orca) maybe do sewing fix sewing machine? … updated plan: -walmart incoming … 8:11 … (laundry key obtained)") is read **against the plan** (`day/update.ts`, rules only), not as a stream. `tryDay` checks it before a new plan and before the Stream BIMBY, which used to file each sentence as its own note (23 filings for that message).
+While a plan is live, a long message that talks about it ("update on this plan- … like asking the neighbor if i can use their laundry key? … Scary thing. … did make the order … (update as of 7pm). add to my to do list make marilyn gift (orca) maybe do sewing fix sewing machine? … updated plan: -walmart incoming … 8:11 … (laundry key obtained)") is read **against the plan** (`day/update.ts`, rules only), not as a stream. `tryDay` checks it before a new plan and before the Stream BIMBY, which used to file each sentence as its own note (23 filings for that message).
 
 It becomes a Report card (`components/Bim/report-card.tsx`) of changes, one effect each, under a reply that also points at the day card:
 

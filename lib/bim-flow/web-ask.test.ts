@@ -98,7 +98,7 @@ describe("in BIM chat", () => {
     }) as typeof fetch
     try {
       const M1 =
-        "what I have to do for the rest of the day: order hairdye and anything else from walmart (tights comes to mind) asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read shelby text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text shelby. and then foxtide stuff and planning ny is important as well. also i prob will have to do my laundry can you find out what time the laundromats by my house close?"
+        "what I have to do for the rest of the day: order hairdye and anything else from walmart (tights comes to mind) asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read marilyn text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text marilyn. and then foxtide stuff and planning ny is important as well. also i prob will have to do my laundry can you find out what time the laundromats by my house close?"
       await useBimChatStore.getState().send(M1)
       const day = useBimChatStore.getState().lines.find((l) => l.dayId)!
       expect(day.dayId).toBeTruthy()

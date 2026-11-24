@@ -76,7 +76,7 @@ describe("looksLikeFoodLog", () => {
   })
 
   it("leaves lines that are not food eaten", () => {
-    expect(looksLikeFoodLog("had a call with shelby")).toBe(false)
+    expect(looksLikeFoodLog("had a call with marilyn")).toBe(false)
     expect(looksLikeFoodLog("can you track calories?")).toBe(false)
     expect(looksLikeFoodLog("starting dishes")).toBe(false)
     expect(looksLikeFoodLog("spent 12 on coffee")).toBe(false)
@@ -210,6 +210,6 @@ describe("tryFood", () => {
   })
 
   it("leaves a line that is not food", async () => {
-    expect(await tryFood("had a call with shelby", NOW, { call: null })).toBeNull()
+    expect(await tryFood("had a call with marilyn", NOW, { call: null })).toBeNull()
   })
 })

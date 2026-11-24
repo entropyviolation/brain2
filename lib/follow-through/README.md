@@ -40,7 +40,7 @@ One at a time, in this order, each with Skip. A skipped gap is not asked again.
 | When | Question | Tap sends |
 |------|----------|-----------|
 | A step was displaced and no reason given | What pulled you away from "…"? | `away: phone \| tidy` |
-| A step has come up 3 times undone | What's in the way? | `in the way: dread \| call shelby` |
+| A step has come up 3 times undone | What's in the way? | `in the way: dread \| call marilyn` |
 | A block ended in the last 3 hours with no feeling | How was …? | `after 3: walk` |
 | A step of today's newest plan has no pull or push | how much do you want to? / how much resistance? | `pull 2: …`, `push 3: …` |
 

@@ -119,7 +119,7 @@ export function splitSteps(sentence: string): { what: string; hedge: Hedge }[] {
   return out
 }
 
-/** A shouted to-do says itself several times ("CALL SHELBY I NEED TO I NEED TO …"): keep the thing, drop the pleading. */
+/** A shouted to-do says itself several times ("CALL MARILYN I NEED TO I NEED TO …"): keep the thing, drop the pleading. */
 export function todoWhat(s: string): string {
   const cut = s.replace(/\b(i\s+need\s+to|i\s+have\s+to|i\s+guess|i\s+should|i\s+must|today\s+is\s+the\s+best\s+day.*$)\b.*$/i, "").trim()
   const what = (cut.length >= 3 ? cut : s).replace(/[.!?\s]+$/g, "").trim()

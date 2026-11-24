@@ -44,11 +44,11 @@ describe("planTextPeople", () => {
   it("links to a person who already has that name or nickname", () => {
     const steps = planTextPeople(
       [row("+15551110001")],
-      { "+15551110001": "Shelby" },
-      [{ id: "p9", names: ["Shelby Seal", "Shelby"], handles: [] }],
+      { "+15551110001": "Marilyn" },
+      [{ id: "p9", names: ["Marilyn Monroe", "Marilyn"], handles: [] }],
       new Set(),
     )
-    expect(steps).toEqual([{ kind: "link", personId: "p9", name: "Shelby", handles: ["+15551110001"] }])
+    expect(steps).toEqual([{ kind: "link", personId: "p9", name: "Marilyn", handles: ["+15551110001"] }])
   })
 
   it("does not make a person whose stable id exists or was deleted", () => {

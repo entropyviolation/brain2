@@ -8,7 +8,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { DayCard } from "./day-card"
 
 const MSG =
-  "what I have to do for the rest of the day: order hairdye and anything else from walmart (tights comes to mind) asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read shelby text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text shelby. and then foxtide stuff and planning ny is important as well."
+  "what I have to do for the rest of the day: order hairdye and anything else from walmart (tights comes to mind) asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read marilyn text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text marilyn. and then foxtide stuff and planning ny is important as well."
 
 beforeEach(() => {
   useDayPlanStore.setState({ plans: {}, order: [] })
@@ -59,7 +59,7 @@ describe("an update to the day plan", () => {
     const t0 = new Date(2026, 10, 11, 16, 10)
     await tryDay(`${MSG} also i prob will have to do my laundry can you find out what time the laundromats by my house close?`, t0, { llm: false })
     const reply = await tryDay(
-      "update on this plan- either im not doing laundry orrr im doing it here somehow?!? like asking the neighbor if i can use their laundry key? Scary thing. add to my to do list make shelby gift (orca) maybe do sewing fix sewing machine?",
+      "update on this plan- either im not doing laundry orrr im doing it here somehow?!? like asking the neighbor if i can use their laundry key? Scary thing. add to my to do list make marilyn gift (orca) maybe do sewing fix sewing machine?",
       new Date(2026, 10, 11, 20, 12),
       { llm: false },
     )

@@ -31,9 +31,9 @@ vi.mock("@/lib/bim-flow/run-flow", () => ({
 import { sendToBim, useBimChatStore } from "./bim-chat"
 import { FOCUS_TTL_MS, resolveFollowUp, useBimThread, type ThreadFocus } from "./bim-thread"
 
-/** A two-person vault: every "Shelby" or "Elijah" in the line is a linked person. */
+/** A two-person vault: every "Marilyn" or "Elijah" in the line is a linked person. */
 const link = (text: string): LinkedMention[] =>
-  [...text.matchAll(/\b(shelby|elijah)\b/gi)].map((m) => {
+  [...text.matchAll(/\b(marilyn|elijah)\b/gi)].map((m) => {
     const best = { id: m[1]!.toLowerCase(), kind: "person" as const, sub: "person" as const, label: m[1]!, score: 1, how: "full" as const, reasons: [] }
     return { text: m[0], start: m.index, end: m.index + m[0].length, status: "linked" as const, kind: "person" as const, best, candidates: [best] }
   })
@@ -49,31 +49,31 @@ describe("resolveFollowUp", () => {
   })
 
   it("adds a window when the question had none", () => {
-    expect(read("last month?", "how many times did I see Shelby?")).toBe("how many times did I see Shelby last month?")
+    expect(read("last month?", "how many times did I see Marilyn?")).toBe("how many times did I see Marilyn last month?")
   })
 
   it("swaps the person", () => {
-    expect(read("what about Elijah?", "when did I last see Shelby?")).toBe("when did I last see Elijah?")
-    expect(read("and elijah", "When was the last time I saw Shelby?")).toBe("When was the last time I saw elijah?")
+    expect(read("what about Elijah?", "when did I last see Marilyn?")).toBe("when did I last see Elijah?")
+    expect(read("and elijah", "When was the last time I saw Marilyn?")).toBe("When was the last time I saw elijah?")
   })
 
   it("fills a pronoun from the one person in focus", () => {
-    expect(read("where did she go after?", "when did I last see Shelby?")).toBe("where did Shelby go after?")
-    expect(read("when is their birthday?", "when did I last see Shelby?")).toBe("when is Shelby's birthday?")
+    expect(read("where did she go after?", "when did I last see Marilyn?")).toBe("where did Marilyn go after?")
+    expect(read("when is their birthday?", "when did I last see Marilyn?")).toBe("when is Marilyn's birthday?")
   })
 
   it("leaves everything else alone", () => {
     // A bare time or name is an answer or a log line, not a follow-up.
     expect(read("yesterday", "how much did I sleep last night?")).toBeNull()
-    expect(read("Elijah", "when did I last see Shelby?")).toBeNull()
+    expect(read("Elijah", "when did I last see Marilyn?")).toBeNull()
     // The same window, the same person, a whole new question, a log line.
     expect(read("and this week?", "how many hours this week?")).toBeNull()
-    expect(read("what about Shelby?", "when did I last see Shelby?")).toBeNull()
+    expect(read("what about Marilyn?", "when did I last see Marilyn?")).toBeNull()
     expect(read("how many showers this week?", "how many hours this week?")).toBeNull()
     expect(read("and then I went to bed", "how much did I sleep last night?")).toBeNull()
     // No person in focus, or two: a pronoun is never guessed.
     expect(read("where did she go?", "how many hours this week?")).toBeNull()
-    expect(read("where did she go?", "did Shelby see Elijah?")).toBeNull()
+    expect(read("where did she go?", "did Marilyn see Elijah?")).toBeNull()
     expect(read("what about Elijah?", "how many hours this week?")).toBeNull()
     expect(resolveFollowUp("and last week?", null, link)).toBeNull()
   })

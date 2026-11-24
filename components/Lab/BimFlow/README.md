@@ -340,7 +340,7 @@ Saved graphs keep old prompts until **Starter graph** is pressed.
 
 ## Told facts live in the chat, not the lab
 
-Facts and questions typed to BIM ("I last saw Shelby July 5th", "when did I last see Shelby?", "countdown to when Elijah comes home") are handled by the chat (`lib/ingest/bim-tell.ts`), not by a graph here. See `docs/BIM_FLOW_HANDOFF.md`. **Planned:** a lab door for them.
+Facts and questions typed to BIM ("I last saw Marilyn July 5th", "when did I last see Marilyn?", "countdown to when Elijah comes home") are handled by the chat (`lib/ingest/bim-tell.ts`), not by a graph here. See `docs/BIM_FLOW_HANDOFF.md`. **Planned:** a lab door for them.
 
 ## Decided, not built
 

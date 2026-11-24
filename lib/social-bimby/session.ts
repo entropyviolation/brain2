@@ -1,12 +1,12 @@
 /**
  * lib/social-bimby/session.ts — After the card: ask for what is missing, then go over texts and DMs together
  *
- * A future line ("hang out with Masha … trip with Shelby; note texts and dms from each") leaves two things to do
+ * A future line ("hang out with Masha … trip with Marilyn; note texts and dms from each") leaves two things to do
  * in chat, one line at a time:
  *
  * 1. **Asks.** Every open question is listed at once, numbered ("1. Masha's number or @handle? 2. Which is
- *    Shelby? a. … b. …"). Answer any of them, in one line or several, in any order: "1 951 201 5076 @loureedstrash
- *    2 a and b", or by name ("shelby @one @two"). Several numbers and handles each are fine, and "last name Seal"
+ *    Marilyn? a. … b. …"). Answer any of them, in one line or several, in any order: "1 951 201 5076 @loureedstrash
+ *    2 a and b", or by name ("marilyn @one @two"). Several numbers and handles each are fine, and "last name Monroe"
  *    adds a full name. Each answered person becomes a card with one `person` change. Nothing is saved until Accept.
  * 2. **Review.** For each person, BIM shows your last few conversations with them (texts and Instagram DMs,
  *    oldest first) and asks one question about each. What you type back is kept as a note; "next" shows the
@@ -156,7 +156,7 @@ function notesPlan(name: string, notes: readonly string[], now: Date): ReportPla
 export interface ContactAnswer {
   phones: string[]
   instagrams: string[]
-  /** "last name Seal" → "Shelby Seal". */
+  /** "last name Monroe" → "Marilyn Monroe". */
   fullName?: string
 }
 
@@ -242,7 +242,7 @@ export function readContactAnswer(text: string, ask: ContactAsk): ContactAnswer 
     if (igMode && looksHandle(w)) addIg(w)
     else igMode = false
   }
-  // A bare handle alone ("shelbyrose_"), or a handle from the list typed out.
+  // A bare handle alone ("marilynrose_"), or a handle from the list typed out.
   const bare = t.trim()
   if (!out.instagrams.length && !out.phones.length) {
     const listed = ask.candidates.find((c) => c.username.toLowerCase() === bare.toLowerCase())
@@ -393,7 +393,7 @@ export async function trySocialFollow(text: string, now: Date, deps: SessionDeps
   if (!socialSessionOpen(now.getTime()) || !session) return null
   const t = text.replace(/\s+/g, " ").trim()
   if (!t) return null
-  // "log: …" is a command for another lane; "shelby: @one" answers a question.
+  // "log: …" is a command for another lane; "marilyn: @one" answers a question.
   const prefix = /^([\p{L}][\p{L} ]{0,24}):\s*\S/u.exec(t)?.[1]?.trim().toLowerCase()
   if (prefix && !session.asks.some((a) => first(a.person).toLowerCase() === prefix || a.person.toLowerCase() === prefix)) return null
   session.touched = now.getTime()

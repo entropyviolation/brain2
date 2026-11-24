@@ -32,12 +32,12 @@ Do not invent words. Output JSON only.
 Example.
 LINES:
 1. Gonna eat the samosa, maybe watch a video and then work on the app.
-2. CALL SHELBY I NEED TO I NEED TO
+2. CALL MARILYN I NEED TO I NEED TO
 3. proud of myself because I woke up early
 OPEN STEPS: (none)
 ACTIONS:
 1. 09:19 samosa
-{"lines":[{"n":1,"steps":[{"what":"eat the samosa","hedge":"will"},{"what":"watch a video","hedge":"maybe"},{"what":"work on the app","hedge":"will"}],"excitement":-1,"resistance":-1,"importance":-1,"satisfaction":-1,"about":""},{"n":2,"steps":[{"what":"call Shelby","hedge":"must"}],"excitement":0,"resistance":3,"importance":4,"satisfaction":-1,"about":""},{"n":3,"steps":[],"excitement":-1,"resistance":-1,"importance":-1,"satisfaction":4,"about":"I woke up early"}],"outcomes":[]}`
+{"lines":[{"n":1,"steps":[{"what":"eat the samosa","hedge":"will"},{"what":"watch a video","hedge":"maybe"},{"what":"work on the app","hedge":"will"}],"excitement":-1,"resistance":-1,"importance":-1,"satisfaction":-1,"about":""},{"n":2,"steps":[{"what":"call Marilyn","hedge":"must"}],"excitement":0,"resistance":3,"importance":4,"satisfaction":-1,"about":""},{"n":3,"steps":[],"excitement":-1,"resistance":-1,"importance":-1,"satisfaction":4,"about":"I woke up early"}],"outcomes":[]}`
 
 const level = { type: "integer", minimum: -1, maximum: 4 }
 

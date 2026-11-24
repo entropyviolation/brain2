@@ -27,12 +27,12 @@ describe("findDay", () => {
 
 describe("parseTell", () => {
   it("last seen, stated", () => {
-    expect(parseTell("The last time I saw Shelby was July 5th", NOW)).toEqual({ kind: "last-seen", who: "Shelby", date: "2026-07-05" })
-    expect(parseTell("I saw Shelby yesterday", NOW)).toEqual({ kind: "last-seen", who: "Shelby", date: "2026-10-29" })
+    expect(parseTell("The last time I saw Marilyn was July 5th", NOW)).toEqual({ kind: "last-seen", who: "Marilyn", date: "2026-07-05" })
+    expect(parseTell("I saw Marilyn yesterday", NOW)).toEqual({ kind: "last-seen", who: "Marilyn", date: "2026-10-29" })
   })
   it("last seen, asked", () => {
-    expect(parseTell("when was the last time i saw shelby?", NOW)).toEqual({ kind: "ask-last-seen", who: "shelby" })
-    expect(parseTell("When did I last see Shelby", NOW)).toEqual({ kind: "ask-last-seen", who: "Shelby" })
+    expect(parseTell("when was the last time i saw marilyn?", NOW)).toEqual({ kind: "ask-last-seen", who: "marilyn" })
+    expect(parseTell("When did I last see Marilyn", NOW)).toEqual({ kind: "ask-last-seen", who: "Marilyn" })
   })
   it("overdue", () => {
     expect(parseTell("The Foxtide CDs are extremely overdue and need to be done immediately", NOW)).toEqual({

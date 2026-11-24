@@ -32,7 +32,7 @@ describe("Self BIMBY: questions about what BIM can do", () => {
     "can you find out what time the laundromats by my house close?",
     "can you search the web for laundromats near me",
     "can you add milk to groceries",
-    "can you tell me when I last saw Shelby?",
+    "can you tell me when I last saw Marilyn?",
     "can you remind me to call mom at 5",
     "what is the boiling point of nitrogen?",
     "when did I last feel nauseous?",

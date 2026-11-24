@@ -6,7 +6,7 @@
  * hang-out you want, a birthday) becomes a plan in `useReportStore`, drawn by the Report card. It writes
  * nothing: every change waits for an Accept. Null leaves the line to the rest of the chat.
  *
- * A line about wanting to do things with a few people later ("hang out with Masha … trip with Shelby; note texts
+ * A line about wanting to do things with a few people later ("hang out with Masha … trip with Marilyn; note texts
  * and dms from each") is read first by `future.ts`, and opens a follow-up session (`session.ts`): the asks for a
  * missing number or handle, then going over each person's texts and DMs. `liveSessionDeps` are its loaders.
  * Before that card is built, anyone with no number is looked up in your Mac Contacts (`/api/phone-contacts`).

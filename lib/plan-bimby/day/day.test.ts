@@ -18,7 +18,7 @@ import { useDayPlanStore } from "./store"
 import { tweakDay } from "./tweak"
 
 const MSG =
-  "what I have to do for the rest of the day: order hairdye and anything else from walmart (tights comes to mind) asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read shelby text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text shelby. and then foxtide stuff and planning ny is important as well. "
+  "what I have to do for the rest of the day: order hairdye and anything else from walmart (tights comes to mind) asap, dye hair, bleach eyebrows, shave legs, pack (my stuff and elijahs) and plan outfits, finish foxtide stuff, and plan ny, and read marilyn text and reply. MUST be done is dye hair (and thus order hairdye) bleach eyebrows and pack, and text marilyn. and then foxtide stuff and planning ny is important as well. "
 
 const at = (h: number, m = 0) => {
   const d = new Date(2026, 10, 11, h, m, 0, 0)
@@ -53,7 +53,7 @@ describe("reading the day", () => {
       "plan outfits",
       "finish foxtide stuff",
       "plan ny",
-      "read shelby text and reply",
+      "read marilyn text and reply",
     ])
     const order = items[0]!
     expect(order.urgent).toBe(true)
@@ -73,7 +73,7 @@ describe("reading the day", () => {
       "plan outfits": "rest",
       "finish foxtide stuff": "important",
       "plan ny": "important",
-      "read shelby text and reply": "must",
+      "read marilyn text and reply": "must",
     })
     expect(items[1]!.after).toBe(0)
   })

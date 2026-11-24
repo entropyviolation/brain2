@@ -65,7 +65,7 @@ const TOPICS: Topic[] = [
   {
     id: "texts",
     words: /\b(?:texts?|messages?|imessages?|dms?)\b/i,
-    say: () => "Yes, I can read them. “What was Shelby talking about in her last text to me?” is answered from the texts themselves.",
+    say: () => "Yes, I can read them. “What was Marilyn talking about in her last text to me?” is answered from the texts themselves.",
   },
   {
     id: "todo",
@@ -91,7 +91,7 @@ const TOPICS: Topic[] = [
   {
     id: "people",
     words: /\b(?:people|friends?|birthdays?|instagram|hang ?outs?)\b/i,
-    say: () => "Yes. A line about a person (a new friend, a DM, a hang-out you want, a birthday) becomes a card with the person, a note and a reminder. “When did I last see Shelby?” reads their Last seen.",
+    say: () => "Yes. A line about a person (a new friend, a DM, a hang-out you want, a birthday) becomes a card with the person, a note and a reminder. “When did I last see Marilyn?” reads their Last seen.",
   },
   {
     id: "flights",
@@ -117,7 +117,7 @@ const TOPICS: Topic[] = [
     id: "data",
     words: /\b(?:my (?:data|notes|logs|history|vault|stuff)|about me|remember(?: things)?|what i (?:did|said|ate))\b/i,
     say: (llm) =>
-      `Yes. Ask about your own data (“when did I last see Shelby?”, “how often was I nauseous this month?”) and I read your logs, notes, tasks and habits and answer with the rows in the fold.${llm ? "" : " With LLM off, code looks for the rows that name the question's words."}`,
+      `Yes. Ask about your own data (“when did I last see Marilyn?”, “how often was I nauseous this month?”) and I read your logs, notes, tasks and habits and answer with the rows in the fold.${llm ? "" : " With LLM off, code looks for the rows that name the question's words."}`,
   },
 ]
 

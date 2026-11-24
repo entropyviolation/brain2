@@ -3,10 +3,10 @@
  *
  * A plain sentence is not a `log:` line when it states or asks something BIM can
  * file. Code reads the shape; no model is asked. Shapes:
- *   fact      "The last time I saw Shelby was July 5th"      → last-seen
+ *   fact      "The last time I saw Marilyn was July 5th"      → last-seen
  *             "The Foxtide CDs are extremely overdue"        → overdue
  *             "Elijah comes home on nov 18th"                → event
- *   question  "When was the last time I saw Shelby?"         → ask-last-seen
+ *   question  "When was the last time I saw Marilyn?"         → ask-last-seen
  *             "When does Elijah come home?"                  → ask-event
  *   command   "Create a countdown widget to when Elijah comes home" → countdown
  * `parseTell` only names the shape and slots. `apply-tell.ts` looks the names up

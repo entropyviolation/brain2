@@ -7,10 +7,10 @@
  *
  *   "how many hours of computer work this week?"  then  "and last week?"
  *     → "how many hours of computer work last week?"
- *   "when did I last see Shelby?"  then  "what about Elijah?"
+ *   "when did I last see Marilyn?"  then  "what about Elijah?"
  *     → "when did I last see Elijah?"
- *   "when did I last see Shelby?"  then  "where did she go after?"
- *     → "where did Shelby go after?"
+ *   "when did I last see Marilyn?"  then  "where did she go after?"
+ *     → "where did Marilyn go after?"
  *
  * No model is asked. The rewritten line runs through the same lanes a typed
  * line does, and the reply says what it was read as. The focus is kept on this

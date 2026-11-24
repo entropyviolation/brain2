@@ -232,7 +232,7 @@ export function readMoney(raw: string, now: Date, ctx: ReadContext = {}): MoneyR
     return { kind: "debt", direction: "owed", who: properName(owed[1]!), cents: amount.cents, ...(note ? { note } : {}) }
   }
 
-  // "i owe shelby $40 for dinner", "i owe 40 to shelby"
+  // "i owe marilyn $40 for dinner", "i owe 40 to marilyn"
   const owe = /^i\s+(?:still\s+)?owe\b\s*(.+)$/i.exec(text)
   if (owe) {
     const amount = findAmount(owe[1]!, { bare: true })
@@ -244,14 +244,14 @@ export function readMoney(raw: string, now: Date, ctx: ReadContext = {}): MoneyR
     return { kind: "debt", direction: "owe", who: properName(who), cents: amount.cents, ...(note ? { note } : {}) }
   }
 
-  // "foxtide paid me", "foxtide paid me back 300", "shelby venmo'd me $40"
+  // "foxtide paid me", "foxtide paid me back 300", "marilyn venmo'd me $40"
   const paidMe = /^(.{1,60}?)\s+(?:finally\s+|just\s+)?(?:paid|venmo(?:'|’)?e?d|zelled|sent|gave)\s+me\b(?:\s+back)?\s*(.*)$/i.exec(text)
   if (paidMe && !/^i$/i.test(paidMe[1]!.trim())) {
     const amount = findAmount(paidMe[2]!, { bare: true })
     return { kind: "settle", direction: "owed", who: properName(paidMe[1]!), ...(amount ? { cents: amount.cents } : {}), date: formatLocalDateKey(now) }
   }
 
-  // "i paid shelby back", "i paid back shelby 40"
+  // "i paid marilyn back", "i paid back marilyn 40"
   const paidBack = /^i\s+(?:finally\s+|just\s+)?(?:paid|venmo(?:'|’)?e?d|zelled)\s+(?:back\s+(.+)|(.+?)\s+back\b\s*(.*))$/i.exec(text)
   if (paidBack) {
     const tail = paidBack[1] ?? `${paidBack[2]} ${paidBack[3] ?? ""}`

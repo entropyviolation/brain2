@@ -1,7 +1,7 @@
 /**
  * lib/ingest/bim-texts.ts — The Texts BIMBY: questions about your phone texts, answered from the texts
  *
- * "What was Shelby talking about in her last text to me?" The Ask flow could not answer this: it reads
+ * "What was Marilyn talking about in her last text to me?" The Ask flow could not answer this: it reads
  * texts only as a day's digest. Here code finds the person in People I Know, loads the hub's texts
  * (`/api/phone-texts`, `texts-client.ts`), takes that person's last text and the ones sent with it,
  * and a model says in a sentence or two what they were about, from those lines only. The texts are
@@ -38,7 +38,7 @@ const QUESTION_LEAD =
 
 const words = (s: string) => s.toLowerCase().replace(/[’']/g, "'").split(/[^\p{L}\p{N}']+/u).filter(Boolean)
 
-/** "What did Shelby last say to me?", "what was the last thing Jo told me?": a texts question with no word for texts. */
+/** "What did Marilyn last say to me?", "what was the last thing Jo told me?": a texts question with no word for texts. */
 const SAID_LAST = /\b(?:last\s+(?:say|said|tell|told|write|wrote|send|sent|ask|asked)|(?:say|said|tell|told|wrote|sent|asked)\s+(?:to\s+)?me\s+last|last\s+thing\s+.{1,30}\s+(?:said|told|wrote|sent|asked))\b/i
 
 /** Cheap first look, before any snapshot is built: the line says text or message, or asks what someone last said. */
@@ -49,8 +49,8 @@ const NOT_A_NAME = new Set(["self", "me", "myself", "i", "you", "her", "him", "s
 const isSelf = (p: Person) => [p.title, ...p.names].some((n) => ["self", "me", "myself"].includes(n.trim().toLowerCase()))
 
 /**
- * People whose name appears in the line as whole words. A full name ("Shelby Seal") beats one word of
- * it ("shelby"); a longer match beats a shorter. The person's own item ("self") is never a match.
+ * People whose name appears in the line as whole words. A full name ("Marilyn Monroe") beats one word of
+ * it ("marilyn"); a longer match beats a shorter. The person's own item ("self") is never a match.
  */
 export function namedPeople(people: Person[], text: string): Person[] {
   const line = ` ${words(text).map((w) => w.replace(/'s$/, "")).join(" ")} `
@@ -79,7 +79,7 @@ export function namedPeople(people: Person[], text: string): Person[] {
     })
 }
 
-/** A question about texts that names someone. Null for anything else, including commands ("text Shelby back"). */
+/** A question about texts that names someone. Null for anything else, including commands ("text Marilyn back"). */
 export function parseTextQuestion(text: string, people: Person[]): TextQuestion | null {
   const t = text.trim()
   if (!t || t.includes("\n") || !mentionsTexts(t)) return null

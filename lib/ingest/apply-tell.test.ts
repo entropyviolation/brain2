@@ -31,7 +31,7 @@ describe("BIM Chat: told facts, questions, commands", () => {
     useHomeDaysUntilStore.setState({ items: [] })
     useTaskStore.setState({
       tasks: [
-        task({ id: "p-shelby", title: "Shelby", type: "person" }),
+        task({ id: "p-marilyn", title: "Marilyn", type: "person" }),
         task({ id: "p-eli1", title: "Elijah Moss", type: "person", personProfile: { nicknames: ["Elijah"] } }),
         task({ id: "p-eli2", title: "Elijah Park", type: "person", personProfile: { nicknames: ["Elijah"] } }),
         task({ id: "t-fox", title: "Foxtide CDs", urgency: 2, importance: 3 }),
@@ -40,29 +40,29 @@ describe("BIM Chat: told facts, questions, commands", () => {
     await sendToBim("nothing", NOW) // settle any pending question from a prior test
   })
 
-  it("files 'the last time I saw Shelby' as Last seen", async () => {
-    const line = await sendToBim("The last time I saw Shelby was July 5th", NOW)
+  it("files 'the last time I saw Marilyn' as Last seen", async () => {
+    const line = await sendToBim("The last time I saw Marilyn was July 5th", NOW)
     expect(line.kind).toBe("tell")
-    expect(line.text).toContain("Shelby: last seen July 5")
-    const row = byId("p-shelby").personProfile?.interactions?.[0]
+    expect(line.text).toContain("Marilyn: last seen July 5")
+    const row = byId("p-marilyn").personProfile?.interactions?.[0]
     expect(row).toMatchObject({ date: "2026-07-05", saw: true })
   })
 
   it("answers a last-seen question, and asks when it does not know", async () => {
-    const asked = await sendToBim("when was the last time i saw shelby?", NOW)
+    const asked = await sendToBim("when was the last time i saw marilyn?", NOW)
     expect(asked.status).toBe("needs_clarify")
-    expect(asked.text).toBe("I don't have any info on that. When do you remember last seeing Shelby?")
+    expect(asked.text).toBe("I don't have any info on that. When do you remember last seeing Marilyn?")
     expect(openTellQuestion()).not.toBeNull()
     const filled = await sendToBim("it was july 5th I think", NOW)
     expect(filled.text).toContain("last seen July 5")
-    expect(byId("p-shelby").personProfile?.interactions?.[0]?.date).toBe("2026-07-05")
+    expect(byId("p-marilyn").personProfile?.interactions?.[0]?.date).toBe("2026-07-05")
     expect(openTellQuestion()).toBeNull()
-    const again = await sendToBim("when did I last see shelby", NOW)
-    expect(again.text).toContain("You last saw Shelby on July 5")
+    const again = await sendToBim("when did I last see marilyn", NOW)
+    expect(again.text).toContain("You last saw Marilyn on July 5")
   })
 
   it("an unrelated line after a question drops the question and runs normally", async () => {
-    await sendToBim("when was the last time i saw shelby?", NOW)
+    await sendToBim("when was the last time i saw marilyn?", NOW)
     const line = await sendToBim("inbox: buy stamps", NOW)
     expect(line.kind).not.toBe("tell")
     expect(openTellQuestion()).toBeNull()
@@ -122,9 +122,9 @@ describe("BIM Chat: told facts, questions, commands", () => {
   })
 
   it("saying 'skip' to a question drops it", async () => {
-    await sendToBim("when was the last time i saw shelby?", NOW)
+    await sendToBim("when was the last time i saw marilyn?", NOW)
     const line = await sendToBim("I don't remember", NOW)
     expect(line.text).toBe("I'll leave it blank.")
-    expect(byId("p-shelby").personProfile?.interactions).toBeUndefined()
+    expect(byId("p-marilyn").personProfile?.interactions).toBeUndefined()
   })
 })

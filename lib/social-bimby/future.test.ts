@@ -20,7 +20,7 @@ import { trySocial } from "./run"
 import { endSocialSession, readContactAnswer, reviewChunks, splitAnswers, socialSessionOpen, startSocialSession, trySocialFollow, type ReviewLine, type SessionDeps } from "./session"
 
 /** The line as typed in BIM chat on 2026-11-21, which BIM logged and asked "how much do you want to?". */
-const LINE = "in terms of the future I am excited to hang out with Masha and I want to go on a trip with shelby; note texts and dms from each"
+const LINE = "in terms of the future I am excited to hang out with Masha and I want to go on a trip with marilyn; note texts and dms from each"
 
 // Saturday, November 21, 2026, 9:22 pm.
 const NOW = new Date(2026, 10, 21, 21, 22)
@@ -31,28 +31,28 @@ const kinds = (plan: ReportPlan) => plan.effects.map((e) => e.kind)
 const val = (plan: ReportPlan, i: number, key: string) => plan.effects[i]!.fields.find((f) => f.key === key)!.value
 
 describe("readFuture", () => {
-  it("reads the line: Masha to hang out with this coming week, a trip with Shelby this season, and a texts review", () => {
+  it("reads the line: Masha to hang out with this coming week, a trip with Marilyn this season, and a texts review", () => {
     const r = readFuture(LINE, [])!
-    expect(r.people.map((p) => p.name)).toEqual(["Masha", "Shelby"])
+    expect(r.people.map((p) => p.name)).toEqual(["Masha", "Marilyn"])
     expect(r.people[0]!.intents).toEqual([{ kind: "hang", horizon: "week", phrase: "hang out with Masha", feeling: "excited" }])
     expect(r.people[1]!.intents[0]).toMatchObject({ kind: "trip", horizon: "season" })
-    expect(r.people[1]!.intents[0]!.phrase).toMatch(/trip with shelby/)
+    expect(r.people[1]!.intents[0]!.phrase).toMatch(/trip with marilyn/)
     expect(r.review).toBe(true)
   })
 
   it("splits clauses on semicolons and 'and I'", () => {
     expect(clausesOf(LINE)).toEqual([
       "in terms of the future I am excited to hang out with Masha",
-      "I want to go on a trip with shelby",
+      "I want to go on a trip with marilyn",
       "note texts and dms from each",
     ])
   })
 
   it("finds known people by first name and keeps their full name", () => {
-    const r = readFuture(LINE, [{ id: "m1", name: "Masha Ivanova", instagram: "loureedstrash" }, { id: "s1", name: "Shelby Seal" }])!
+    const r = readFuture(LINE, [{ id: "m1", name: "Masha Ivanova", instagram: "loureedstrash" }, { id: "s1", name: "Marilyn Monroe" }])!
     expect(r.people.map((p) => [p.name, p.known?.id])).toEqual([
       ["Masha Ivanova", "m1"],
-      ["Shelby Seal", "s1"],
+      ["Marilyn Monroe", "s1"],
     ])
   })
 
@@ -80,13 +80,13 @@ describe("buildFuturePlan", () => {
     expect(val(plan, 3, "period")).toBe("week")
     expect(val(plan, 3, "on")).toBe(NEXT_MONDAY)
     expect(val(plan, 3, "text")).toBe("Hang out with Masha")
-    // Shelby: this season, then a maybe on the year.
+    // Marilyn: this season, then a maybe on the year.
     expect(val(plan, 7, "period")).toBe("quarter")
-    expect(val(plan, 7, "text")).toBe("Go on a trip with Shelby")
+    expect(val(plan, 7, "text")).toBe("Go on a trip with Marilyn")
     expect(val(plan, 8, "period")).toBe("year")
-    expect(val(plan, 8, "text")).toBe("Maybe: go on a trip with shelby")
+    expect(val(plan, 8, "text")).toBe("Maybe: go on a trip with marilyn")
     expect(val(plan, 1, "text")).toBe("in terms of the future I am excited to hang out with Masha")
-    expect(review).toEqual(["Masha", "Shelby"])
+    expect(review).toEqual(["Masha", "Marilyn"])
   })
 
   it("the coming week is next Monday's, even on a Sunday", () => {
@@ -97,25 +97,25 @@ describe("buildFuturePlan", () => {
   it("fills an Instagram from your one matching mutual, and asks when several match or nothing does", () => {
     const mutuals: Mutual[] = [
       { name: "Masha Ivanova", username: "loureedstrash" },
-      { name: "Shelby Seal", username: "shelbyseal" },
-      { name: "Shelby K", username: "shelbs.k" },
+      { name: "Marilyn Monroe", username: "marilynmonroe" },
+      { name: "Marilyn K", username: "mm.k" },
     ]
     const { plan, asks } = buildFuturePlan(readFuture(LINE, [])!, LINE, NOW, { mutuals, contactOf: () => ({ phones: [] }) })
     expect(val(plan, 0, "instagram")).toBe("loureedstrash")
     expect(plan.effects[0]!.evidence).toEqual(["Instagram mutual: Masha Ivanova @loureedstrash"])
     expect(asks).toHaveLength(1)
-    expect(asks[0]!.person).toBe("Shelby")
-    expect(asks[0]!.candidates.map((c) => c.username)).toEqual(["shelbyseal", "shelbs.k"])
+    expect(asks[0]!.person).toBe("Marilyn")
+    expect(asks[0]!.candidates.map((c) => c.username)).toEqual(["marilynmonroe", "mm.k"])
 
     const none = buildFuturePlan(readFuture(LINE, [])!, LINE, NOW, noContacts)
     expect(none.asks.map((a) => a.question)).toEqual([
       expect.stringContaining("Masha's number or @handle?"),
-      expect.stringContaining("Shelby's number or @handle?"),
+      expect.stringContaining("Marilyn's number or @handle?"),
     ])
   })
 
   it("a known person with a number or a handle is not asked about and not remade", () => {
-    const known = [{ id: "m1", name: "Masha", instagram: "loureedstrash" }, { id: "s1", name: "Shelby" }]
+    const known = [{ id: "m1", name: "Masha", instagram: "loureedstrash" }, { id: "s1", name: "Marilyn" }]
     const { plan, asks } = buildFuturePlan(readFuture(LINE, known)!, LINE, NOW, { mutuals: [], contactOf: (id) => ({ phones: id === "s1" ? ["555 123 4567"] : [] }) })
     expect(asks).toEqual([])
     expect(kinds(plan).filter((k) => k === "person")).toEqual([])
@@ -129,10 +129,10 @@ describe("mutuals", () => {
   it("is the mutuals list, or someone you follow who follows you back", () => {
     const tasks = [
       account("loureedstrash", "Masha Ivanova", [INSTAGRAM_ANALYSIS_LIST_IDS.mutuals]),
-      account("shelbyseal", "Shelby Seal", [INSTAGRAM_FOLLOWING_LIST_ID], true),
-      account("celeb", "Shelby Famous", [INSTAGRAM_FOLLOWING_LIST_ID], false),
+      account("marilynmonroe", "Marilyn Monroe", [INSTAGRAM_FOLLOWING_LIST_ID], true),
+      account("celeb", "Marilyn Famous", [INSTAGRAM_FOLLOWING_LIST_ID], false),
     ]
-    expect(mutualsFrom(tasks).map((m) => m.username)).toEqual(["loureedstrash", "shelbyseal"])
+    expect(mutualsFrom(tasks).map((m) => m.username)).toEqual(["loureedstrash", "marilynmonroe"])
   })
 
   it("matches every word of the name, then a handle that holds the first name", () => {
@@ -146,32 +146,32 @@ describe("mutuals", () => {
 })
 
 describe("the follow-up: asks, then texts and DMs together", () => {
-  const ask = { person: "Shelby", candidates: [{ name: "Shelby Seal", username: "shelbyseal" }, { name: "Shelby K", username: "shelbs.k" }], question: "Which one is Shelby?" }
+  const ask = { person: "Marilyn", candidates: [{ name: "Marilyn Monroe", username: "marilynmonroe" }, { name: "Marilyn K", username: "mm.k" }], question: "Which one is Marilyn?" }
 
   it("reads a pick, a number, a handle", () => {
-    expect(readContactAnswer("b", ask)).toEqual({ phones: [], instagrams: ["shelbs.k"] })
+    expect(readContactAnswer("b", ask)).toEqual({ phones: [], instagrams: ["mm.k"] })
     expect(readContactAnswer("her number is (555) 123-4567", ask)).toEqual({ phones: ["(555) 123-4567"], instagrams: [] })
-    expect(readContactAnswer("@Shelby.Rose", ask)).toEqual({ phones: [], instagrams: ["shelby.rose"] })
-    expect(readContactAnswer("ig is shelbyrose_", ask)).toEqual({ phones: [], instagrams: ["shelbyrose_"] })
-    expect(readContactAnswer("shelbyseal", ask)).toEqual({ phones: [], instagrams: ["shelbyseal"] })
+    expect(readContactAnswer("@Marilyn.Rose", ask)).toEqual({ phones: [], instagrams: ["marilyn.rose"] })
+    expect(readContactAnswer("ig is marilynrose_", ask)).toEqual({ phones: [], instagrams: ["marilynrose_"] })
+    expect(readContactAnswer("marilynmonroe", ask)).toEqual({ phones: [], instagrams: ["marilynmonroe"] })
     expect(readContactAnswer("I'm not sure honestly", ask)).toBeNull()
   })
 
   it("reads several numbers and handles, both picks, and a last name", () => {
     // The answer typed on 2026-11-21.
     expect(readContactAnswer("number- 9512015076 instagram handle- loureedstrash", { person: "masha", candidates: [], question: "" })).toEqual({ phones: ["9512015076"], instagrams: ["loureedstrash"] })
-    expect(readContactAnswer("a and b", ask)).toEqual({ phones: [], instagrams: ["shelbyseal", "shelbs.k"] })
-    expect(readContactAnswer("her igs are shelbyseal and shelbs.priv", ask)).toEqual({ phones: [], instagrams: ["shelbyseal", "shelbs.priv"] })
+    expect(readContactAnswer("a and b", ask)).toEqual({ phones: [], instagrams: ["marilynmonroe", "mm.k"] })
+    expect(readContactAnswer("her igs are marilynmonroe and mm.priv", ask)).toEqual({ phones: [], instagrams: ["marilynmonroe", "mm.priv"] })
     expect(readContactAnswer("@one.a @two.b, 951 201 5076 and 909-555-1234", ask)).toEqual({ phones: ["951 201 5076", "909-555-1234"], instagrams: ["one.a", "two.b"] })
-    expect(readContactAnswer("last name seal", ask)).toEqual({ phones: [], instagrams: [], fullName: "Shelby Seal" })
-    const withCards = { person: "Shelby", candidates: [], cards: [{ name: "Shelby", phones: ["+19515550101"] }, { name: "Shelby Seal", phones: ["+19515550102", "+19515550103"] }], question: "" }
-    expect(readContactAnswer("b", withCards)).toEqual({ phones: ["+19515550102", "+19515550103"], instagrams: [], fullName: "Shelby Seal" })
+    expect(readContactAnswer("last name monroe", ask)).toEqual({ phones: [], instagrams: [], fullName: "Marilyn Monroe" })
+    const withCards = { person: "Marilyn", candidates: [], cards: [{ name: "Marilyn", phones: ["+19515550101"] }, { name: "Marilyn Monroe", phones: ["+19515550102", "+19515550103"] }], question: "" }
+    expect(readContactAnswer("b", withCards)).toEqual({ phones: ["+19515550102", "+19515550103"], instagrams: [], fullName: "Marilyn Monroe" })
   })
 
   it("splits one line into answers by number or by name", () => {
     const asks = [
       { person: "Masha", candidates: [], question: "", n: 1 },
-      { person: "Shelby", candidates: [], question: "", n: 2 },
+      { person: "Marilyn", candidates: [], question: "", n: 2 },
     ]
     expect(splitAnswers("1 9512015076 @loureedstrash 2 @one @two", asks).map((p) => [p.ask.n, p.text])).toEqual([
       [1, "9512015076 @loureedstrash"],
@@ -181,8 +181,8 @@ describe("the follow-up: asks, then texts and DMs together", () => {
       [1, "951-201-5076,"],
       [2, "skip"],
     ])
-    expect(splitAnswers("shelby is @one and masha 9512015076", asks).map((p) => [p.ask.person, p.text])).toEqual([
-      ["Shelby", "is @one and"],
+    expect(splitAnswers("marilyn is @one and masha 9512015076", asks).map((p) => [p.ask.person, p.text])).toEqual([
+      ["Marilyn", "is @one and"],
       ["Masha", "9512015076"],
     ])
   })
@@ -217,15 +217,15 @@ describe("the follow-up: asks, then texts and DMs together", () => {
     })
 
     it("asks first; an answer becomes a card; then goes over texts and DMs; notes come back as a card", async () => {
-      const said = startSocialSession([{ person: "Shelby", candidates: [], question: "Shelby's number or @handle?" }], ["Masha"], NOW.getTime())
-      expect(said).toMatch(/1\. Shelby's number/)
+      const said = startSocialSession([{ person: "Marilyn", candidates: [], question: "Marilyn's number or @handle?" }], ["Masha"], NOW.getTime())
+      expect(said).toMatch(/1\. Marilyn's number/)
       expect(said).toMatch(/say go and we'll go over Masha's texts and DMs/)
 
-      const answered = (await trySocialFollow("@shelbyrose", NOW, deps({ Masha: masha })))!
-      expect(answered.text).toMatch(/Shelby: @shelbyrose\. On the card below/)
+      const answered = (await trySocialFollow("@marilynrose", NOW, deps({ Masha: masha })))!
+      expect(answered.text).toMatch(/Marilyn: @marilynrose\. On the card below/)
       expect(answered.text).toMatch(/go over Masha's texts and DMs/)
       expect(plans[0]!.effects[0]).toMatchObject({ kind: "person" })
-      expect(plans[0]!.effects[0]!.fields.find((f) => f.key === "instagram")!.value).toBe("shelbyrose")
+      expect(plans[0]!.effects[0]!.fields.find((f) => f.key === "instagram")!.value).toBe("marilynrose")
 
       const first = (await trySocialFollow("go", NOW, deps({ Masha: masha })))!
       expect(first.text).toMatch(/^Masha, 1 of 2 · Instagram DMs/)
@@ -246,13 +246,13 @@ describe("the follow-up: asks, then texts and DMs together", () => {
     })
 
     it("skip moves on, done stops, a command or a long unrelated line is left to the other lanes", async () => {
-      startSocialSession([{ person: "Shelby", candidates: [], question: "What's Shelby's number or @handle? (or skip)" }], ["Masha", "Shelby"], NOW.getTime())
+      startSocialSession([{ person: "Marilyn", candidates: [], question: "What's Marilyn's number or @handle? (or skip)" }], ["Masha", "Marilyn"], NOW.getTime())
       expect(await trySocialFollow("log: ate lunch", NOW, deps({}))).toBeNull()
       expect(await trySocialFollow("I was thinking about how the weather has been really weird this whole week honestly", NOW, deps({}))).toBeNull()
-      expect((await trySocialFollow("skip", NOW, deps({})))!.text).toMatch(/nothing saved for Shelby/)
-      const none = (await trySocialFollow("go", NOW, deps({ Masha: [], Shelby: null }, { Shelby: null })))!
+      expect((await trySocialFollow("skip", NOW, deps({})))!.text).toMatch(/nothing saved for Marilyn/)
+      const none = (await trySocialFollow("go", NOW, deps({ Masha: [], Marilyn: null }, { Marilyn: null })))!
       expect(none.text).toMatch(/No texts or DMs with Masha/)
-      expect(none.text).toMatch(/couldn't reach your texts or DMs for Shelby/)
+      expect(none.text).toMatch(/couldn't reach your texts or DMs for Marilyn/)
       expect(socialSessionOpen(NOW.getTime())).toBe(false)
 
       startSocialSession([], ["Masha"], NOW.getTime())
@@ -273,24 +273,24 @@ describe("the follow-up: asks, then texts and DMs together", () => {
       const said = startSocialSession(
         [
           { person: "masha", candidates: [], question: "masha's number or @handle?" },
-          { person: "Shelby", candidates: [], question: "Shelby's number or @handle?" },
+          { person: "Marilyn", candidates: [], question: "Marilyn's number or @handle?" },
         ],
         [],
         NOW.getTime(),
       )
-      expect(said).toMatch(/1\. masha's number or @handle\?\n2\. Shelby's number/)
+      expect(said).toMatch(/1\. masha's number or @handle\?\n2\. Marilyn's number/)
       // Not an answer: left to the other lanes, and the asks stay open.
       expect(await trySocialFollow("i love you bim! great job on that last one", NOW, deps({}))).toBeNull()
       expect(await trySocialFollow("i neeeeed to text ruggles back!!!", NOW, deps({}))).toBeNull()
-      const both = (await trySocialFollow("2 @shelbs.one @shelbs.two 1 9512015076 ig loureedstrash", NOW, deps({})))!
+      const both = (await trySocialFollow("2 @mm.one @mm.two 1 9512015076 ig loureedstrash", NOW, deps({})))!
       expect(both.text).toMatch(/That's everyone/)
       const fields = (i: number) => Object.fromEntries(plans[i]!.effects[0]!.fields.map((f) => [f.key, f.value]))
-      expect(fields(0)).toMatchObject({ name: "Shelby", instagram: "shelbs.one, shelbs.two" })
+      expect(fields(0)).toMatchObject({ name: "Marilyn", instagram: "mm.one, mm.two" })
       expect(fields(1)).toMatchObject({ name: "masha", phone: "9512015076", instagram: "loureedstrash" })
       expect(socialSessionOpen(NOW.getTime())).toBe(false)
 
-      startSocialSession([{ person: "masha", candidates: [], question: "" }, { person: "Shelby", candidates: [], question: "" }], [], NOW.getTime())
-      const one = (await trySocialFollow("shelby: @shelbs.one", NOW, deps({})))!
+      startSocialSession([{ person: "masha", candidates: [], question: "" }, { person: "Marilyn", candidates: [], question: "" }], [], NOW.getTime())
+      const one = (await trySocialFollow("marilyn: @mm.one", NOW, deps({})))!
       expect(one.text).toMatch(/Still open:\n1\. /)
     })
 
@@ -314,7 +314,7 @@ describe("end to end", () => {
   it("saves nothing until Accept; then the people, notes, intentions, next week, the season and the year", async () => {
     const reply = (await trySocial(LINE, NOW))!
     expect(reply.route).toMatch(/^SOCIAL · future/)
-    expect(reply.text).toMatch(/That's about Masha and Shelby/)
+    expect(reply.text).toMatch(/That's about Masha and Marilyn/)
     expect(reply.text).toMatch(/Masha's number or @handle\?/)
     expect(personNamed("Masha")).toBeUndefined()
     expect(getPlanEntries("week", getWeekString(new Date(2026, 10, 23)))).toEqual([])
@@ -324,15 +324,15 @@ describe("end to end", () => {
     expect(plan.effects.map((e) => [e.status, e.result])).toEqual(plan.effects.map((e) => ["applied", e.result]))
 
     const masha = personNamed("Masha")!
-    const shelby = personNamed("Shelby")!
+    const marilyn = personNamed("Marilyn")!
     expect(masha.noteLog?.at(-1)?.text).toBe("in terms of the future I am excited to hang out with Masha")
-    expect(shelby.noteLog?.at(-1)?.text).toBe("I want to go on a trip with shelby")
+    expect(marilyn.noteLog?.at(-1)?.text).toBe("I want to go on a trip with marilyn")
     expect(masha.personProfile?.intentions).toMatchObject([{ text: "Hang out with Masha", kind: "hang", horizon: "week", date: "2026-11-21" }])
-    expect(shelby.personProfile?.intentions).toMatchObject([{ text: "Go on a trip with Shelby", kind: "trip", horizon: "season" }])
+    expect(marilyn.personProfile?.intentions).toMatchObject([{ text: "Go on a trip with Marilyn", kind: "trip", horizon: "season" }])
 
     expect(getPlanEntries("week", getWeekString(new Date(2026, 10, 23))).map((e) => e.text)).toEqual([expect.stringContaining("Hang out with Masha")])
-    expect(getPlanEntries("quarter", quarterKey(NOW)).map((e) => e.text)).toEqual([expect.stringContaining("Go on a trip with Shelby")])
-    expect(getPlanEntries("year", "2026").map((e) => e.text)).toEqual([expect.stringContaining("Maybe: go on a trip with shelby")])
+    expect(getPlanEntries("quarter", quarterKey(NOW)).map((e) => e.text)).toEqual([expect.stringContaining("Go on a trip with Marilyn")])
+    expect(getPlanEntries("year", "2026").map((e) => e.text)).toEqual([expect.stringContaining("Maybe: go on a trip with marilyn")])
   })
 
   it("reuses a Masha already in People I Know: no second Masha, no ask about her", async () => {
@@ -361,8 +361,8 @@ describe("end to end", () => {
     expect(card.route).toMatch(/^SOCIAL · future/)
     expect(card.reportId).toBeTruthy()
     expect(card.text).not.toMatch(/how much do you want/i)
-    // Masha has a number; Shelby has nothing, so BIM asks.
-    expect(card.text).toMatch(/Shelby's number or @handle\?/)
+    // Masha has a number; Marilyn has nothing, so BIM asks.
+    expect(card.text).toMatch(/Marilyn's number or @handle\?/)
     const skipped = await sendToBim("skip", NOW, { llm: false })
     expect(skipped.text).toMatch(/go over Masha's texts and DMs/)
     const shown = await sendToBim("go", NOW, { llm: false })
@@ -375,7 +375,7 @@ describe("end to end", () => {
     vi.stubGlobal("fetch", async (url: string) => {
       const name = new URL(String(url), "http://x").searchParams.get("name")
       if (String(url).includes("/api/phone-contacts"))
-        return new Response(JSON.stringify({ cards: name === "Masha" ? [{ name: "Masha Ivanova", phones: ["+19512015076"] }] : name === "Shelby" ? [{ name: "Shelby", phones: ["+15550001111", "+15550002222"] }] : [] }))
+        return new Response(JSON.stringify({ cards: name === "Masha" ? [{ name: "Masha Ivanova", phones: ["+19512015076"] }] : name === "Marilyn" ? [{ name: "Marilyn", phones: ["+15550001111", "+15550002222"] }] : [] }))
       throw new Error("no network in tests")
     })
     const reply = (await trySocial(LINE, NOW))!
@@ -383,20 +383,20 @@ describe("end to end", () => {
     const plan = useReportStore.getState().plans[reply.reportId]!
     const person = (n: string) => Object.fromEntries(plan.effects.find((e) => e.kind === "person" && e.fields[0]!.value === n)!.fields.map((f) => [f.key, f.value]))
     expect(person("Masha")).toMatchObject({ phone: "+19512015076", fullName: "Masha Ivanova" })
-    expect(person("Shelby")).toMatchObject({ phone: "+15550001111, +15550002222", fullName: "" })
+    expect(person("Marilyn")).toMatchObject({ phone: "+15550001111, +15550002222", fullName: "" })
     await acceptAll(reply.reportId)
-    expect(personNamed("Shelby")!.personProfile?.phones).toEqual(["+15550001111", "+15550002222"])
+    expect(personNamed("Marilyn")!.personProfile?.phones).toEqual(["+15550001111", "+15550002222"])
     expect(personNamed("Masha")!.personProfile?.fullName).toBe("Masha Ivanova")
   })
 
   it("keeps a second Instagram as another account", async () => {
     const listId = ensurePeopleIKnowList()
-    const s = createPerson("Shelby", listId)
+    const s = createPerson("Marilyn", listId)
     useTaskStore.getState().addTask(s)
-    startSocialSession([{ person: "Shelby", candidates: [], question: "" }], [], NOW.getTime())
-    const said = (await trySocialFollow("@shelbs.one @shelbs.two", NOW, { loadTexts: async () => [], loadDms: async () => [], putPlan: (p) => useReportStore.getState().put(p) }))!
+    startSocialSession([{ person: "Marilyn", candidates: [], question: "" }], [], NOW.getTime())
+    const said = (await trySocialFollow("@mm.one @mm.two", NOW, { loadTexts: async () => [], loadDms: async () => [], putPlan: (p) => useReportStore.getState().put(p) }))!
     await acceptAll(said.reportId!)
-    expect(personNamed("Shelby")!.personProfile).toMatchObject({ instagram: "shelbs.one", otherInstagrams: ["shelbs.two"] })
+    expect(personNamed("Marilyn")!.personProfile).toMatchObject({ instagram: "mm.one", otherInstagrams: ["mm.two"] })
   })
 
   it("has its own lane before ask-back and every shape lane", () => {

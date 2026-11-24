@@ -33,9 +33,9 @@ beforeEach(() => {
 
 describe("parseTripPrep", () => {
   it("reads the place and one item per line", () => {
-    expect(parseTripPrep("have to do before leaving for new york: pack \n talk to shelby \n buy gift")).toEqual({
+    expect(parseTripPrep("have to do before leaving for new york: pack \n talk to marilyn \n buy gift")).toEqual({
       place: "New York",
-      items: ["Pack", "Talk to shelby", "Buy gift"],
+      items: ["Pack", "Talk to marilyn", "Buy gift"],
     })
   })
   it("splits one line on commas and peels bullets", () => {
@@ -49,7 +49,7 @@ describe("parseTripPrep", () => {
 
 describe("leadUpDates", () => {
   it("spreads early items and puts packing in the last days", () => {
-    const days = leadUpDates(["Talk to Shelby", "Buy gift", "Call bank", "Pack"], "2026-11-12", NOW)
+    const days = leadUpDates(["Talk to Marilyn", "Buy gift", "Call bank", "Pack"], "2026-11-12", NOW)
     expect(days).toEqual(["2026-11-07", "2026-11-08", "2026-11-09", "2026-11-11"])
   })
   it("puts everything today when leaving tomorrow", () => {
@@ -65,7 +65,7 @@ describe("findFlightDay", () => {
 })
 
 describe("applyTripPrep", () => {
-  const say = "have to do before leaving for new york:\npack\ntalk to shelby"
+  const say = "have to do before leaving for new york:\npack\ntalk to marilyn"
 
   it("uses the flight date, makes the list, and dates the tasks", () => {
     useTaskStore.setState({ tasks: [flight("f", "SAN", "JFK", "2026-11-12")] })
@@ -75,9 +75,9 @@ describe("applyTripPrep", () => {
     const list = lists.find((l) => l.name === "To do before New York")!
     expect(list).toBeTruthy()
     const mine = tasks.filter((t) => t.lists?.includes(list.id))
-    expect(mine.map((t) => t.description).sort()).toEqual(["Pack", "Talk to shelby"])
+    expect(mine.map((t) => t.description).sort()).toEqual(["Pack", "Talk to marilyn"])
     expect(mine.find((t) => t.description === "Pack")?.scheduledDate).toEqual(new Date(2026, 10, 11))
-    expect(mine.find((t) => t.description === "Talk to shelby")?.scheduledDate).toEqual(new Date(2026, 10, 7))
+    expect(mine.find((t) => t.description === "Talk to marilyn")?.scheduledDate).toEqual(new Date(2026, 10, 7))
     expect(useEventStore.getState().events).toHaveLength(0)
   })
 

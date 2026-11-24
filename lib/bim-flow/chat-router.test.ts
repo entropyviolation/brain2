@@ -19,7 +19,7 @@ const LADDER = ["small", "big"]
 
 describe("routeByCode", () => {
   it("settles plain questions and build requests with no model", () => {
-    expect(routeByCode("when did I last see Shelby?")).toMatchObject({ intent: "ask", sure: true })
+    expect(routeByCode("when did I last see Marilyn?")).toMatchObject({ intent: "ask", sure: true })
     expect(routeByCode("how many hours of computer work this week")).toMatchObject({ intent: "ask", sure: true })
     expect(routeByCode("make a new daily habit for being home")).toMatchObject({ intent: "build", sure: true })
   })

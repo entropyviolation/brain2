@@ -7,7 +7,7 @@ import type { Task } from "@/lib/types"
 import { HabitListPopup } from "./habit-list-popup"
 
 const LIST = "1791346611510"
-const NAMES = ["Ruggles", "Rebecca", "Cammy", "An", "Shelby"] as const
+const NAMES = ["Ruggles", "Rebecca", "Cammy", "An", "Marilyn"] as const
 
 function textItem(name: string): Task {
   return {

@@ -177,7 +177,7 @@ function lineId(): string {
 
 /**
  * The question BIM last asked about a told fact ("When do you remember last
- * seeing Shelby?"). In memory only: a reload forgets the question, not the answer.
+ * seeing Marilyn?"). In memory only: a reload forgets the question, not the answer.
  */
 let pendingTell: TellPending | null = null
 
@@ -276,7 +276,7 @@ function tryTell(text: string, now: Date): BimLine | null {
 }
 
 /**
- * "What was Shelby talking about in her last text to me?" (`bim-texts.ts`). Answered from the hub's texts, in ROUTER and
+ * "What was Marilyn talking about in her last text to me?" (`bim-texts.ts`). Answered from the hub's texts, in ROUTER and
  * LLM mode alike; the model only sums up the texts it is handed, and only with LLM on. The iPhone asks the Mac hub.
  */
 async function tryTexts(text: string, now: Date, llm: boolean): Promise<BimLine | null> {

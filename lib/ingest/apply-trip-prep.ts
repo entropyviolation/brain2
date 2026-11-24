@@ -1,5 +1,5 @@
 /**
- * lib/ingest/apply-trip-prep.ts — BIM Chat command: "have to do before leaving for New York: pack / talk to Shelby"
+ * lib/ingest/apply-trip-prep.ts — BIM Chat command: "have to do before leaving for New York: pack / talk to Marilyn"
  *
  * A Trip-prep BIMBY. One line plus the things after it become:
  *   1. a departure date, from the next Flight item that lands in that place, else a Plan event whose title
@@ -70,7 +70,7 @@ export function splitItems(body: string): string[] {
   return out
 }
 
-/** "have to do before leaving for new york: pack \n talk to shelby" → place and items. Null for anything else. */
+/** "have to do before leaving for new york: pack \n talk to marilyn" → place and items. Null for anything else. */
 export function parseTripPrep(text: string): TripPrep | null {
   const m = TRIP_PREP.exec(text)
   if (!m) return null

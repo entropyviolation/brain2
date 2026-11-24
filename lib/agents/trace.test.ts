@@ -64,7 +64,7 @@ describe("traceOfFlowRun", () => {
     blocks: [],
     messages: [
       {
-        message: { id: "m1", text: "when did I last see Shelby?", at: "2026-11-11T10:00:00.000Z", prior: [] },
+        message: { id: "m1", text: "when did I last see Marilyn?", at: "2026-11-11T10:00:00.000Z", prior: [] },
         steps: [
           { nodeId: message.id, ms: 0, port: "out", output: null },
           { nodeId: retrieve.id, ms: 200, port: "out", output: { rows: 3 } },

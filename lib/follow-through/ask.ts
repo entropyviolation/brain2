@@ -69,7 +69,7 @@ export type Answer =
   | { kind: "skip"; what: string }
   | { kind: "skip-all" }
 
-/** The line a tap sends. Typed by hand works too: `push 3: call shelby`. */
+/** The line a tap sends. Typed by hand works too: `push 3: call marilyn`. */
 export function readAnswer(text: string): Answer | null {
   const t = text.trim()
   if (/^skip all$/i.test(t)) return { kind: "skip-all" }

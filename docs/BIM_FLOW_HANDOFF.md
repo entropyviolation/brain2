@@ -373,4 +373,4 @@ _Last mapped: 2026-10-30_
 
 - Code-first on purpose, as in the playbook: the shapes the person actually uses are matched by grammar, names come from the vault (`name-resolve.ts`), dates from `findDay`. A line whose subject the vault lacks falls through to `log:`.
 - The unknown-answer loop is `TellPending` (one open question, in memory). The answer is filed and the original command runs in the same step.
-- **Planned:** a model fallback for phrasings the grammar misses (run it as one extract node, then reuse `applyTell`); more subjects (birthdays, "countdown to Shelby's birthday", last texted, habits); the lab graph could expose these as a `tell` door so they can be tested with scripted models; undo through BIM's `undo` word (today it is the app's Cmd-Z, one step per tell).
+- **Planned:** a model fallback for phrasings the grammar misses (run it as one extract node, then reuse `applyTell`); more subjects (birthdays, "countdown to Marilyn's birthday", last texted, habits); the lab graph could expose these as a `tell` door so they can be tested with scripted models; undo through BIM's `undo` word (today it is the app's Cmd-Z, one step per tell).

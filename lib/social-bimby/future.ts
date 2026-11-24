@@ -1,5 +1,5 @@
 /**
- * lib/social-bimby/future.ts — "I'm excited to hang out with Masha and I want to go on a trip with Shelby"
+ * lib/social-bimby/future.ts — "I'm excited to hang out with Masha and I want to go on a trip with Marilyn"
  *
  * A line about what you want to do with a few people, later. Each person gets their own clause, and each clause
  * says what you want: a hang-out (this coming week) or a trip (this season). "Note texts and dms from each" asks
@@ -107,7 +107,7 @@ function nameOnly(m: RegExpMatchArray, people: readonly KnownPerson[]): { name: 
   const full = second ? `${first} ${second}` : first
   const known = knownBy(full, people) ?? knownBy(first, people)
   if (known) return { name: known.name, known }
-  // An unknown name must look like one: capitalized as typed ("Jo"), or long enough not to be a word ("shelby").
+  // An unknown name must look like one: capitalized as typed ("Jo"), or long enough not to be a word ("marilyn").
   if (first.length < 3 && !/^\p{Lu}/u.test(first)) return null
   return { name: capital(second ? `${first} ${second}` : first) }
 }
@@ -250,7 +250,7 @@ export function buildFuturePlan(read: FutureRead, message: string, now: Date, de
     let phones: string[] = []
     let fullName = ""
     let cardChoices: ContactCard[] = []
-    // No number on file: look in your Contacts. One card with their name (often saved as just "Shelby") is them.
+    // No number on file: look in your Contacts. One card with their name (often saved as just "Marilyn") is them.
     if (!contact.phones.length) {
       const cards = (deps.contactCards?.(p.name) ?? []).filter((c) => c.phones.length)
       if (cards.length === 1) {

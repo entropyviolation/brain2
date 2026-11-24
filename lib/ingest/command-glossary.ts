@@ -276,7 +276,7 @@ On disk: docs/BIM_COMMANDS.md · docs/MESSAGE_INGEST.md`
 export const BIM_CHAT_INFO = `${BIM_SHORT} chat — just talk.
 
 With LLM on, plain sentences work:
-• Tell me a fact: "The last time I saw Shelby was July 5th" · "Elijah comes home nov 18th"
+• Tell me a fact: "The last time I saw Marilyn was July 5th" · "Elijah comes home nov 18th"
 • Ask: "When did I last shower?" · "how many times did I smoke this week" — answered from your data, nothing is filed
 • Ask me to make something: "make a habit for stretching" · "countdown to when Elijah comes home"
 • Anything else is logged as a time-stamped event.

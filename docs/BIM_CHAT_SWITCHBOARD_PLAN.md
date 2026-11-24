@@ -86,7 +86,7 @@ One closed enum, `ChatIntent`:
 |-------|-------|---------|
 | `ask` | wants a fact from their own data | "when did I last shower", "how much did I sleep this week" |
 | `log` | something that happened or is happening | "making garlic confit now" |
-| `tell` | a fact about a person, date or thing to file | "Shelby's birthday is March 3" |
+| `tell` | a fact about a person, date or thing to file | "Marilyn's birthday is March 3" |
 | `build` | wants a habit, list, widget, rule made | "make a daily habit for being home 5+ hours" |
 | `correct` | fixes BIM's last turn | "no, that was yesterday", "that wasn't a question" |
 | `chat` | conversation, opinion, thinking out loud, general knowledge | "I'm so tired of this", "what temp for confit?" |
@@ -107,7 +107,7 @@ Steps, cheapest first (ENT-3), stopping at the first that is sure:
    reuses `BimChoice` and the clarify buttons. The tap is a free labelled example.
 
 `second` lets one line be two things, such as "just got back from Elijah's, when did I
-last see Shelby?" (`log` + `ask`). At most two lanes ever run (ENT-5).
+last see Marilyn?" (`log` + `ask`). At most two lanes ever run (ENT-5).
 
 ### L2 — lanes are flows
 

@@ -14,7 +14,7 @@ All reading is code (`read.ts`). A line needs a money verb and an amount, or one
 |---------|-------|---------------|
 | "Spent 90$ on the amex getting hairdye and other stuff on instacart" | spend: $90, Amex, Instacart, hairdye and other stuff | Tracking log spend (as the money book does it) + a `Purchase` here |
 | "foxtide owes me 600$ for the cd designs" | debt owed to you | `brain2-budget` debts |
-| "i owe shelby $40 for dinner" | debt you owe | `brain2-budget` debts |
+| "i owe marilyn $40 for dinner" | debt you owe | `brain2-budget` debts |
 | "foxtide paid me" / "foxtide paid me 400" | debt settled, whole or part | debt removed or reduced, an earning line added |
 | "got paid 200 from foxtide for the poster" | earning | `brain2-budget` lines |
 | "got 15$ off restaurant food on instacart" | perk | `perks` here |

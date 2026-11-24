@@ -121,7 +121,7 @@ describe("parseMessage", () => {
     expect(parseMessage("to do list")).toMatchObject({ kind: "capture", payload: "to do list" })
     expect(parseMessage("/quicklists")).toMatchObject({ kind: "quicklists", payload: "" })
     expect(parseMessage("/quicklists 5")).toMatchObject({ kind: "quicklists", payload: "5" })
-    expect(parseMessage("Text shelby back")).toMatchObject({ kind: "capture", payload: "Text shelby back" })
+    expect(parseMessage("Text marilyn back")).toMatchObject({ kind: "capture", payload: "Text marilyn back" })
     expect(parseMessage("text: Jane on my way")).toMatchObject({ kind: "iphone-text", payload: "Jane on my way" })
     expect(parseMessage("call gran points-100")).toMatchObject({ kind: "capture", payload: "call gran points-100" })
     expect(parseMessage("call: Jane 12m")).toMatchObject({ kind: "iphone-call", payload: "Jane 12m" })

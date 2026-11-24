@@ -77,7 +77,7 @@ describe("Commands BIMBY in chat", () => {
 
   it("lets a new question through while waiting for a paste", () => {
     tryCommands("remember this command to back up the vault", now)
-    expect(tryCommands("what did shelby last say to me?", now)).toBeNull()
+    expect(tryCommands("what did marilyn last say to me?", now)).toBeNull()
   })
 
   it("forgets one, shipped or saved", () => {

@@ -1238,9 +1238,9 @@ describe("ingestIncoming", () => {
   })
 
   it("logs bare text, call, did, and add and keeps the colon forms", () => {
-    const text = ingestIncoming(sim("Text shelby back"), NOW)
+    const text = ingestIncoming(sim("Text marilyn back"), NOW)
     expect(text.kind).toBe("event-log")
-    if (text.status === "ok") expect(text.reply).toMatch(/Text shelby back/)
+    if (text.status === "ok") expect(text.reply).toMatch(/Text marilyn back/)
     const call = ingestIncoming(sim("call gran points-100"), NOW)
     expect(call.kind).toBe("event-log")
     if (call.status === "ok") expect(call.reply).toMatch(/call gran points-100/)

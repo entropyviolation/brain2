@@ -265,7 +265,7 @@ const withNext = (said: string, now: Date, route: string): FollowReply => {
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
 
-/** A one-tap answer ("push 3: call shelby", "after 4: walk", "away: phone | tidy", "skip: …"). Null when the line is not one. */
+/** A one-tap answer ("push 3: call marilyn", "after 4: walk", "away: phone | tidy", "skip: …"). Null when the line is not one. */
 export function tryFollowAnswer(text: string, now = new Date()): FollowReply | null {
   const answer = readAnswer(text)
   if (!answer) return null

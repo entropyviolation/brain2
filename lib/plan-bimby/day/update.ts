@@ -2,7 +2,7 @@
  * lib/plan-bimby/day/update.ts — A long update about the day, read against the live day plan (pure, rules only)
  *
  * While a day plan is live, a message like "update on this plan- … like asking the neighbor if i can use their
- * laundry key? … Scary thing. … did make the order … add to my to do list make shelby gift (orca) …" is not a
+ * laundry key? … Scary thing. … did make the order … add to my to do list make marilyn gift (orca) …" is not a
  * stream of 20 notes. It is changes to the plan: things added (with what they wait on), things done (at a time,
  * or somewhere inside a window), how a thing feels, and a few lines for Tracking, Notes and Shopping. What names
  * nothing and asks for nothing is heard, listed in the trace, and not filed.

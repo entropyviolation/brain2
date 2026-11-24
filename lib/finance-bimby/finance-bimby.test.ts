@@ -41,7 +41,7 @@ describe("readMoney", () => {
 
   it("reads who owes whom, with the reason", () => {
     expect(readMoney("foxtide owes me 600$ for the cd designs", NOW)).toEqual({ kind: "debt", direction: "owed", who: "Foxtide", cents: 60000, note: "the cd designs" })
-    expect(readMoney("i owe shelby $40 for dinner", NOW)).toEqual({ kind: "debt", direction: "owe", who: "Shelby", cents: 4000, note: "dinner" })
+    expect(readMoney("i owe marilyn $40 for dinner", NOW)).toEqual({ kind: "debt", direction: "owe", who: "Marilyn", cents: 4000, note: "dinner" })
   })
 
   it("reads a discount as a perk", () => {
@@ -57,7 +57,7 @@ describe("readMoney", () => {
   })
 
   it("leaves lines that are not money", () => {
-    for (const line of ["spent 3 hours on foxtide", "got 2 things done today", "paid attention in class", "ordered my thoughts", "got home at 5", "made dinner", "i owe shelby a call", "what did i spend?"]) {
+    for (const line of ["spent 3 hours on foxtide", "got 2 things done today", "paid attention in class", "ordered my thoughts", "got home at 5", "made dinner", "i owe marilyn a call", "what did i spend?"]) {
       expect(readMoney(line, NOW), line).toBeNull()
     }
   })

@@ -127,7 +127,7 @@ const wordCount = (s: string) => s.replace(/\([^)]*\)/g, " ").trim().split(/\s+/
 /** True when the words open with a doing word ("call mom"), so they can be a task. */
 export const startsWithVerb = (s: string): boolean => VERBS.has(stem(firstWord(s)))
 
-/** "pack (…) and plan outfits" is two things; "read shelby text and reply" is one. A new thing starts with a verb and has an object. */
+/** "pack (…) and plan outfits" is two things; "read marilyn text and reply" is one. A new thing starts with a verb and has an object. */
 function splitAnd(part: string): string[] {
   const pieces = splitOutside(part, /^\s+and\s+/i)
   const out: string[] = []
