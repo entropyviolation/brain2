@@ -424,7 +424,9 @@ body.win95-app .home-widget-dialog .home-widget-detail button.home-affirm-lens.i
   text-align: center;
 }
 
-body.win95-app .home-widget-dialog .home-widget-detail button.home-affirm-said {
+/* Mint key on the paper face only. The dash face keys are one seg font at 400;
+   a 700 here made Said it a faux-bold, dark-ink face beside Say it. */
+body.win95-app .home-widget-dialog:not([data-style="dash"]) .home-widget-detail button.home-affirm-said {
   background-image: linear-gradient(180deg, #effff8, #b6efd9 60%, #5ec7a2);
   color: #0c4e39;
   font-weight: 700;

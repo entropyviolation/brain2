@@ -122,6 +122,8 @@ function ChatPane() {
   const choices = openChoices(lines)
   const box = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  // The navy ring shows only once the person clicks into the box or types; autofocus on open stays quiet.
+  const [editing, setEditing] = useState(false)
   // Electron only: mic → local Whisper (`lib/desktop-dictation.ts`); the words join the draft.
   const dictate = useDesktopDictation((text) => {
     setDraft(appendDictated(draft, text))
@@ -161,7 +163,7 @@ function ChatPane() {
         {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} />}
       </div>
       <div className="bim-compose">
-        <div className="bim-glass bim-well">
+        <div className={editing || draft ? "bim-glass bim-well is-editing" : "bim-glass bim-well"}>
           {choices.length ? (
             <div className="bim-chips" aria-label="Answers">
               {choices.map((choice, i) => (
@@ -198,32 +200,38 @@ function ChatPane() {
             aria-label="Message BIM"
             value={draft}
             placeholder={photos.length ? "Caption (or leave blank and I will ask)…" : replyTarget ? "Say what's wrong or what you know…" : choices.length ? "Type an answer, or press a number…" : "Message BIM…"}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setEditing(true)
+              setDraft(event.target.value)
+            }}
             onKeyDown={onKey}
+            onPointerDown={() => setEditing(true)}
+            onBlur={() => setEditing(false)}
             autoFocus={!touchFirst()}
           />
         </div>
         <div className="bim-send">
           <input ref={fileInput} type="file" accept="image/*" multiple hidden aria-label="Attach photos" onChange={addPhotos} />
-          <button data-no95 type="button" className="is-mod" aria-label="Attach photo" onClick={() => fileInput.current?.click()}>
-            <span className="bim-key-word">📷</span>
-            <Paperclip className="bim-key-icon" aria-hidden="true" />
-          </button>
-          {dictate.available ? (
-            <button
-              data-no95
-              type="button"
-              className={dictate.state === "listening" ? "is-mod bim-dictate is-live" : "is-mod bim-dictate"}
-              aria-label={dictate.state === "listening" ? "Stop dictation" : "Dictate"}
-              aria-pressed={dictate.state === "listening"}
-              title={dictate.state === "listening" ? "Stop and transcribe" : dictate.state === "transcribing" ? "Transcribing…" : "Dictate (local Whisper)"}
-              disabled={dictate.state === "transcribing"}
-              onClick={() => void dictate.toggle()}
-            >
-              <span className="bim-key-word">{dictate.state === "listening" ? "● STOP" : dictate.state === "transcribing" ? "…" : "🎙 TALK"}</span>
-              <Mic className="bim-key-icon" aria-hidden="true" />
+          {/* Attach and dictate share one row above SEND, each about half its width. Icons only. */}
+          <div className="bim-send-row">
+            <button data-no95 type="button" className="is-mod" aria-label="Attach photo" title="Attach photo" onClick={() => fileInput.current?.click()}>
+              <Paperclip className="bim-key-icon" aria-hidden="true" />
             </button>
-          ) : null}
+            {dictate.available ? (
+              <button
+                data-no95
+                type="button"
+                className={dictate.state === "listening" ? "is-mod bim-dictate is-live" : "is-mod bim-dictate"}
+                aria-label={dictate.state === "listening" ? "Stop dictation" : "Dictate"}
+                aria-pressed={dictate.state === "listening"}
+                title={dictate.state === "listening" ? "Stop and transcribe" : dictate.state === "transcribing" ? "Transcribing…" : "Dictate (local Whisper)"}
+                disabled={dictate.state === "transcribing"}
+                onClick={() => void dictate.toggle()}
+              >
+                <Mic className="bim-key-icon" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
           <button data-no95 type="button" className="is-primary" aria-label="Send" disabled={!draft.trim() && !photos.length} onClick={() => submit()}>
             <span className="bim-key-word">SEND ↵</span>
             <ArrowUp className="bim-key-icon" aria-hidden="true" />

@@ -44,6 +44,13 @@ export function useDesktopDictation(onText: (text: string) => void) {
 
   useEffect(() => setAvailable(isDesktopDictationAvailable()), [])
 
+  // A flag fades on its own: "Heard nothing." after 4s, other faults after 12s.
+  useEffect(() => {
+    if (!error) return
+    const timer = setTimeout(() => setError(null), error === "Heard nothing." ? 4000 : 12000)
+    return () => clearTimeout(timer)
+  }, [error])
+
   const release = () => {
     stream.current?.getTracks().forEach((track) => track.stop())
     stream.current = null

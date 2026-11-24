@@ -653,11 +653,12 @@
   padding: 14px 18px;
 }
 
+/* The box fills the well: no dead glass under it. */
 .bim-well textarea {
+  flex: 1 1 auto;
   padding: 4px 6px !important;
   min-height: 56px;
-  max-height: 140px;
-  resize: vertical;
+  resize: none;
   border: 0 !important;
   outline: none !important;
   box-shadow: none !important;
@@ -673,10 +674,20 @@
   text-shadow: none;
 }
 
+/* win95.css rings every focused field in navy. Here the ring waits for a click or a keystroke
+   (`.is-editing`), so the autofocus on open stays quiet. */
+body.win95-app .bim-well textarea:focus,
+body.win95-app .bim-well textarea:focus-visible,
 .bim-well textarea:focus,
 .bim-well textarea:focus-visible {
   outline: none !important;
   box-shadow: none !important;
+}
+
+body.win95-app .bim-well.is-editing textarea:focus,
+.bim-well.is-editing textarea:focus {
+  outline: 2px solid #000080 !important;
+  outline-offset: -2px;
 }
 
 .bim-well:focus-within {
@@ -699,6 +710,24 @@
   min-width: 96px;
   padding: 10px 12px 13px;
   font-size: 11px;
+}
+
+/* Attach and dictate: one row, half of SEND each, icon only. */
+.bim-send-row {
+  display: flex;
+  gap: 6px;
+}
+
+.bim-crt .bim-send-row button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 0 11px;
+}
+
+.bim-crt .bim-send-row .bim-key-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 /* Dictate key (Electron only). Listening: the cap lights in the fault ink and pulses. */
@@ -1282,7 +1311,8 @@
     align-items: end;
   }
 
-  .bim-send {
+  .bim-send,
+  .bim-send-row {
     display: contents;
   }
 

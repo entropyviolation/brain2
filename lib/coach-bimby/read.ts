@@ -14,6 +14,7 @@
  * No stores, no models. `apply.ts` does the writing.
  */
 
+import { dropGreeting } from "@/lib/ingest/greeting"
 import { parseClockToken } from "@/lib/ingest/times"
 import type { RecurringReminderRepeat } from "@/lib/reminders"
 import type { MeKind } from "./me-store"
@@ -64,7 +65,7 @@ const WORKING = /^i(?:'m| am|m)\s+(?:working (?:toward|towards|on)|trying to|aim
 
 /** A line that tells BIM something lasting about you. Null when it is not one of the shapes. */
 export function parseAboutMe(raw: string): AboutMe | null {
-  const text = raw.replace(/\s+/g, " ").trim()
+  const text = dropGreeting(raw.replace(/\s+/g, " ").trim())
   if (!text || /\?\s*$/.test(text) || text.length > 320) return null
   const goals = GOALS.exec(text)
   if (goals) {
@@ -94,7 +95,7 @@ export function parseAboutMe(raw: string): AboutMe | null {
 export type MeAsk = "all" | "goals"
 
 export function parseMeAsk(raw: string): MeAsk | null {
-  const t = raw.trim().toLowerCase().replace(/[?.!]+$/, "")
+  const t = dropGreeting(raw.trim()).toLowerCase().replace(/[?.!]+$/, "")
   if (/^(?:what|wat|wht)(?:'s| is| are)? my (?:goals?|aims?|priorities|dreams?)(?: again)?$|^(?:list|show|tell me)(?: me)? my (?:goals?|priorities)$|^remind me (?:of|what) my goals(?: are)?$/.test(t)) return "goals"
   if (/^(?:what do you (?:know|remember)(?: about me)?|who am i|what have you learned about me|tell me (?:about me|what you know about me)|what do you know of me|do you know me|how well do you know me|show (?:me )?(?:what you know|my memory|your memory of me))$/.test(t)) return "all"
   return null
@@ -108,7 +109,7 @@ export function forgetWords(what: string): string[] {
 
 /** "forget that I hate mornings" → "I hate mornings". Null when the line is not a forget. */
 export function parseForget(raw: string): string | null {
-  const m = /^(?:please\s+)?(?:forget|stop remembering|delete|remove|drop)(?:\s+(?:that|about|the (?:note|fact|thing)(?: that)?|what i said about))?\s+(.{3,200})$/i.exec(raw.trim())
+  const m = /^(?:please\s+)?(?:forget|stop remembering|delete|remove|drop)(?:\s+(?:that|about|the (?:note|fact|thing)(?: that)?|what i said about))?\s+(.{3,200})$/i.exec(dropGreeting(raw.trim()))
   if (!m) return null
   const what = clean(m[1]!)
   // "delete that", "remove the last one": an undo, not a note. A forget names what it drops.

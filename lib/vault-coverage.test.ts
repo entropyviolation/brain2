@@ -19,6 +19,7 @@ import { useEventStore } from "@/lib/event-store"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useMeStore } from "@/lib/coach-bimby/me-store"
+import { useGeniusesStore } from "@/lib/geniuses/store"
 import { useDayLogStore } from "@/lib/day-log-bimby/store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
@@ -91,6 +92,7 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-planned-actions": () => usePlannedActionStore.getState(),
   "cogs-goals-store": () => useGoalsStore.getState(),
   "cogs-coach-me": () => useMeStore.getState(),
+  "cogs-geniuses": () => useGeniusesStore.getState(),
   "cogs-day-logs": () => useDayLogStore.getState(),
   "cogs-habits-store": () => useHabitsStore.getState(),
   "cogs-reviews-store": () => useReviewsStore.getState(),

@@ -87,9 +87,23 @@ type GeniusNote = {
 }
 ```
 
+**Built** 2026-11-24 in `lib/geniuses/types.ts`, with two more records for memory: `GeniusTalk` (one argument about one task, up to twelve lines, and how it ended) and `CouncilMeeting` (topic, every ask and answer, your pick and why).
+
 Missions stay the friend's `FriendMission` rows (`lib/friend-mission.ts`). One optional field is added: `geniusId: string | null`. Old rows read as `null`, so the journal, points and keepsakes keep working unchanged.
 
 **Relationship is derived, not stored.** Bond today is computed from the mission log (`lib/friend-stats.ts`), and keepsakes are counted from it. A genius's relationship works the same way: a pure function over its missions. No counter can drift.
+
+## Memory (**Built** 2026-11-24)
+
+A genius remembers three things, kept in its own store (`brain2-geniuses`, `lib/geniuses/store.ts`) and read back into every prompt by `lib/geniuses/memory.ts`:
+
+| Kind | What | How it gets there | Read back |
+|---|---|---|---|
+| **Notes** | What you told it, dated | You keep a line on purpose, or the model offers one (`keep`) and you accept; those show as "picked up" | Newest twelve |
+| **Talks** | Your last arguments with it: the task, your last words, the outcome | Every talk-back turn | Last three |
+| **Council minutes** | The meetings it sat in: its ask, which area got the time, your reason | You close a council | Last three |
+
+It never reads another genius's notes or talks. From a meeting it learns only which area got the time. You can read, add and delete all of it in the lab's Memory tab, which also shows the exact MEMORY block the next prompt will carry.
 
 ## How a genius picks an assignment
 
@@ -167,7 +181,7 @@ What you say in a reply often belongs somewhere: a reason a task is stuck, a nex
 
 Nothing is written until you press accept. Each write is one call through the existing stores and shows in the item's history.
 
-**This changes one old rule.** `docs/FRIEND_COMPANION.md` says "Do not store chat transcripts. The friend is not an LLM session." For geniuses: the exchanges on one mission are kept on that mission's log (capped at twelve lines, each ≤ 280 characters), because remembering your argument is the feature. Nothing else is stored. There is still no free chat with a genius outside a mission.
+**This changes one old rule.** `docs/FRIEND_COMPANION.md` says "Do not store chat transcripts. The friend is not an LLM session." For geniuses: the exchanges about one task are kept as a `GeniusTalk` in the geniuses store (capped at twelve lines, each ≤ 280 characters, sixty talks), because remembering your argument is the feature. Nothing else is stored. There is still no free chat with a genius outside an assignment.
 
 ## New geniuses for new goals and projects
 
@@ -179,6 +193,18 @@ Limits: at most seven active geniuses. A genius whose goal is done can **retire*
 
 When two geniuses want the same evening (Coin wants a gig, Muse wants studio time), the council view shows both asks side by side with their reasons. You pick, and the pick is logged for both. Neither genius sees the other's notes; they see only that the evening went to the other area. This is the interplay between superegos, refereed by the ego.
 
+## The lab (**Built** 2026-11-24)
+
+`/lab/geniuses` (`components/Lab/Geniuses/`) is where every model call a genius makes can be played with. A model bar picks the installed model, the temperature, "Fresh" (skip the call cache) and "Script only". Tabs:
+
+- **Talk**: pick a genius and a task, argue for up to six exchanges. Each turn shows the exact system and user prompt (editable before sending), the raw JSON, and whether the model or the script answered and why.
+- **Council**: name a time or a question; each seated genius asks, then each hears the others and holds or gives way by name; you pick, with a reason. The minutes become memory.
+- **Geniuses**: name, face, area, charter, bindings, status. The editor moves to Gallery Details in GN-3.
+- **Prompts**: the saved templates with their `{{slots}}`; Reset returns to the default.
+- **Memory**: notes, talks and councils, and the MEMORY block the next prompt carries.
+
+Checked live with `qwen2.5:14b-instruct` (see `components/Lab/Geniuses/README.md`). The first run showed geniuses addressing each other and copying each other's asks; the default council prompts now forbid both. The 14B still says "we" sometimes; tune it in the Prompts tab.
+
 ## Implementation slices
 
 Each slice is small, keeps the app working, and ends green: `npx tsc --noEmit`, the touched tests, and a browser check for any UI. Desktop UI follows `docs/DESIGN_STYLE.md`; the phone follows `docs/MOBILE_STYLE.md`. The one personality editor stays Gallery Details (FRIEND_COMPANION rule), so the charter editor goes there too.
@@ -187,7 +213,10 @@ Each slice is small, keeps the app working, and ends green: `npx tsc --noEmit`, 
 
 The pixel game, its lab pages, scripts, reference boards and docs left Brain2. The friend's two "play" keys are gone. This page and the doc updates were written.
 
-### GN-1: the record
+### GN-1: the record (**Built** 2026-11-24)
+
+Built as planned, with memory (talks and council minutes) and prompt overrides in the same store. `cogs-geniuses` is shrink-guarded in `lib/vault-guard.js`. The Gallery tab and binding cleanup on load (`dropDangling` exists, not yet called) wait for GN-3.
+
 
 - `lib/geniuses/types.ts`, `lib/geniuses/sanitize.ts` (clamp lengths, drop dangling binding ids, cap notes at 200), `lib/geniuses/starters.ts` (the three templates, unbound).
 - `lib/geniuses/store.ts`: a zustand persist slice under `persistKey("geniuses")`, version 1.
@@ -213,7 +242,10 @@ The pixel game, its lab pages, scripts, reference boards and docs left Brain2. T
 - Shown on the instrument where bond is today; new keepsakes join the existing keepsake list.
 - Tests: fixture logs for each signal.
 
-### GN-5: talking back
+### GN-5: talking back (engine and lab **Built** 2026-11-24)
+
+Built: `lib/geniuses/run.ts` (the read, the prompt, the call through `escalate`), `prompts.ts` (editable templates) and `reply.ts` (checks and the scripted ladder), in place of the planned `voice.ts`. Tested: bad JSON, an over-long line, shame words, and pressing on the sixth exchange all fall back. Still **Planned**: the reply box on the real mission sheet, the Trace, and the Blueprint.
+
 
 - `lib/geniuses/voice.ts`: builds the prompt from the read; `lib/geniuses/reply.ts`: validates `GeniusReply`, falls back to the ladder.
 - A reply box on the mission sheet, level 2 and up. Each turn records a Trace through `lib/agents/trace.ts` (read-only import).
@@ -230,7 +262,10 @@ The pixel game, its lab pages, scripts, reference boards and docs left Brain2. T
 
 - The "Give this a genius?" offer on the Goals tab and on a project list; the seven-active cap; retire and rest.
 
-### GN-8: council and clock
+### GN-8: council and clock (council in the lab **Built** 2026-11-24)
+
+The council runs in the lab: asks, answers, the ego's pick, and minutes each genius remembers. Still **Planned**: a council view in the app, and the clock.
+
 
 - The side-by-side conflict view. Unsolicited lines on the friend clock that FRIEND_COMPANION already plans (quiet hours, cadence, pushiness).
 
