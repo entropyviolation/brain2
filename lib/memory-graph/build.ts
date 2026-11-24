@@ -15,6 +15,7 @@
  */
 
 import { egoEdges } from "@/lib/link-graph"
+import { stripSecretsDeep } from "@/lib/secrets"
 import { itemTitle } from "@/lib/item-utils"
 import type { BimLine } from "@/lib/ingest/bim-chat"
 import type { ItemRecord, List } from "@/lib/types"
@@ -118,7 +119,7 @@ export function itemFacts(item: ItemRecord, all: readonly ItemRecord[], now = ne
   const lastNote = item.noteLog?.length ? item.noteLog[item.noteLog.length - 1] : undefined
   if (lastNote) facts.push(`note ${lastNote.date}: ${cut(lastNote.text, 90)}`)
   else if (item.notes) facts.push(`note: ${cut(item.notes, 90)}`)
-  return facts
+  return stripSecretsDeep(facts)
 }
 
 /** One item and everything around it. Unknown center: an empty graph. */
@@ -129,6 +130,9 @@ export function itemGraph(
   now = new Date(),
   lines: readonly BimLine[] = [],
 ): MemoryGraph {
+  // `\secret` spans never become a node, a fact, or a "mentions" link (`docs/SECRETS.md`).
+  all = stripSecretsDeep(all)
+  lines = stripSecretsDeep(lines)
   const byId = new Map(all.map((t) => [t.id, t]))
   const center = byId.get(centerId)
   if (!center) return { centerId, nodes: [], edges: [] }
@@ -257,6 +261,8 @@ export function laneOf(line: BimLine): string {
 
 /** BIM's working memory: hub → lanes → recent turns → the items each turn named, and its evidence. */
 export function bimGraph(lines: readonly BimLine[], all: readonly ItemRecord[], now = new Date()): MemoryGraph {
+  all = stripSecretsDeep(all)
+  lines = stripSecretsDeep(lines)
   const hub: GraphNode = { id: "bim", kind: "hub", label: "BIM", facts: [], ask: askFor("hub", "BIM") }
   const nodes = new Map<string, GraphNode>([[hub.id, hub]])
   const edges: GraphEdge[] = []

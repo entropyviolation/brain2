@@ -12,7 +12,7 @@
 "use client"
 
 import { create } from "zustand"
-import { createPassphraseRecord, MIN_PASSPHRASE_LENGTH, verifyPassphrase, type PassphraseRecord } from "@/lib/secrets"
+import { asksForSecrets, createPassphraseRecord, MIN_PASSPHRASE_LENGTH, stripSecretsDeep, verifyPassphrase, type PassphraseRecord } from "@/lib/secrets"
 
 export const SECRETS_LOCK_KEY = "brain2-secrets-lock"
 export const IDLE_LOCK_MS = 10 * 60 * 1000
@@ -123,4 +123,29 @@ export const useSecretsStore = create<SecretsState>((set, get) => {
 export function secretsShown(surface: SecretsSurface): boolean {
   const { unlocked, include } = useSecretsStore.getState()
   return unlocked && include[surface]
+}
+
+/** The same question as a hook, so a screen repaints when you unlock, switch on, lock or idle out. */
+export function useSecretsShown(surface: SecretsSurface): boolean {
+  return useSecretsStore((s) => s.unlocked && s.include[surface])
+}
+
+/**
+ * What a screen may draw: the value as it is while secrets are shown, else a copy with every `\secret` span cut
+ * from every string in it (`stripSecretsDeep`). Hidden means gone: no mask, no marks, no count.
+ */
+export function maskSecrets<T>(value: T, shown: boolean): T {
+  return shown ? value : stripSecretsDeep(value)
+}
+
+/**
+ * Does this line EXPLICITLY include secrets, so its readers and model calls may see `\secret` spans and secret
+ * items? Only with a passphrase set AND typed (unlocked), and then when the chat switch is on or the line says
+ * "secrets included" (`asksForSecrets`). With no passphrase there is no way in: the phrase alone is not enough.
+ * A topic never counts. Background BIMBIES never ask this: they stay secret-free (`docs/SECRETS.md`).
+ */
+export function secretsAskedFor(text: string): boolean {
+  const { record, unlocked } = useSecretsStore.getState()
+  if (!record || !unlocked) return false
+  return secretsShown("chat") || asksForSecrets(text)
 }

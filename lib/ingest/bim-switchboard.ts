@@ -28,6 +28,7 @@ import { traceOfFlowRun } from "@/lib/agents/trace-adapters"
 import { saveTrace } from "@/lib/agents/trace-store"
 import type { TraceRecorder } from "@/lib/agents/trace"
 import { snapshotFromStores } from "@/lib/bim-flow/store-snapshot"
+import { secretsAskedFor } from "@/lib/secrets-store"
 import { retrieve } from "@/lib/bim-flow/retrieve"
 import { contentWords, type VaultSnapshot } from "@/lib/bim-flow/vault-search"
 import type { Answer, Evidence, Flow } from "@/lib/bim-flow/types"
@@ -146,13 +147,26 @@ async function codeLook(text: string, snap: VaultSnapshot, now: Date): Promise<E
   }
 }
 
-async function askOnce(text: string, crew: Crew, now: Date, signal: AbortSignal): Promise<{ answer: SwitchboardAnswer; models: string[] }> {
+/**
+ * Secrets for one line: a line that EXPLICITLY said "secrets included" (`secretsAskedFor`) gets a snapshot and model
+ * calls that keep `\secret` spans and secret items. Every other line gets neither (`docs/SECRETS.md`).
+ */
+interface Secrets {
+  call: { secrets?: "included" }
+  snap: () => ReturnType<typeof snapshotFromStores>
+}
+function secretsFor(text: string): Secrets {
+  const on = secretsAskedFor(text)
+  return { call: on ? { secrets: "included" } : {}, snap: () => (on ? snapshotFromStores(true) : snapshotFromStores()) }
+}
+
+async function askOnce(text: string, crew: Crew, now: Date, signal: AbortSignal, secrets: Secrets): Promise<{ answer: SwitchboardAnswer; models: string[] }> {
   const flow = savedFlow("ask")
   const run = await runFlow(
     flow,
     [{ id: `bim-chat-${now.getTime()}`, text, at: now.toISOString(), prior: [] }],
-    ollamaCall(crew.main, signal),
-    snapshotFromStores(),
+    ollamaCall(crew.main, signal, secrets.call),
+    secrets.snap(),
     {
       model: crew.main,
       // Chat keeps the answer on `main` (the 14B) beside the 3B gates: both stay loaded on a 32 GB Mac.
@@ -183,15 +197,15 @@ async function askOnce(text: string, crew: Crew, now: Date, signal: AbortSignal)
 }
 
 /** The Ask flow inside one budget (`ASK_TIMEOUT_MS`), tried a second time when the model's reply was empty or not JSON. */
-async function askLane(text: string, crew: Crew, now: Date): Promise<{ answer: SwitchboardAnswer; models: string[]; tries: number }> {
+async function askLane(text: string, crew: Crew, now: Date, secrets: Secrets): Promise<{ answer: SwitchboardAnswer; models: string[]; tries: number }> {
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), ASK_TIMEOUT_MS)
   try {
     try {
-      return { ...(await askOnce(text, crew, now, abort.signal)), tries: 1 }
+      return { ...(await askOnce(text, crew, now, abort.signal, secrets)), tries: 1 }
     } catch (error) {
       if (!retryable(error) || abort.signal.aborted) throw error
-      return { ...(await askOnce(text, crew, now, abort.signal)), tries: 2 }
+      return { ...(await askOnce(text, crew, now, abort.signal, secrets)), tries: 2 }
     }
   } finally {
     clearTimeout(timer)
@@ -205,7 +219,7 @@ function chatChip(route: ChatRoute, ms: number, reply: ChatLaneReply): string {
   return `${routeChip(route, ms, reply.models, { label: reply.web ? "web" : "chat", notes })} · ${reply.calls} call${reply.calls === 1 ? "" : "s"}`
 }
 
-async function chatLane(text: string, crew: Crew, now: Date, turns: ChatTurn[] | undefined, snap: ReturnType<typeof snapshotFromStores>): Promise<ChatLaneReply> {
+async function chatLane(text: string, crew: Crew, now: Date, turns: ChatTurn[] | undefined, snap: ReturnType<typeof snapshotFromStores>, secrets: Secrets): Promise<ChatLaneReply> {
   // The web is a tool the pick model may choose for a question with no code cue ("who won the game last night?").
   // The search is the Web BIMBY's, and so is home (`web-ask.ts`); only the query leaves the Mac.
   const home = useHomeStore.getState().home
@@ -217,7 +231,7 @@ async function chatLane(text: string, crew: Crew, now: Date, turns: ChatTurn[] |
   } catch {
     /* a store not loaded here: talk without it */
   }
-  return runChatLane({ text, turns, now, snap, call: ollamaCall(crew.main, AbortSignal.timeout(CHAT_TIMEOUT_MS)), pick: crew.pick, main: crew.main, web, ...(about ? { about } : {}) })
+  return runChatLane({ text, turns, now, snap, call: ollamaCall(crew.main, AbortSignal.timeout(CHAT_TIMEOUT_MS), secrets.call), pick: crew.pick, main: crew.main, web, ...(about ? { about } : {}) })
 }
 
 /**
@@ -248,6 +262,7 @@ export async function runSwitchboard(
   if (!ok) return null
   const crew = await timed("crew", () => chatCrew())
   if (!crew) return null
+  const secrets = secretsFor(text)
   const t0 = Date.now()
   // A busy daemon must not leave chat waiting: past this, the line goes to the executor as before.
   // Words the person already corrected go straight to the lane they named (`route-verdicts.ts`); no model is asked.
@@ -259,10 +274,10 @@ export async function runSwitchboard(
   // ("what temp for garlic confit?"), which the Ask flow could only answer with "I don't know".
   const loneChat = route.sure && route.intent === "chat" && !route.second
   let snap: ReturnType<typeof snapshotFromStores> | null = null
-  const general = !taught && route.sure && route.intent === "ask" && !route.second && looksGeneral(groundLine((snap = snapshotFromStores()), text, now))
+  const general = !taught && route.sure && route.intent === "ask" && !route.second && looksGeneral(groundLine((snap = secrets.snap()), text, now))
   if (loneChat || general) {
     try {
-      const reply = await timed("chat", () => chatLane(text, crew, now, opts.turns, snap ?? snapshotFromStores()))
+      const reply = await timed("chat", () => chatLane(text, crew, now, opts.turns, snap ?? secrets.snap(), secrets))
       const chat = { text: reply.text, general: reply.general, evidence: reply.evidence, ...(reply.web ? { web: reply.web } : {}) }
       return { route: chatChip(route, Date.now() - t0, reply), chat, passThrough: false, intent: "chat", sure: true }
     } catch {
@@ -274,14 +289,14 @@ export async function runSwitchboard(
   const passThrough = route.intent !== "ask" || !route.sure
   if (!wantsAsk) return { route: routeChip(route, Date.now() - t0), passThrough: true, intent: route.intent, sure: route.sure }
   try {
-    const { answer, models, tries } = await timed("ask", () => askLane(text, crew, now))
+    const { answer, models, tries } = await timed("ask", () => askLane(text, crew, now, secrets))
     return { route: `${routeChip(route, Date.now() - t0, models)}${tries > 1 ? " · retried" : ""}`, answer, passThrough, intent: route.intent, sure: route.sure }
   } catch (error) {
     const aborted = error instanceof Error && (error.name === "AbortError" || /abort/i.test(error.message))
     const why = aborted ? `timed out after ${ASK_TIMEOUT_MS / 1000}s` : error instanceof Error ? error.message : String(error)
     const failed = why.slice(0, 80)
     // Say what code found rather than only that the model failed.
-    const found = foundAnswer(failed, await codeLook(text, snap ?? snapshotFromStores(), now))
+    const found = foundAnswer(failed, await codeLook(text, snap ?? secrets.snap(), now))
     if (found) return { route: `${routeChip(route, Date.now() - t0)} · ask failed · code look`, answer: found, passThrough, intent: route.intent, sure: route.sure }
     return { route: `${routeChip(route, Date.now() - t0)} · ask failed`, failed, passThrough, intent: route.intent, sure: route.sure }
   }

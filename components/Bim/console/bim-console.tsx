@@ -12,7 +12,7 @@
  */
 "use client"
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { ArrowUp, Mic, Paperclip, Volume2, VolumeX } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
@@ -24,6 +24,7 @@ import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { SecretsToggle } from "@/components/Secrets/SecretsToggle"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
+import { insertSecretMarks } from "@/lib/secrets"
 import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
@@ -206,6 +207,15 @@ function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
   const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget } = useBimChat()
   const choices = openChoices(lines)
   const box = useRef<HTMLTextAreaElement>(null)
+  // The SECRET key's caret, placed once the new draft is on screen (a controlled box jumps to the end otherwise).
+  const caretTo = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const el = box.current
+    if (caretTo.current == null || !el) return
+    el.focus()
+    el.setSelectionRange(caretTo.current, caretTo.current)
+    caretTo.current = null
+  }, [draft])
   const fileInput = useRef<HTMLInputElement>(null)
   // The navy ring shows only once the person clicks into the box or types; autofocus on open stays quiet.
   const [editing, setEditing] = useState(false)
@@ -329,6 +339,22 @@ function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
             {word}
           </button>
         ))}
+        {/* Puts `\secret … \secret` at the caret (or wraps the selection); deletes nothing (`docs/SECRETS.md`). */}
+        <button
+          data-no95
+          type="button"
+          title="Mark words secret: \secret … \secret. Hidden from search, graphs and every reply unless you say “secrets included”."
+          onPointerDown={(event) => event.preventDefault()}
+          onClick={() => {
+            const el = box.current
+            const next = insertSecretMarks(draft, el?.selectionStart ?? draft.length, el?.selectionEnd ?? draft.length)
+            setEditing(true)
+            setDraft(next.text)
+            caretTo.current = next.caret
+          }}
+        >
+          secret
+        </button>
         <button data-no95 type="button" className="bim-quick-gap" disabled={busy} title="BIM asks what you are doing or how you feel" onClick={() => checkIn()}>
           ask me
         </button>

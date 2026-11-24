@@ -762,14 +762,8 @@ body.win95-app .bim-well.is-editing textarea:focus,
   padding: 3px 9px 6px;
 }
 
-/* Quick keycaps in the app's Windows pixel face (`w95fa`, one weight). Tabs and MODE keep Silkscreen. */
-.ui-dialog-content.bim-crt .bim-quick button {
-  font-family: var(--w95-font) !important;
-  font-size: 13px;
-  font-weight: normal;
-  font-synthesis: none;
-  letter-spacing: 0.02em;
-}
+/* Quick keycaps read in the same face, size and case as the top keys (＋ new, chats): the shared
+   `.bim-crt button` keycap, DM Mono 500 11px uppercase (2026-11-24). No override here. */
 
 .bim-quick .bim-quick-gap {
   margin-left: auto;
@@ -840,13 +834,14 @@ body.win95-app .bim-well.is-editing textarea:focus,
   display: grid;
   place-items: end center;
   width: 72px;
-  height: 80px;
+  /* Less sky over his head (2026-11-24: was 80px). The thought dots may peek over the top edge. */
+  height: 68px;
   padding-bottom: 3px;
   box-sizing: border-box;
   border-radius: 4px;
-  /* Pale cool paper, so the silver blob and its dark outline read (2026-11-24; was CRT black). */
-  background: linear-gradient(180deg, #f3f6f8 0%, #dde4e8 100%);
-  box-shadow: inset 0 0 0 1px #9aa3aa, inset 0 1px 0 #fff, inset 0 -6px 10px rgba(40, 60, 70, 0.12);
+  /* Dark graphite, not black and not bright paper (2026-11-24), so the silver blob reads without glare. */
+  background: linear-gradient(180deg, #4a5056 0%, #353a3f 100%);
+  box-shadow: inset 0 0 0 1px #24282c, inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -6px 10px rgba(0, 0, 0, 0.25);
 }
 
 .bim-blob {
@@ -894,9 +889,10 @@ body.win95-app .bim-well.is-editing textarea:focus,
   animation-delay: 0.5s;
 }
 
+/* The bob goes UP from rest, so he never dips below the floor of his box (2026-11-24; was down 1px = 3px). */
 @keyframes bim-blob-bob {
   50% {
-    transform: translateY(1px);
+    transform: translateY(-1px);
   }
 }
 

@@ -13,7 +13,7 @@ import { withHolidays } from "@/lib/holidays"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useHealthImportStore } from "@/lib/phone-sync/health-store"
 import { useReviewsStore } from "@/lib/reviews-store"
-import { withoutSecrets } from "@/lib/secrets"
+import { stripSecretsDeep, withoutSecrets } from "@/lib/secrets"
 import { secretsShown } from "@/lib/secrets-store"
 import { buildDatasets } from "./datasets"
 import type { TelegramFeedRow } from "@/lib/ingest/telegram-feed"
@@ -128,10 +128,16 @@ export function buildPeople(tasks: Task[]): NonNullable<VaultSnapshot["people"]>
 }
 
 /**
- * Secret items are left out unless `includeSecrets` is true. Default: whether
- * the person unlocked secrets and switched them on for chat.
+ * Secret items, and every `\secret … \secret` span inside any text, are left
+ * out unless `includeSecrets` is true. Default: whether the person unlocked
+ * secrets and switched them on for chat.
  */
 export function snapshotFromStores(includeSecrets: boolean = secretsShown("chat")): VaultSnapshot {
+  const snap = buildSnapshotFromStores(includeSecrets)
+  return includeSecrets ? snap : stripSecretsDeep(snap)
+}
+
+function buildSnapshotFromStores(includeSecrets: boolean): VaultSnapshot {
   const { tasks: allTasks, lists } = useTaskStore.getState()
   const tasks = withoutSecrets(allTasks, includeSecrets)
   const habits = useHabitsStore.getState().tasks
@@ -195,6 +201,11 @@ function hubState(items: Record<string, string>, key: string): Record<string, un
  * No store is touched, so tests can run the flows on the person's real vault.
  */
 export function snapshotFromPersistItems(items: Record<string, string>, now = new Date(), includeSecrets = false): { snap: VaultSnapshot; feed: TelegramFeedRow[] } {
+  const out = buildFromPersistItems(items, now, includeSecrets)
+  return includeSecrets ? out : stripSecretsDeep(out)
+}
+
+function buildFromPersistItems(items: Record<string, string>, now: Date, includeSecrets: boolean): { snap: VaultSnapshot; feed: TelegramFeedRow[] } {
   const rawTask = hubState(items, "task-storage") as { tasks?: Task[]; lists?: { id: string; name: string }[] } | null
   const task = rawTask && { ...rawTask, tasks: withoutSecrets(rawTask.tasks ?? [], includeSecrets) }
   const habits = (hubState(items, "habits-store")?.tasks ?? []) as { id: string; name: string }[]

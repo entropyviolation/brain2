@@ -14,6 +14,7 @@
  */
 
 import { archive } from "./archive"
+import { stripSecretSpans } from "@/lib/secrets"
 
 export const OLLAMA_URL = "http://127.0.0.1:11434"
 
@@ -214,9 +215,20 @@ export function keepAliveFor(model: string): string | number {
 const nsToMs = (ns: unknown) => (typeof ns === "number" && ns > 0 ? Math.round(ns / 1e6) : undefined)
 const taskOf = (system: string) => system.replace(/\s+/g, " ").trim().slice(0, 60)
 
-/** A `ModelCall` bound to one Ollama model. Identical prompts are answered from memory, unless `fresh` (a test run: real timings, every call archived). */
-export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: boolean } = {}): ModelCall {
-  return async ({ model: only, system, user, schema, maxTokens = 200, temperature = 0 }) => {
+/**
+ * A `ModelCall` bound to one Ollama model. Identical prompts are answered from memory, unless `fresh` (a test run: real timings, every call archived).
+ * `background` marks a job no one is waiting on (the Day Log BIMBY, the Coach BIMBY's quiet read).
+ *
+ * Secrets: every `\secret … \secret` span is cut from the system and user text before the model sees it, the
+ * cache keys it, the trace shows it, or the archive keeps it. Only `secrets: "included"` keeps them, and only a
+ * line that EXPLICITLY said "secrets included" passes that (`secretsAskedFor`, `docs/SECRETS.md`). This is the
+ * one gate every model call goes through, so a new caller is secret-free until it opts in.
+ */
+export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: boolean; background?: boolean; secrets?: "included" } = {}): ModelCall {
+  const keep = opts.secrets === "included" && !opts.background
+  return async ({ model: only, system: rawSystem, user: rawUser, schema, maxTokens = 200, temperature = 0 }) => {
+    const system = keep ? rawSystem : stripSecretSpans(rawSystem)
+    const user = keep ? rawUser : stripSecretSpans(rawUser)
     const model = only || bound
     const key = JSON.stringify([model, system, user, schema, temperature])
     const startedAt = Date.now()
@@ -309,7 +321,7 @@ export async function embedScores(query: string, texts: string[], signal?: Abort
           method: "POST",
           signal,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: EMBED_MODEL, input: batch.map((t) => t.slice(0, 400)) }),
+          body: JSON.stringify({ model: EMBED_MODEL, input: batch.map((t) => stripSecretSpans(t).slice(0, 400)) }),
         },
         { timeoutMs: 60_000 },
       )

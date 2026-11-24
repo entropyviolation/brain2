@@ -23,7 +23,7 @@
  */
 import type { Item, Task, AttributeValue } from "@/lib/types"
 import { itemTitle } from "@/lib/item-utils"
-import { withoutSecrets } from "@/lib/secrets"
+import { stripSecretSpans, withoutSecrets } from "@/lib/secrets"
 
 /** The field category a query term matched on, ordered by descending weight. */
 export type SearchField = "title" | "tag" | "attribute"
@@ -47,8 +47,9 @@ export interface SearchOptions {
    */
   titleOnly?: boolean
   /**
-   * Keep items flagged `secret`. Default false: secret items are never
-   * returned unless the caller asks (`secretsShown("search")`).
+   * Keep items flagged `secret`, and match words inside `\secret … \secret`
+   * spans. Default false: secret items are never returned and secret spans
+   * are never matched unless the caller asks (`secretsShown("search")`).
    */
   includeSecrets?: boolean
 }
@@ -104,18 +105,23 @@ function stringifyAttributeValue(value: AttributeValue): string {
  * the generic `Item` and the richer built-in `Task` (body, notes, etc.).
  * `description` is only consulted as a title fallback via {@link itemTitle}.
  */
-function collectFields(item: Item, titleOnly = false): FieldText[] {
+function collectFields(item: Item, titleOnly = false, includeSecrets = false): FieldText[] {
   const task = item as Partial<Task>
   const fields: FieldText[] = []
+  // Words inside a `\secret` span never match unless secrets are included (`lib/secrets.ts`).
+  const visible = (text: string) => normalize(includeSecrets ? text : stripSecretSpans(text))
 
   const titleText = itemTitle(item as Partial<Task>)
-  if (titleText) fields.push({ field: "title", text: normalize(titleText) })
+  if (titleText) {
+    const t = visible(titleText)
+    if (t) fields.push({ field: "title", text: t })
+  }
 
   if (titleOnly) return fields
 
   if (item.tags?.length) {
     for (const tag of item.tags) {
-      const t = normalize(tag)
+      const t = visible(tag)
       if (t) fields.push({ field: "tag", text: t })
     }
   }
@@ -139,7 +145,7 @@ function collectFields(item: Item, titleOnly = false): FieldText[] {
     }
   }
   for (const text of attrTexts) {
-    const n = normalize(text)
+    const n = visible(text)
     if (n) fields.push({ field: "attribute", text: n })
   }
 
@@ -181,7 +187,7 @@ export function searchItems<T extends Item>(
   const results: SearchResult<T>[] = []
 
   for (const item of withoutSecrets(items, opts.includeSecrets)) {
-    const fields = collectFields(item, opts.titleOnly)
+    const fields = collectFields(item, opts.titleOnly, opts.includeSecrets)
     if (fields.length === 0) continue
 
     let total = 0

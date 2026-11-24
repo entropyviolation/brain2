@@ -9,9 +9,10 @@
 "use client"
 
 import { Camera } from "lucide-react"
-import { Fragment, memo, useRef, useState } from "react"
+import { Fragment, memo, useLayoutEffect, useRef, useState } from "react"
 import { BIM_FULL, BIM_SHORT } from "@/lib/ingest/bim"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
+import { insertSecretMarks } from "@/lib/secrets"
 import type { BimLine } from "@/lib/ingest/bim-chat"
 import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
@@ -59,6 +60,16 @@ const PhoneLog = memo(function PhoneLog({ lines }: { lines: BimLine[] }) {
 export function BimPhoneScreen() {
   const { lines, draft, setDraft, submit, onKeyDown, clear, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget } = useBimChat()
   const fileInput = useRef<HTMLInputElement>(null)
+  const box = useRef<HTMLTextAreaElement>(null)
+  // The SECRET key's caret, placed once the new draft is on screen (a controlled box jumps to the end otherwise).
+  const caretTo = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const el = box.current
+    if (caretTo.current == null || !el) return
+    el.focus()
+    el.setSelectionRange(caretTo.current, caretTo.current)
+    caretTo.current = null
+  }, [draft])
   const choices = openChoices(lines)
   const [showPast, setShowPast] = useState(false)
 
@@ -129,6 +140,7 @@ export function BimPhoneScreen() {
           <Camera size="1.1em" aria-hidden />
         </button>
         <textarea
+          ref={box}
           aria-label="Message BIM"
           value={draft}
           rows={2}
@@ -147,6 +159,19 @@ export function BimPhoneScreen() {
             {word}
           </button>
         ))}
+        <button
+          type="button"
+          className="m-keycap"
+          onPointerDown={(event) => event.preventDefault()}
+          onClick={() => {
+            const el = box.current
+            const next = insertSecretMarks(draft, el?.selectionStart ?? draft.length, el?.selectionEnd ?? draft.length)
+            setDraft(next.text)
+            caretTo.current = next.caret
+          }}
+        >
+          secret
+        </button>
       </div>
     </section>
   )
