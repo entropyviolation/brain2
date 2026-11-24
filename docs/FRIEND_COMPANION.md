@@ -1,5 +1,9 @@
 # Today's friend — companion + suggestion engine (plan)
 
+_Last mapped: 2026-11-24_
+
+**Where this goes next:** [`GENIUSES.md`](GENIUSES.md). Each friend can become a **genius**: an advocate for one area of your life (habits, money, a project) with its own bindings, memory and relationship, and, later, model replies to your reasons. That page changes two rules here, and says so: the "LLM (maybe never)" section and "Do not store chat transcripts." The pixel game is no longer part of Brain2 (it is `~/baby-animal-game`).
+
 This is the north-star spec for turning the header **today's friend** from a
 photograph + bubble into a **large, multi-facet companion system**.
 
@@ -176,7 +180,7 @@ always say “I love you”.
 | `lib/friend-suggestion-clock.ts` | Unsolicited ticks | later |
 | `lib/friend-quests.ts` | Multi-step item quests | later |
 | `lib/friend-mood.ts` | Hunger / sleep / weather / tracking | later |
-| `lib/friend-trinkets.ts` | Nest furniture cosmetics | later (the in-game trinkets and keepsakes of the Baby animal game live in `lib/baby-game/items.ts` and are not nest cosmetics) |
+| `lib/friend-trinkets.ts` | Nest furniture cosmetics | later |
 
 ### Candidate pool (phased)
 
@@ -231,7 +235,7 @@ Per friend:
 - **Later:** ring buffer of last ids in the scorer, “opened from bubble”,
   reunion already used this assignment, mood
 
-Do not store chat transcripts. The friend is not an LLM session.
+Do not store chat transcripts. The friend is not an LLM session. (Planned exception for geniuses: up to twelve lines per mission, see [`GENIUSES.md`](GENIUSES.md).)
 
 ### Copy
 
@@ -268,6 +272,8 @@ through `points-store` (`Friend: {title}`). Idempotent via mission `done`.
 - Sound optional, off by default
 
 ### LLM (maybe never)
+
+_2026-11-24:_ superseded for geniuses by [`GENIUSES.md`](GENIUSES.md) "Talking back". The picker rule below still holds there.
 
 Optional flavor on copy, not the picker. Picker stays testable. If an LLM is
 added, it receives the already-chosen title + tone, and may not choose a

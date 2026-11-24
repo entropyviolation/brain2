@@ -33,7 +33,6 @@ import { handleChromeHistoryApi } from "./chrome-history-api.mjs"
 import { handleInstagramApi } from "./instagram-api.mjs"
 import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
 import { handleCodeDocsApi } from "./code-docs-api.mjs"
-import { handleBabyGensApi } from "./baby-gens-api.mjs"
 import { handleSpeedReadApi } from "./speed-read-api.mjs"
 import { handleLinkPeekApi } from "./link-peek-api.mjs"
 import { brain2Env } from "../lib/brain2-env.mjs"
@@ -186,7 +185,6 @@ const server = createServer(async (req, res) => {
     if (await handleInstagramApi(req, res, pathname)) return
     if (await handlePhoneSyncApi(req, res, pathname)) return
     if (await handleCodeDocsApi(req, res, pathname)) return
-    if (await handleBabyGensApi(req, res, pathname)) return
     if (await handleSpeedReadApi(req, res, pathname)) return
     if (await handleLinkPeekApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
