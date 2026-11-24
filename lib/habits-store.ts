@@ -137,6 +137,7 @@ import { rowsMissingMass } from "@/lib/vault-guard.js"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
+import { isPhoneWebStorage } from "@/lib/phone-device"
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { migrateHabitSortMode, type HabitSortMode } from "@/lib/habit-sort"
 import { applyHabitOrder } from "@/lib/habit-order"
@@ -1052,6 +1053,27 @@ type GradeSyncState = Pick<
   | "habitExemptions"
 >
 
+/**
+ * Daily prioritized habits depend on the week of `day` only (the lookback
+ * starts at that week's Sunday), so one week shares one answer. Keyed by the
+ * store's own `weeklyData` and `tasks` objects, which a write replaces. A
+ * full-history grade walk used to redo the six-week lookback for every day
+ * and every habit: about a second on the Mac, longer on the phone.
+ */
+const prioByWeek = new WeakMap<object, WeakMap<object, Map<string, WeeklyTask[]>>>()
+
+function prioritizedDailyForWeek(state: GradeSyncState, daily: WeeklyTask[], day: Date): WeeklyTask[] {
+  const data = state.weeklyData ?? {}
+  let byTasks = prioByWeek.get(data)
+  if (!byTasks) prioByWeek.set(data, (byTasks = new WeakMap()))
+  let byWeek = byTasks.get(state.tasks)
+  if (!byWeek) byTasks.set(state.tasks, (byWeek = new Map()))
+  const weekKey = getWeekString(getWeekStartDate(day))
+  let prio = byWeek.get(weekKey)
+  if (!prio) byWeek.set(weekKey, (prio = prioritizedHabits(daily, data, day, "daily")))
+  return prio
+}
+
 function dailyShownGrades(state: GradeSyncState, day: Date): { week: number; output: number; dayScore: number } {
   const weekDates = getWeekDates(getWeekStartDate(day))
   const daily = state.tasks.filter(isDailyHabit)
@@ -1066,11 +1088,12 @@ function dailyShownGrades(state: GradeSyncState, day: Date): { week: number; out
     state.outputGradeTolerance,
     isExempt,
   )
-  const prio = prioritizedHabits(daily, state.weeklyData, day, "daily")
-  const prioWeek =
+  const prio = prioritizedDailyForWeek(state, daily, day)
+  const prioWeekGrade =
     prio.length > 0
-      ? calculateWeekToDateGrade(prio, state.weeklyData, weekDates, day, state.gradeTolerance, isExempt).grade
+      ? calculateWeekToDateGrade(prio, state.weeklyData, weekDates, day, state.gradeTolerance, isExempt)
       : null
+  const prioWeek = prioWeekGrade ? prioWeekGrade.grade : null
   const prioOut =
     prio.length > 0
       ? calculateWeekToDateOutputGrade(prio, state.weeklyData, weekDates, day, state.outputGradeTolerance, isExempt)
@@ -1078,12 +1101,7 @@ function dailyShownGrades(state: GradeSyncState, day: Date): { week: number; out
       : null
   const dateKey = formatLocalDateKey(day)
   const rawDay = weekGrade.days.find((d) => d.dateKey === dateKey)?.raw ?? 0
-  const prioRaw =
-    prio.length > 0
-      ? (calculateWeekToDateGrade(prio, state.weeklyData, weekDates, day, state.gradeTolerance, isExempt).days.find(
-          (d) => d.dateKey === dateKey,
-        )?.raw ?? 0)
-      : null
+  const prioRaw = prioWeekGrade ? (prioWeekGrade.days.find((d) => d.dateKey === dateKey)?.raw ?? 0) : null
   return {
     week: blendPriorityScore(weekGrade.grade, prioWeek, !!state.gradeUsePriority),
     output: blendPriorityScore(outputGrade.grade, prioOut, !!state.outputUsePriority),
@@ -2092,6 +2110,10 @@ export const useHabitsStore = create<HabitsState>()(
             const live = useHabitsStore.getState()
             if (!live.tasks?.length) return
             syncGradeBonusesFromState(live, new Date())
+            // The phone never writes points back (not a patch store), and the
+            // Mac already walked the history. On the phone that walk froze
+            // the screen after every load, since Safari has no idle callback.
+            if (isPhoneWebStorage()) return
             scheduleIdle(() => syncGradeBonusesFromState(useHabitsStore.getState()))
           }
           if (usePointsStore.persist.hasHydrated()) queueMicrotask(syncAwards)

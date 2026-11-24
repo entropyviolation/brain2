@@ -113,8 +113,20 @@ export function bindAllNighterNights(read: NightReader) {
   readNights = read
 }
 
+let lastNights: object | null = null
+let lastContext: ExemptionContext | null = null
+
+/**
+ * Every exemption check without its own context lands here, thousands of
+ * times in one grade walk. The sleep store replaces its nights object on a
+ * write, so one set per object is enough.
+ */
 export function currentExemptionContext(): ExemptionContext {
-  return exemptionContext(readNights())
+  const nights = readNights()
+  if (lastContext && nights && nights === lastNights) return lastContext
+  lastContext = exemptionContext(nights)
+  lastNights = nights ?? null
+  return lastContext
 }
 
 const allNighterListeners = new Set<(morningKey: string) => void>()
