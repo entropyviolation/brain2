@@ -55,7 +55,7 @@ The rules read first. With LLM on, the sentences the rules left go to one schema
 
 | File | Role |
 |------|------|
-| `parse.ts` | Pure. `parseTellLead` (one name or `A + B`), `tellLead`, `sentences`, `dayIn` (holidays + `findDay`), `readAbout` |
+| `parse.ts` | Pure. `parseTellLead` (one name or `A + B`), `tellLead`, `sentences`, `dayIn` (holidays + `findDay`; a `find`, not a for-of with an early return, which Turbopack in Next 15.2 bundled with `findDay` unbound), `readAbout` |
 | `plan.ts` | Pure. `buildGraphPlan`: the card from the reads and a snapshot (people, open tasks, the subject's address, relation and links) |
 | `ghosts.ts` | Pure. `withProposals` (waiting changes as `proposal` nodes on the center), `waitingFor` |
 | `llm.ts` | `readsFromModel` (pure check against the sentences), `readWithModel` |

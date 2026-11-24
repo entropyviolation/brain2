@@ -107,15 +107,15 @@ function easter(y: number): Date {
 
 /** A day named in a sentence, holidays included. Past tense takes the nearest one on or before today. */
 export function dayIn(text: string, now: Date, prefer: "past" | "future"): string | null {
-  for (const h of HOLIDAYS) {
-    if (!h.re.test(text)) continue
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    let d = h.day(now.getFullYear())
-    if (prefer === "past" && d > today) d = h.day(now.getFullYear() - 1)
-    if (prefer === "future" && d < today) d = h.day(now.getFullYear() + 1)
-    return isoOf(d)
-  }
-  return findDay(text, now, prefer)?.iso ?? null
+  // A find, not a for-of with an early return: Turbopack (Next 15.2) left the bim-tell import after that loop
+  // unbound in the browser bundle ("findDay is not defined").
+  const h = HOLIDAYS.find((x) => x.re.test(text))
+  if (!h) return findDay(text, now, prefer)?.iso ?? null
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  let d = h.day(now.getFullYear())
+  if (prefer === "past" && d > today) d = h.day(now.getFullYear() - 1)
+  if (prefer === "future" && d < today) d = h.day(now.getFullYear() + 1)
+  return isoOf(d)
 }
 
 // ---------------------------------------------------------------- one sentence at a time
