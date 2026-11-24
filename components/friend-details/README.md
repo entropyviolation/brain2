@@ -4,7 +4,7 @@ One friend’s page, opened from the header photograph and from Gallery **Detail
 
 The page is a space homestead: a farm-sim page on a station hull. The hull is dark and riveted. The friend face and the tab page sit on pale steel plates with a dialogue-box border and a rivet in each corner. The photograph sits in a round chrome porthole: a conic-metal ring with four rivets, a glass lip, and a rainbow film around the rim of the glass; the middle stays clear. Bond is twenty pixel hearts. Little pixel icons (`PixelIcon.tsx`) sit beside the tabs, the keys, Met / Worn / Next, the name, and the mission letter. No yellow, no gold. _Last mapped: 2026-11-01._
 
-The porthole and the bond meter share a top and a bottom. The name is the one large line, top-aligned with the window. Chat sits at the foot of that column. Today’s mission is a dark strip 16px under that pair. Tabs — Today, Personality, Keepsakes, Journal — meet the page with no gap. The stage and the footer stay put. Only the page scrolls. The last tab is remembered per friend.
+The porthole and the bond meter share a top and a bottom. The name is the one large line, top-aligned with the window. Chat sits at the foot of that column. Today’s mission is a dark strip 16px under that pair. Tabs — Today, Personality, Genius, Keepsakes, Journal — meet the page with no gap (five columns since 2026-11-24). The stage and the footer stay put. Only the page scrolls. The last tab is remembered per friend.
 
 _Last mapped: 2026-10-30._
 
@@ -21,6 +21,7 @@ friend-details/
   FriendMissionDetail.tsx                  mission card over the instrument; item detail loads when the task opens
   FriendDetailsJournal.tsx                 playlist rows, opens the card
   FriendDetailsKeepsakes.tsx               cameo badges counted from the log
+  FriendDetailsGenius.tsx                  the Genius tab: wear a genius, or edit its name, area, charter, status, bindings
   useFriendDraft.ts                        dirty check, presets, save
   friend-details.css                       --friend-silver, --friend-lace, --friend-glow, --friend-nixie
   friend-details.test.tsx
@@ -62,3 +63,8 @@ _Last mapped: 2026-11-01._
 Every word key on the page is the house keycap (`docs/DESIGN_STYLE.md` → Keycaps), painted on `.friend-key`. That includes Change picture, Remove, Chat, the corner Close, presets, mission verbs, and the footer. They are pale silver with a darker skirt and drop about 2px on press. A fixed action (Accept mission, I did it, Yes smaller, Yes first step, Save personality) is the primary cap: `.is-primary`, navy ring and lamp. A voice key that is chosen latches to CRT glass with a green legend: `.is-on`. The four tabs are the shared latching bay (`.b2-keycap-tab` with `data-state`), the same as other room switchers. The gallery and the header mission sheet share `.friend-key`, so they get the same caps.
 
 The glass shine and the bond bar each sweep once a minute, then hold. `prefers-reduced-motion: reduce` stops that sweep, the offered pulse, the power-on, and the bubble bounce.
+
+## Genius tab
+
+_Last mapped: 2026-11-24._ `FriendDetailsGenius.tsx`. A card can be the face of one genius (`lib/geniuses/`, `docs/GENIUSES.md`). Not a genius yet: "Be Hearth" (and the others) moves that genius's face to this card; "New genius" starts one named after the card. A genius: name, area, charter, status (seven active at most), and trays for the lists, goals, objectives, habits and project items it cares about, in the equalizer's bead style, then "What it sees" (the area read its prompt carries). Edits save as you make them, into the geniuses store, not the personality draft, so Save personality and Revert do not touch them. "Stop being" clears the face. Talks, councils, memory and prompts stay in `/lab/geniuses`.
+

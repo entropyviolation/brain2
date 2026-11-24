@@ -120,7 +120,7 @@ Today’s mission is a dark strip. **Accept** and **I did it** sit on the strip.
 The title opens the mission card, which still walks **Something smaller**, the
 first step, and a reason, and opens the task on top.
 
-Win98 tabs — Today, Personality, Keepsakes, Journal — replace the long scroll.
+Win98 tabs — Today, Personality, Genius, Keepsakes, Journal — replace the long scroll. The Genius tab (2026-11-24) is `docs/GENIUSES.md`.
 The last tab is remembered per friend. Today holds the newest journal rows.
 
 Tone is a dial. Bubble effects are swatches. Whims sit in a two-column grid.

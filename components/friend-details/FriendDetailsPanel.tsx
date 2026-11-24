@@ -1,7 +1,8 @@
 /**
  * components/friend-details/FriendDetailsPanel.tsx — One friend’s instrument
  *
- * Portrait, four readouts, voice keys, equalizer, keepsakes, journal.
+ * Portrait, four readouts, voice keys, equalizer, keepsakes, journal, and the
+ * Genius page (`FriendDetailsGenius.tsx`), which saves into the geniuses store.
  * The draft stays local until Save personality. Close asks when it is dirty.
  * Chat previews a line and does not log a mission.
  */
@@ -24,6 +25,7 @@ import { FriendDetailsEqualizer } from "@/components/friend-details/personality/
 import { FriendMissionDetail } from "@/components/friend-details/FriendMissionDetail"
 import { FriendDetailsJournal } from "@/components/friend-details/FriendDetailsJournal"
 import { FriendDetailsKeepsakes } from "@/components/friend-details/FriendDetailsKeepsakes"
+import { FriendDetailsGenius } from "@/components/friend-details/FriendDetailsGenius"
 import { FriendDetailsPortrait } from "@/components/friend-details/portrait/FriendDetailsPortrait"
 import { FriendDetailsVoice } from "@/components/friend-details/personality/FriendDetailsVoice"
 import { confirmDiscard, useFriendDraft } from "@/components/friend-details/useFriendDraft"
@@ -33,12 +35,12 @@ import "@/components/friend-details/friend-details.css"
 const POWER_MS = 560
 const TAB_KEY = "brain2-friend-details-tab"
 const TONE_KEY = "brain2-friend-tones"
-type FriendTab = "today" | "personality" | "keepsakes" | "journal"
+type FriendTab = "today" | "personality" | "genius" | "keepsakes" | "journal"
 
 function readTab(animalId: string): FriendTab {
   if (typeof window === "undefined") return "today"
   const stored = window.localStorage.getItem(`${TAB_KEY}:${animalId}`)
-  if (stored === "personality" || stored === "keepsakes" || stored === "journal" || stored === "today") return stored
+  if (stored === "personality" || stored === "genius" || stored === "keepsakes" || stored === "journal" || stored === "today") return stored
   return "today"
 }
 
@@ -221,6 +223,7 @@ export function FriendDetailsPanel({
           [
             ["today", "Today", "sprout"],
             ["personality", "Personality", "heart"],
+            ["genius", "Genius", "signpost"],
             ["keepsakes", "Keepsakes", "gem"],
             ["journal", "Journal", "book"],
           ] as const
@@ -265,6 +268,7 @@ export function FriendDetailsPanel({
                 <FriendDetailsEqualizer draft={draft} titles={titles} lists={lists} onChange={patch} onPreset={applyPreset} />
               </div>
             ) : null}
+            {tab === "genius" ? <FriendDetailsGenius animalId={animalId} displayName={displayName} /> : null}
             {tab === "keepsakes" ? (
               <FriendDetailsKeepsakes
                 missions={missions}

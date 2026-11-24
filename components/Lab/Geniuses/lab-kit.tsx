@@ -93,12 +93,14 @@ export function useGeniusNames(): Record<string, string> {
 export function useContextFor(): (g: Genius, exceptTalkId?: string) => GeniusContext {
   const vault = useAreaVault()
   const personalities = useBabyAnimalsStore((s) => s.personalities)
+  const photos = useBabyAnimalsStore((s) => s.photos)
   const talks = useGeniusesStore((s) => s.talks)
   const meetings = useGeniusesStore((s) => s.meetings)
   const names = useGeniusNames()
   return useMemo(
-    () => (genius: Genius, exceptTalkId?: string) => geniusContext({ genius, vault: { ...vault, now: new Date() }, personalities, talks, meetings, names, exceptTalkId }),
-    [vault, personalities, talks, meetings, names],
+    () => (genius: Genius, exceptTalkId?: string) =>
+      geniusContext({ genius, vault: { ...vault, now: new Date() }, personalities, talks, meetings, names, exceptTalkId, faceName: photos.find((p) => p.animalId === genius.animalId)?.displayName }),
+    [vault, personalities, talks, meetings, names, photos],
   )
 }
 

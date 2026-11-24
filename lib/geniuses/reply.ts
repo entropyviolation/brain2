@@ -23,7 +23,11 @@ export function twoSentences(text: string): string {
 
 export type Checked<T> = { ok: true; value: T } | { ok: false; why: string }
 
-export function checkReply(raw: unknown, turn: number, maxTurns = MAX_TURNS): Checked<GeniusReply> {
+/** The time someone named ("this weekend", "tomorrow"), if any. */
+export const namedTime = (said: string): string | null => LATER.exec(said)?.[0] ?? null
+
+/** `said` is what they just wrote: when it names a time, only reschedule or concede passes. */
+export function checkReply(raw: unknown, turn: number, maxTurns = MAX_TURNS, said = ""): Checked<GeniusReply> {
   const o = obj(raw)
   if (typeof o.line !== "string" || !o.line.trim()) return { ok: false, why: "no line" }
   if (o.line.length > LINE_MAX) return { ok: false, why: `line over ${LINE_MAX} characters` }
@@ -32,6 +36,7 @@ export function checkReply(raw: unknown, turn: number, maxTurns = MAX_TURNS): Ch
   if (!GENIUS_STANCES.includes(o.stance as GeniusStance)) return { ok: false, why: `stance "${String(o.stance)}" is not one of ${GENIUS_STANCES.join(", ")}` }
   const stance = o.stance as GeniusStance
   if (turn >= maxTurns && stance !== "concede" && stance !== "reschedule") return { ok: false, why: "last exchange must concede or reschedule" }
+  if (namedTime(said) && stance !== "concede" && stance !== "reschedule") return { ok: false, why: `they named a time ("${namedTime(said)}")` }
   const reply: GeniusReply = { line, stance }
   if (stance === "split") {
     const smaller = clip(o.smaller, 140)
@@ -53,7 +58,7 @@ const CANT = /\b(can'?t|cannot|too tired|exhausted|sick|ill|no time|not today|ov
 /** The scripted ladder: soften, then split, then reschedule, then concede. Used when the model is off, down, or failed a check. */
 export function scriptedReply(input: { turn: number; said: string; task: string; maxTurns?: number }): GeniusReply {
   const max = input.maxTurns ?? MAX_TURNS
-  const later = LATER.exec(input.said)?.[0]
+  const later = namedTime(input.said)
   if (later) return { line: `${later[0]!.toUpperCase()}${later.slice(1)} works. I will ask again then.`, stance: "reschedule", when: later }
   if (input.turn >= max || CANT.test(input.said)) return { line: "That is a real reason. Not today, then.", stance: "concede" }
   if (input.turn <= 1) return { line: `I hear you. It still matters to me that “${input.task}” moves.`, stance: "soften" }

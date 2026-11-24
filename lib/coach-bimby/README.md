@@ -17,6 +17,8 @@ was open, and nothing in chat could set a timed one.
 
 All of these work in BIM chat and on Telegram.
 
+_2026-11-24:_ The notes also answer simple questions in code, through the BIM chat `fact` lane: "what is my name?" says "Your name is Allie." with no model (`lib/ingest/bim-facts.ts`, `aboutFacts`).
+
 _2026-11-24:_ A hello in front is skipped (`lib/ingest/greeting.ts`): "hi. remember that my name is Allie" is kept as a `who` note. Before this it was logged.
 
 ## Learning as you talk

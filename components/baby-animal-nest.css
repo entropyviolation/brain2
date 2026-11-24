@@ -908,3 +908,32 @@ body.win95-app .baby-friend-dialog:has(.friend-instrument) > button.keycap-close
     height: auto !important;
   }
 }
+
+/* Genius reply box on the mission sheet (`components/genius-talk-back.tsx`). */
+.genius-talk {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.genius-talk-lines {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.genius-talk-line {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.genius-talk-line.is-you {
+  text-align: right;
+  opacity: 0.8;
+}
+.genius-talk-meta {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.6;
+}

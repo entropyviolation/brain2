@@ -53,6 +53,8 @@ export type FriendMission = {
   deadline: string
   declineReason: string
   log: FriendMissionLogEntry[]
+  /** The genius that offered it (`lib/geniuses/`). Missing on old rows and on plain friend missions. */
+  geniusId?: string | null
 }
 
 /** What `offerMission` receives. The store fills id, status, and the log. */
@@ -180,6 +182,7 @@ export function sanitizeFriendMission(raw: unknown): FriendMission | null {
     deadline: typeof rec.deadline === "string" ? rec.deadline : "",
     declineReason: typeof rec.declineReason === "string" ? rec.declineReason.slice(0, 400) : "",
     log,
+    ...(typeof rec.geniusId === "string" && rec.geniusId.trim() ? { geniusId: rec.geniusId.trim().slice(0, 80) } : {}),
   }
 }
 

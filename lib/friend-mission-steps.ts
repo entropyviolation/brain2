@@ -35,3 +35,16 @@ export function ensureFriendFirstStep(taskId: string | null, title: string): { s
   if (!made) return null
   return { stepId: made.id, stepTitle: made.description }
 }
+
+/** Add one named step under the item (a genius's smaller step, after you accept it) and return it. */
+export function addFriendStep(taskId: string | null, description: string): { stepId: string; stepTitle: string } | null {
+  const itemId = friendMissionItemId(taskId)
+  const text = description.trim()
+  if (!itemId || !text) return null
+  const task = useTaskStore.getState().tasks.find((row) => row.id === itemId)
+  if (!task) return null
+  const subtasks = addStepsAsSubtasks(task.subtasks, [{ description: text, isMolecular: true }])
+  const made = subtasks[subtasks.length - 1]
+  useTaskStore.getState().updateTask({ ...task, subtasks })
+  return made ? { stepId: made.id, stepTitle: made.description } : null
+}

@@ -1810,7 +1810,7 @@ p.friend-mission-title {
 
 .friend-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
   margin: 0;
 }
@@ -2650,3 +2650,40 @@ p.friend-mission-title {
   }
 }
 
+
+/* Genius page (`FriendDetailsGenius.tsx`): the same trays and beads as the equalizer. */
+.friend-genius {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  padding: 6px 2px;
+}
+.friend-genius > .friend-tray,
+.friend-genius > .friend-tray-note,
+.friend-genius > .friend-key-row,
+.friend-genius > .friend-genius-sees,
+.friend-genius-field.is-wide {
+  grid-column: 1 / -1;
+}
+.friend-genius-field {
+  display: grid;
+  gap: 3px;
+}
+.friend-genius-field textarea {
+  resize: vertical;
+  font: inherit;
+}
+.friend-genius-sees pre {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  font-size: 11px;
+  color: var(--friend-ink, #222);
+}
+.friend-key-row.is-wrap {
+  flex-wrap: wrap;
+}
+@media (max-width: 560px) {
+  .friend-genius {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

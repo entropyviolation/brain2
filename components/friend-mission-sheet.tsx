@@ -6,7 +6,8 @@
  * `components/friend-details/use-item-detail-popup.ts` when an item id is
  * opened, so a refresh does not parse the item-detail module with this sheet. Accept starts a same-day point window. Decline asks to break the
  * task down, then to do only the first step, then for a written reason.
- * Each answer is logged on the mission.
+ * Each answer is logged on the mission. A genius's mission also has a reply
+ * box (`components/genius-talk-back.tsx`): you argue, it answers.
  */
 "use client"
 
@@ -18,6 +19,8 @@ import type { FriendMission } from "@/lib/friend-mission"
 import { friendMissionItemId, isActionableFriendKind } from "@/lib/friend-mission"
 import { ensureFriendFirstStep, splitFriendTask } from "@/lib/friend-mission-steps"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
+import { useGeniusesStore } from "@/lib/geniuses/store"
+import { closeGeniusTalk, GeniusTalkBack } from "@/components/genius-talk-back"
 
 type Phase = "offer" | "breakdown" | "first" | "why" | "accepted"
 
@@ -25,12 +28,15 @@ export function FriendMissionSheet({
   open,
   nudge,
   friendName,
+  geniusId = null,
   onOpenChange,
   onFinished,
 }: {
   open: boolean
   nudge: FriendNudge | null
   friendName: string
+  /** The genius speaking, when the worn card is a genius's face. The stored mission's own `geniusId` wins. */
+  geniusId?: string | null
   onOpenChange: (open: boolean) => void
   /** Close the sheet. Pass the finished mission when this click completed it. */
   onFinished: (done: FriendMission | null) => void
@@ -44,6 +50,8 @@ export function FriendMissionSheet({
 
   const taskKey = nudge?.taskId ?? ""
   const stored = missions.find((row) => row.taskId === taskKey && (row.status === "offered" || row.status === "accepted"))
+  const speakerId = stored?.geniusId ?? geniusId
+  const genius = useGeniusesStore((s) => (speakerId ? s.geniuses.find((g) => g.id === speakerId) ?? null : null))
 
   useEffect(() => {
     setWhy("")
@@ -62,6 +70,7 @@ export function FriendMissionSheet({
   }
 
   const accept = (step?: { stepId: string; stepTitle: string }) => {
+    if (genius) closeGeniusTalk(genius.id, nudge.taskId, "accepted")
     useBabyAnimalsStore.getState().acceptMission(nudge.taskId, step)
     setPhase("accepted")
   }
@@ -101,6 +110,18 @@ export function FriendMissionSheet({
             ) : (
               <p className="baby-friend-mission-ask">{splitNote || nudge.title}</p>
             )
+          ) : null}
+          {phase === "offer" && actionable && genius ? (
+            <GeniusTalkBack
+              genius={genius}
+              taskId={nudge.taskId}
+              title={nudge.title}
+              onAccept={accept}
+              onDecline={(reason) => {
+                useBabyAnimalsStore.getState().declineMission(nudge.taskId, reason)
+                onFinished(null)
+              }}
+            />
           ) : null}
           {phase === "breakdown" ? (
             <p className="baby-friend-mission-ask">{who} tilts their head. Want me to break this into smaller tasks?</p>
@@ -215,6 +236,7 @@ export function FriendMissionSheet({
                 event.preventDefault()
                 const reason = why.trim()
                 if (!reason) return
+                if (genius) closeGeniusTalk(genius.id, nudge.taskId, "declined")
                 useBabyAnimalsStore.getState().declineMission(nudge.taskId, reason)
                 onFinished(null)
               }}

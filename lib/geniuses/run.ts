@@ -35,12 +35,14 @@ export function geniusContext(input: {
   names: Record<string, string>
   exceptTalkId?: string
   caps?: MemoryCaps
+  /** The face card's own name ("Little Rock Hyrax"). Pack cards have opaque ids, so the prompt needs this. */
+  faceName?: string
 }): GeniusContext {
   const g = input.genius
-  const p = personalityFor(input.personalities, g.animalId, g.name)
+  const p = personalityFor(input.personalities, g.animalId, input.faceName ?? g.name)
   return {
     genius: g,
-    animal: animalById(g.animalId)?.young ?? (g.animalId || "animal"),
+    animal: input.faceName?.trim() || animalById(g.animalId)?.young || "animal",
     tone: p.tone,
     pushiness: p.pushiness,
     read: readArea(g, input.vault),
@@ -136,7 +138,7 @@ export function speak(input: { context: GeniusContext; talk: Pick<GeniusTalk, "t
   const max = input.maxTurns ?? MAX_TURNS
   const turn = Math.min(turnOf(input.talk.lines), max)
   const prompt = input.prompt ?? voicePrompt(input.context, input.talk, input.said, input.overrides, max)
-  return ask(prompt, input.run, VOICE_SCHEMA, (raw) => checkReply(raw, turn, max), () => scriptedReply({ turn, said: input.said, task: input.talk.task, maxTurns: max }))
+  return ask(prompt, input.run, VOICE_SCHEMA, (raw) => checkReply(raw, turn, max, input.said), () => scriptedReply({ turn, said: input.said, task: input.talk.task, maxTurns: max }))
 }
 
 /** The scripted council ask: the top open step, or an open habit, or the charter. */

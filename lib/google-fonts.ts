@@ -55,6 +55,7 @@ export const GOOGLE_FONTS = [
   "Manrope",
   "DM Sans",
   "Figtree",
+  "Karla",
   "Outfit",
   "Sora",
 ] as const

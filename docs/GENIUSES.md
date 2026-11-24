@@ -224,13 +224,19 @@ Built as planned, with memory (talks and council minutes) and prompt overrides i
 - Tests: sanitize round trip; dangling ids dropped; an empty store loads.
 - Done when the store survives a reload and a backup round trip. No UI yet.
 
-### GN-2: missions know their genius
+### GN-2: missions know their genius (**Built** 2026-11-24)
+
+Built as planned in `lib/geniuses/pool.ts`, with one change: when the friend's pool has nothing in the area, the genius offers an open step from its area read (a bound list's item that is not on today's To Do), and only then says the area is empty. An unbound genius says so. `FriendMission.geniusId` is written only on a genius's missions; old rows load unchanged.
+
 
 - `FriendMission.geniusId` (optional, sanitized to `null`), in `lib/friend-mission.ts` and the store's sanitize.
 - `lib/geniuses/pool.ts`: `inArea(genius, candidate, vault)` and `geniusPick(genius, pool, log, now)`, wrapping `friend-suggestion.ts` without changing its default path.
 - Tests: an old mission row loads; a candidate outside the bindings is never picked; declined-this-week lowers a score; an empty area returns an empty-pool line.
 
-### GN-3: see and edit a genius
+### GN-3: see and edit a genius (**Built** 2026-11-24)
+
+Built: the Genius tab in Gallery Details (`components/friend-details/FriendDetailsGenius.tsx`) and the header speaking as the genius whose face is the worn card. One change: the tab saves as you edit, into the geniuses store, instead of joining the personality draft's Save and Revert. A face is a gallery card id (`pack-…`); the starters' species faces are placeholders until you pick "Be Hearth" on a card.
+
 
 - Gallery Details gains a **Genius** tab: area, charter, bindings (pickers for objectives, goals, lists, habits, root items), status.
 - The header friend: when the worn friend's card is a genius's face, the bubble speaks as that genius and picks from its area. Otherwise it behaves as today.
@@ -242,9 +248,9 @@ Built as planned, with memory (talks and council minutes) and prompt overrides i
 - Shown on the instrument where bond is today; new keepsakes join the existing keepsake list.
 - Tests: fixture logs for each signal.
 
-### GN-5: talking back (engine and lab **Built** 2026-11-24)
+### GN-5: talking back (**Built** 2026-11-24, without level gating, Trace or Blueprint)
 
-Built: `lib/geniuses/run.ts` (the read, the prompt, the call through `escalate`), `prompts.ts` (editable templates) and `reply.ts` (checks and the scripted ladder), in place of the planned `voice.ts`. Tested: bad JSON, an over-long line, shame words, and pressing on the sixth exchange all fall back. Still **Planned**: the reply box on the real mission sheet, the Trace, and the Blueprint.
+Built: `lib/geniuses/run.ts` (the read, the prompt, the call through `escalate`), `prompts.ts` (editable templates) and `reply.ts` (checks and the scripted ladder), in place of the planned `voice.ts`. Tested: bad JSON, an over-long line, shame words, and pressing on the sixth exchange all fall back. The reply box on the mission sheet is built too (`components/genius-talk-back.tsx`), open at every level until GN-4. One rule moved from prompt to code after a live check: when you name a time, a reply that presses is refused and the script moves the task to that time. The voice prompt now also says the genius knows a task only by its title, after the 14B praised a book's contents. Still **Planned**: the Trace and the Blueprint.
 
 
 - `lib/geniuses/voice.ts`: builds the prompt from the read; `lib/geniuses/reply.ts`: validates `GeniusReply`, falls back to the ladder.
@@ -253,7 +259,10 @@ Built: `lib/geniuses/run.ts` (the read, the prompt, the call through `escalate`)
 - Tests: bad JSON falls back; an over-long line is refused; the mission title never changes; six exchanges end in concede or reschedule.
 - Live check on the real model, as Coach BIMBY's learning was checked: three arguments, logged with the model's replies.
 
-### GN-6: listening and recording
+### GN-6: listening and recording (part **Built** 2026-11-24)
+
+Built on the mission sheet: the smaller step as a new subtask (then accepted), and "Remember" as a genius note about the item. A new time goes only into the decline reason. Still **Planned**: a note on the task itself, goal progress, and a dated reminder for the new time.
+
 
 - Cards for note-on-task, goal progress, child step, and remember-this. Each calls the existing store action.
 - Tests: nothing writes before accept; a note appends and never overwrites.

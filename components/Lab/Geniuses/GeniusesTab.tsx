@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from "react"
 import { BABY_ANIMALS } from "@/lib/baby-animals"
+import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { areaLines } from "@/lib/geniuses/read"
 import { CHARTER_MAX, MAX_ACTIVE } from "@/lib/geniuses/sanitize"
@@ -46,6 +47,12 @@ function Picker({ label, options, value, onChange }: { label: string; options: O
 function GeniusCard({ g, options }: { g: Genius; options: Record<keyof GeniusBindings, Option[]> }) {
   const store = useGeniusesStore.getState
   const contextFor = useContextFor()
+  const photos = useBabyAnimalsStore((s) => s.photos)
+  const faces = useMemo(() => {
+    const cards = photos.map((p) => ({ id: p.animalId, label: p.displayName.trim() || p.animalId }))
+    const have = new Set(cards.map((c) => c.id))
+    return [{ id: "", label: "(no face)" }, ...cards, ...BABY_ANIMALS.filter((a) => !have.has(a.id)).map((a) => ({ id: a.id, label: a.young }))]
+  }, [photos])
   const [refused, setRefused] = useState(false)
   const read = useMemo(() => areaLines(contextFor(g).read), [g, contextFor])
   const bind = (key: keyof GeniusBindings, ids: string[]) => store().updateGenius(g.id, { bindings: { ...g.bindings, [key]: ids } })
@@ -55,7 +62,7 @@ function GeniusCard({ g, options }: { g: Genius; options: Record<keyof GeniusBin
         <label className="text-xs">Name<input className={field} value={g.name} onChange={(e) => store().updateGenius(g.id, { name: e.target.value || g.name })} /></label>
         <label className="text-xs">Face
           <select className={field} value={g.animalId} onChange={(e) => store().updateGenius(g.id, { animalId: e.target.value })}>
-            {BABY_ANIMALS.map((a) => <option key={a.id} value={a.id}>{a.young}</option>)}
+            {faces.map((f) => <option key={f.id || "none"} value={f.id}>{f.label}</option>)}
           </select>
         </label>
         <label className="text-xs">Status

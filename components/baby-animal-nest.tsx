@@ -9,6 +9,10 @@
  * through a smaller task, a first step, and a reason. Escape, ×, or outside
  * click dismisses the bubble without declining. Finishing an accepted
  * mission opens a small cheer.
+ *
+ * When the worn card is a genius's face (`lib/geniuses/`), the friend speaks as
+ * that genius: its name, missions only from its area, and a reply box on the
+ * sheet where it answers your reasons.
  */
 "use client"
 
@@ -32,6 +36,9 @@ import { useAttachmentSrc } from "@/components/use-attachment-src"
 import { isHabitGoalMet } from "@/lib/habit-utils"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
+import { liveVault } from "@/lib/geniuses/live"
+import { geniusForFace, geniusPick } from "@/lib/geniuses/pool"
+import { useGeniusesStore } from "@/lib/geniuses/store"
 
 /** CRT bezel power-on length (ms) — one short gesture, not a loop. */
 const CRT_POWER_ON_MS = 560
@@ -40,6 +47,7 @@ type MissionSheet = ComponentType<{
   open: boolean
   nudge: FriendNudge | null
   friendName: string
+  geniusId?: string | null
   onOpenChange: (open: boolean) => void
   onFinished: (done: FriendMission | null) => void
 }>
@@ -91,6 +99,9 @@ function ChatMark() {
 export function BabyAnimalNest() {
   const personalities = useBabyAnimalsStore((s) => s.personalities)
   const displayName = useBabyAnimalsStore((s) => s.displayName)
+  const wornId = useBabyAnimalsStore((s) => s.animalId)
+  const geniuses = useGeniusesStore((s) => s.geniuses)
+  const genius = geniusForFace(geniuses, wornId)
   const currentPhotoId = useBabyAnimalsStore((s) => s.currentPhotoId)
   const photos = useBabyAnimalsStore((s) => s.photos)
   const photo = photos.find((p) => p.id === currentPhotoId)
@@ -225,13 +236,25 @@ export function BabyAnimalNest() {
     const friend = useBabyAnimalsStore.getState()
     const habits = useHabitsStore.getState()
     const personality = personalityFor(friend.personalities, friend.animalId, friend.displayName)
-    const next = pickFriendTodoNudge(items.tasks, items.folders, nudge?.taskId ?? null, Math.random, {
-      personality,
-      habits: habits.tasks,
-      weeklyData: habits.weeklyData,
-      habitExemptions: habits.habitExemptions,
-      flavor: true,
-    })
+    const speaker = geniusForFace(useGeniusesStore.getState().geniuses, friend.animalId)
+    const next = speaker
+      ? geniusPick({
+          genius: speaker,
+          tasks: items.tasks,
+          folders: items.folders,
+          vault: liveVault(),
+          log: friend.friendMissions,
+          personalities: friend.personalities,
+          faceName: friend.displayName,
+          lastId: nudge?.taskId ?? null,
+        })
+      : pickFriendTodoNudge(items.tasks, items.folders, nudge?.taskId ?? null, Math.random, {
+          personality,
+          habits: habits.tasks,
+          weeklyData: habits.weeklyData,
+          habitExemptions: habits.habitExemptions,
+          flavor: true,
+        })
     if (isActionableFriendKind(next.kind)) {
       friend.offerMission({
         animalId: friend.animalId,
@@ -244,6 +267,7 @@ export function BabyAnimalNest() {
         kind: next.kind,
         points: next.rewardPoints,
         effect: next.effect,
+        ...(speaker ? { geniusId: speaker.id } : {}),
       })
     }
     setMissionOpen(false)
@@ -256,7 +280,7 @@ export function BabyAnimalNest() {
     if (done) setCheer(done)
   }
 
-  const who = displayName || "today's friend"
+  const who = genius?.name || displayName || "today's friend"
   const photoLabel = photo ? `Open details for ${who}` : "Open the friend gallery"
   const chatLabel = nudge ? `Ask ${who} for another line` : `Ask ${who} for a mission`
   const celebrate = cheer
@@ -298,7 +322,9 @@ export function BabyAnimalNest() {
         />
       ) : null}
       <span className="baby-nest-wordmark">
-        <span className="baby-nest-name">{displayName || (busy ? "Finding…" : "today's friend")}</span>
+        <span className="baby-nest-name" title={genius ? `${genius.name}, genius of ${genius.area}` : undefined}>
+          {genius?.name || displayName || (busy ? "Finding…" : "today's friend")}
+        </span>
         <span className="baby-nest-controls">
           <button type="button" className="baby-nest-chat-hit" onClick={speak} aria-label={chatLabel} title={chatLabel} disabled={busy}>
             <ChatMark />
@@ -363,6 +389,7 @@ export function BabyAnimalNest() {
           open={missionOpen && !!nudge}
           nudge={nudge}
           friendName={who}
+          geniusId={genius?.id ?? null}
           onOpenChange={setMissionOpen}
           onFinished={finishSheet}
         />

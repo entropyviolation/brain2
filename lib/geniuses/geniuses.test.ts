@@ -194,3 +194,11 @@ describe("run", () => {
     expect(ans.value.yieldsTo).toBe("genius-coin")
   })
 })
+
+describe("a named time", () => {
+  it("only reschedule or concede passes when they named a time; the script reschedules to it", () => {
+    expect(checkReply({ line: "It has great tips.", stance: "press" }, 2, 6, "I'll start it this weekend").ok).toBe(false)
+    expect(checkReply({ line: "This weekend, then.", stance: "reschedule", when: "this weekend" }, 2, 6, "I'll start it this weekend").ok).toBe(true)
+    expect(scriptedReply({ turn: 2, said: "I'll start it this weekend", task: "x" })).toMatchObject({ stance: "reschedule", when: "this weekend" })
+  })
+})
