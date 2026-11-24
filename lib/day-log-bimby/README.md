@@ -24,7 +24,7 @@ Say it in your own words; it is kept word for word (`amend.ts`, `store.ts`) and 
 
 Code sorts each one (`correction` when it starts "no", "actually", "it was", "wasn't", "remove"…; `addition` for "add", "also", "forgot"…; else `note`) and reads a clock out of it (`detectClock`), so it also shows in the hour-by-hour list as ✎. The model is told amendments win over every other row.
 
-**Planned:** an amendment that also fixes the Tracking row it corrects (through the Tracking Helper), as a card to accept.
+**Planned:** an amendment that also fixes the Tracking row it corrects (through the Tracking BIMBY), as a card to accept; answer boxes on the gaps; a hand edit to a line proposed as an edit to its row. See [`docs/LOG_DOCS_PLAN.md`](../../docs/LOG_DOCS_PLAN.md) §1.
 
 ## Hand edits are never lost
 
@@ -41,6 +41,10 @@ The doc is ordinary text and can be edited. The record keeps a hash of the words
 Every desktop window runs it, not only one: the fixed doc id keeps one doc per day, but each window keeps its own records and narrative cache, so versions can differ between windows. **Planned:** one writer (the hub's window), like the phone-sync hub.
 
 The model runs only when BIM's LLM mode is on. `brain2-day-log-auto` = `off` in localStorage stops the automatic runs.
+
+## Where it goes
+
+The roadmap is [`docs/LOG_DOCS_PLAN.md`](../../docs/LOG_DOCS_PLAN.md). In short (all **Planned**): logs and Tracking stay one record in two forms (an accepted amendment changes the rows; a row change rebuilds the log within a minute, re-asking the model only for the stretch that changed; [E12] opens the row in Tracking and Tracking opens the Day Log). Week, Month, Season and Year Logs are built from the Day Logs, and Trip / span logs ("New York Log") from Flight items, trips and location. Every log gets a data sidecar that BIM chat, the geniuses, Data and Home read, and a Logs view draws from.
 
 ## Doors
 

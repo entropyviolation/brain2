@@ -2,6 +2,8 @@
 
 _Last mapped: 2026-11-24_
 
+Where this is going (two-way with Tracking, Week / Month / Trip logs, logs as data Brain2 reads): [`LOG_DOCS_PLAN.md`](LOG_DOCS_PLAN.md).
+
 One document per day, in **Docs → LOG DOCS → DAY LOGS**, written by the Day Log BIMBY (`lib/day-log-bimby/`). It is the full account of what happened: at what time, where, with whom, for how long, and how I felt. Every Day Log follows this standard, so any two days read the same way.
 
 ## Name
