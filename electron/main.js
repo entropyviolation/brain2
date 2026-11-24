@@ -24,7 +24,7 @@ const { createStaticFileResolver } = require("./static-file")
 const { LINK_SCHEME_PRIVILEGES, registerFileLinkIpc } = require("./file-links")
 const { INSTAGRAM_SCHEME_PRIVILEGES, registerInstagramIpc, reportWindowOpen, adoptReportWindow, isReportUrl } = require("./instagram-ipc")
 const { isAppNavigationUrl, isBlankPopup, openExternalWeb } = require("./external-url")
-const { registerDictateIpc } = require("./dictate")
+const { registerDictateIpc, stopDictateWorker } = require("./dictate")
 
 const isDev = !app.isPackaged
 
@@ -539,6 +539,7 @@ app.whenReady().then(async () => {
 app.on("will-quit", () => {
   globalShortcut.unregisterAll()
   if (instagramWatcher) instagramWatcher.stop()
+  stopDictateWorker()
 })
 
 app.on("window-all-closed", () => {

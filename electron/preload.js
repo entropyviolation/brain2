@@ -46,8 +46,10 @@ const QUICK_CAPTURE_IPC_CHANNEL = "quick-capture:open"
 // `EXTRACT_PDF_TEXT_IPC_CHANNEL` in electron/main.js + `extractPdfText` in
 // electron/ipc/channels.js. Consumed by lib/file-extract.ts.
 const EXTRACT_PDF_TEXT_IPC_CHANNEL = "cogs:file:extractPdfText"
-// Must match `TRANSCRIBE_AUDIO_IPC_CHANNEL` in electron/dictate.js.
+// Must match the channel names in electron/dictate.js.
 const TRANSCRIBE_AUDIO_IPC_CHANNEL = "cogs:dictate:transcribe"
+const DICTATE_PARTIAL_IPC_CHANNEL = "cogs:dictate:partial"
+const DICTATE_WARM_IPC_CHANNEL = "cogs:dictate:warm"
 
 // Code documentation reader. MUST match `CODE_DOCS_LIST` / `CODE_DOCS_READ`
 // in electron/code-docs.js. The dev server answers the same files over HTTP;
@@ -368,6 +370,10 @@ contextBridge.exposeInMainWorld("desktop", {
   extractPdfText: (dataUrl) => ipcRenderer.invoke(EXTRACT_PDF_TEXT_IPC_CHANNEL, dataUrl),
   // Dictation: recorded audio → local Whisper (electron/dictate.js). Resolves `{ ok, text | error }`.
   transcribeAudio: (bytes, mime) => ipcRenderer.invoke(TRANSCRIBE_AUDIO_IPC_CHANNEL, bytes, mime),
+  // Live pass over the recording so far (warm worker only). Same reply shape.
+  dictatePartial: (bytes, mime) => ipcRenderer.invoke(DICTATE_PARTIAL_IPC_CHANNEL, bytes, mime),
+  // Load the Whisper model ahead of the first pass. Resolves true when ready.
+  dictateWarm: () => ipcRenderer.invoke(DICTATE_WARM_IPC_CHANNEL),
   // Open a module (or sheet) in its own window at `/popout/?module=` /
   // `/popout/?sheet=` (legacy `#popout/…` hashes still accepted). Fire-and-forget;
   // the web build lacks this method so callers fall back to `window.open`.

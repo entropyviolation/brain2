@@ -416,8 +416,9 @@
     transition: none;
   }
 
-  .bim-crt .bim-send button.bim-dictate.is-live {
-    animation: none;
+  .bim-crt .bim-send button.bim-dictate.is-live,
+  .bim-dictate-lamp {
+    animation: none !important;
   }
 }
 
@@ -1453,6 +1454,40 @@ body.win95-app .bim-well.is-editing textarea:focus,
   line-height: 1;
 }
 
+/* Dictation status: a lamp and one mono line. Red while the mic is on, ink while the last pass runs. */
+.bim-dictate-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--bim-fault);
+  font: 11px/1.4 var(--bim-mono);
+  letter-spacing: 0.06em;
+}
+
+.bim-dictate-status.is-transcribing {
+  color: var(--bim-ink);
+}
+
+.bim-dictate-lamp {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 5px currentColor;
+  animation: bim-pulse 1.2s ease-in-out infinite;
+}
+
+.bim-dictate-status.is-transcribing .bim-dictate-lamp {
+  animation-duration: 0.5s;
+}
+
+/* Live words read a little dim until the last pass lands. */
+.bim-well textarea.is-dictating {
+  opacity: 0.8;
+}
+
 .bim-photo-error {
   margin: 0;
   color: var(--bim-fault);
@@ -1588,18 +1623,6 @@ body.win95-app .bim-well.is-editing textarea:focus,
   height: 30px;
   flex: none;
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.7));
-}
-
-.bim-grille-bloom {
-  fill: #7dffc4;
-  opacity: 0;
-  filter: blur(2px);
-  transition: opacity 260ms ease;
-}
-
-.bim-grille.is-ping .bim-grille-bloom {
-  opacity: 0.32;
-  transition: opacity 40ms ease;
 }
 
 .bim-grille.is-off {
