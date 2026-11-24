@@ -10,7 +10,7 @@
  */
 "use client"
 
-import { createDocument, loadDocumentBody, renameDocument, setDocumentBody, setDocumentFolder } from "@/components/Docs/doc-actions"
+import { createDocument, documentFolder, documentFont, loadDocumentBody, renameDocument, setDocumentBody, setDocumentFolder, setDocumentFont } from "@/components/Docs/doc-actions"
 import { NOTE_ATTR, NOTE_TYPE_ID } from "@/lib/note-types"
 import { previewDocBody, putPersistedDoc, taskToPersistedDoc } from "@/lib/doc-persist"
 import { withItemWriteSource } from "@/lib/item-write-source"
@@ -19,6 +19,27 @@ import type { Task } from "@/lib/types"
 import { DAY_LOG_FOLDER, dayLogTitle } from "./render"
 
 export const dayLogDocId = (date: string): string => `doc_daylog_${date}`
+
+/**
+ * The typeface of every Log Doc. _2026-11-24:_ Karla replaced Merriweather; every
+ * other style in the logs stays as it was.
+ */
+export const LOG_DOC_FONT = "Karla"
+
+/** The font Log Docs used before Karla. Only docs still on it are moved, so a font picked by hand stays. */
+const OLD_LOG_DOC_FONT = "Merriweather"
+
+/** Move every doc in a log folder (Day Logs, their hand-edited copies, Week Logs) from Merriweather to Karla. Returns how many moved. */
+export function karlaOnLogDocs(folders: readonly string[]): number {
+  let moved = 0
+  for (const t of useTaskStore.getState().tasks) {
+    if (t.type !== NOTE_TYPE_ID || !folders.includes(documentFolder(t))) continue
+    if (documentFont(t) !== OLD_LOG_DOC_FONT) continue
+    setDocumentFont(t.id, LOG_DOC_FONT)
+    moved++
+  }
+  return moved
+}
 
 /** The attribute that marks a doc as a Day Log, holding its date. */
 export const DAY_LOG_ATTR = "dayLogDate"
@@ -79,7 +100,7 @@ async function fileNow(date: string, html: string, opts: { keepHandEdits: boolea
       attributes: {
         [NOTE_ATTR.status]: "evergreen",
         [NOTE_ATTR.folder]: DAY_LOG_FOLDER,
-        [NOTE_ATTR.fontFamily]: "Merriweather",
+        [NOTE_ATTR.fontFamily]: LOG_DOC_FONT,
         [NOTE_ATTR.updatedAt]: now.toISOString(),
         [DAY_LOG_ATTR]: date,
       },
@@ -93,11 +114,13 @@ async function fileNow(date: string, html: string, opts: { keepHandEdits: boolea
   if (opts.keepHandEdits) {
     const old = await loadDocumentBody(id, held.body ?? "")
     const stamp = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })
-    const copy = createDocument(`${title} · hand-edited copy ${stamp}`, DAY_LOG_FOLDER, old)
+    const heldFont = documentFont(held)
+    const copy = createDocument(`${title} · hand-edited copy ${stamp}`, DAY_LOG_FOLDER, old, heldFont === OLD_LOG_DOC_FONT ? LOG_DOC_FONT : heldFont)
     keptCopyId = copy.id
   }
   if ((held.description ?? "") !== title) renameDocument(id, title)
   if (held.attributes?.[NOTE_ATTR.folder] !== DAY_LOG_FOLDER) setDocumentFolder(id, DAY_LOG_FOLDER)
+  if (documentFont(held) === OLD_LOG_DOC_FONT) setDocumentFont(id, LOG_DOC_FONT)
   if (held.attributes?.[DAY_LOG_ATTR] !== date) {
     const fresh = useTaskStore.getState().tasks.find((t) => t.id === id)
     if (fresh) useTaskStore.getState().updateTask({ ...fresh, attributes: { ...(fresh.attributes ?? {}), [DAY_LOG_ATTR]: date } })

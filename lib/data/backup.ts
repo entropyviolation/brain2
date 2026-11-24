@@ -38,6 +38,7 @@ import { useGoalsStore } from "@/lib/goals-store"
 import { useMeStore } from "@/lib/coach-bimby/me-store"
 import { useGeniusesStore } from "@/lib/geniuses/store"
 import { useDayLogStore } from "@/lib/day-log-bimby/store"
+import { useWeekLogStore } from "@/lib/week-log-bimby/store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useReviewsStore } from "@/lib/reviews-store"
@@ -177,6 +178,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("coach-me"), rehydrate: persistRehydrate(useMeStore) },
   { key: persistKey("geniuses"), rehydrate: persistRehydrate(useGeniusesStore) },
   { key: persistKey("day-logs"), rehydrate: persistRehydrate(useDayLogStore) },
+  { key: persistKey("week-logs"), rehydrate: persistRehydrate(useWeekLogStore) },
   { key: persistKey("habits-store"), rehydrate: persistRehydrate(useHabitsStore) },
   { key: "points-store", rehydrate: persistRehydrate(usePointsStore) },
   { key: persistKey("reviews-store"), rehydrate: persistRehydrate(useReviewsStore) },
@@ -241,6 +243,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-geniuses": "Geniuses and their memory",
   [persistKey("day-logs")]: "Day Logs and their amendments",
   "cogs-day-logs": "Day Logs and their amendments",
+  [persistKey("week-logs")]: "Week Logs and their amendments",
+  "cogs-week-logs": "Week Logs and their amendments",
   [persistKey("habits-store")]: "Habits",
   "cogs-habits-store": "Habits",
   "points-store": "Points",
@@ -547,6 +551,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("coach-me")]: asLiveStore(useMeStore),
   [persistKey("geniuses")]: asLiveStore(useGeniusesStore),
   [persistKey("day-logs")]: asLiveStore(useDayLogStore),
+  [persistKey("week-logs")]: asLiveStore(useWeekLogStore),
   [persistKey("habits-store")]: asLiveStore(useHabitsStore),
   "points-store": asLiveStore(usePointsStore),
   [persistKey("reviews-store")]: asLiveStore(useReviewsStore),

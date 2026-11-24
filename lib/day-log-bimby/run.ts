@@ -23,13 +23,14 @@ import { useTaskStore } from "@/lib/task-store"
 import { afterPersistHydrated } from "@/lib/use-persist-hydrated"
 import { makeAmendment, readDayLogAsk } from "./amend"
 import { composeNarrative } from "./compose"
-import { dayLogDocId, fileDayLog, handEdited } from "./file"
+import { dayLogDocId, fileDayLog, handEdited, karlaOnLogDocs } from "./file"
 import { gatherDay, MINUTES_PER_DAY } from "./gather"
 import { DAY_LOG_FOLDER, dayLogTitle, renderDayLog } from "./render"
 import { readDaySources } from "./sources"
 import { autoPlan } from "./schedule"
 import { amendmentsFor, dayLogRecord, useDayLogStore } from "./store"
 import type { Amendment, DayNarrative, DaySources } from "./types"
+import { WEEK_LOG_FOLDER } from "@/lib/week-log-bimby/week"
 
 /** Raised on `window` after a Day Log doc is written, so an open editor reloads it. */
 export const DAY_LOG_WRITTEN_EVENT = "brain2:day-log-written"
@@ -64,6 +65,11 @@ function readCache(): Record<string, DayNarrative> {
   }
 }
 
+/** The day's last prose on this device, or null. The Week Log BIMBY reads it. */
+export function cachedDayNarrative(date: string): DayNarrative | null {
+  return readCache()[date] ?? null
+}
+
 function cacheNarrative(date: string, n: DayNarrative): void {
   try {
     const all = { ...readCache(), [date]: n }
@@ -76,14 +82,16 @@ function cacheNarrative(date: string, n: DayNarrative): void {
 
 // ---------------------------------------------------------------- the model
 
-async function modelFor(opts: BuildOpts): Promise<{ call: ModelCall; model?: string } | null> {
+/** The chat crew's main model as a background call, or null when LLM mode is off. Shared with the Week Log BIMBY. */
+export async function logModelFor(opts: Pick<BuildOpts, "llm" | "call">): Promise<{ call: ModelCall; model?: string } | null> {
   if (opts.call !== undefined) return opts.call ? { call: opts.call } : null
   const llm = opts.llm ?? useBimLlmMode.getState().on
   if (!llm) return null
   try {
     const [{ chatCrew }, { ollamaCall }] = await Promise.all([import("@/lib/bim-flow/chat-models"), import("@/lib/bim-flow/ollama")])
     const crew = await chatCrew()
-    return crew ? { call: ollamaCall(crew.main), model: crew.main } : null
+    // Background: a chat line cuts in and this call starts over when chat is quiet (`lib/bim-flow/ollama.ts`).
+    return crew ? { call: ollamaCall(crew.main, undefined, { background: true }), model: crew.main } : null
   } catch {
     return null
   }
@@ -125,7 +133,7 @@ async function buildNow(date: string, opts: BuildOpts): Promise<BuildResult> {
     return filed
   }
 
-  const model = evidence.length ? await modelFor(opts) : null
+  const model = evidence.length ? await logModelFor(opts) : null
   // The complete code-built log goes in first, so a reload or a dead model mid-way still leaves every row filed.
   const first = await write(cached, model ? "the narrative is being written" : cached ? STALE : undefined, edited)
   let narrative = cached
@@ -178,18 +186,32 @@ const FIRST_RUN_DELAY_MS = 3 * 60_000
 const EVERY_MS = 60 * 60_000
 let running = false
 
+/**
+ * Run an automatic tick in one window only; the others skip it. _2026-11-24:_ every window ran the Day and Week Log
+ * BIMBIES, so the same logs were written twice and their model calls stacked up in front of chat. Null when skipped.
+ */
+export async function inOneWindow<T>(name: string, run: () => Promise<T>): Promise<T | null> {
+  const locks = typeof navigator !== "undefined" ? (navigator as Navigator & { locks?: LockManager }).locks : undefined
+  if (!locks?.request) return run()
+  return locks.request(name, { ifAvailable: true }, (lock) => (lock ? run() : null)) as Promise<T | null>
+}
+
 export async function runDayLogTick(now = new Date()): Promise<BuildResult[]> {
   if (running) return []
   running = true
   try {
-    const llm = useBimLlmMode.getState().on
-    const plan = autoPlan(now, useDayLogStore.getState().logs, (d) => gatherDay(readDaySources(d)).length >= 5, llm)
-    const done: BuildResult[] = []
-    for (const p of plan) done.push(await buildDayLog(p.date, { llm: p.llm, auto: true, now }))
-    return done
+    return (await inOneWindow("brain2-day-log-tick", () => dayLogTick(now))) ?? []
   } finally {
     running = false
   }
+}
+
+async function dayLogTick(now: Date): Promise<BuildResult[]> {
+  const llm = useBimLlmMode.getState().on
+  const plan = autoPlan(now, useDayLogStore.getState().logs, (d) => gatherDay(readDaySources(d)).length >= 5, llm)
+  const done: BuildResult[] = []
+  for (const p of plan) done.push(await buildDayLog(p.date, { llm: p.llm, auto: true, now }))
+  return done
 }
 
 export const DAY_LOG_AUTO_KEY = "brain2-day-log-auto"
@@ -219,6 +241,8 @@ export function startDayLogBimby(): () => void {
     if (dayLogAutoOn()) void runDayLogTick()
   }
   const stopHydrate = afterPersistHydrated(useTaskStore.persist, () => {
+    // _2026-11-24:_ Log Docs moved from Merriweather to Karla; logs built before then follow.
+    karlaOnLogDocs([DAY_LOG_FOLDER, WEEK_LOG_FOLDER])
     first = setTimeout(tick, FIRST_RUN_DELAY_MS)
     timer = setInterval(tick, EVERY_MS)
   })

@@ -49,7 +49,7 @@ Logs nest by time: **Day Log → Week Log → Month Log → Season and Year Logs
 
 ## 4. Period logs: week, month, season, year
 
-**Planned.** Same standard, same bar, same amend flow. Each sits in its own folder under LOG DOCS:
+_2026-11-24:_ **Week Logs are built** ([`lib/week-log-bimby/`](../lib/week-log-bimby/README.md)): folder, title and schedule as below, the seven days folded from each day's ledger and Day Log prose (not from a sidecar yet), one model call for the brief, the same bar and amend flow. Empty days are built anyway and listed as gaps. Month, Season and Year stay **Planned**. Each sits in its own folder under LOG DOCS:
 
 | Log | Folder | Title | Built when |
 | --- | --- | --- | --- |
@@ -64,7 +64,7 @@ Keys follow `lib/tracking-summaries.ts` (`weekSummaryKey`, `monthSummaryKeyFromD
 
 **Sections.** The period in brief; at a glance (totals and averages, best and worst days); day by day (each day's brief, linked to its Day Log); places; people; screens; body; how I felt across it; in my own words (the strongest lines); plans and what got done; the period's summary and songs (from Data → Summary); gaps (days with little or no data); amendments.
 
-**Amendments flow down.** An amendment to a Week Log that names a day ("Tuesday I was sick all day") is filed on that Day Log too, and offered as a Tracking change there.
+**Amendments flow down** (**Planned**). An amendment to a Week Log that names a day ("Tuesday I was sick all day") is filed on that Day Log too, and offered as a Tracking change there.
 
 ## 5. Span logs: trips and named stretches
 

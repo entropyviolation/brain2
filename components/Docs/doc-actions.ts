@@ -57,7 +57,7 @@ async function writePersisted(doc: Task, body?: string): Promise<void> {
 }
 
 /** Create a new Docs note; returns the created task. Persists to IndexedDB. */
-export function createDocument(title = "Untitled document", folder = "", body = BLANK_BODY): Task {
+export function createDocument(title = "Untitled document", folder = "", body = BLANK_BODY, font = "Merriweather"): Task {
   const store = useTaskStore.getState()
   const now = new Date()
   const doc: Task = {
@@ -72,7 +72,7 @@ export function createDocument(title = "Untitled document", folder = "", body = 
     attributes: {
       [NOTE_ATTR.status]: "draft",
       [NOTE_ATTR.folder]: folder.trim(),
-      [NOTE_ATTR.fontFamily]: "Merriweather",
+      [NOTE_ATTR.fontFamily]: isAllowedFont(font) ? font : "Merriweather",
       [NOTE_ATTR.updatedAt]: now.toISOString(),
     },
     links: [],

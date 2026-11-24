@@ -14,6 +14,7 @@ Why it exists: a day's facts were spread over a dozen places (Tracking views, iP
 4. **Render** (`render.ts`, code). The 14 standard sections. Every time, number and list comes from the ledger, so they are exact with the model off. Own words are marked ❝ ❞ and quoted in full in section 9.
 5. **File** (`file.ts`). The complete code-built log is filed **before** the model starts, then replaced when the prose is done. _2026-11-24:_ a dev-server reload mid-way dropped a whole build when nothing was filed until the model finished. Doc writes are stamped `agent · Day Log BIMBY`.
     One doc per day, id `doc_daylog_<date>`, title `DAY LOG · 2026-11-24 · Tuesday`, folder `LOG DOCS/DAY LOGS`, attribute `dayLogDate`. A fixed id means two windows building the same day write one doc.
+    The doc font is **Karla** (`LOG_DOC_FONT`). _2026-11-24:_ it replaced Merriweather; every other style stays. On load, `karlaOnLogDocs` moves Day Logs, their hand-edited copies and Week Logs still on Merriweather to Karla; a font picked by hand is left alone.
 
 ## Amending
 
@@ -40,11 +41,11 @@ The doc is ordinary text and can be edited. The record keeps a hash of the words
 
 Every desktop window runs it, not only one: the fixed doc id keeps one doc per day, but each window keeps its own records and narrative cache, so versions can differ between windows. **Planned:** one writer (the hub's window), like the phone-sync hub.
 
-The model runs only when BIM's LLM mode is on. `brain2-day-log-auto` = `off` in localStorage stops the automatic runs.
+The model runs only when BIM's LLM mode is on. _2026-11-24:_ its calls are background calls: a BIM chat call in any window cuts the running one, and it starts over once chat has been quiet for 20 s (`lib/bim-flow/ollama.ts`). Before, a chat question waited behind a 100 s window and timed out. Only one background call runs at a time across windows, and the automatic tick runs in one window only (`inOneWindow`, `navigator.locks` `brain2-day-log-tick`); every window used to write the same logs. `brain2-day-log-auto` = `off` in localStorage stops the automatic runs.
 
 ## Where it goes
 
-The roadmap is [`docs/LOG_DOCS_PLAN.md`](../../docs/LOG_DOCS_PLAN.md). In short (all **Planned**): logs and Tracking stay one record in two forms (an accepted amendment changes the rows; a row change rebuilds the log within a minute, re-asking the model only for the stretch that changed; [E12] opens the row in Tracking and Tracking opens the Day Log). Week, Month, Season and Year Logs are built from the Day Logs, and Trip / span logs ("New York Log") from Flight items, trips and location. Every log gets a data sidecar that BIM chat, the geniuses, Data and Home read, and a Logs view draws from.
+**Week Logs** are built from these Day Logs by the Week Log BIMBY ([`lib/week-log-bimby/`](../week-log-bimby/README.md)), which reads `cachedDayNarrative` and shares `logModelFor`. The roadmap is [`docs/LOG_DOCS_PLAN.md`](../../docs/LOG_DOCS_PLAN.md). In short (all **Planned**): logs and Tracking stay one record in two forms (an accepted amendment changes the rows; a row change rebuilds the log within a minute, re-asking the model only for the stretch that changed; [E12] opens the row in Tracking and Tracking opens the Day Log). Month, Season and Year Logs are built from the Day Logs, and Trip / span logs ("New York Log") from Flight items, trips and location. Every log gets a data sidecar that BIM chat, the geniuses, Data and Home read, and a Logs view draws from.
 
 ## Doors
 
@@ -68,11 +69,11 @@ The roadmap is [`docs/LOG_DOCS_PLAN.md`](../../docs/LOG_DOCS_PLAN.md). In short 
 - `gather.ts`: `gatherDay`, `untrackedRuns`, `coveredMinutes`, clock helpers. Pure.
 - `compose.ts`: `windowsOf`, `windowLedger`, `WINDOW_SYSTEM`, `DAY_SYSTEM`, `checkCitations`, `composeNarrative`.
 - `render.ts`: `renderDayLog`, `codeBrief`, `dayLogTitle`, `DAY_LOG_FOLDER`. Pure.
-- `file.ts`: `fileDayLog`, `handEdited`, `textHash`, `dayLogDocId`, `dayLogDateOf`.
+- `file.ts`: `fileDayLog`, `handEdited`, `textHash`, `dayLogDocId`, `dayLogDateOf`, `LOG_DOC_FONT`, `karlaOnLogDocs`.
 - `amend.ts`: `makeAmendment`, `amendmentKind`, `readDay`, `readDayLogAsk`. Pure.
 - `schedule.ts`: `autoPlan`. Pure.
 - `store.ts`: `useDayLogStore`.
-- `run.ts`: `buildDayLog`, `amendDayLog`, `tryDayLog`, `runDayLogTick`, `startDayLogBimby`.
+- `run.ts`: `buildDayLog`, `amendDayLog`, `tryDayLog`, `runDayLogTick`, `startDayLogBimby`, `cachedDayNarrative`, `logModelFor`.
 - `day-log-bimby.test.ts`: a full day of every source, windows under the cap, citation checks, a fake model, all 14 sections, the chat lines, the schedule.
 
 Test: `npx vitest run lib/day-log-bimby`

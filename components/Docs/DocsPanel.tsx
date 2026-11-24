@@ -43,13 +43,15 @@ import { DayLogBar, DayLogMaker } from "./day-log-bar"
 import { dayLogDateOf } from "@/lib/day-log-bimby/file"
 import { DAY_LOG_FOLDER, DAY_LOG_PARENT } from "@/lib/day-log-bimby/render"
 import { DAY_LOG_WRITTEN_EVENT } from "@/lib/day-log-bimby/run"
+import { WeekLogBar, WeekLogMaker } from "./week-log-bar"
+import { WEEK_LOG_FOLDER, weekLogStartOf } from "@/lib/week-log-bimby/week"
 import "./docs.css"
 
 const ALL_FOLDER = "__all__"
 const UNFILED = "__unfiled__"
 
 /** Folders that always show, even empty. A "/" in a folder label nests it under its parent. */
-const BUILTIN_FOLDERS = [DAY_LOG_PARENT, DAY_LOG_FOLDER]
+const BUILTIN_FOLDERS = [DAY_LOG_PARENT, DAY_LOG_FOLDER, WEEK_LOG_FOLDER]
 
 /** Every folder in use, the built-in ones, and each nested folder's parents, sorted so a child follows its parent. */
 export function folderTree(used: string[]): string[] {
@@ -182,7 +184,7 @@ export function DocsPanel() {
     }
   }, [selected?.id])
 
-  // A Day Log rebuilt while open: show the new body unless there are unsaved keystrokes.
+  // A Day Log or Week Log rebuilt while open: show the new body unless there are unsaved keystrokes.
   useEffect(() => {
     const onWritten = (e: Event) => {
       const id = (e as CustomEvent<{ docId: string }>).detail?.docId
@@ -504,6 +506,14 @@ export function DocsPanel() {
                 }}
               />
             ) : null}
+            {!selected && folderFilter === WEEK_LOG_FOLDER ? (
+              <WeekLogMaker
+                onBuilt={(id) => {
+                  void flushBody()
+                  setSelectedId(id)
+                }}
+              />
+            ) : null}
             {!selected ? (
               <DocsHome
                 folderLabel={folderLabel}
@@ -579,6 +589,7 @@ export function DocsPanel() {
                 />
 
                 {dayLogDateOf(selected) ? <DayLogBar date={dayLogDateOf(selected)!} /> : null}
+                {weekLogStartOf(selected) ? <WeekLogBar start={weekLogStartOf(selected)!} /> : null}
 
                 <div className="docs-editor-wrap">
                   <DocumentEditor
