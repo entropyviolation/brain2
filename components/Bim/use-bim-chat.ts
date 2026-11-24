@@ -7,17 +7,28 @@
  */
 "use client"
 
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
 import { BIM_CHAT_DRAFT_KEY, readDraft, writeTextDraft } from "@/lib/draft-store"
 import { BIM_CHAT_ADD_EVENT } from "@/lib/doc-selection/doc-selection-bus"
-import { useBimChatStore } from "@/lib/ingest/bim-chat"
+import { useBimChatStore, type BimLine } from "@/lib/ingest/bim-chat"
+import { maskSecrets, useSecretsShown } from "@/lib/secrets-store"
 import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { useReplyTarget } from "@/lib/report-bimby/reply-target"
 import { chatPhotoFromFile } from "@/lib/ingest/chat-photo"
 import type { IncomingAttachment } from "@/lib/ingest/types"
 
+/**
+ * The transcript as a screen may draw it (`docs/SECRETS.md`). Locked, every `\secret` span is cut from every line,
+ * card ref and choice, and a line of yours that was all secret is not drawn at all. Unlocked with the chat switch
+ * on, the lines come back as written. The store keeps them as written either way.
+ */
+export function useShownLines(lines: BimLine[]): BimLine[] {
+  const shown = useSecretsShown("chat")
+  return useMemo(() => (shown ? lines : maskSecrets(lines, false).filter((l, i) => l.who !== "you" || !!l.text.trim() || !lines[i]!.text.trim())), [lines, shown])
+}
+
 export function useBimChat() {
-  const lines = useBimChatStore((s) => s.lines)
+  const lines = useShownLines(useBimChatStore((s) => s.lines))
   const busy = useBimChatStore((s) => s.busy)
   const send = useBimChatStore((s) => s.send)
   const clear = useBimChatStore((s) => s.clear)

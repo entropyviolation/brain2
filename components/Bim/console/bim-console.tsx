@@ -25,6 +25,7 @@ import { useBimLlmMode } from "@/lib/ingest/bim-switchboard"
 import { SecretsToggle } from "@/components/Secrets/SecretsToggle"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
 import { insertSecretMarks } from "@/lib/secrets"
+import { maskSecrets, useSecretsShown } from "@/lib/secrets-store"
 import { ReportCard } from "@/components/Bim/report-card"
 import { WireCard } from "@/components/Bim/wire-card"
 import { DayCard } from "@/components/Bim/day-card"
@@ -76,7 +77,7 @@ export function clock(iso: string, now = new Date()): string {
 }
 
 /** The chat history. Memoized: a keystroke in the well does not repaint every line under the glass. */
-const ChatLog = memo(function ChatLog({ lines, onTry, onThought }: { lines: BimLine[]; onTry: (text: string) => void; onThought: (line: BimLine) => void }) {
+const ChatLog = memo(function ChatLog({ lines, onTry, onThought, onRetry }: { lines: BimLine[]; onTry: (text: string) => void; onThought: (line: BimLine) => void; onRetry: (text: string) => void }) {
   return (
     <>
       {lines.length === 0 ? (
@@ -111,6 +112,11 @@ const ChatLog = memo(function ChatLog({ lines, onTry, onThought }: { lines: BimL
             {line.readAs ? <span className="bim-msg-route">read as: {line.readAs}</span> : null}
             {line.route || (line.who === "bim" && line.traceId && !line.waiting) ? <ThoughtChip line={line} onThought={onThought} /> : null}
             {line.general ? <span className="bim-msg-route">general, not from your data</span> : null}
+            {line.retry && !line.waiting ? (
+              <button data-no95 type="button" className="bim-msg-route bim-route-key bim-retry" title={`Send again: ${line.retry}`} onClick={() => onRetry(line.retry!)}>
+                <span aria-hidden="true">↻</span> retry
+              </button>
+            ) : null}
             {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
             {line.wireId ? <WireCard wireId={line.wireId} /> : null}
             {line.dayId ? <DayCard dayId={line.dayId} lineId={line.id} /> : null}
@@ -129,7 +135,8 @@ const ChatLog = memo(function ChatLog({ lines, onTry, onThought }: { lines: BimL
  */
 function ThoughtChip({ line, onThought }: { line: BimLine; onThought: (line: BimLine) => void }) {
   const [open, setOpen] = useState(false)
-  const trace = useMemo(() => (open && line.traceId ? getTrace(line.traceId) : undefined), [open, line.traceId])
+  const shown = useSecretsShown("chat")
+  const trace = useMemo(() => (open && line.traceId ? maskSecrets(getTrace(line.traceId), shown) : undefined), [open, line.traceId, shown])
   const stages = trace ? trace.events.filter((e) => !e.parent || !trace.events.some((p) => p.id === e.parent)) : []
   return (
     <>
@@ -255,7 +262,7 @@ function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
         <ConvoKeys showing={showPast} setShowing={setShowPast} />
       </div>
       <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
-        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} onThought={onThought} />}
+        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} onThought={onThought} onRetry={submit} />}
       </div>
       <div className="bim-compose">
         <div className={editing || draft ? "bim-glass bim-well is-editing" : "bim-glass bim-well"}>

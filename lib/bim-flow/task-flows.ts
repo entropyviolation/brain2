@@ -79,7 +79,8 @@ export function askFlow(): Flow {
       maxRoutes: 1,
       routes: [
         { key: "last", label: "when last or first", hint: "asks WHEN something last, first, or most recently happened", pattern: "\\b(last time|when (did|was) (i|the|it)\\b.*\\b(last|first)\\b|when was the (last|first)|most recently|how long (has it been )?since)\\b" },
-        { key: "count", label: "how many or how long", hint: "asks HOW MANY times, HOW OFTEN, or HOW LONG in total", pattern: "\\b(how many|how often|how long|how much time)\\b" },
+        { key: "count", label: "how many or how long", hint: "asks HOW MANY times, HOW OFTEN, or HOW LONG in total", pattern: "\\b(how many|how often|how long|how much time)\\b(?!.*\\b(until|till|til|before)\\b)" },
+        // Not "how long until Elijah gets home": that looks ahead, there is nothing to count. It goes to the plain lane.
         { key: "with", label: "while with someone", hint: "asks what the person does, wears, eats, or says WHEN they are with a named person or at a named place", pattern: "\\bwhen i('m| am| was)? (hang|hung|out|with)\\b.*\\bwith\\b|\\bwhen i('m| am)? with\\b" },
       ],
     }),

@@ -45,6 +45,7 @@ import {
 import type { IngestTransport } from "../lib/ingest/deliver-reply"
 import type { IncomingTelegramPayload } from "../lib/ingest/telegram-bridge"
 import { brain2Env, brain2EnvLine } from "../lib/brain2-env.mjs"
+import { stripSecretSpans } from "../lib/secrets"
 
 type ExecutorModule = typeof import("../lib/ingest/executor")
 type HydratedStore = {
@@ -261,11 +262,12 @@ function flushVault(onlyKeys?: string[]) {
   }
 }
 
+// Telegram sits outside the passphrase gate, so no `\secret` span is ever sent there (`docs/SECRETS.md`).
 const transport: IngestTransport = {
   async send(chatId, text, markup) {
     const result = await telegramApi("sendMessage", {
       chat_id: chatId,
-      text,
+      text: stripSecretSpans(text) || "…",
       reply_markup: markup ? JSON.stringify(markup) : undefined,
     })
     return { messageId: result && result.message_id }
@@ -288,7 +290,7 @@ const transport: IngestTransport = {
     await telegramApi("editMessageText", {
       chat_id: chatId,
       message_id: messageId,
-      text,
+      text: stripSecretSpans(text) || "…",
       reply_markup: JSON.stringify(markup || { inline_keyboard: [] }),
     })
   },

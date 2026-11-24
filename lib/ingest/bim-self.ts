@@ -110,6 +110,12 @@ const TOPICS: Topic[] = [
       `Yes. Say “day log” (or “yesterday's day log”, “day log monday”) and the Day Log BIMBY reads everything from that day (tracking, location, Health, calls, texts, screen time, food, what you told me here and on Telegram, docs you wrote) and files one exact account in Docs → LOG DOCS → DAY LOGS. “Day log yesterday: the call with mom was at 3” keeps your correction word for word and rebuilds it. Yesterday's log is finished on its own after 4 am.${llm ? "" : " With LLM off it lists every row with times but writes no prose."}`,
   },
   {
+    id: "week-log",
+    words: /\b(?:week\s*logs?|weekly\s+logs?)\b/i,
+    say: (llm) =>
+      `Yes. Say “week log” (or “last week's week log”) and the Week Log BIMBY reads the seven days of that week, Monday to Sunday, from each day's Day Log and rows, and files one account in Docs → LOG DOCS → WEEK LOGS: the week in brief, day by day, where the time went, places, people, body, own words, gaps. “Week log: Tuesday I was home sick all day” keeps your words and rebuilds it. Last week's log is finished on its own after Monday 4 am.${llm ? "" : " With LLM off it writes every total and each day's brief but no week prose."}`,
+  },
+  {
     id: "food",
     words: /\b(?:food|meals?|ate|eaten|calories|kcal|nutrition(?:al)?|macros|recipes?)\b/i,
     say: () => "Yes. Tell me what you ate, as loosely as you like (“yesterday a whole container of ravioli with cheddar and 2 Red Bulls”), and the Food BIMBY reads it into meals, looks up each part (your saved foods, USDA, Open Food Facts, then an estimate), and files each on the Food book with the numbers. A homemade dish is saved as a recipe card. “Undo that” takes it back.",

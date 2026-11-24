@@ -38,6 +38,8 @@ const PLAIN = ["tell-open", "question-open", "verb"] as const
 /** The lanes, in the order a line meets them. The reason for each place is beside it. */
 export const CHAT_LANES = [
   { id: "handoff", cost: "code", does: "“Send this to tracking bimby: …” hands the words, unread, to that BIMBY's own chat." },
+  // Right after: the GRAPH tab's "Tell BIM about Linda: …" names its item, so no shape lane may read the words as a dump, a plan or a fact.
+  { id: "graph-tell", cost: "local-model", does: "“Tell BIM about Linda Gibbins Croft: …” (the GRAPH tab's Tell key, one node or several) becomes a card of changes to that item: the words as a note, facts, an address as a Location, relations to other people, days you saw them, To Dos or project parts, considerations, and a group list." },
   // Second: the line under "Paste the command" is kept word for word, so no lane may read it as a log line or a question.
   { id: "commands", agent: "commands-bimby", cost: "code", does: "“Remember this command to …” keeps a shell command (pasted with it, or as the next line); “what's the command to …?” says it back." },
   // Right after: only the line after a bare Spotify link ("favorite of the week"), which every later lane would read as a log line or a question.
@@ -51,13 +53,14 @@ export const CHAT_LANES = [
   // Before the fact and tell shapes, which would read a booking's clocks as facts.
   { id: "flight-file", cost: "code", skipWhen: OPEN, does: "A pasted booking confirmation becomes Flight items and calendar events." },
   { id: "dump", cost: "code", skipWhen: OPEN, does: "A brain dump (one long message with several plans and no clocks) becomes a card: new plans as To Dos or Inbox items, plans already on your list as amendments to them, a dose, things on the way, notes to BIM, and the thought patterns it shows; “what are my thought patterns?” counts them." },
+  { id: "owed", cost: "code", skipWhen: OPEN, does: "“Who do I need to text back?” lists who is waiting on a text (their last text, how long, their number) and your “text X back” to-dos; “already texted Ruggles at 3pm” checks those to-dos off with that time." },
   { id: "flight-ask", cost: "code", skipWhen: ["tell-open"], does: "“When am I flying to New York?” is answered from the Flight items." },
   // Before self, which would answer "can you log what I ate: …" as a question about BIM, and before money, day and
   // stream, which would read a list of meals as a spend, a plan or a stream of thought.
   { id: "food", agent: "food-bimby", cost: "local-model", skipWhen: OPEN, does: "A line about food eaten (“had a whole container of ravioli and 2 Red Bulls yesterday”, “log all this food”) is read into meals, each part looked up for nutrition (saved foods, USDA, Open Food Facts, then an estimate), and filed on the Food book with a plate; a homemade dish is saved as a recipe card." },
   // Before self, which would read "can you make my day log?" as a question about BIM, and before day and stream, which
   // would read "day log monday: I was at the gym 9–10" as a plan or a stream of thought.
-  { id: "day-log", cost: "local-model", skipWhen: OPEN, does: "“Day log”, “make yesterday's masterlog” builds that day's Day Log doc from every source (Docs → LOG DOCS → DAY LOGS); “day log monday: the call with mom was at 3” keeps the correction word for word and rebuilds." },
+  { id: "day-log", cost: "local-model", skipWhen: OPEN, does: "“Day log”, “make yesterday's masterlog” builds that day's Day Log doc from every source (Docs → LOG DOCS → DAY LOGS); “day log monday: the call with mom was at 3” keeps the correction word for word and rebuilds. “Week log”, “last week's week log” builds the Week Log from the seven Day Logs (Docs → LOG DOCS → WEEK LOGS); “week log: Tuesday I was sick all day” keeps it word for word and rebuilds the week." },
   // Before keep, web and the router: "can you answer questions that need a web search?" is about BIM, not a search or an Ask.
   { id: "self", cost: "code", skipWhen: OPEN, does: "“Can you …?”, “are you able to …?” or “what can you do?” about BIM itself is answered from a fixed sheet of what each lane does." },
   // Before keep, which leaves a timed "remind me to …" alone, and before the fact lane, which would keep "remember that I …" as a plain fact.

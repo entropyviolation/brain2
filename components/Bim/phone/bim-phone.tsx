@@ -23,7 +23,7 @@ import "@/components/Bim/bim-ink.css"
 import "./bim-phone.css"
 
 /** The transcript. Memoized: a keystroke in the compose box does not repaint every line and card. */
-const PhoneLog = memo(function PhoneLog({ lines }: { lines: BimLine[] }) {
+const PhoneLog = memo(function PhoneLog({ lines, onRetry }: { lines: BimLine[]; onRetry: (text: string) => void }) {
   return (
     <>
       {lines.length === 0 ? (
@@ -40,6 +40,11 @@ const PhoneLog = memo(function PhoneLog({ lines }: { lines: BimLine[] }) {
             {line.readAs ? <span className="bim-phone-route">read as: {line.readAs}</span> : null}
             {line.route ? <span className="bim-phone-route">{line.route}</span> : null}
             {line.general ? <span className="bim-phone-route">general, not from your data</span> : null}
+            {line.retry && !line.waiting ? (
+              <button type="button" className="m-keycap bim-phone-retry" onClick={() => onRetry(line.retry!)}>
+                retry
+              </button>
+            ) : null}
             {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
             {line.wireId ? <WireCard wireId={line.wireId} /> : null}
             {line.dayId ? <DayCard dayId={line.dayId} lineId={line.id} /> : null}
@@ -94,7 +99,7 @@ export function BimPhoneScreen() {
       </header>
 
       <div className="bim-phone-screen" ref={logRef} role="log" aria-live="polite">
-        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <PhoneLog lines={lines} />}
+        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <PhoneLog lines={lines} onRetry={submit} />}
         <span className="bim-phone-cursor" aria-hidden="true" />
       </div>
 

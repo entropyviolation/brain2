@@ -7,6 +7,7 @@
 "use client"
 
 import { useBimChatStore, type BimConvo } from "@/lib/ingest/bim-chat"
+import { stripSecretSpans } from "@/lib/secrets"
 
 function when(iso: string): string {
   const d = new Date(iso)
@@ -71,12 +72,12 @@ export function ConvoList({ onDone }: { onDone: () => void }) {
               onDone()
             }}
           >
-            <span className="bim-convo-title">{c.title}</span>
+            <span className="bim-convo-title">{stripSecretSpans(c.title) || "Chat"}</span>
             <span className="bim-convo-meta">
               {when(c.startedAt)} · {c.lines.length} lines
             </span>
           </button>
-          <button data-no95 type="button" className="bim-convo-drop" aria-label={`Delete "${c.title}"`} onClick={() => dropConvo(c.id)}>
+          <button data-no95 type="button" className="bim-convo-drop" aria-label={`Delete "${stripSecretSpans(c.title) || "Chat"}"`} onClick={() => dropConvo(c.id)}>
             ✕
           </button>
         </li>

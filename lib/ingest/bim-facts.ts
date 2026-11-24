@@ -27,6 +27,8 @@ export interface Fact {
   at?: number
   /** note only: the sentence kept. */
   text?: string
+  /** Set on a Coach BIMBY note about you (`aboutFacts`): your own words, or picked up from chat by the model. */
+  about?: "said" | "learned"
 }
 
 /** How long after a moment passes BIM still says "that already happened". After this it says it does not know. */
@@ -38,11 +40,20 @@ const STOP = new Set(
   (
     "a an the and or of to for in on at by is are was were be do does did will would can could should how long until till when " +
     "what whats time left much many again next my i me it its this that there any please tell minutes hours minute hour " +
-    "remember note fyi keep mind about"
+    "remember note fyi keep mind about where who which am you your get gets got come comes coming"
   ).split(" "),
 )
 
-const stem = (w: string) => (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w)
+/**
+ * Words that name the same thing in a fact and a question. "Elijah gets home at 2" must answer "when does Elijah get
+ * back?": on 2026-11-24 two of three words matched and the question went to the model, which timed out.
+ */
+const SAME: Record<string, string> = { back: "home", here: "home", return: "home", arrive: "home" }
+
+const stem = (w: string) => {
+  const s = w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w
+  return SAME[s] ?? s
+}
 
 /** Content words, lowercased and lightly stemmed, in order, without repeats. */
 export function factTokens(text: string): string[] {
@@ -221,6 +232,8 @@ export function looksLikeFactQuestion(text: string): boolean {
 export function matchFact(facts: Fact[], question: string): Fact | null {
   const q = new Set(factTokens(question))
   if (!q.size) return null
+  // "What is my name?" wants the note that says "my name", not "Dana's last name is Smith".
+  const mine = /\bmy\b/i.test(question) ? [...q].map((t) => new RegExp(`\\bmy ${t}`, "i")) : []
   let best: Fact | null = null
   let bestScore = 0
   for (const f of facts) {
@@ -228,7 +241,7 @@ export function matchFact(facts: Fact[], question: string): Fact | null {
     const hit = f.tokens.filter((t) => q.has(t)).length
     // A moment is named by the whole question; a note holds the answer, so the question must be inside it.
     const base = f.kind === "note" ? Math.min(q.size, f.tokens.length) : f.tokens.length
-    const score = hit / base
+    const score = hit / base + (f.kind === "note" && mine.some((r) => r.test(f.text ?? "")) ? 0.01 : 0)
     const need = base === 1 ? 1 : 0.67
     if (hit < Math.min(2, base) || score < need) continue
     if (score > bestScore || (score === bestScore && best && f.toldAt > best.toldAt)) {
@@ -284,4 +297,35 @@ export function rememberedText(f: Omit<Fact, "id">, now: Date): string {
   if (f.kind === "note") return `Okay, I'll remember that: ${f.text}.`
   const at = f.at ?? 0
   return `Okay. ${f.label} ${formatMoment(at, now)} (in ${formatSpan(at - now.getTime())}). I'll only trust it until then.`
+}
+
+// ---------------------------------------------------------------- what the Coach BIMBY knows about you
+
+/** A note about you in your own words, as the Coach BIMBY keeps it (`lib/coach-bimby/me-store.ts`). */
+export interface AboutNote {
+  id: string
+  text: string
+  at: number
+  source: "said" | "learned"
+}
+
+/** Coach notes as note facts, so "what is my name?" is answered from "my name is Allie" with no model. */
+export function aboutFacts(notes: AboutNote[]): Fact[] {
+  return notes.map((n) => ({ id: `me-${n.id}`, kind: "note" as const, label: n.text, tokens: factTokens(n.text), toldAt: n.at, text: n.text, about: n.source }))
+}
+
+/** "my name is allie" → "Your name is Allie". First person turned to second; a name after "name is" capitalized. */
+export function toYou(text: string): string {
+  const out = text
+    .trim()
+    .replace(/[.!]+$/, "")
+    .replace(/\bI am\b|\bI'm\b/gi, "you're")
+    .replace(/\bI was\b/gi, "you were")
+    .replace(/\bI\b/g, "you")
+    .replace(/\bmy\b/gi, "your")
+    .replace(/\bmine\b/gi, "yours")
+    .replace(/\bme\b/gi, "you")
+    .replace(/\bmyself\b/gi, "yourself")
+    .replace(/\b(name is|called) ([a-z][\w'-]*)/i, (_, a: string, b: string) => `${a} ${b.charAt(0).toUpperCase()}${b.slice(1)}`)
+  return out.charAt(0).toUpperCase() + out.slice(1)
 }

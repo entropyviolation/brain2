@@ -17,9 +17,11 @@ import { useReportStore } from "@/lib/report-bimby/store"
 import { useReplyTarget } from "@/lib/report-bimby/reply-target"
 import type { Effect, EffectField } from "@/lib/report-bimby/types"
 import { useTaskStore } from "@/lib/task-store"
+import { hasSecretSpans } from "@/lib/secrets"
+import { maskSecrets, useSecretsShown } from "@/lib/secrets-store"
 import "./report-card.css"
 
-const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY", sleep: "SLEEP", line: "FILE", verdict: "LINK", feeling: "FEEL", person: "PERSON", "person-note": "NOTE", birthday: "BIRTHDAY", reminder: "REMIND", "plan-entry": "PLAN", intention: "INTENT", day: "DAY", amend: "AMEND", pattern: "PATTERN" }
+const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY", sleep: "SLEEP", line: "FILE", verdict: "LINK", feeling: "FEEL", person: "PERSON", "person-note": "NOTE", birthday: "BIRTHDAY", reminder: "REMIND", "plan-entry": "PLAN", intention: "INTENT", day: "DAY", amend: "AMEND", pattern: "PATTERN", "item-note": "NOTE", consider: "CONSIDER", fact: "FACT", place: "PLACE", kin: "RELATION", relation: "TO YOU", seen: "SEEN", todo: "TO DO", step: "PART", contact: "CONTACT", group: "GROUP" }
 const STATUS_LABEL: Record<Effect["status"], string> = { pending: "WAITING", working: "SAVING…", applied: "SAVED", rejected: "REJECTED", failed: "FAILED" }
 
 /** Text fields that hold prose (a note, a line) read as a full-width box that grows with the words. */
@@ -165,8 +167,10 @@ function useReplyTo(planId: string, effect: Effect) {
   return { on, toggle }
 }
 
-function EffectBlock({ planId, effect }: { planId: string; effect: Effect }) {
-  const locked = effect.status === "applied" || effect.status === "rejected" || effect.status === "working"
+function EffectBlock({ planId, effect, sealed = false }: { planId: string; effect: Effect; sealed?: boolean }) {
+  // `sealed`: a field holds a `\secret` span and secrets are hidden, so the field is drawn stripped and cannot be
+  // edited (saving the stripped words would delete the secret).
+  const locked = sealed || effect.status === "applied" || effect.status === "rejected" || effect.status === "working"
   const reply = useReplyTo(planId, effect)
   return (
     <article className={`rc-effect is-${effect.status}${reply.on ? " is-reply" : ""}`} data-kind={effect.kind}>
@@ -201,8 +205,11 @@ function EffectBlock({ planId, effect }: { planId: string; effect: Effect }) {
 }
 
 export function ReportCard({ reportId }: { reportId: string }) {
-  const plan = useReportStore((s) => s.plans[reportId])
-  if (!plan) return <p className="rc-gone">This plan is no longer kept on this device.</p>
+  const asWritten = useReportStore((s) => s.plans[reportId])
+  const shown = useSecretsShown("chat")
+  // Locked, no `\secret` span is drawn anywhere on the card: title, why, evidence, fields, result (`docs/SECRETS.md`).
+  const plan = useMemo(() => (asWritten ? maskSecrets(asWritten, shown) : undefined), [asWritten, shown])
+  if (!plan || !asWritten) return <p className="rc-gone">This plan is no longer kept on this device.</p>
   const pending = plan.effects.filter((e) => e.status === "pending").length
   const saving = plan.effects.some((e) => e.status === "working")
   return (
@@ -211,7 +218,7 @@ export function ReportCard({ reportId }: { reportId: string }) {
         <summary>how I read it ({plan.trace.length} steps)</summary>
         <ol>{plan.trace.map((t, i) => <li key={i}>{t}</li>)}</ol>
       </details>
-      {plan.effects.map((e) => <EffectBlock key={e.id} planId={plan.id} effect={e} />)}
+      {plan.effects.map((e, i) => <EffectBlock key={e.id} planId={plan.id} effect={e} sealed={!shown && asWritten.effects[i]!.fields.some((f) => typeof f.value === "string" && hasSecretSpans(f.value))} />)}
       {pending > 1 && !saving ? (
         <div className="rc-actions rc-all">
           <button type="button" data-no95 className="rc-accept" onClick={() => acceptAll(plan.id)}>Accept all {pending}</button>

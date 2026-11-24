@@ -2,6 +2,7 @@ import { afterEach, describe, it, expect, beforeEach, vi } from "vitest"
 import { HOME_ASK, resetWebAsk, useHomeStore } from "@/lib/bim-flow/web-ask"
 import { resetAllStores } from "@/tests/test-utils"
 import { useIngestStore } from "./ingest-store"
+import { getTrace } from "@/lib/agents/trace-store"
 import { BIM_CHAT_ID, bimChoices, sendToBim, useBimChatStore, useBimFactsStore } from "./bim-chat"
 import { BIM_PING } from "./bim"
 import type { ApplyResult } from "./types"
@@ -85,6 +86,23 @@ describe("BIM Chat", () => {
     const event = useIngestStore.getState().events[0]
     expect(event.channel).toBe("simulate")
     expect(event.chatId).toBe(BIM_CHAT_ID)
+  })
+
+  it("a \\secret span is filed as written but read, traced and replied to only without it", async () => {
+    const said = String.raw`inbox: buy stamps \secret for Marilyn Monroe \secret`
+    const line = await sendToBim(said)
+    // Filed with your exact words, so an unlocked read can find it later.
+    expect(JSON.stringify(useIngestStore.getState().events[0])).toContain("Marilyn")
+    // The Trace (what the Thought sheet draws) never holds it.
+    expect(JSON.stringify(getTrace(line.traceId!))).not.toContain("Marilyn")
+    expect(JSON.stringify(getTrace(line.traceId!))).not.toContain("\\secret")
+  })
+
+  it("a line that is all secret is kept and nothing else is said", async () => {
+    const line = await sendToBim(String.raw`\secret thinking about Marilyn Monroe \secret`)
+    expect(line.text).toBe("Kept.")
+    expect(line.route).toBe("SECRET · code")
+    expect(JSON.stringify(getTrace(line.traceId ?? "") ?? {})).not.toContain("Marilyn")
   })
 
   it("maps clarify buttons onto the same typed answers", () => {

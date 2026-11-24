@@ -28,6 +28,7 @@ import { applyFollowEffect } from "@/lib/follow-through/run"
 import { applySocialEffect } from "@/lib/social-bimby/apply"
 import { applyDayEffect } from "@/lib/plan-bimby/day/update-apply"
 import { applyAmend, applyPattern } from "@/lib/dump-bimby/apply"
+import { applyGraphEffect } from "@/lib/graph-bimby/apply"
 import { fmtClock, parseDateTime } from "./time"
 import { fieldValue, type Effect } from "./types"
 
@@ -203,6 +204,18 @@ export function applyEffect(effect: Effect, now = new Date()): Applied {
         return applyAmend(effect, now)
       case "pattern":
         return applyPattern(effect)
+      case "item-note":
+      case "consider":
+      case "fact":
+      case "place":
+      case "kin":
+      case "relation":
+      case "seen":
+      case "todo":
+      case "step":
+      case "contact":
+      case "group":
+        return applyGraphEffect(effect, now)
     }
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error))

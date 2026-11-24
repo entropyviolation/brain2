@@ -26,6 +26,8 @@ export const parseOwedAsk = (text: string): boolean => ASK.test(text.trim())
 const NO_REPLY_NEEDED =
   /^(?:(?:liked|loved|laughed at|emphasized|disliked|questioned|reacted\s+\S+\s+to)\s+[“"].*|ok(?:ay)?|k+|kk|lol+|lmao+|haha+|ha|ty|thx|thanks?(?: you)?|np|no problem|cool|nice|yes|yep|yup|sure|sounds good|perfect|love you|ily|night|goodnight|gn|bye|see you|see ya|ttyl|[\p{Emoji}\s]+)[.!]*$/iu
 
+const AUTOMATED = /\b(?:verification|security|login|one-time|passcode|your code|code is|reply stop|text stop|stop to (?:opt out|end|unsubscribe)|unsubscribe|msg&data|msg & data|do not reply|order #|has shipped|out for delivery|appointment reminder)\b/i
+
 export interface OwedTodo {
   id: string
   title: string
@@ -92,6 +94,10 @@ export function owedRows(
   for (const list of threads.values()) {
     const last = list.at(-1)!
     if (last.dir !== "in" || Date.parse(last.at) < from) continue
+    // A number you never wrote to that no contact names, or a machine (codes, STOP to opt out), is not waiting on you.
+    const unnamed = /^[+\d\s().-]+$|@/.test(last.who)
+    if (unnamed && !list.some((r) => r.dir === "out")) continue
+    if (AUTOMATED.test(last.text)) continue
     let i = list.length - 1
     while (i >= 0 && list[i]!.dir === "in") i--
     const theirs = list.slice(i + 1).filter((r) => !NO_REPLY_NEEDED.test(r.text.trim()))
@@ -142,8 +148,8 @@ export function owedText(rows: OwedRow[], now: Date, textsReached: boolean): str
     if (r.contact) bits.push(r.contact)
     if (r.lastAt) bits.push(`waiting ${waited(r.lastAt, now)}${r.unanswered > 1 ? ` (${r.unanswered} texts)` : ""}`)
     if (r.lastText) bits.push(`“${r.lastText.length > 90 ? `${r.lastText.slice(0, 87)}…` : r.lastText}”`)
+    else if (textsReached) bits.push("no unanswered text, to-do only")
     if (r.todos.length) bits.push(`to-do: ${r.todos.map((t) => t.title).join("; ")}`)
-    else if (!r.lastAt) bits.push("to-do only")
     return bits.join(" · ")
   })
   const tail = `Say “already texted ${rows[0]!.who.split(" ")[0]}” (add when, like “at 3pm”) and I'll check off the to-do and take them off this list.`

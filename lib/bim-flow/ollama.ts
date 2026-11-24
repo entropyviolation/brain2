@@ -215,9 +215,118 @@ export function keepAliveFor(model: string): string | number {
 const nsToMs = (ns: unknown) => (typeof ns === "number" && ns > 0 ? Math.round(ns / 1e6) : undefined)
 const taskOf = (system: string) => system.replace(/\s+/g, " ").trim().slice(0, 60)
 
+// ---------------------------------------------------------------- chat first
+
+/**
+ * Ollama answers one call at a time per model. A background job (the Day Log BIMBY writes for 100 s on the 14B) left
+ * BIM chat queued behind it: on 2026-11-24 "what is my name?" spent its whole 30 s Ask budget waiting for one plan call
+ * that needed under 2 s. So chat goes first: a foreground call aborts every running background call, and new background
+ * calls wait until chat has been quiet for `CHAT_HOLD_MS`, then go again from the start. Every desktop window runs the
+ * Day Log BIMBY, so the windows tell each other over a `BroadcastChannel`.
+ */
+export const CHAT_HOLD_MS = 20_000
+/** The longest another window's chat call can hold this window's background work, in case it closed mid-call. */
+const REMOTE_HOLD_MS = 120_000
+let holdMs = CHAT_HOLD_MS
+let foregroundLive = 0
+let quietAt = 0
+const backgroundLive = new Set<AbortController>()
+
+/** Tests only: a shorter hold. */
+export function setChatHoldMs(ms: number): void {
+  holdMs = ms
+}
+
+/** The reason a background call was cut: chat needed the model. Not the daemon's fault. */
+export class YieldedToChat extends Error {
+  constructor() {
+    super("yielded to chat")
+    this.name = "YieldedToChat"
+  }
+}
+
+function yieldBackground(): void {
+  for (const c of backgroundLive) c.abort(new YieldedToChat())
+}
+
+const lane: BroadcastChannel | null = (() => {
+  try {
+    return typeof BroadcastChannel === "function" ? new BroadcastChannel("brain2-model-lane") : null
+  } catch {
+    return null
+  }
+})()
+lane?.addEventListener("message", (e: MessageEvent) => {
+  const until = Date.now() + (e.data === "chat-start" ? REMOTE_HOLD_MS : e.data === "chat-end" ? holdMs : 0)
+  if (e.data === "chat-start") yieldBackground()
+  // An end replaces the start's long hold.
+  if (until > Date.now()) quietAt = e.data === "chat-end" ? until : Math.max(quietAt, until)
+})
+
+/** True while a chat call runs here or in another window, or ended less than `CHAT_HOLD_MS` ago. */
+export function chatBusy(now = Date.now()): boolean {
+  return foregroundLive > 0 || now < quietAt
+}
+
+async function asForeground<T>(run: () => Promise<T>): Promise<T> {
+  foregroundLive++
+  yieldBackground()
+  try {
+    lane?.postMessage("chat-start")
+  } catch {}
+  try {
+    return await run()
+  } finally {
+    foregroundLive--
+    quietAt = Math.max(quietAt, Date.now() + holdMs)
+    try {
+      lane?.postMessage("chat-end")
+    } catch {}
+  }
+}
+
+/**
+ * One background call at a time, across every window. _2026-11-24:_ two windows each ran the Day Log and Week Log
+ * BIMBIES, so four long calls sat in Ollama's queue at once. Cutting the running one did not help: chat still
+ * queued behind the other three and every ask ran out its 45 s. With one in flight, chat waits for nothing once it
+ * is cut. `navigator.locks` spans same-origin windows; a chain in this module is the fallback (tests, Node).
+ */
+const BG_LOCK = "brain2-model-background"
+let bgChain: Promise<unknown> = Promise.resolve()
+function oneBackground<T>(run: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator !== "undefined" ? (navigator as Navigator & { locks?: LockManager }).locks : undefined
+  if (locks?.request) return locks.request(BG_LOCK, run) as Promise<T>
+  const next = bgChain.then(run, run)
+  bgChain = next.catch(() => {})
+  return next
+}
+
+async function asBackground<T>(run: (signal: AbortSignal) => Promise<T>, signal?: AbortSignal): Promise<T> {
+  for (;;) {
+    while (chatBusy()) await pause(Math.min(1000, holdMs), signal)
+    const own = new AbortController()
+    const out = await oneBackground<{ value: T } | { again: true }>(async () => {
+      // Chat may have started while this waited for the lock.
+      if (chatBusy() || signal?.aborted) return { again: true as const }
+      backgroundLive.add(own)
+      try {
+        const value: T = await run(either(signal, own.signal))
+        return { value }
+      } catch (error) {
+        if (!(own.signal.reason instanceof YieldedToChat) || signal?.aborted) throw error
+        return { again: true as const } // Cut for chat: wait for quiet and start over.
+      } finally {
+        backgroundLive.delete(own)
+      }
+    })
+    if (signal?.aborted) throw signal.reason
+    if ("value" in out) return out.value
+  }
+}
+
 /**
  * A `ModelCall` bound to one Ollama model. Identical prompts are answered from memory, unless `fresh` (a test run: real timings, every call archived).
- * `background` marks a job no one is waiting on (the Day Log BIMBY, the Coach BIMBY's quiet read).
+ * `background` marks a job no one is waiting on (the Day Log BIMBY, the Coach BIMBY's quiet read): it yields to chat (see `CHAT_HOLD_MS`).
  *
  * Secrets: every `\secret … \secret` span is cut from the system and user text before the model sees it, the
  * cache keys it, the trace shows it, or the archive keeps it. Only `secrets: "included"` keeps them, and only a
@@ -237,7 +346,8 @@ export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: 
       return cache.get(key)
     }
     try {
-      const { parsed, times } = await askOllama(model, system, user, schema, maxTokens, temperature, signal)
+      const ask = (s?: AbortSignal) => askOllama(model, system, user, schema, maxTokens, temperature, s)
+      const { parsed, times } = opts.background ? await asBackground(ask, signal) : await asForeground(() => ask(signal))
       cache.set(key, parsed)
       const ms = Date.now() - startedAt
       tell({ model, task: taskOf(system), startedAt, ms, ok: true, ...times, system, user, output: parsed })

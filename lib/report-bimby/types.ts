@@ -14,6 +14,7 @@ import type { AcceptGrade } from "@/lib/accept-grade"
 /** `verdict` and `feeling`: a plan-to-outcome link and a feeling on its scales (`lib/follow-through/`). Accept confirms the record. */
 /** `person`, `person-note`, `birthday`, `reminder`, `plan-entry`, `intention`: the Social BIMBY (`lib/social-bimby/`). */
 /** `amend`: a change to an open task a brain dump names again; `pattern`: a thought pattern to confirm (`lib/dump-bimby/`). */
+/** `item-note`, `consider`, `fact`, `place`, `kin`, `relation`, `seen`, `todo`, `step`, `contact`, `group`: the Graph BIMBY (`lib/graph-bimby/`), told about one item or a group from the GRAPH tab. */
 /** `day`: a change to the live day plan (`lib/plan-bimby/day/update.ts`); `op` says which, `ref` is the plan id. */
 export type EffectKind =
   | "inventory"
@@ -33,6 +34,17 @@ export type EffectKind =
   | "day"
   | "amend"
   | "pattern"
+  | "item-note"
+  | "consider"
+  | "fact"
+  | "place"
+  | "kin"
+  | "relation"
+  | "seen"
+  | "todo"
+  | "step"
+  | "contact"
+  | "group"
 
 export type EffectStatus = "pending" | "working" | "applied" | "rejected" | "failed"
 
@@ -60,6 +72,8 @@ export interface Effect {
   op?: string
   /** The record this effect confirms (a step or feeling id in the follow-through ledger). */
   ref?: string
+  /** Graph BIMBY: the item ids this change is about (the node or nodes you told BIM about). */
+  about?: string[]
   /** What happened on accept: the writer's reply, or why it failed. */
   result?: string
   /** `ok`: accepted with the Neutral key (`lib/accept-grade.ts`). Applied the same, never a good example. */
@@ -75,6 +89,9 @@ export interface ReportPlan {
   /** The reading, in order: what was found in the message and what was looked up. */
   trace: string[]
   effects: Effect[]
+  /** Graph BIMBY: the item the words were about (the GRAPH tab draws the waiting changes on it). A group lists every id. */
+  about?: string
+  aboutIds?: string[]
 }
 
 export const fieldValue = (effect: Effect, key: string): string => effect.fields.find((f) => f.key === key)?.value ?? ""

@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { getTrace } from "@/lib/agents/trace-store"
+import { maskSecrets, useSecretsShown } from "@/lib/secrets-store"
 import type { Trace, TraceEvent } from "@/lib/agents/trace"
 import type { BimLine } from "@/lib/ingest/bim-chat"
 import "./thought-popup.css"
@@ -113,8 +114,12 @@ function EventRow({ event, kids, depth, span, open, toggle }: { event: TraceEven
   )
 }
 
-export function ThoughtPopup({ line, said, onClose }: { line: BimLine; said?: string; onClose: () => void }) {
-  const trace = useMemo(() => (line.traceId ? getTrace(line.traceId) : undefined), [line.traceId])
+export function ThoughtPopup({ line: asWritten, said: saidRaw, onClose }: { line: BimLine; said?: string; onClose: () => void }) {
+  // Locked, the sheet draws no `\secret` span anywhere: the line, what you said, every step, every prompt (`docs/SECRETS.md`).
+  const shown = useSecretsShown("chat")
+  const line = useMemo(() => maskSecrets(asWritten, shown), [asWritten, shown])
+  const said = saidRaw === undefined ? undefined : maskSecrets(saidRaw, shown)
+  const trace = useMemo(() => (line.traceId ? maskSecrets(getTrace(line.traceId), shown) : undefined), [line.traceId, shown])
   const [open, setOpen] = useState<Set<string>>(new Set())
   const [copied, setCopied] = useState(false)
 

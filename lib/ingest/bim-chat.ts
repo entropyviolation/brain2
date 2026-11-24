@@ -26,6 +26,7 @@ import { applyTextMirror } from "./apply-text-mirror"
 import { applyTripPrep } from "./apply-trip-prep"
 import { answerTell, applyTell, type TellPending, type TellReply } from "./apply-tell"
 import {
+  aboutFacts,
   answerFact,
   looksLikeFactQuestion,
   matchFact,
@@ -35,6 +36,7 @@ import {
   pruneFacts,
   rememberedText,
   rememberFact,
+  toYou,
   type Fact,
 } from "./bim-facts"
 import { tryResistance, tryResistanceOutcome, tryResistanceWhy, type ResistanceReply } from "./bim-resistance"
@@ -51,6 +53,7 @@ import { openMoneyQuestion, tryMoney, tryMoneyPhoto } from "@/lib/finance-bimby/
 import { undoLastFood } from "@/lib/food-bimby/apply"
 import { tryFood } from "@/lib/food-bimby/run"
 import { tryDayLog } from "@/lib/day-log-bimby/run"
+import { tryWeekLog } from "@/lib/week-log-bimby/run"
 import { escalate } from "@/lib/bim-flow/crew"
 import { CHAT_LANES, runLanes, type ChatLaneId, type LaneBody, type LaneGuard } from "./bim-lanes"
 import { BIM_CHAT_AGENT_ID, BIM_CHAT_REV } from "@/lib/agents/adapters/bim-chat"
@@ -74,6 +77,8 @@ import { liveSessionDeps, trySocial } from "@/lib/social-bimby/run"
 import { trySocialFollow } from "@/lib/social-bimby/session"
 import { tryStream } from "@/lib/stream-bimby/run"
 import { tryDump } from "@/lib/dump-bimby/run"
+import { tryGraphTell } from "@/lib/graph-bimby/run"
+import { tryOwed } from "./bim-owed-run"
 import { parsePatternAsk, patternSummaryText, summarize, useThoughtPatternStore } from "@/lib/thought-patterns/store"
 import { tryWire } from "@/lib/wire-bimby/run"
 import { tryDay } from "@/lib/plan-bimby/day/run"
@@ -85,7 +90,10 @@ import { splitAside } from "@/lib/bim-flow/web-lane"
 import { answerSelf } from "./bim-self"
 import { tryCoach, tryRemind } from "@/lib/coach-bimby/apply"
 import { learnFromLine } from "@/lib/coach-bimby/learn"
+import { hasSecretSpans, stripSecretSpans, stripSecretsDeep } from "@/lib/secrets"
+import { secretsAskedFor } from "@/lib/secrets-store"
 import { parseCoachAsk } from "@/lib/coach-bimby/read"
+import { useMeStore } from "@/lib/coach-bimby/me-store"
 import { nextQuestion } from "@/lib/follow-through/ask"
 import { observeLine, tryFollowAnswer, tryFollowCommand, type MineSources } from "@/lib/follow-through/run"
 import { followLedger } from "@/lib/follow-through/store"
@@ -146,6 +154,13 @@ export type BimLine = {
   replyTo?: string
   /** On a line of yours: the card change it replies to ("BIRTHDAY · Nico's birthday", `lib/report-bimby/reply-target.ts`). */
   aboutCard?: string
+  /** On a reply that failed or timed out: your line, sent again by the Retry key on the reply. */
+  retry?: string
+}
+
+/** A reply worth a Retry key: an error, a stalled turn, or an Ask or chat run that failed or timed out (even when code found rows). */
+export function replyFailed(line: Pick<BimLine, "status" | "route" | "text">): boolean {
+  return line.status === "error" || /\b(ask|chat) failed\b/.test(line.route ?? "") || /^The model did not finish\b/.test(line.text)
 }
 
 type InlineButton = { text: string; callback_data: string }
@@ -353,9 +368,13 @@ function tryFact(text: string, now: Date): BimLine | null {
   const note = parseNoteStatement(text)
   if (note) return keepFact(note, now)
   if (!looksLikeFactQuestion(text)) return null
-  const facts = pruneFacts(useBimFactsStore.getState().facts, now)
+  // What you told the fact lane, and what the Coach BIMBY knows about you ("remember that my name is Allie").
+  // Notes about you answer only a question about you or a "who is …?": "how was work?" is not "I work at a bakery".
+  const aboutYou = /\b(?:my|i|me|i'm|im)\b/i.test(text) || /^who\b/i.test(text.trim())
+  const facts = [...pruneFacts(useBimFactsStore.getState().facts, now), ...(aboutYou ? aboutFacts(useMeStore.getState().notes) : [])]
   const hit = matchFact(facts, text)
   if (!hit) return null
+  if (hit.about) return factLine(`${toYou(hit.text ?? hit.label)}.${hit.about === "learned" ? " (I picked that up from chat.)" : ""}`, { route: "FACT · about you · code" })
   const answer = answerFact(hit, now)
   if (answer.state === "unknown" || answer.state === "just-passed") awaitingFact = { label: hit.label, tokens: hit.tokens }
   return factLine(answer.text, { route: "FACT · memory · code" })
@@ -509,12 +528,12 @@ function chatLine(board: SwitchboardResult, said: string): BimLine {
 }
 
 /** The turns before this line, oldest first, for the chat lane. The line being sent is already last in the transcript. */
-function earlierTurns(text: string): { who: "you" | "bim"; text: string }[] {
+function earlierTurns(text: string, secrets = false): { who: "you" | "bim"; text: string }[] {
   // Up to this line's own turn: lines sent after it (queued) and reply slots still waiting are not context.
   const all = convoLinesWhere((ls) => ls.some((l, i) => l.who === "you" && l.text === text && ls[i + 1]?.waiting))
   const mine = all.findIndex((l, i) => l.who === "you" && l.text === text && all[i + 1]?.waiting)
   const before = (mine >= 0 ? all.slice(0, mine) : all.filter((l, i) => !(i === all.length - 1 && l.who === "you" && l.text === text))).filter((l) => !l.waiting)
-  return before.slice(-8).map((l) => ({ who: l.who, text: l.text }))
+  return before.slice(-8).map((l) => ({ who: l.who, text: secrets ? l.text : stripSecretSpans(l.text) }))
 }
 
 function resistanceLine(r: ResistanceReply, tag = false): BimLine {
@@ -555,6 +574,17 @@ export async function sendToBim(
   now = new Date(),
   opts: { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; origin?: TraceOrigin; about?: CardRef; search?: WebSearch } = {},
 ): Promise<BimLine> {
+  // Secret spans (`docs/SECRETS.md`): unless this line EXPLICITLY includes secrets (passphrase typed), every reader
+  // of the turn — router, lanes, patterns, cues, follow-through, learning, the Trace — gets the line with its
+  // `\secret` spans cut out. Only the executor's write keeps your exact words (`raw`), so the span stays in the
+  // vault for a later unlocked read and the covert tallies.
+  const raw = text
+  const secrets = secretsAskedFor(raw)
+  if (!secrets && hasSecretSpans(raw)) {
+    text = stripSecretSpans(raw)
+    if (!text.trim()) return keepSecretOnly(raw, now)
+  }
+  const kept = { secrets, ...(text !== raw ? { raw: { seen: text, said: raw } } : {}) }
   // One Trace for the whole turn, the follow-through read and the cues included. Every model call made while the
   // turn runs is an event of its own, named by the stage that asked (`turn.stage`), so `cost.calls` is the real count.
   const rec = recorder({ blueprint: { id: BIM_CHAT_AGENT_ID, rev: BIM_CHAT_REV }, input: text, origin: opts.origin ?? "app" })
@@ -566,7 +596,8 @@ export async function sendToBim(
     try {
       const stop: StopReason = line.status === "error" ? "error" : line.status === "needs_clarify" ? "needs-person" : "done"
       const proposals = line.reportId || line.wireId || line.dayId || line.habitLineId ? 1 : 0
-      saveTrace(rec.finish(stop, { text: line.text, proposals, wrote: writesSince(newestBefore).map((e) => e.kind ?? "write") }))
+      const trace = rec.finish(stop, { text: line.text, proposals, wrote: writesSince(newestBefore).map((e) => e.kind ?? "write") })
+      saveTrace(secrets ? trace : stripSecretsDeep(trace))
     } catch {}
     return { ...line, traceId: rec.id }
   }
@@ -580,7 +611,7 @@ export async function sendToBim(
       if (replied) return close(bimLine(replied.text, { route: replied.route, ...(replied.reportId ? { reportId: replied.reportId } : {}), ...(replied.evidence?.length ? { evidence: replied.evidence } : {}) }))
       turn.stage = "correct"
     }
-    const routed = await routeToBim(text, now, { ...opts, rec, turn }, newestBefore)
+    const routed = await routeToBim(text, now, { ...opts, ...kept, rec, turn }, newestBefore)
     turn.stage = "follow-through"
     let t0 = rec.clock()
     const line = await followed(routed, text, now, opts)
@@ -607,6 +638,19 @@ export async function sendToBim(
 }
 
 /**
+ * A line that is all secret: nothing reads it. It is filed as written (`log:` through the executor) so it waits in
+ * the vault for an unlocked read, and BIM says only that it was kept.
+ */
+async function keepSecretOnly(raw: string, now: Date): Promise<BimLine> {
+  try {
+    const result = await executorSend(`log: ${raw}`, now)
+    return bimLine("Kept.", { status: result.status === "error" ? "error" : "ok", kind: result.kind, route: "SECRET · code" })
+  } catch (error) {
+    return bimLine(`Error: ${error instanceof Error ? error.message : String(error)}`, { status: "error" })
+  }
+}
+
+/**
  * The Coach BIMBY's quiet read of one line, on the main model (the 3B returned nothing for "i'm a freelance
  * illustrator and my sister dana is visiting"; the 14B kept both and nothing from moods or errands). Never throws,
  * never holds the turn.
@@ -616,7 +660,7 @@ async function learnQuietly(text: string, now: Date): Promise<void> {
     const crew = await chatCrew()
     if (!crew) return
     const model = crew.main
-    await learnFromLine(text, ollamaCall(model, AbortSignal.timeout(60_000)), model, now)
+    await learnFromLine(text, ollamaCall(model, AbortSignal.timeout(180_000), { background: true }), model, now)
   } catch {
     /* learning is a bonus */
   }
@@ -673,7 +717,7 @@ async function followed(line: BimLine, text: string, now: Date, opts: { photos?:
 /** What the app already holds that the follow-through ledger can be read from. */
 function mineSources(): MineSources {
   const said = allBimLines().filter((l) => l.who === "you").map((l) => ({ text: l.text, at: l.at }))
-  const plans = Object.values(useReportStore.getState().plans).map((p) => ({ text: p.text, at: p.at }))
+  const plans = Object.values(useReportStore.getState().plans).map((p) => ({ text: stripSecretSpans(p.text), at: p.at }))
   return { texts: [...plans, ...said], overcome: useOvercomeStore.getState().log }
 }
 
@@ -810,7 +854,17 @@ function noteTurn(said: string, now: Date, line: BimLine, newestBefore: string |
 
 // ---------------------------------------------------------------- lanes
 
-type SendOpts = { llm?: boolean; lastBim?: string; photos?: IncomingAttachment[]; rec?: TraceRecorder; turn?: TurnStage }
+type SendOpts = {
+  llm?: boolean
+  lastBim?: string
+  photos?: IncomingAttachment[]
+  rec?: TraceRecorder
+  turn?: TurnStage
+  /** This line EXPLICITLY includes secrets (`secretsAskedFor`). */
+  secrets?: boolean
+  /** The line had `\secret` spans: lanes read `seen`; only the executor's write gets `said`. */
+  raw?: { seen: string; said: string }
+}
 type LaneCtx = { text: string; now: Date; opts: SendOpts }
 
 const bimLine = (text: string, extra: Partial<BimLine> = {}): BimLine => ({ id: lineId(), at: new Date().toISOString(), who: "bim", text, status: "ok", ...extra })
@@ -883,15 +937,17 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
   const switchboard = (force: boolean) =>
     timed(
       "switchboard",
-      () => runSwitchboard(text, now, BIM_CHAT_SOURCE, opts.lastBim, { ...(force ? { force } : {}), turns: earlierTurns(text), stage, rec: opts.rec }),
+      () => runSwitchboard(text, now, BIM_CHAT_SOURCE, opts.lastBim, { ...(force ? { force } : {}), turns: earlierTurns(opts.raw?.said ?? text, !!opts.secrets), stage, rec: opts.rec }),
       (b) => b?.route ?? "not routed",
     )
+  // Your exact words, spans and all, are what gets filed; every read above saw them stripped.
+  const asWritten = (said: string) => (opts.raw && said === opts.raw.seen ? opts.raw.said : said)
   const execute = (said: string) => timed("executor", () => ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: said, receivedAt: now.toISOString() }, now), (r) => `${r.status} · ${r.kind}`)
   let board = opts.llm ? await switchboard(false) : null
   if (board?.chat && !board.passThrough) return chatLine(board, text)
   if (board?.answer && !board.passThrough) return (await webInstead(board, text, now)) ?? answerLine(board, text)
   if (board?.failed && !board.passThrough) return failedLine(board)
-  let result = await execute(text)
+  let result = await execute(asWritten(text))
   // The ladder gave up on a line (a start, mood, or place it could not finish). With LLM on, the
   // router gets it before it becomes a question for you: a sure ask is answered, a sure log is filed.
   if (opts.llm && !board && !heldBefore && result.status === "needs_clarify" && RESCUABLE.has(result.pending.kind)) {
@@ -906,7 +962,7 @@ async function ladderLane({ text, now, opts }: LaneCtx): Promise<BimLine> {
     }
     if (second?.sure && second.intent === "log") {
       useIngestStore.getState().setPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID, null)
-      result = await execute(`log: ${text}`)
+      result = await execute(`log: ${asWritten(text)}`)
     }
     board = second
   }
@@ -1037,6 +1093,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     const handed = await tryHandoff(text, { llm: !!opts.llm })
     return handed ? bimLine(handed.text, { route: handed.route, ...(handed.habitLineId ? { habitLineId: handed.habitLineId } : {}), ...(handed.reportId ? { reportId: handed.reportId } : {}) }) : null
   },
+  "graph-tell": async ({ text, now, opts }) => {
+    const told = await tryGraphTell(text, now, { llm: !!opts.llm })
+    return told ? bimLine(told.text, { route: told.route, kind: "tell", ...(told.reportId ? { reportId: told.reportId } : {}) }) : null
+  },
   commands: ({ text, now }) => {
     const said = tryCommands(text, now)
     return said ? bimLine(said.text, { route: said.route, kind: "tell" }) : null
@@ -1063,6 +1123,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     return followed ? bimLine(followed.text, { route: followed.route, ...(followed.choices.length ? { choices: followed.choices } : {}) }) : null
   },
   "flight-file": ({ text, now }) => tryFlights(text, now),
+  owed: async ({ text, now }) => {
+    const owed = await tryOwed(text, now)
+    return owed ? bimLine(owed.text, { route: owed.route, kind: "tell", ...(owed.evidence ? { evidence: owed.evidence } : {}) }) : null
+  },
   dump: ({ text, now }) => {
     const ask = parsePatternAsk(text)
     if (ask) return bimLine(patternSummaryText(summarize(useThoughtPatternStore.getState().observations, now, ask.days), ask.days), { route: "PATTERNS · ledger · code", kind: "tell" })
@@ -1074,7 +1138,7 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     return food ? bimLine(food.text, { route: food.route, kind: "tell", ...(food.choices?.length ? { choices: food.choices } : {}) }) : null
   },
   "day-log": async ({ text, now, opts }) => {
-    const said = await tryDayLog(text, now, { llm: !!opts.llm })
+    const said = (await tryDayLog(text, now, { llm: !!opts.llm })) ?? (await tryWeekLog(text, now, { llm: !!opts.llm }))
     return said ? bimLine(said.text, { route: said.route, kind: "tell" }) : null
   },
   self: ({ text, opts }) => {
@@ -1271,7 +1335,8 @@ function convoId(): string {
 
 /** A conversation's title: its first line of yours, cut short. */
 export function convoTitle(lines: BimLine[]): string {
-  const first = lines.find((l) => l.who === "you")?.text.replace(/\s+/g, " ").trim()
+  // Titles are always drawn, locked or not, so a secret span never becomes one.
+  const first = lines.map((l) => (l.who === "you" ? stripSecretSpans(l.text).replace(/\s+/g, " ").trim() : "")).find(Boolean)
   if (!first) return "New chat"
   return first.length > 48 ? `${first.slice(0, 47)}…` : first
 }
@@ -1294,10 +1359,12 @@ function convoLinesWhere(has: (lines: BimLine[]) => boolean): BimLine[] {
   return s.past.find((c) => has(c.lines))?.lines ?? s.lines
 }
 
-/** Every line of every kept conversation, oldest conversation first. For readers that mine what you said. */
-export function allBimLines(): BimLine[] {
+/** Every line of every kept conversation, oldest conversation first, `\secret` spans cut. For readers that mine what you said. */
+export function allBimLines(includeSecrets = false): BimLine[] {
   const s = useBimChatStore.getState()
-  return [...[...s.past].reverse().flatMap((c) => c.lines), ...s.lines]
+  const all = [...[...s.past].reverse().flatMap((c) => c.lines), ...s.lines]
+  // A reader never sees a `\secret` span unless it asks (`docs/SECRETS.md`).
+  return includeSecrets ? all : stripSecretsDeep(all)
 }
 
 /** What BIM holds between messages: the open question, the to-do aside, the last write for `undo`, the thread. */
@@ -1382,7 +1449,7 @@ function bimChatActions(set: StoreApi<BimChatState>["setState"], get: StoreApi<B
             reply = bimLine(`Error: ${error instanceof Error ? error.message : String(error)}`, { status: "error" })
           }
           // A failed turn marks only this line, and offers to send it again.
-          if (reply.status === "error" && text && !photos.length) reply = { ...reply, choices: [...(reply.choices ?? []), { label: "try again", text }] }
+          if (replyFailed(reply) && text && !photos.length) reply = { ...reply, retry: text, choices: [...(reply.choices ?? []), { label: "try again", text }] }
           const done: BimLine = { ...reply, id: slot.id, replyTo: mine.id }
           set((s) => ({
             busy: false,

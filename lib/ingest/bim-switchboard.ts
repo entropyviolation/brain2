@@ -38,9 +38,14 @@ import { looksLikeVerb, parseMessage } from "./parse-message"
 import type { IngestSource } from "./types"
 
 const MODE_KEY = "bimchat-llm-mode"
-const ROUTE_TIMEOUT_MS = 45_000
-/** The Ask flow's whole budget, a retry included. Past it, BIM says what code found (fix 8, `docs/BIM_CHAT_USAGE.md` §7). */
-export const ASK_TIMEOUT_MS = 30_000
+const ROUTE_TIMEOUT_MS = 60_000
+/**
+ * The Ask flow's whole budget, a retry included. Past it, BIM says what code found (fix 8, `docs/BIM_CHAT_USAGE.md` §7)
+ * and offers Retry. 45 s, up from 30 s on 2026-11-24: an unqueued run takes 20 to 24 s (plan, route, answer, check on
+ * the 14B). 90 s later that day: a background call that was already mid-prompt when chat cut it can still hold the
+ * 14B for tens of seconds, and a slow true answer beats a fast "did not finish".
+ */
+export const ASK_TIMEOUT_MS = 90_000
 const CHAT_TIMEOUT_MS = 90_000
 
 type LlmModeState = { on: boolean; setOn: (on: boolean) => void }

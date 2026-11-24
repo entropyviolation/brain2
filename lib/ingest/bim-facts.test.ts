@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  aboutFacts,
   answerFact,
   matchFact,
   parseBareWhen,
@@ -8,6 +9,7 @@ import {
   parseInstantStatement,
   parseNoteStatement,
   rememberFact,
+  toYou,
   type Fact,
 } from "./bim-facts"
 
@@ -97,5 +99,39 @@ describe("people coming and going are moments", () => {
     const later = new Date(2026, 10, 24, 8, 19)
     expect(matchFact([fact], "how long do I have until elijah gets home?")?.id).toBe("x")
     expect(answerFact(fact, later).text).toMatch(/^In 5 hours? 41 min/)
+  })
+})
+
+describe("simple facts answered in code (2026-11-24: both timed out on the model)", () => {
+  const now = new Date(2026, 10, 24, 8, 16)
+  it("“gets back” finds “will get home”", () => {
+    const fact = { ...parseInstantStatement("Elijah will get home at around 2pm today", now)!, id: "x", toldAt: now.getTime() }
+    expect(matchFact([fact], "how many minutes until elijah gets back?")?.id).toBe("x")
+    expect(matchFact([fact], "when is elijah back?")?.id).toBe("x")
+    expect(matchFact([fact], "when does marilyn get back?")).toBeNull()
+  })
+
+  const notes = aboutFacts([
+    { id: "1", text: "my name is allie", at: now.getTime(), source: "said" },
+    { id: "2", text: "Marilyn's last name is Monroe", at: now.getTime(), source: "said" },
+    { id: "3", text: "I live in Brooklyn", at: now.getTime(), source: "said" },
+    { id: "4", text: "Dana is my sister", at: now.getTime(), source: "learned" },
+  ])
+  const answer = (q: string) => {
+    const hit = matchFact(notes, q)
+    return hit ? toYou(hit.text!) : null
+  }
+
+  it("answers questions about you from the Coach notes, in the second person", () => {
+    expect(answer("what is my name?")).toBe("Your name is Allie")
+    expect(answer("whats my name")).toBe("Your name is Allie")
+    expect(answer("where do I live?")).toBe("You live in Brooklyn")
+    expect(answer("who is dana?")).toBe("Dana is your sister")
+    expect(answer("what is my favorite color?")).toBeNull()
+  })
+
+  it("toYou turns first person around", () => {
+    expect(toYou("I'm a freelance illustrator")).toBe("You're a freelance illustrator")
+    expect(toYou("I hate mornings.")).toBe("You hate mornings")
   })
 })
