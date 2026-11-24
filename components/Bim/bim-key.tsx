@@ -6,6 +6,7 @@
  */
 "use client"
 
+import { BIM_GRAPH_OPEN_EVENT } from "@/lib/memory-graph/open"
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react"
 import { SquareTerminal } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -92,7 +93,12 @@ export function BimKey({ word, phoneBar }: { word?: string; phoneBar?: string } 
       if (narrow === (phoneBar !== undefined)) setOpen(true)
     }
     window.addEventListener(BIM_CHAT_ADD_EVENT, onAdd)
-    return () => window.removeEventListener(BIM_CHAT_ADD_EVENT, onAdd)
+    // "graph in BIM" (an item's Links tab) opens the console on GRAPH (`lib/memory-graph/open.ts`).
+    window.addEventListener(BIM_GRAPH_OPEN_EVENT, onAdd)
+    return () => {
+      window.removeEventListener(BIM_CHAT_ADD_EVENT, onAdd)
+      window.removeEventListener(BIM_GRAPH_OPEN_EVENT, onAdd)
+    }
   }, [phoneBar, setOpen])
 
   // Cmd/Ctrl-J opens BIM Chat from anywhere, and closes it again. Cmd-K is search; Shift and Alt chords stay free.

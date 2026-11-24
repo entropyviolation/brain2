@@ -21,6 +21,8 @@ export interface TextRow {
   thread: string
   group: boolean
   text: string
+  /** The other side's raw handle (number or email), for showing contact info. */
+  handle?: string
 }
 
 /** The compact row `/api/phone-texts` sends. */
@@ -64,7 +66,7 @@ export function toRows(raw: RawText[], nameOf: (handle: string) => string): Text
   for (const r of raw) {
     const text = readableText(r.t)
     if (!text) continue
-    rows.push({ at: new Date(r.at).toISOString(), dir: r.dir, who: nameOf(r.h), thread: r.th, group: !!r.g, text })
+    rows.push({ at: new Date(r.at).toISOString(), dir: r.dir, who: nameOf(r.h), thread: r.th, group: !!r.g, text, handle: r.h })
   }
   return rows.sort((a, b) => a.at.localeCompare(b.at))
 }

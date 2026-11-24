@@ -87,3 +87,15 @@ describe("matching and notes", () => {
     expect(parseBareWhen("hello there", at(1))).toBeNull()
   })
 })
+
+describe("people coming and going are moments", () => {
+  const now = new Date(2026, 10, 24, 8, 16)
+  it("keeps “Elijah will get home at around 2pm today” and answers how long", () => {
+    const f = parseInstantStatement("Elijah will get home at around 2pm today", now)
+    expect(f?.at).toBe(new Date(2026, 10, 24, 14, 0).getTime())
+    const fact = { ...f!, id: "x", toldAt: now.getTime() }
+    const later = new Date(2026, 10, 24, 8, 19)
+    expect(matchFact([fact], "how long do I have until elijah gets home?")?.id).toBe("x")
+    expect(answerFact(fact, later).text).toMatch(/^In 5 hours? 41 min/)
+  })
+})

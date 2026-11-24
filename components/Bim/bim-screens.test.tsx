@@ -33,8 +33,11 @@ describe("BIM Chat screens", () => {
     expect(screen.queryByRole("button", { name: "CLR" })).toBeNull()
     fireEvent.keyDown(screen.getByLabelText("Message BIM"), { key: "2" })
     await waitFor(() => expect(screen.getAllByText("2").length).toBeGreaterThan(0))
-    fireEvent.click(screen.getByRole("button", { name: /^graph/ }))
+    fireEvent.click(screen.getByRole("button", { name: /^actions/ }))
     expect(screen.getByText(/PLANNED — NOT CONNECTED YET/)).toBeTruthy()
+    // GRAPH is live: BIM's memory, with the search to graph any item.
+    fireEvent.click(screen.getByRole("button", { name: /^graph/ }))
+    expect(screen.getByLabelText("Find any item to graph")).toBeTruthy()
   })
 
   it("console stamp is the time today and adds the date on another day", () => {

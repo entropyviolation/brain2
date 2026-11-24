@@ -1,0 +1,401 @@
+/*
+ * components/Bim/graph/memory-graph.css — The GRAPH tab: a radar of rings on CRT glass.
+ * Inks from `bim-ink.css` only: items in the drifting ink, people in LCD white-blue, notes, lanes and
+ * evidence in violet, dates in the counter-drift. No orange, no new hues.
+ */
+
+.bim-graph-pane {
+  gap: 0;
+}
+
+.bim-graph {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bim-graph-bar {
+  flex: none;
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 14px;
+  border-bottom: 1px solid var(--bim-line);
+}
+
+.bim-graph-title {
+  font: 10px/1 var(--bim-pixel);
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.bim-graph-count {
+  flex: none;
+  font: 11px/1 var(--bim-mono);
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
+}
+
+.bim-graph-gap {
+  flex: 1 1 auto;
+}
+
+/* Glass keys: thin ghost rings in the ink, the LLM row's skin, not silver caps. */
+.ui-dialog-content.bim-crt .bim-graph button.bim-graph-key,
+.ui-dialog-content.bim-crt .bim-graph-find button,
+.ui-dialog-content.bim-crt .bim-graph-acts button {
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid var(--bim-line);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: none;
+  transform: none;
+  color: var(--bim-ink);
+  text-shadow: var(--bim-glow);
+  font-size: 10px;
+}
+
+.ui-dialog-content.bim-crt .bim-graph button.bim-graph-key:hover:not(:disabled),
+.ui-dialog-content.bim-crt .bim-graph-acts button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bim-ink) 14%, rgba(0, 0, 0, 0.3));
+}
+
+.ui-dialog-content.bim-crt .bim-graph button.bim-graph-key:active:not(:disabled),
+.ui-dialog-content.bim-crt .bim-graph-acts button:active:not(:disabled) {
+  transform: translateY(1px);
+  background: color-mix(in srgb, var(--bim-ink) 24%, rgba(0, 0, 0, 0.3));
+}
+
+.ui-dialog-content.bim-crt .bim-graph button.bim-graph-key.is-on {
+  border-color: var(--bim-ink);
+  background: color-mix(in srgb, var(--bim-ink) 16%, transparent);
+}
+
+.ui-dialog-content.bim-crt .bim-graph button.bim-graph-key.is-on::before {
+  content: none;
+}
+
+.bim-graph-find {
+  position: relative;
+  flex: 0 1 220px;
+  min-width: 120px;
+}
+
+.bim-graph-find input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid var(--bim-line);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--bim-lcd);
+  font: 12px/1.2 var(--bim-mono);
+  text-shadow: var(--bim-glow-lcd);
+  outline: none;
+}
+
+.bim-graph-find input::placeholder {
+  color: var(--bim-dim);
+  text-shadow: none;
+}
+
+.bim-graph-find input:focus {
+  border-color: var(--bim-ink);
+}
+
+.bim-graph-find ul {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--bim-line);
+  border-radius: 4px;
+  background: var(--bim-glass);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6);
+}
+
+.ui-dialog-content.bim-crt .bim-graph-find button {
+  width: 100%;
+  justify-content: space-between;
+  border: 0;
+  background: transparent;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  text-align: left;
+  font: 12px/1.3 var(--bim-mono) !important;
+}
+
+.bim-graph-find small {
+  color: var(--bim-violet);
+  text-shadow: var(--bim-glow-violet);
+}
+
+/* The well: a faint grid and the radar rings, like the scope it reads as. */
+.bim-graph-well {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background:
+    linear-gradient(color-mix(in srgb, var(--bim-ink) 5%, transparent) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, color-mix(in srgb, var(--bim-ink) 5%, transparent) 1px, transparent 1px) 0 0 / 28px 28px;
+}
+
+.bim-graph-well:active {
+  cursor: grabbing;
+}
+
+.bim-graph-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: visible;
+}
+
+.bim-graph-ring {
+  fill: none;
+  stroke: var(--bim-line);
+  stroke-width: 1;
+  stroke-dasharray: 2 5;
+  opacity: 0.7;
+}
+
+.bim-graph-edge line {
+  stroke: color-mix(in srgb, var(--bim-ink) 38%, transparent);
+  stroke-width: 1.2;
+}
+
+.bim-graph-edge.is-hot line {
+  stroke: var(--bim-ink);
+  stroke-width: 1.8;
+  filter: drop-shadow(0 0 3px var(--bim-ink));
+}
+
+.bim-graph-edge text {
+  fill: var(--bim-ink-2);
+  font: 10px/1 var(--bim-mono);
+  paint-order: stroke;
+  stroke: var(--bim-glass);
+  stroke-width: 3px;
+}
+
+.bim-graph-node {
+  --node: var(--bim-ink);
+  color: var(--node);
+  cursor: pointer;
+  outline: none;
+}
+
+.bim-graph-node.is-person {
+  --node: var(--bim-lcd);
+}
+
+.bim-graph-node.is-note,
+.bim-graph-node.is-lane,
+.bim-graph-node.is-evidence,
+.bim-graph-node.is-resource {
+  --node: var(--bim-violet);
+}
+
+.bim-graph-node.is-date,
+.bim-graph-node.is-list,
+.bim-graph-node.is-step {
+  --node: var(--bim-ink-2);
+}
+
+.bim-graph-dot {
+  fill: var(--bim-glass);
+  stroke: var(--node);
+  stroke-width: 1.6;
+  filter: drop-shadow(0 0 4px var(--node));
+  transition: stroke-width 120ms ease;
+}
+
+.bim-graph-node.is-date .bim-graph-dot {
+  stroke-dasharray: 3 2;
+}
+
+.bim-graph-pip {
+  fill: var(--node);
+}
+
+.bim-graph-node.is-center .bim-graph-dot {
+  stroke-width: 2.4;
+  fill: color-mix(in srgb, var(--node) 14%, var(--bim-glass));
+}
+
+.bim-graph-halo {
+  pointer-events: none;
+  animation: bim-graph-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes bim-graph-breathe {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.bim-graph-node:hover .bim-graph-dot,
+.bim-graph-node:focus-visible .bim-graph-dot {
+  stroke-width: 2.6;
+}
+
+.bim-graph-node.is-sel .bim-graph-dot {
+  stroke-width: 2.8;
+  filter: drop-shadow(0 0 8px var(--node));
+}
+
+.bim-graph-node.is-dim {
+  opacity: 0.45;
+}
+
+.bim-graph-label {
+  fill: var(--node);
+  font: 9px/1 var(--bim-pixel);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  paint-order: stroke;
+  stroke: var(--bim-glass);
+  stroke-width: 3px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--node) 45%, transparent));
+}
+
+.bim-graph-node.is-turn .bim-graph-label,
+.bim-graph-node.is-evidence .bim-graph-label,
+.bim-graph-node.is-note .bim-graph-label,
+.bim-graph-node.is-step .bim-graph-label {
+  font: 10px/1 var(--bim-mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.bim-graph-empty {
+  position: absolute;
+  inset: auto 20px 50% 20px;
+  margin: 0;
+  text-align: center;
+  color: var(--bim-dim);
+  pointer-events: none;
+}
+
+.bim-graph-hint {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  margin: 0;
+  font: 7px/1 var(--bim-pixel);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bim-dim);
+  text-shadow: none;
+  pointer-events: none;
+}
+
+/* Inspector: a smaller glass over the bottom-left of the well. */
+.bim-graph-inspect {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  width: min(330px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 10px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--bim-ink) 45%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bim-glass) 94%, transparent);
+  box-shadow: 0 0 22px rgba(0, 0, 0, 0.85), inset 0 0 14px color-mix(in srgb, var(--bim-ink) 8%, transparent);
+  cursor: default;
+}
+
+.bim-graph-inspect-head {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 4px;
+  font: 8px/1.3 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bim-legend);
+  text-shadow: var(--bim-glow-soft);
+}
+
+.bim-graph-inspect-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 6px;
+  font: 14px/1.35 var(--bim-mono);
+  color: var(--bim-lcd);
+  text-shadow: var(--bim-glow-lcd);
+}
+
+.bim-graph-facts {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  font: 12px/1.45 var(--bim-mono);
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
+}
+
+.bim-graph-facts li {
+  position: relative;
+  padding-left: 12px;
+  white-space: pre-wrap;
+}
+
+.bim-graph-facts li::before {
+  content: "·";
+  position: absolute;
+  left: 2px;
+}
+
+.bim-graph-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-dialog-content.bim-crt .bim-graph-acts button.bim-graph-ask {
+  flex: 1 1 100%;
+  border-color: color-mix(in srgb, var(--bim-ink) 60%, transparent);
+  background: color-mix(in srgb, var(--bim-ink) 12%, rgba(0, 0, 0, 0.3));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bim-graph-halo {
+    animation: none;
+  }
+}
+
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  .bim-graph-bar {
+    flex-wrap: wrap;
+  }
+
+  .bim-graph-find {
+    flex: 1 1 100%;
+  }
+
+  .bim-graph-hint {
+    display: none;
+  }
+}

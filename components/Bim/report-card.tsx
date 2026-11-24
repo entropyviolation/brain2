@@ -19,7 +19,7 @@ import type { Effect, EffectField } from "@/lib/report-bimby/types"
 import { useTaskStore } from "@/lib/task-store"
 import "./report-card.css"
 
-const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY", sleep: "SLEEP", line: "FILE", verdict: "LINK", feeling: "FEEL", person: "PERSON", "person-note": "NOTE", birthday: "BIRTHDAY", reminder: "REMIND", "plan-entry": "PLAN", intention: "INTENT", day: "DAY" }
+const KIND_LABEL: Record<Effect["kind"], string> = { inventory: "INVENTORY", cycle: "CYCLE", intake: "INTAKE", timeblock: "ACTIVITY", sleep: "SLEEP", line: "FILE", verdict: "LINK", feeling: "FEEL", person: "PERSON", "person-note": "NOTE", birthday: "BIRTHDAY", reminder: "REMIND", "plan-entry": "PLAN", intention: "INTENT", day: "DAY", amend: "AMEND", pattern: "PATTERN" }
 const STATUS_LABEL: Record<Effect["status"], string> = { pending: "WAITING", working: "SAVING…", applied: "SAVED", rejected: "REJECTED", failed: "FAILED" }
 
 /** Text fields that hold prose (a note, a line) read as a full-width box that grows with the words. */

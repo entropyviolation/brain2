@@ -12,6 +12,7 @@ import type { AcceptGrade } from "@/lib/accept-grade"
 import { applyEffectPaced } from "./apply"
 import { useReportStore } from "./store"
 import { rejectFollowEffect } from "@/lib/follow-through/run"
+import { rejectPattern } from "@/lib/dump-bimby/apply"
 
 /** Let the browser paint (the "saving" bar) before the heavy write starts. */
 const nextPaint = (): Promise<void> =>
@@ -68,6 +69,7 @@ export function rejectEffect(planId: string, effectId: string): void {
   if (!effect || effect.status === "applied") return
   // A rejected link is undone in the ledger and never proposed again.
   if (effect.kind === "verdict" || effect.kind === "feeling") rejectFollowEffect(effect)
+  if (effect.kind === "pattern") rejectPattern(effect)
   useReportStore.getState().setStatus(planId, effectId, "rejected")
 }
 

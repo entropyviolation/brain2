@@ -434,6 +434,8 @@ each variant keeps a local `overrideId` so opening a linked row (through
 the unsaved guard) swaps the detail view to that item without leaving the surface (reset when the
 host opens a new item).
 
+_2026-11-24:_ The Links view bar has a **graph in BIM** key. It opens BIM chat on its GRAPH tab centered on this item (`openBimGraph`, `lib/memory-graph/open.ts`), where the item's parts, steps, links, notes, mentions and chat turns can be walked and asked about (`components/Bim/README.md`).
+
 ## Import paths
 
 Import the surfaces directly:

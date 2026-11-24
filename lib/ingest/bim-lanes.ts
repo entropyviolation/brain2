@@ -50,6 +50,7 @@ export const CHAT_LANES = [
   { id: "follow-through", cost: "code", does: "A one-tap follow-through answer, or “day's end”, “findings”, “mine follow-through”." },
   // Before the fact and tell shapes, which would read a booking's clocks as facts.
   { id: "flight-file", cost: "code", skipWhen: OPEN, does: "A pasted booking confirmation becomes Flight items and calendar events." },
+  { id: "dump", cost: "code", skipWhen: OPEN, does: "A brain dump (one long message with several plans and no clocks) becomes a card: new plans as To Dos or Inbox items, plans already on your list as amendments to them, a dose, things on the way, notes to BIM, and the thought patterns it shows; “what are my thought patterns?” counts them." },
   { id: "flight-ask", cost: "code", skipWhen: ["tell-open"], does: "“When am I flying to New York?” is answered from the Flight items." },
   // Before self, which would answer "can you log what I ate: …" as a question about BIM, and before money, day and
   // stream, which would read a list of meals as a spend, a plan or a stream of thought.

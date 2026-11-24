@@ -4,15 +4,16 @@
  * A silver handheld with CRT glass wells (`bim-console.css`, ink from `components/Bim/bim-ink.css`):
  * tab keys, the chat glass with a compose well, and BIM's dossier card with a pixel face. Digits 1–9
  * pick a numbered answer while a question is open. CHAT, LOG, COMMANDS (filterable), and LLM (week
- * suggestions, then a door to `/lab/bim-flow`) are live. GRAPH, ACTIONS, and RULES are **Planned**:
- * they say what they will show once BIM reads the knowledge graph and a model.
+ * suggestions, then a door to `/lab/bim-flow`) and GRAPH (`../graph/memory-graph.tsx`) are live. ACTIONS and
+ * RULES are **Planned**. Keys sound (`lib/key-foley.ts`; the speaker key mutes). A reply's route chip opens a
+ * THOUGHT strip, and that opens the whole turn (`../thought-popup.tsx`).
  * Every line runs through the Telegram bot's executor (`lib/ingest/bim-chat.ts`). The MODE switch on
  * top of the chat picks plain routing or the local models; BIM checks in ("ask me", and on open).
  */
 "use client"
 
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
-import { ArrowUp, Mic, Paperclip } from "lucide-react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { ArrowUp, Mic, Paperclip, Volume2, VolumeX } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
 import { BIM_CONSOLE_BIO, BIM_FULL, BIM_HANDLE, BIM_SHORT } from "@/lib/ingest/bim"
@@ -32,6 +33,16 @@ import { listOllamaModels } from "@/lib/bim-flow/ollama"
 import { LlmSuggestions } from "./llm-suggestions"
 import { appendDictated, useDesktopDictation } from "@/lib/desktop-dictation"
 import { dmMonoFace } from "@/lib/fonts/dm-mono"
+import { addToBimChat } from "@/lib/doc-selection/doc-selection-bus"
+import { keyDown, keyUp, setFoley, switchClack, useFoley } from "@/lib/key-foley"
+import { getTrace } from "@/lib/agents/trace-store"
+import { useTaskStore } from "@/lib/task-store"
+import { itemTitle } from "@/lib/item-utils"
+import { nameIndex, namedIn } from "@/lib/memory-graph/build"
+import { openBimGraph, useBimGraphFocus } from "@/lib/memory-graph/open"
+import { MemoryGraphPane } from "../graph/memory-graph"
+import { ThoughtPopup } from "../thought-popup"
+import { SpeakerGrille } from "../speaker-grille"
 import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 import "@/components/Bim/bim-ink.css"
 import "./bim-console.css"
@@ -40,7 +51,6 @@ const TABS = ["chat", "log", "commands", "llm", "graph", "actions", "rules"] as 
 type ConsoleTab = (typeof TABS)[number]
 
 const PLANNED: Partial<Record<ConsoleTab, string>> = {
-  graph: "Knowledge graph. Items, people, and links BIM can name and walk from a chat line.",
   actions: "Actions. What BIM did for you, and what he proposes to do, each one approvable.",
   rules: "Rules. Standing instructions BIM follows when a message or a time matches.",
 }
@@ -65,7 +75,7 @@ export function clock(iso: string, now = new Date()): string {
 }
 
 /** The chat history. Memoized: a keystroke in the well does not repaint every line under the glass. */
-const ChatLog = memo(function ChatLog({ lines, onTry }: { lines: BimLine[]; onTry: (text: string) => void }) {
+const ChatLog = memo(function ChatLog({ lines, onTry, onThought }: { lines: BimLine[]; onTry: (text: string) => void; onThought: (line: BimLine) => void }) {
   return (
     <>
       {lines.length === 0 ? (
@@ -98,18 +108,13 @@ const ChatLog = memo(function ChatLog({ lines, onTry }: { lines: BimLine[]; onTr
             )}
             {line.aboutCard ? <span className="bim-about">↳ re: {line.aboutCard}</span> : null}
             {line.readAs ? <span className="bim-msg-route">read as: {line.readAs}</span> : null}
-            {line.route ? <span className="bim-msg-route">{line.route}</span> : null}
+            {line.route || (line.who === "bim" && line.traceId && !line.waiting) ? <ThoughtChip line={line} onThought={onThought} /> : null}
             {line.general ? <span className="bim-msg-route">general, not from your data</span> : null}
             {line.reportId ? <ReportCard reportId={line.reportId} /> : null}
             {line.wireId ? <WireCard wireId={line.wireId} /> : null}
             {line.dayId ? <DayCard dayId={line.dayId} lineId={line.id} /> : null}
             {line.habitLineId ? <HabitCard lineId={line.habitLineId} /> : null}
-            {line.evidence?.length ? (
-              <details className="bim-msg-ev">
-                <summary>evidence ({line.evidence.length})</summary>
-                {line.evidence.map((row, i) => <p key={i}>{row}</p>)}
-              </details>
-            ) : null}
+            {line.evidence?.length ? <EvidenceFold line={line} onThought={onThought} /> : null}
           </div>
         ))
       )}
@@ -117,7 +122,87 @@ const ChatLog = memo(function ChatLog({ lines, onTry }: { lines: BimLine[]; onTr
   )
 })
 
-function ChatPane() {
+/**
+ * The route chip is a key: it opens the THOUGHT strip under the reply (the stages the turn went through, in
+ * order, and what it cost). OPEN FULL THOUGHT opens the whole turn. Two clicks, so the chat stays quiet.
+ */
+function ThoughtChip({ line, onThought }: { line: BimLine; onThought: (line: BimLine) => void }) {
+  const [open, setOpen] = useState(false)
+  const trace = useMemo(() => (open && line.traceId ? getTrace(line.traceId) : undefined), [open, line.traceId])
+  const stages = trace ? trace.events.filter((e) => !e.parent || !trace.events.some((p) => p.id === e.parent)) : []
+  return (
+    <>
+      <button data-no95 type="button" className="bim-msg-route bim-route-key" aria-expanded={open} title="How BIM got here" onClick={() => setOpen(!open)}>
+        <span aria-hidden="true">{open ? "▾" : "▸"}</span> {line.route ?? "thought"}
+      </button>
+      {open ? (
+        <div className="bim-thought-strip">
+          {trace ? (
+            <ol aria-label="Stages in order">
+              {stages.map((e) => (
+                <li key={e.id} className={`is-${e.status}`} title={e.note ?? e.status}>
+                  <i aria-hidden="true" />
+                  {e.actor}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>{line.traceId ? "Trace no longer on this device." : "No trace kept for this line."}</p>
+          )}
+          {trace ? (
+            <p className="bim-thought-cost">
+              {trace.cost.calls ? `${trace.cost.calls} model call${trace.cost.calls === 1 ? "" : "s"}` : "code only"} · {trace.events.length} steps ·{" "}
+              {trace.result.wrote.length ? `wrote ${trace.result.wrote.join(", ")}` : "wrote nothing"}
+            </p>
+          ) : null}
+          <div className="bim-thought-keys">
+            <button data-no95 type="button" onClick={() => onThought(line)}>
+              open full thought ⇱
+            </button>
+            <button data-no95 type="button" onClick={() => openBimGraph(null)}>
+              graph ⇱
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+/** The rows an answer read. A row that names an item can be walked in the graph. Names are matched only once open. */
+function EvidenceFold({ line, onThought }: { line: BimLine; onThought: (line: BimLine) => void }) {
+  const [open, setOpen] = useState(false)
+  const tasks = useTaskStore((s) => (open ? s.tasks : null))
+  const index = useMemo(() => (tasks ? nameIndex(tasks) : []), [tasks])
+  const rows = line.evidence ?? []
+  return (
+    <details className="bim-msg-ev" onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary>
+        evidence · {rows.length} row{rows.length === 1 ? "" : "s"}
+      </summary>
+      <ul>
+        {rows.map((row, i) => {
+          const named = open ? namedIn(row, index, 2) : []
+          return (
+            <li key={i}>
+              <span>{row}</span>
+              {named.map((id) => (
+                <button data-no95 key={id} type="button" className="bim-ev-node" title="Walk this in the graph" onClick={() => openBimGraph(id)}>
+                  ◎ {itemTitle(tasks?.find((t) => t.id === id)) || "item"}
+                </button>
+              ))}
+            </li>
+          )
+        })}
+      </ul>
+      <button data-no95 type="button" className="bim-ev-all" onClick={() => onThought(line)}>
+        view evidence and thought ⇱
+      </button>
+    </details>
+  )
+}
+
+function ChatPane({ onThought }: { onThought: (line: BimLine) => void }) {
   const { lines, busy, draft, setDraft, submit, onKeyDown, clear, checkIn, logRef, llm, setLlm, photos, addPhotos, removePhoto, photoError, replyTarget, clearReplyTarget } = useBimChat()
   const choices = openChoices(lines)
   const box = useRef<HTMLTextAreaElement>(null)
@@ -155,12 +240,12 @@ function ChatPane() {
 
   return (
     <div className="bim-crt-pane">
-      <div className="bim-chat-top">
+      <div className="bim-chat-top bim-tray">
         <ModeSwitch llm={llm} setLlm={setLlm} />
         <ConvoKeys showing={showPast} setShowing={setShowPast} />
       </div>
       <div className="bim-glass bim-scroll" ref={logRef} role="log" aria-live="polite">
-        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} />}
+        {showPast ? <ConvoList onDone={() => setShowPast(false)} /> : <ChatLog lines={lines} onTry={startWith} onThought={onThought} />}
       </div>
       <div className="bim-compose">
         <div className={editing || draft ? "bim-glass bim-well is-editing" : "bim-glass bim-well"}>
@@ -238,7 +323,7 @@ function ChatPane() {
           </button>
         </div>
       </div>
-      <div className="bim-quick" aria-label="Quick commands">
+      <div className="bim-quick bim-tray" aria-label="Quick commands">
         {BIM_QUICK.map((word) => (
           <button data-no95 key={word} type="button" onClick={() => submit(word)}>
             {word}
@@ -266,7 +351,7 @@ function ModeSwitch({ llm, setLlm }: { llm: boolean; setLlm: (on: boolean) => vo
       <span className="bim-mode-label">MODE</span>
       {/* One slide switch: ROUTER on the left, LLM on the right. The words are lamps you can tap too. */}
       <div className={`bim-sw${llm ? " is-llm" : ""}`}>
-        <span className={`bim-sw-word${llm ? "" : " is-lit"}`} aria-hidden="true" onClick={() => setLlm(false)}>
+        <span className={`bim-sw-word${llm ? "" : " is-lit"}`} aria-hidden="true" onClick={() => llm && (switchClack(), setLlm(false))}>
           router
         </span>
         <button
@@ -280,7 +365,7 @@ function ModeSwitch({ llm, setLlm }: { llm: boolean; setLlm: (on: boolean) => vo
         >
           <span className="bim-sw-knob" aria-hidden="true" />
         </button>
-        <span className={`bim-sw-word${llm ? " is-lit" : ""}`} aria-hidden="true" onClick={() => setLlm(true)}>
+        <span className={`bim-sw-word${llm ? " is-lit" : ""}`} aria-hidden="true" onClick={() => !llm && (switchClack(), setLlm(true))}>
           llm
         </span>
       </div>
@@ -305,7 +390,7 @@ function LogPane() {
   )
   return (
     <div className="bim-crt-pane">
-      <div className="bim-tools">
+      <div className="bim-tools bim-tray">
         <button data-no95 type="button" className={faultsOnly ? "is-on" : undefined} aria-pressed={faultsOnly} onClick={() => setFaultsOnly(!faultsOnly)}>
           errors only
         </button>
@@ -334,7 +419,7 @@ function CommandsPane() {
   }, [query])
   return (
     <div className="bim-crt-pane">
-      <div className="bim-tools">
+      <div className="bim-tools bim-tray">
         <input type="search" aria-label="Filter commands" placeholder="Filter commands…" value={query} onChange={(event) => setQuery(event.target.value)} />
       </div>
       <div className="bim-glass bim-scroll">
@@ -390,22 +475,83 @@ function Dossier() {
           <dd>{count}</dd>
         </dl>
       </div>
-      <div className="bim-glass bim-scroll bim-bio">{BIM_CONSOLE_BIO}</div>
+      <div className="bim-glass bim-scroll bim-bio">
+        <p className="bim-legend">Quick guide</p>
+        {BIM_CONSOLE_BIO}
+      </div>
     </aside>
   )
 }
 
+/** Icon-only key: the key sound on or off. The grille beside it is the speaker. */
+function SoundKey() {
+  const on = useFoley()
+  return (
+    <div className="bim-speaker">
+      <button data-no95 type="button" className="bim-sound-key" aria-pressed={on} aria-label={on ? "Mute key sound" : "Turn key sound on"} title={on ? "Key sound on" : "Key sound off"} onClick={() => setFoley(!on)}>
+        {on ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
+      </button>
+      <SpeakerGrille on={on} />
+    </div>
+  )
+}
+
+/** Every key sounds (`lib/key-foley.ts`): the slide switch clacks, SEND is a heavier key. */
+function soundFor(target: EventTarget | null, up: boolean): void {
+  const el = target instanceof Element ? target : null
+  if (!el) return
+  if (el.closest(".bim-sw-word")) return
+  const key = el.closest("button")
+  if (!key || key.disabled || key.classList.contains("bim-sound-key")) return
+  if (up) return keyUp()
+  if (key.classList.contains("bim-sw-track")) return switchClack()
+  keyDown(key.classList.contains("is-primary") ? 1.25 : 1)
+}
+
+const LIVE = TABS.filter((t) => !PLANNED[t])
+const SOON = TABS.filter((t) => PLANNED[t])
+
 export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [tab, setTab] = useState<ConsoleTab>("chat")
+  const [thought, setThought] = useState<BimLine | null>(null)
   // The dialog portals to <body>, so the keys' DM Mono variable goes on <html>.
   useStampFontVariables(dmMonoFace)
   const planned = PLANNED[tab]
   const busy = useBimChatStore((s) => s.busy)
-  const firstSoon = TABS.findIndex((t) => PLANNED[t])
+
+  // "graph in BIM" and the graph keys in chat ask for GRAPH (`lib/memory-graph/open.ts`).
+  const asked = useBimGraphFocus((s) => s.asked)
+  const seen = useRef(0)
+  useEffect(() => {
+    if (asked === seen.current) return
+    seen.current = asked
+    setThought(null)
+    setTab("graph")
+  }, [asked])
+
+  // ASK BIM on a graph node: the question joins the compose well, and CHAT shows it. Nothing is sent.
+  const ask = useCallback((text: string) => {
+    addToBimChat(text)
+    setTab("chat")
+  }, [])
+
+  const tabKey = (t: ConsoleTab) => (
+    <button
+      data-no95
+      key={t}
+      type="button"
+      className={`${t === tab ? "is-on" : ""}${PLANNED[t] ? " is-soon" : ""}`.trim() || undefined}
+      aria-pressed={t === tab}
+      title={PLANNED[t]}
+      onClick={() => setTab(t)}
+    >
+      {t}
+    </button>
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bim-crt bim-ink" hideClose>
+      <DialogContent className="bim-crt bim-ink" hideClose onPointerDownCapture={(e) => soundFor(e.target, false)} onPointerUpCapture={(e) => soundFor(e.target, true)}>
         <DialogTitle className="sr-only">{BIM_SHORT} Chat</DialogTitle>
         <DialogDescription className="sr-only">{BIM_FULL} console</DialogDescription>
         <div className="bim-crt-top">
@@ -414,29 +560,20 @@ export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange
             {BIM_SHORT}
           </div>
           <span className="bim-crt-name">{BIM_FULL}</span>
+          <nav className="bim-crt-tabs" aria-label="BIM console tabs">
+            <div className="bim-tray bim-tabs-live">{LIVE.map(tabKey)}</div>
+            <span className="bim-crt-soon">not wired yet</span>
+            <div className="bim-tray is-dashed bim-tabs-soon">{SOON.map(tabKey)}</div>
+          </nav>
+          <SoundKey />
           <KeycapClose className="bim-crt-x" label="Close BIM Chat" onClick={() => onOpenChange(false)} />
         </div>
-        <nav className="bim-crt-tabs" aria-label="BIM console tabs">
-          {TABS.map((t, i) => (
-            <Fragment key={t}>
-              {i === firstSoon ? <span className="bim-crt-soon">NOT WIRED YET</span> : null}
-              <button
-                data-no95
-                type="button"
-                className={`${t === tab ? "is-on" : ""}${PLANNED[t] ? " is-soon" : ""}`.trim() || undefined}
-                aria-pressed={t === tab}
-                onClick={() => setTab(t)}
-              >
-                {t}
-              </button>
-            </Fragment>
-          ))}
-        </nav>
         <div className="bim-crt-main">
           <div className="bim-crt-left">
-            {tab === "chat" ? <ChatPane /> : null}
+            {tab === "chat" ? <ChatPane onThought={setThought} /> : null}
             {tab === "log" ? <LogPane /> : null}
             {tab === "commands" ? <CommandsPane /> : null}
+            {tab === "graph" ? <MemoryGraphPane onAsk={ask} onThought={setThought} /> : null}
             {tab === "llm" ? (
               <div className="bim-glass bim-scroll">
                 <LlmSuggestions />
@@ -457,9 +594,10 @@ export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange
           <Dossier />
         </div>
         <div className="bim-foot">
-          <span>Enter sends · Shift+Enter new line · 1–9 picks an answer</span>
+          <span>Enter sends · Shift+Enter new line · 1–9 picks an answer · route chip ▸ shows the thought</span>
           <span>Same brain as Telegram</span>
         </div>
+        {thought ? <ThoughtPopup line={thought} said={useBimChatStore.getState().lines.find((l) => l.id === thought.replyTo)?.text} onClose={() => setThought(null)} /> : null}
       </DialogContent>
     </Dialog>
   )

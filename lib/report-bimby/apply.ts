@@ -27,6 +27,7 @@ import { applyStreamLine } from "@/lib/stream-bimby/apply"
 import { applyFollowEffect } from "@/lib/follow-through/run"
 import { applySocialEffect } from "@/lib/social-bimby/apply"
 import { applyDayEffect } from "@/lib/plan-bimby/day/update-apply"
+import { applyAmend, applyPattern } from "@/lib/dump-bimby/apply"
 import { fmtClock, parseDateTime } from "./time"
 import { fieldValue, type Effect } from "./types"
 
@@ -198,6 +199,10 @@ export function applyEffect(effect: Effect, now = new Date()): Applied {
         return applySocialEffect(effect, now)
       case "day":
         return applyDayEffect(effect, now)
+      case "amend":
+        return applyAmend(effect, now)
+      case "pattern":
+        return applyPattern(effect)
     }
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error))

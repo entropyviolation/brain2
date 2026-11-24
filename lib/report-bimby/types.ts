@@ -13,6 +13,7 @@ import type { AcceptGrade } from "@/lib/accept-grade"
 /** `line`: one command the executor already runs (Stream BIMBY). Accept sends the field to the executor. */
 /** `verdict` and `feeling`: a plan-to-outcome link and a feeling on its scales (`lib/follow-through/`). Accept confirms the record. */
 /** `person`, `person-note`, `birthday`, `reminder`, `plan-entry`, `intention`: the Social BIMBY (`lib/social-bimby/`). */
+/** `amend`: a change to an open task a brain dump names again; `pattern`: a thought pattern to confirm (`lib/dump-bimby/`). */
 /** `day`: a change to the live day plan (`lib/plan-bimby/day/update.ts`); `op` says which, `ref` is the plan id. */
 export type EffectKind =
   | "inventory"
@@ -30,6 +31,8 @@ export type EffectKind =
   | "plan-entry"
   | "intention"
   | "day"
+  | "amend"
+  | "pattern"
 
 export type EffectStatus = "pending" | "working" | "applied" | "rejected" | "failed"
 

@@ -161,7 +161,7 @@ export function formatMoment(at: number, now: Date): string {
 // ---------------------------------------------------------------- statements
 
 const VERBS =
-  "resets?|ends?|expires?|renews?|starts?|begins?|opens?|closes?|unlocks?|refreshes|restarts?|resumes?|arrives?|finishes|is due|are due|is ready|are ready|comes back|lifts|runs out|ships|launches|is over"
+  "resets?|ends?|expires?|renews?|starts?|begins?|opens?|closes?|unlocks?|refreshes|restarts?|resumes?|arrives?|finishes|is due|are due|is ready|are ready|comes back|lifts|runs out|ships|launches|is over|gets? home|comes? home|gets? back|gets? here|gets? in|lands?|leaves?|be home|be back|be here|picks? (?:me )?up|wakes? up"
 
 const LEAD = /^(?:fyi|btw|heads up|note|just so you know)[,:]?\s+(?:that\s+)?/i
 

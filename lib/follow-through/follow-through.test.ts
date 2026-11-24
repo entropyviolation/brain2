@@ -3,7 +3,7 @@ import { nextQuestion, readAnswer } from "./ask"
 import { merge, proposeLinks, unplanned } from "./link"
 import { followFromModel, followPrompt, type FollowAsk } from "./llm"
 import { dayEnd, findings, planRealism, predictionError, realismLine } from "./learn"
-import { afterFeeling, beforeFeeling, displacementIn, hedgeOf, readPieces, splitSteps, todoWhat, type ReadPiece } from "./read"
+import { afterFeeling, beforeFeeling, displacementIn, hedgeOf, ownFuture, readPieces, routeOf, splitSteps, todoWhat, type ReadPiece } from "./read"
 import { followRows } from "./rows"
 import { allSteps, emptyLedger, type Feeling, type Ledger } from "./types"
 
@@ -209,5 +209,19 @@ describe("rows for analyses", () => {
     expect(rows.find((r) => r.text.startsWith("eat the Samosa"))!.source).toBe("done · proposed")
     expect(rows.some((r) => r.source === "unplanned" && r.text.startsWith("walk"))).toBe(true)
     expect(rows.some((r) => r.source.startsWith("feeling after") && r.text.startsWith("great about"))).toBe(true)
+  })
+})
+
+describe("whose future", () => {
+  it("reads someone else's future as a fact, not your plan", () => {
+    expect(ownFuture("Elijah will get home at around 2pm today")).toBe(false)
+    expect(routeOf("Elijah will get home at around 2pm today")).not.toBe("plan")
+    expect(routeOf("the package is going to arrive tomorrow")).not.toBe("plan")
+  })
+  it("keeps your own plans", () => {
+    expect(routeOf("I'm gonna call the bank")).toBe("plan")
+    expect(routeOf("gonna eat the samosa then work on BRAIN2")).toBe("plan")
+    expect(routeOf("need to book nyc")).toBe("plan")
+    expect(routeOf("we will go to the park at 4")).toBe("plan")
   })
 })

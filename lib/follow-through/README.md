@@ -1,6 +1,6 @@
 # Follow-through
 
-_Last mapped: 2026-11-09_
+_Last mapped: 2026-11-24_
 
 Every line of the stream becomes one of four linked records, and this module keeps the links between them honest. It sits on the Stream BIMBY (`lib/stream-bimby/README.md`): the stream is read into filings there, and into records here.
 
@@ -29,7 +29,9 @@ A record is saved when it is read, as `proposed`. It becomes `confirmed` by Acce
 4. Each proposed link is a `verdict` effect (card label LINK) and each read feeling a `feeling` effect (FEEL) at the end of the stream's plan card. Accept goes through `lib/report-bimby/apply.ts` → `applyFollowEffect`.
 5. The chat reply ends with one gap question as tap choices.
 
-A plain chat line that is not a stream, a command or a question is read by rules alone (`observeLine`, called by `sendToBim` after the reply is built) and its gap asked the same way. Blocks already in Tracking's Activity view join the day's actions (`trackedActions`), so an accepted Report BIMBY block can fulfil a step.
+A plain chat line that is not a stream, a command or a question is read by rules alone (`observeLine`, called by `sendToBim` after the reply is built). It can be asked a gap about what happened (away, in the way, how was it), but never the pull/push rating. That rating is asked only after a plan you filed (a stream card, a day plan) or after you answer another tap.
+
+_2026-11-24:_ a future line about someone else ("Elijah will get home at 2pm") is a fact, not your plan (`ownFuture` in `read.ts`). A plan says I or we, or starts on the verb ("gonna eat", "need to call"). Before this, any line in the future tense became a step and BIM asked "how much do you want to?" about it. Blocks already in Tracking's Activity view join the day's actions (`trackedActions`), so an accepted Report BIMBY block can fulfil a step.
 
 _2026-11-11:_ a filed day plan (`lib/plan-bimby/README.md`, "Today") adds one intention with a step per thing, and its resistance and importance as confirmed "before" feelings. A row finished there adds the action and confirms the step `done`.
 

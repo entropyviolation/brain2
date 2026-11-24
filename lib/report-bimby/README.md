@@ -37,6 +37,7 @@ _2026-11-11:_ `acceptEffect(planId, id, "ok")` and `acceptAll(planId, "ok")` are
 | `timeblock` | `acceptSuggestion` (`lib/bim-flow/accept.ts`) | Same overlap refusal, merge, and "autodetected" notes as an accepted LLM suggestion; stamped `generatedBy: llm` |
 | `line` | `applyStreamLine` (`lib/stream-bimby/apply.ts`) | One executor line from the Stream BIMBY (inbox, tracking, lists, notes). The field `line` is editable and is what is sent. Card label FILE |
 | `verdict`, `feeling` | `applyFollowEffect` (`lib/follow-through/run.ts`) | A plan-to-outcome link and a feeling on its scales, added to a stream card. Accept confirms the record in the follow-through ledger; Reject undoes the link (`decide.ts` calls `rejectFollowEffect`). `Effect.ref` is the record's id. Card labels LINK and FEEL |
+| `amend`, `pattern` | `lib/dump-bimby/apply.ts` | _2026-11-24:_ from the Dump BIMBY. `amend` changes an open task a brain dump names again (priority, today, deadline, a dated note). `pattern` confirms a thought pattern in `lib/thought-patterns/`; Reject marks it wrong (`decide.ts` calls `rejectPattern`). Card labels AMEND and PATTERN |
 | `sleep` | `useSleepStore.setBedtime` / `setWakeTime`, then `syncSleepNight` | One night keyed by the morning it ends in. The sleep log paints the Sleep pen and the Done row, so this is the same writer as the Sleep tab. The wake carries `definite` or `estimated`; the bedtime is always `estimated`. Reads the night back and fails if the log did not keep it |
 
 ## Sleep and the wider search

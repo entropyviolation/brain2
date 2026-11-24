@@ -182,6 +182,10 @@ export interface ModelCallSeen {
   loadMs?: number
   promptMs?: number
   evalMs?: number
+  /** The prompt and the reply, for the turn's Trace (the Thought popup). Clipped where they are kept. */
+  system?: string
+  user?: string
+  output?: unknown
 }
 
 const watchers = new Set<(call: ModelCallSeen) => void>()
@@ -217,18 +221,18 @@ export function ollamaCall(bound: string, signal?: AbortSignal, opts: { fresh?: 
     const key = JSON.stringify([model, system, user, schema, temperature])
     const startedAt = Date.now()
     if (!opts.fresh && cache.has(key)) {
-      tell({ model, task: taskOf(system), startedAt, ms: 0, ok: true, cached: true })
+      tell({ model, task: taskOf(system), startedAt, ms: 0, ok: true, cached: true, system, user, output: cache.get(key) })
       return cache.get(key)
     }
     try {
       const { parsed, times } = await askOllama(model, system, user, schema, maxTokens, temperature, signal)
       cache.set(key, parsed)
       const ms = Date.now() - startedAt
-      tell({ model, task: taskOf(system), startedAt, ms, ok: true, ...times })
+      tell({ model, task: taskOf(system), startedAt, ms, ok: true, ...times, system, user, output: parsed })
       archive("model-call", { model, system, user, schema, maxTokens, output: parsed, ms, ...times })
       return parsed
     } catch (error) {
-      tell({ model, task: taskOf(system), startedAt, ms: Date.now() - startedAt, ok: false, error: error instanceof Error ? error.message : String(error) })
+      tell({ model, task: taskOf(system), startedAt, ms: Date.now() - startedAt, ok: false, error: error instanceof Error ? error.message : String(error), system, user })
       throw error
     }
   }

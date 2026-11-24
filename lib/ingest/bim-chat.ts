@@ -12,7 +12,7 @@
  * does. The transcript is a per-device convenience in `localStorage`
  * (`bimchat-transcript`, no `brain2-` prefix, so it never joins the vault).
  */
-import { create } from "zustand"
+import { create, type StoreApi } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import { linkText } from "@/lib/bim-flow/entity-link"
 import { recordRouteVerdict } from "@/lib/bim-flow/route-verdicts"
@@ -73,6 +73,8 @@ import { tryCommands } from "@/lib/commands-bimby/run"
 import { liveSessionDeps, trySocial } from "@/lib/social-bimby/run"
 import { trySocialFollow } from "@/lib/social-bimby/session"
 import { tryStream } from "@/lib/stream-bimby/run"
+import { tryDump } from "@/lib/dump-bimby/run"
+import { parsePatternAsk, patternSummaryText, summarize, useThoughtPatternStore } from "@/lib/thought-patterns/store"
 import { tryWire } from "@/lib/wire-bimby/run"
 import { tryDay } from "@/lib/plan-bimby/day/run"
 import { answerWeb, looksLikeWebQuestion, takeHome, type WebAnswer } from "@/lib/bim-flow/web-ask"
@@ -431,6 +433,10 @@ async function answerAskBack(text: string, now: Date): Promise<BimLine | null> {
   }
   // A command or a new question is not the answer: drop the question and run the line.
   if (looksLikeVerb(text, now) || /\?\s*$/.test(text)) return null
+  if (held.kind === "fact") {
+    const moment = parseInstantStatement(text, now)
+    if (moment) keepFact(moment, now)
+  }
   const line =
     held.kind === "doing" ? `doing: ${text}` : held.kind === "mood" ? `mood: ${text}` : `log: ${text} (answer to "${held.question}")`
   const result = await ingestIncomingAsync({ source: BIM_CHAT_SOURCE, text: line, receivedAt: now.toISOString() }, now)
@@ -1057,6 +1063,12 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
     return followed ? bimLine(followed.text, { route: followed.route, ...(followed.choices.length ? { choices: followed.choices } : {}) }) : null
   },
   "flight-file": ({ text, now }) => tryFlights(text, now),
+  dump: ({ text, now }) => {
+    const ask = parsePatternAsk(text)
+    if (ask) return bimLine(patternSummaryText(summarize(useThoughtPatternStore.getState().observations, now, ask.days), ask.days), { route: "PATTERNS · ledger · code", kind: "tell" })
+    const dump = tryDump(text, now)
+    return dump ? bimLine(dump.text, { route: dump.route, reportId: dump.reportId }) : null
+  },
   food: async ({ text, now, opts }) => {
     const food = await tryFood(text, now, { llm: !!opts.llm })
     return food ? bimLine(food.text, { route: food.route, kind: "tell", ...(food.choices?.length ? { choices: food.choices } : {}) }) : null

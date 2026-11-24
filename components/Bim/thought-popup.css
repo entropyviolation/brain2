@@ -1,0 +1,367 @@
+/*
+ * components/Bim/thought-popup.css — The Thought sheet over the BIM console.
+ * One CRT glass over a dimmed handheld. Inks from `bim-ink.css`; the glow is the chat's own (`--bim-glow*`).
+ */
+
+.bim-th-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 26px;
+  border-radius: inherit;
+  background: rgba(12, 16, 18, 0.55);
+  backdrop-filter: blur(1.5px);
+}
+
+.bim-th {
+  display: flex;
+  flex-direction: column;
+  width: min(880px, 100%);
+  height: min(640px, 100%);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bim-th-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bim-line);
+}
+
+.bim-th-title {
+  font: 10px/1 var(--bim-pixel);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.bim-th-id {
+  font: 10px/1 var(--bim-mono);
+  color: var(--bim-dim);
+  text-shadow: none;
+}
+
+.bim-th-gap {
+  flex: 1 1 auto;
+}
+
+.bim-th-body {
+  flex: 1 1 auto;
+  padding: 14px 18px 22px;
+  font: 13px/1.5 var(--bim-mono);
+}
+
+.bim-th-h {
+  margin: 18px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--bim-line);
+  font: 9px/1.3 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
+}
+
+.bim-th-h small {
+  font: 11px/1 var(--bim-mono);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--bim-dim);
+  text-shadow: none;
+}
+
+.bim-th-sum {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 4px 14px;
+  margin: 0;
+}
+
+.bim-th-sum dt {
+  padding-top: 3px;
+  font: 8px/1.4 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bim-legend);
+  text-shadow: var(--bim-glow-soft);
+}
+
+.bim-th-sum dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.bim-th-sum dd.is-you,
+.bim-th-reply {
+  color: var(--bim-lcd);
+  text-shadow: var(--bim-glow-lcd);
+}
+
+.bim-th-sum dd.is-route {
+  color: var(--bim-violet);
+  text-shadow: var(--bim-glow-violet);
+}
+
+/* Pipeline: the top-level stages in order, each with a lamp. */
+.bim-th-pipe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bim-th-pipe li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 12px/1 var(--bim-mono);
+}
+
+.bim-th-pipe li.is-pass,
+.bim-th-pipe li.is-skip {
+  color: var(--bim-dim);
+  text-shadow: none;
+}
+
+.bim-th-arrow {
+  margin: 0 3px;
+  color: var(--bim-dim);
+  text-shadow: none;
+}
+
+.bim-th-lamp {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f4fff8, var(--bim-ink) 55%, #0b3a32);
+  box-shadow: 0 0 5px var(--bim-ink);
+}
+
+.is-pass > .bim-th-lamp,
+.is-pass > button > .bim-th-lamp {
+  background: color-mix(in srgb, var(--bim-ink) 35%, #1a2422);
+  box-shadow: none;
+}
+
+.is-skip > .bim-th-lamp,
+.is-skip > button > .bim-th-lamp {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--bim-dim);
+}
+
+.is-error > .bim-th-lamp,
+.is-error > button > .bim-th-lamp {
+  background: radial-gradient(circle at 35% 35%, #fff0f0, var(--bim-fault) 60%, #5a1c1c);
+  box-shadow: 0 0 5px var(--bim-fault);
+}
+
+/* Every step: a tree, indented by the step it ran inside, with a timing bar across the whole turn. */
+.bim-th-tree,
+.bim-th-tree ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bim-th-tree ol {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px dotted var(--bim-line);
+}
+
+.bim-th-ev {
+  margin: 0 0 6px;
+}
+
+.ui-dialog-content.bim-crt .bim-th button.bim-th-ev-head,
+.ui-dialog-content.bim-crt .bim-th button.bim-th-ev-head:active:not(:disabled),
+.ui-dialog-content.bim-crt .bim-th button.bim-th-ev-head:hover:not(:disabled) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px 8px;
+  width: 100%;
+  min-height: 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  color: var(--bim-ink);
+  text-shadow: var(--bim-glow);
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  text-align: left;
+  font: 12px/1.35 var(--bim-mono) !important;
+  opacity: 1;
+  cursor: default;
+}
+
+.ui-dialog-content.bim-crt .bim-th button.bim-th-ev-head:not(:disabled) {
+  cursor: pointer;
+}
+
+.ui-dialog-content.bim-crt .bim-th button.bim-th-ev-head:hover:not(:disabled),
+.ui-dialog-content.bim-crt .bim-th button.bim-th-ev-head[aria-expanded="true"] {
+  background: var(--bim-ghost);
+}
+
+.bim-th-kind {
+  padding: 1px 5px;
+  font: 8px/1.4 var(--bim-pixel);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #041014;
+  background: color-mix(in srgb, var(--bim-ink) 80%, transparent);
+  text-shadow: none;
+}
+
+.bim-th-ev.is-pass .bim-th-kind,
+.bim-th-ev.is-skip .bim-th-kind {
+  background: var(--bim-line);
+  color: var(--bim-lcd);
+}
+
+.bim-th-actor {
+  color: var(--bim-lcd);
+  text-shadow: var(--bim-glow-lcd);
+}
+
+.bim-th-agent,
+.bim-th-model {
+  color: var(--bim-violet);
+  text-shadow: var(--bim-glow-violet);
+}
+
+.bim-th-time {
+  margin-left: auto;
+  color: var(--bim-dim);
+  text-shadow: none;
+}
+
+.bim-th-more {
+  color: var(--bim-legend);
+}
+
+.bim-th-bar {
+  position: relative;
+  display: block;
+  height: 3px;
+  margin: 1px 6px 0;
+  background: color-mix(in srgb, var(--bim-ink) 8%, transparent);
+}
+
+.bim-th-bar b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--bim-ink);
+  box-shadow: 0 0 6px var(--bim-ink);
+}
+
+.bim-th-ev.is-error > .bim-th-bar b {
+  background: var(--bim-fault);
+  box-shadow: 0 0 6px var(--bim-fault);
+}
+
+.bim-th-note {
+  margin: 2px 6px 0;
+  font: 11px/1.45 var(--bim-mono);
+  color: var(--bim-legend);
+  text-shadow: var(--bim-glow-soft);
+}
+
+.bim-th-data {
+  margin: 6px 6px 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.bim-th-data section {
+  border: 1px solid var(--bim-line);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.bim-th-data h5 {
+  margin: 0;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--bim-line);
+  font: 8px/1.3 var(--bim-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
+}
+
+.bim-th-data pre {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.5 var(--bim-mono);
+  color: var(--bim-lcd);
+  text-shadow: var(--bim-glow-lcd);
+}
+
+.bim-th-none {
+  color: var(--bim-dim);
+}
+
+.bim-th-reply {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.bim-th-evidence {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bim-th-evidence li {
+  position: relative;
+  margin: 0 0 4px;
+  padding-left: 16px;
+  color: var(--bim-ink-2);
+  text-shadow: var(--bim-glow-2);
+}
+
+.bim-th-evidence li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--bim-ink-2);
+  box-shadow: 0 0 4px var(--bim-ink-2);
+}
+
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  .bim-th-scrim {
+    padding: 6px;
+  }
+
+  .bim-th {
+    height: 100%;
+  }
+
+  .bim-th-sum {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+}

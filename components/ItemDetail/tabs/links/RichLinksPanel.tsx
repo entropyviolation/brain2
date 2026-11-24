@@ -34,6 +34,7 @@ import { SuggestionShelf } from "@/components/ItemDetail/tabs/links/SuggestionSh
 import { useLinksGraph } from "@/components/ItemDetail/tabs/links/use-links-graph"
 import { useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
 import { useLinksViewStore } from "@/lib/graph/links-view-store"
+import { openBimGraph } from "@/lib/memory-graph/open"
 import "./rich-links.css"
 
 interface RichLinksPanelProps {
@@ -143,6 +144,10 @@ export function RichLinksPanel({ task, editable = true, addLink, removeLink, wri
         <label className="rl-derived-switch">
           <input type="checkbox" checked={withDerived} onChange={(e) => setWithDerived(e.target.checked)} /> with derived
         </label>
+        {/* Opens BIM chat's GRAPH tab centered here: walk it, and ask BIM about any node. */}
+        <button type="button" className="rl-key" title="Open in BIM's graph and talk about it" onClick={() => openBimGraph(task.id)}>
+          graph in BIM
+        </button>
       </div>
       {view === "matrix" ? <LinkMatrix itemId={task.id} links={graph.links} title={graph.title} /> : null}
       {view === "path" ? <LinkPath itemId={task.id} links={graph.links} tasks={tasks} title={graph.title} onOpen={onOpenItem} /> : null}
