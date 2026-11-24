@@ -763,13 +763,13 @@ export function mergeSharedPersistItems(incoming, source) {
       continue
     }
     const existing = existingVaultItem(name)
+    // The phone hub posts every key it holds on each flush, and nearly all of
+    // them match disk. A union of a value with itself is that value, but it
+    // parsed and walked 30 MB per Telegram text and kept the hub near 100% CPU.
+    if (existing === value) continue
     const merged = mergeIntoHub(existing, value, name)
     if (typeof merged !== "string") {
       skipped++
-      continue
-    }
-    if (existing === value) {
-      writeVaultItem(name, merged, source)
       continue
     }
     if (merged === existing && existing !== value) {
@@ -790,13 +790,10 @@ export function upsertSharedPersistItem(name, value, source) {
     return view({ skipped: "friend-pic" })
   }
   const existing = existingVaultItem(name)
+  if (existing === value) return view()
   const merged = mergeIntoHub(existing, value, name)
   if (typeof merged !== "string") {
     return view({ skipped: "empty" })
-  }
-  if (existing === value) {
-    writeVaultItem(name, merged, source)
-    return view()
   }
   if (merged === existing && existing !== value) {
     journalVaultDrop(name, existing, value, true)
@@ -1225,7 +1222,7 @@ async function handlePhoneTextPeople(req, res) {
 }
 
 /**
- * Mac Contacts cards for a name, read only: `?name=Shelby` → `{ cards: [{ name, first, last, phones, emails }] }`.
+ * Mac Contacts cards for a name, read only: `?name=Marilyn` → `{ cards: [{ name, first, last, phones, emails }] }`.
  * The Social BIMBY looks here before it asks you for someone's number (`lib/social-bimby/run.ts`).
  */
 async function handlePhoneContacts(req, res) {
