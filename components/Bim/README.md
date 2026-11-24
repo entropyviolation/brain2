@@ -242,3 +242,5 @@ _Last mapped: 2026-11-11_ `day-card.tsx` draws the Plan BIMBY's day plan (`lib/p
 Corrections ("no, yesterday") and the follow-through line reader skip a day line, as they do for the other cards.
 
 Not checked in the running app: the card's look on the console and the phone, and the run list inside it. The render test covers rows, an edit, the change box, and filing.
+
+_Last mapped: 2026-11-24_ **Day Log lane.** `day log`, `yesterday's day log`, `make my masterlog for monday` build that day's Day Log in Docs → LOG DOCS → DAY LOGS; `day log yesterday: the call with mom was at 3` keeps the words as an amendment and rebuilds. Lane `day-log`, after `food` and before `self` (`lib/day-log-bimby/`). A bare question ("can you make my day log?") goes to `self`, which explains it. Chip: `DAY LOG · built · model` (or `amended`, `code`). Tested in `lib/day-log-bimby/day-log-bimby.test.ts`, not yet in the running app.

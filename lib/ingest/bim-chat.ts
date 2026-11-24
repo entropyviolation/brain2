@@ -50,6 +50,7 @@ import { undoLastMoney } from "@/lib/finance-bimby/apply"
 import { openMoneyQuestion, tryMoney, tryMoneyPhoto } from "@/lib/finance-bimby/run"
 import { undoLastFood } from "@/lib/food-bimby/apply"
 import { tryFood } from "@/lib/food-bimby/run"
+import { tryDayLog } from "@/lib/day-log-bimby/run"
 import { escalate } from "@/lib/bim-flow/crew"
 import { CHAT_LANES, runLanes, type ChatLaneId, type LaneBody, type LaneGuard } from "./bim-lanes"
 import { BIM_CHAT_AGENT_ID, BIM_CHAT_REV } from "@/lib/agents/adapters/bim-chat"
@@ -1057,6 +1058,10 @@ const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
   food: async ({ text, now, opts }) => {
     const food = await tryFood(text, now, { llm: !!opts.llm })
     return food ? bimLine(food.text, { route: food.route, kind: "tell", ...(food.choices?.length ? { choices: food.choices } : {}) }) : null
+  },
+  "day-log": async ({ text, now, opts }) => {
+    const said = await tryDayLog(text, now, { llm: !!opts.llm })
+    return said ? bimLine(said.text, { route: said.route, kind: "tell" }) : null
   },
   self: ({ text, opts }) => {
     const said = answerSelf(text, { llm: !!opts.llm })

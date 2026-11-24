@@ -104,6 +104,12 @@ const TOPICS: Topic[] = [
     say: () => "Yes. “Remember this command to …” keeps a shell command, and “what's the command to …?” says it back.",
   },
   {
+    id: "day-log",
+    words: /\b(?:day\s*logs?|master\s*logs?|daily\s+logs?|diary|journal of (?:my|the) day)\b/i,
+    say: (llm) =>
+      `Yes. Say “day log” (or “yesterday's day log”, “day log monday”) and the Day Log BIMBY reads everything from that day (tracking, location, Health, calls, texts, screen time, food, what you told me here and on Telegram, docs you wrote) and files one exact account in Docs → LOG DOCS → DAY LOGS. “Day log yesterday: the call with mom was at 3” keeps your correction word for word and rebuilds it. Yesterday's log is finished on its own after 4 am.${llm ? "" : " With LLM off it lists every row with times but writes no prose."}`,
+  },
+  {
     id: "food",
     words: /\b(?:food|meals?|ate|eaten|calories|kcal|nutrition(?:al)?|macros|recipes?)\b/i,
     say: () => "Yes. Tell me what you ate, as loosely as you like (“yesterday a whole container of ravioli with cheddar and 2 Red Bulls”), and the Food BIMBY reads it into meals, looks up each part (your saved foods, USDA, Open Food Facts, then an estimate), and files each on the Food book with the numbers. A homemade dish is saved as a recipe card. “Undo that” takes it back.",

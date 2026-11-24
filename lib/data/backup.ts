@@ -36,6 +36,7 @@ import { useEventStore } from "@/lib/event-store"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useMeStore } from "@/lib/coach-bimby/me-store"
+import { useDayLogStore } from "@/lib/day-log-bimby/store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useReviewsStore } from "@/lib/reviews-store"
@@ -173,6 +174,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("planned-actions"), rehydrate: persistRehydrate(usePlannedActionStore) },
   { key: persistKey("goals-store"), rehydrate: persistRehydrate(useGoalsStore) },
   { key: persistKey("coach-me"), rehydrate: persistRehydrate(useMeStore) },
+  { key: persistKey("day-logs"), rehydrate: persistRehydrate(useDayLogStore) },
   { key: persistKey("habits-store"), rehydrate: persistRehydrate(useHabitsStore) },
   { key: "points-store", rehydrate: persistRehydrate(usePointsStore) },
   { key: persistKey("reviews-store"), rehydrate: persistRehydrate(useReviewsStore) },
@@ -233,6 +235,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-goals-store": "Goals",
   [persistKey("coach-me")]: "What BIM knows about you",
   "cogs-coach-me": "What BIM knows about you",
+  [persistKey("day-logs")]: "Day Logs and their amendments",
+  "cogs-day-logs": "Day Logs and their amendments",
   [persistKey("habits-store")]: "Habits",
   "cogs-habits-store": "Habits",
   "points-store": "Points",
@@ -537,6 +541,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("planned-actions")]: asLiveStore(usePlannedActionStore),
   [persistKey("goals-store")]: asLiveStore(useGoalsStore),
   [persistKey("coach-me")]: asLiveStore(useMeStore),
+  [persistKey("day-logs")]: asLiveStore(useDayLogStore),
   [persistKey("habits-store")]: asLiveStore(useHabitsStore),
   "points-store": asLiveStore(usePointsStore),
   [persistKey("reviews-store")]: asLiveStore(useReviewsStore),

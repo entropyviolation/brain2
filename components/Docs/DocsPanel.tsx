@@ -39,15 +39,35 @@ import {
   setDocumentFont,
   setDocumentStatus,
 } from "./doc-actions"
+import { DayLogBar, DayLogMaker } from "./day-log-bar"
+import { dayLogDateOf } from "@/lib/day-log-bimby/file"
+import { DAY_LOG_FOLDER, DAY_LOG_PARENT } from "@/lib/day-log-bimby/render"
+import { DAY_LOG_WRITTEN_EVENT } from "@/lib/day-log-bimby/run"
 import "./docs.css"
 
 const ALL_FOLDER = "__all__"
 const UNFILED = "__unfiled__"
 
+/** Folders that always show, even empty. A "/" in a folder label nests it under its parent. */
+const BUILTIN_FOLDERS = [DAY_LOG_PARENT, DAY_LOG_FOLDER]
+
+/** Every folder in use, the built-in ones, and each nested folder's parents, sorted so a child follows its parent. */
+export function folderTree(used: string[]): string[] {
+  const set = new Set<string>([...used, ...BUILTIN_FOLDERS])
+  for (const f of [...set]) {
+    const parts = f.split("/")
+    for (let i = 1; i < parts.length; i++) set.add(parts.slice(0, i).join("/"))
+  }
+  return [...set].sort((a, b) => a.localeCompare(b))
+}
+
+/** A doc is in a folder when its label is that folder or one nested under it. */
+const inFolder = (label: string, folder: string) => label === folder || label.startsWith(`${folder}/`)
+
 export function DocsPanel() {
   const tasks = useTaskStore((s) => s.tasks)
   const docs = useMemo(() => listDocuments(tasks), [tasks])
-  const folders = useMemo(() => listDocumentFolders(docs), [docs])
+  const folders = useMemo(() => folderTree(listDocumentFolders(docs)), [docs])
 
   const [folderFilter, setFolderFilter] = useState<string>(() => readStoredId(APP_NAV_KEYS.docsFolder) || ALL_FOLDER)
   const [selectedId, setSelectedId] = useState<string | null>(() => readStoredId(APP_NAV_KEYS.docsDocId))
@@ -81,7 +101,7 @@ export function DocsPanel() {
     if (folderFilter === UNFILED) {
       return docs.filter((d) => !documentFolder(d) && documentStatus(d) !== "archived")
     }
-    return docs.filter((d) => documentFolder(d) === folderFilter && documentStatus(d) !== "archived")
+    return docs.filter((d) => inFolder(documentFolder(d), folderFilter) && documentStatus(d) !== "archived")
   }, [docs, folderFilter])
 
   const searchedDocs = useMemo(
@@ -161,6 +181,19 @@ export function DocsPanel() {
       cancelled = true
     }
   }, [selected?.id])
+
+  // A Day Log rebuilt while open: show the new body unless there are unsaved keystrokes.
+  useEffect(() => {
+    const onWritten = (e: Event) => {
+      const id = (e as CustomEvent<{ docId: string }>).detail?.docId
+      if (!id || id !== selectedIdRef.current || pendingBody.current !== null) return
+      void loadDocumentBody(id, "").then((html) => {
+        if (html && selectedIdRef.current === id && pendingBody.current === null) setDraft(html)
+      })
+    }
+    window.addEventListener(DAY_LOG_WRITTEN_EVENT, onWritten)
+    return () => window.removeEventListener(DAY_LOG_WRITTEN_EVENT, onWritten)
+  }, [])
 
   const flushBody = useCallback(async () => {
     if (timer.current) {
@@ -295,7 +328,7 @@ export function DocsPanel() {
     const keys = [
       { id: ALL_FOLDER, label: "All documents" },
       { id: UNFILED, label: "Unfiled" },
-      ...folders.map((f) => ({ id: f, label: f })),
+      ...folders.map((f) => ({ id: f, label: f.split("/").pop() ?? f, depth: f.split("/").length - 1 })),
     ]
     return keys
   }, [folders])
@@ -412,6 +445,8 @@ export function DocsPanel() {
                   <button
                     type="button"
                     className="docs-folder-item"
+                    style={"depth" in f && f.depth ? { paddingLeft: 8 + f.depth * 14 } : undefined}
+                    title={f.id.startsWith("__") ? undefined : f.id}
                     aria-selected={folderFilter === f.id}
                     onClick={() => {
                       void flushBody()
@@ -461,6 +496,14 @@ export function DocsPanel() {
           </aside>
 
           <section className="docs-main" aria-label={selected ? "Editor" : "Documents"}>
+            {!selected && folderFilter === DAY_LOG_FOLDER ? (
+              <DayLogMaker
+                onBuilt={(id) => {
+                  void flushBody()
+                  setSelectedId(id)
+                }}
+              />
+            ) : null}
             {!selected ? (
               <DocsHome
                 folderLabel={folderLabel}
@@ -534,6 +577,8 @@ export function DocsPanel() {
                   openedNowAt={openStamp?.id === selected.id ? openStamp.now : null}
                   onClose={() => setInfoOpen(false)}
                 />
+
+                {dayLogDateOf(selected) ? <DayLogBar date={dayLogDateOf(selected)!} /> : null}
 
                 <div className="docs-editor-wrap">
                   <DocumentEditor

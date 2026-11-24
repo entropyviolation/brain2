@@ -60,6 +60,7 @@ import { useChromeHistoryInbox } from "@/hooks/use-chrome-history-inbox"
 import { useListMembershipRulesTick } from "@/hooks/use-list-membership-rules-tick"
 import { useSystemHomeListPins } from "@/lib/home-system-lists"
 import { usePeopleIKnowList } from "@/hooks/use-people-i-know"
+import { useDayLogBimby } from "@/hooks/use-day-log-bimby"
 import { useCloseGiftIdeas } from "@/hooks/use-close-gift-ideas"
 import {
   useInstagramAnalysisLists,
@@ -136,6 +137,8 @@ function DeskReadyMark() {
 function IdleVaultSeeds() {
   useSystemHomeListPins()
   usePeopleIKnowList()
+  // Day Log BIMBY: today kept current, yesterday finished after 4 am (`lib/day-log-bimby/`).
+  useDayLogBimby()
   useCloseGiftIdeas()
   useInstagramFollowingList()
   useInstagramFollowersList()

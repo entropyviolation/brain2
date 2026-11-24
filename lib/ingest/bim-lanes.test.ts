@@ -97,6 +97,7 @@ describe("CHAT_LANES", () => {
       "flight-file",
       "flight-ask",
       "food",
+      "day-log",
       "self",
       "remind",
       "coach",
