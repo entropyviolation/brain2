@@ -169,8 +169,8 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `habits`
 
-- **Format:** `habits` · `hi` · `habit board`
-- **Forms / aliases:** `habits`, `hi`, `habit board`
+- **Format:** `habits` · `habit board`
+- **Forms / aliases:** `habits`, `habit board`
 - **Does:** Dump today's habit board as plain text.
 
 ### `hemisync`

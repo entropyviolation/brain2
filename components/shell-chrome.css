@@ -887,12 +887,18 @@ body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([
   cursor: default;
 }
 
-/* Quick Add is the primary cap: silver face, navy legend, navy lamp, navy ring. */
+/* Quick Add is the primary cap: silver face, navy legend, navy lamp. The navy
+   ring shows only while the key is pressed or has keyboard focus, not at rest. */
 body.win95-app .b2-shell-rail button.b2-shell-go:not(.todo-cap) {
   --cap-edge: #2a3570;
   color: #1a2556;
   font-weight: 700;
   letter-spacing: 0.02em;
+  outline: none;
+}
+
+body.win95-app .b2-shell-rail button.b2-shell-go:not(.todo-cap):active,
+body.win95-app .b2-shell-rail button.b2-shell-go:not(.todo-cap):focus-visible {
   outline: 2px solid var(--todo-cap-navy);
   outline-offset: 1px;
 }
@@ -2436,9 +2442,14 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap) {
+    outline: none;
+    color: #1a2556;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap):active,
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap):focus-visible {
     outline: 2px solid #22306c;
     outline-offset: 1px;
-    color: #1a2556;
   }
 
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap)::before {

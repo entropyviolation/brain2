@@ -203,7 +203,7 @@ SCAN / PANTRY
 
 READ
 • read: grocery list  ·  show: Groceries  ·  dump: chores
-• habits  ·  hi  ·  agenda  ·  count  ·  tags  ·  ping
+• habits  ·  agenda  ·  count  ·  tags  ·  ping
 • help  ·  info  |  manual  |  instructions
 
 ALWAYS ON

@@ -87,6 +87,7 @@ describe("CHAT_LANES", () => {
   // answer before the tell shapes do. A change here should be a decision, so the whole order is pinned.
   it("keeps the order a line meets them in", () => {
     expect(CHAT_LANES.map((l) => l.id)).toEqual([
+      "hello",
       "handoff",
       "graph-tell",
       "commands",

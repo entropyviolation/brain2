@@ -53,7 +53,7 @@ const VERBS: VerbSpec[] = [
   { kind: "inbox", aliases: ["dump inbox", "show inbox", "read inbox", "open inbox"] },
   { kind: "search", aliases: ["search", "find", "?"] },
   { kind: "today", aliases: ["today", "tdy"] },
-  { kind: "habits", aliases: ["habit board", "habits", "hi"] },
+  { kind: "habits", aliases: ["habit board", "habits"] },
   { kind: "status", aliases: ["working now", "where", "status", "now"] },
   { kind: "ops", aliases: ["operations", "ops"] },
   { kind: "count", aliases: ["counts", "count"] },

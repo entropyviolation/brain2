@@ -14,3 +14,11 @@ const LEAD = new RegExp(String.raw`^\s*${HELLO}(?:\s+(?:bim|there))?\s*(?:[.,!:;
 export function dropGreeting(text: string): string {
   return text.replace(LEAD, "")
 }
+
+/** Hellos that say nothing else. Not "gm" (the morning review) or "ok" / "so" (they answer something). */
+const BARE = /^\s*(?:hi+|hey+|hello+|hiya|heya|yo+|howdy|hi there|hey there)(?:\s+bim)?\s*[.!~]*\s*$/i
+
+/** "hi", "hey!", "hello bim": a line that is only a hello, said in passing. */
+export function isBareGreeting(text: string): boolean {
+  return BARE.test(text)
+}

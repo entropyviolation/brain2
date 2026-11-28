@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { parseAboutMe, parseForget, parseMeAsk } from "@/lib/coach-bimby/read"
 import { parseNoteStatement } from "./bim-facts"
-import { dropGreeting } from "./greeting"
+import { dropGreeting, isBareGreeting } from "./greeting"
 
 describe("dropGreeting", () => {
   it("takes off one leading hello and its mark", () => {
@@ -26,5 +26,14 @@ describe("remember shapes after a hello", () => {
   })
   it("keeps a plain fact", () => {
     expect(parseNoteStatement("hi, remember that the gate code is 4412")?.text).toBe("the gate code is 4412")
+  })
+})
+
+describe("isBareGreeting", () => {
+  it("is a line that is only a hello", () => {
+    for (const s of ["hi", "Hi!", "hiii", "hey", "hey bim", "hello.", "yo", "hi there"]) expect(isBareGreeting(s)).toBe(true)
+  })
+  it("is not a hello with words after it, or a command", () => {
+    for (const s of ["hi, remember that the gate code is 4412", "habits", "gm", "ok", "hi mom"]) expect(isBareGreeting(s)).toBe(false)
   })
 })

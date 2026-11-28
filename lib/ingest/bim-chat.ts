@@ -56,6 +56,7 @@ import { tryDayLog } from "@/lib/day-log-bimby/run"
 import { tryWeekLog } from "@/lib/week-log-bimby/run"
 import { escalate } from "@/lib/bim-flow/crew"
 import { CHAT_LANES, runLanes, type ChatLaneId, type LaneBody, type LaneGuard } from "./bim-lanes"
+import { isBareGreeting } from "./greeting"
 import { BIM_CHAT_AGENT_ID, BIM_CHAT_REV } from "@/lib/agents/adapters/bim-chat"
 import { clip, recorder, type EventDraft, type StopReason, type TraceOrigin, type TraceRecorder } from "@/lib/agents/trace"
 import { saveTrace } from "@/lib/agents/trace-store"
@@ -1170,6 +1171,7 @@ async function grammarLine(pieces: GrammarPiece[], now: Date): Promise<BimLine> 
  * this is only what each one runs. A body returns null to leave the line for the next lane.
  */
 const LANE_BODIES: Record<ChatLaneId, LaneBody<LaneCtx, BimLine>> = {
+  hello: async ({ text }) => (isBareGreeting(text) ? bimLine("Hi.", { route: "HELLO · code" }) : null),
   handoff: async ({ text, opts }) => {
     // LLM off means no model anywhere in the turn, the BIMBY handed to included: it runs its rules alone.
     const handed = await tryHandoff(text, { llm: !!opts.llm })

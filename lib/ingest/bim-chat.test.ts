@@ -210,13 +210,16 @@ describe("day-stream grammar lane", () => {
     expect(useIngestStore.getState().events[0]!.kind).toBe("needed")
   })
 
-  it("starts an activity, stops it, and logs a stop with nothing open", async () => {
+  it("starts an activity, stops it, and makes a stop with nothing open a Tracking event", async () => {
     const start = await sendToBim("starting dishes", new Date(), { llm: false })
     expect(start.text).toContain("Currently: dishes")
     const stop = await sendToBim("done with dishes", new Date(), { llm: false })
     expect(stop.text).toContain("Stopped: dishes")
     const nothing = await sendToBim("home from walk", new Date(), { llm: false })
-    expect(nothing.route).toBe("GRAMMAR · log · code")
+    expect(nothing.route).toBe("GRAMMAR · did · code")
+    expect(nothing.text).toContain("Just did: done with walk")
+    const up = await sendToBim("Up", new Date(), { llm: false })
+    expect(up.text).toContain("Just did: woke up")
   })
   it("“doing a facemask rn so counts as skincare” checks Skincare for today, the rest as the cell's note", async () => {
     useHabitsStore.setState({
@@ -386,5 +389,24 @@ describe("Coach BIMBY lanes in BIM chat", () => {
     // A plain To Do is still the keep lane's.
     const todo = await sendToBim("remind me to water the plants", now, { llm: false })
     expect(todo.route).toBe("KEEP · to do · code")
+  })
+})
+
+describe("BIM Chat: a bare hello", () => {
+  beforeEach(() => {
+    resetAllStores()
+    useBimChatStore.setState({ lines: [], busy: false })
+  })
+
+  it("says hi back, without the habit board, and files nothing", async () => {
+    const before = useIngestStore.getState().events.length
+    for (const s of ["hi", "hey!", "hello bim"]) {
+      const line = await sendToBim(s, new Date(), { llm: false })
+      expect(line.route).toBe("HELLO · code")
+      expect(line.text).toBe("Hi.")
+    }
+    expect(useIngestStore.getState().events.length).toBe(before)
+    // The board is still one word away.
+    expect((await sendToBim("habits", new Date(), { llm: false })).route).not.toBe("HELLO · code")
   })
 })

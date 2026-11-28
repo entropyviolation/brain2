@@ -349,7 +349,7 @@ How to use it
 • dh: hemisync — done (preset). Bare hemisync is not a habit log
 • dh: read 30 pages  ·  dh: exercise 15 min …  ·  dh: chess score 355
 • habit: exercise 30  |  did: stretch  |  h stretch
-• habits  |  hi  |  habit board — dump today's board
+• habits  |  habit board — dump today's board
 Optional yesterday. Notes stamp: from text message at {time}.
 
 Send "habit commands" for the glossary.`,
@@ -607,7 +607,7 @@ Often follows a receipt photo. Send "inv commands".`,
 • lists  ·  ls  ·  folders  ·  dirs
 • read inbox  ·  show inbox  ·  dump inbox
 • search: milk  ·  find:  ·  ?
-• today  ·  tdy  ·  habits  ·  hi  ·  where  ·  status
+• today  ·  tdy  ·  habits  ·  where  ·  status
 • count  ·  tags  ·  ops  ·  agenda  ·  calendar
 A read that matches nothing parks on iPhone Notes Store.
 

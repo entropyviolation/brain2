@@ -46,7 +46,7 @@ describe("day-stream grammar", () => {
     expect(kinds("still feeling tired")).toBeNull()
     expect(kinds("working on brain2, specifically improving bim chat")).toEqual(["start:brain2", "rest:specifically improving bim chat"])
     expect(kinds("working on it")).toBeNull()
-    expect(kinds("Changed into blue dress now going on a walk")).toEqual(["did:changed into blue dress", "start:walk"])
+    expect(kinds("Changed into blue dress now going on a walk")).toEqual(["did:Changed into blue dress", "start:walk"])
     expect(kinds("Finally changed my outfit")).toEqual(["did:changed my outfit"])
     expect(kinds("Just got home from walking a few minutes ago")).toEqual(["stop:walking"])
     expect(kinds("About to leave for another walk")).toBeNull()

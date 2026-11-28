@@ -37,6 +37,8 @@ const PLAIN = ["tell-open", "question-open", "verb"] as const
 
 /** The lanes, in the order a line meets them. The reason for each place is beside it. */
 export const CHAT_LANES = [
+  // First: "hi" alone is an empty hello, said often. It was the habit board's alias, then a logged line; now it is neither.
+  { id: "hello", cost: "code", skipWhen: ["question-open"], does: "A line that is only a hello (“hi”, “hey bim”) gets a hello back, and nothing is filed." },
   { id: "handoff", cost: "code", does: "“Send this to tracking bimby: …” hands the words, unread, to that BIMBY's own chat." },
   // Right after: the GRAPH tab's "Tell BIM about Linda: …" names its item, so no shape lane may read the words as a dump, a plan or a fact.
   { id: "graph-tell", cost: "local-model", does: "“Tell BIM about Linda Gibbins Croft: …” (the GRAPH tab's Tell key, one node or several) becomes a card of changes to that item: the words as a note, facts, an address as a Location, relations to other people, days you saw them, To Dos or project parts, considerations, and a group list." },
